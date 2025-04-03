@@ -144,6 +144,7 @@ const Clients = () => {
             <TableRow>
               <TableCell>Имя</TableCell>
               <TableCell>Фамилия</TableCell>
+              <TableCell>Баланс</TableCell>
               <TableCell>Действия</TableCell>
             </TableRow>
           </TableHead>
@@ -152,6 +153,17 @@ const Clients = () => {
               <TableRow key={client.id}>
                 <TableCell>{client.firstName}</TableCell>
                 <TableCell>{client.lastName}</TableCell>
+                <TableCell>
+                  <Typography 
+                    color={client.balance >= 0 ? 'success.main' : 'error.main'}
+                    fontWeight="medium"
+                  >
+                    {client.balance.toLocaleString('ru-RU', {
+                      style: 'currency',
+                      currency: 'RUB'
+                    })}
+                  </Typography>
+                </TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={1}>
                     <Button

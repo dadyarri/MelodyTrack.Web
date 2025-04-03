@@ -2,19 +2,24 @@ export interface Client {
   id: number;
   firstName: string;
   lastName: string;
-  contacts: {
-    phone?: string;
-    vk?: string;
-    telegram?: string;
-  }
+  patronymic?: string;
+  contacts?: ClientContact;
+  balance: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ClientContact {
+  id: number;
+  email?: string;
+  phone?: string;
 }
 
 export interface CreateClientData {
   firstName: string;
   lastName: string;
   phone?: string;
+  patronymic?: string;
   vk?: string;
   telegram?: string;
 }
