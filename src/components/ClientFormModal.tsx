@@ -10,7 +10,6 @@ import {
   Alert,
 } from '@mui/material'
 import { clientService } from '../services/client'
-import { Telegram } from '@mui/icons-material'
 
 interface ClientFormModalProps {
   open: boolean
@@ -31,11 +30,9 @@ const ClientFormModal = ({ open, onClose, onClientCreated }: ClientFormModalProp
     const clientData = {
       firstName: formData.get('firstName') as string,
       lastName: formData.get('lastName') as string,
-      contacts: {
-        phone: formData.get('phone') as string,
-        telegram: formData.get('telegram') as string,
-        vk: formData.get('vk') as string,
-      }
+      phone: formData.get('phone') as string,
+      telegram: formData.get('telegram') as string,
+      vk: formData.get('vk') as string,
     }
 
     try {
@@ -76,21 +73,18 @@ const ClientFormModal = ({ open, onClose, onClientCreated }: ClientFormModalProp
               autoComplete="family-name"
             />
             <TextField
-              required
               fullWidth
               label="Telegram"
               name="telegram"
               autoComplete="telegram"
             />
             <TextField
-              required
               fullWidth
               label="VK"
               name="vk"
               autoComplete="vk"
             />
             <TextField
-              required
               fullWidth
               label="Телефон"
               name="phone"

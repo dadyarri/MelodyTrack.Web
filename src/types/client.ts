@@ -14,11 +14,9 @@ export interface Client {
 export interface CreateClientData {
   firstName: string;
   lastName: string;
-  contacts: {
-    phone?: string;
-    vk?: string;
-    telegram?: string;
-  }
+  phone?: string;
+  vk?: string;
+  telegram?: string;
 }
 
 export interface ClientsResponse {
