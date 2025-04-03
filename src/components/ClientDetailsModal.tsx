@@ -18,12 +18,13 @@ import SaveIcon from '@mui/icons-material/Save'
 import CancelIcon from '@mui/icons-material/Cancel'
 import { Client, UpdateClientRequest } from '../types/client'
 import { clientService } from '../services/client'
+import PaymentFormModal from './PaymentFormModal'
 
 interface ClientDetailsModalProps {
   open: boolean
   onClose: () => void
   client: Client | null
-  onClientUpdated?: (updatedClient: Client) => void
+  onClientUpdated: () => void
 }
 
 type ContactField = 'phone' | 'vk' | 'telegram'
@@ -34,6 +35,7 @@ const ClientDetailsModal = ({ open, onClose, client, onClientUpdated }: ClientDe
   const [editedClient, setEditedClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
 
   if (!client) return null
 
@@ -67,7 +69,7 @@ const ClientDetailsModal = ({ open, onClose, client, onClientUpdated }: ClientDe
       const updatedClient = await clientService.updateClient(editedClient.id, updateData)
       setIsEditing(false)
       setEditedClient(null)
-      onClientUpdated?.(updatedClient)
+      onClientUpdated()
     } catch (err) {
       setError('Ошибка при обновлении данных клиента')
       console.error('Error updating client:', err)
@@ -95,6 +97,10 @@ const ClientDetailsModal = ({ open, onClose, client, onClientUpdated }: ClientDe
         [field]: value
       }
     })
+  }
+
+  const handlePaymentCreated = () => {
+    onClientUpdated()
   }
 
   const renderField = (label: string, value: string, field: MainField) => {
@@ -140,82 +146,120 @@ const ClientDetailsModal = ({ open, onClose, client, onClientUpdated }: ClientDe
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">Информация о клиенте</Typography>
-          {!isEditing ? (
-            <Tooltip title="Редактировать">
-              <IconButton onClick={handleEdit} color="primary">
-                <EditIcon />
-              </IconButton>
-            </Tooltip>
-          ) : (
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6">Информация о клиенте</Typography>
+            {!isEditing ? (
+              <Tooltip title="Редактировать">
+                <IconButton onClick={handleEdit} color="primary">
+                  <EditIcon />
+                </IconButton>
+              </Tooltip>
+            ) : (
+              <Box>
+                <Tooltip title="Сохранить">
+                  <IconButton 
+                    onClick={handleSave} 
+                    disabled={loading}
+                    color="primary"
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Отмена">
+                  <IconButton onClick={handleCancel} color="error">
+                    <CancelIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
             <Box>
-              <Tooltip title="Сохранить">
-                <IconButton 
-                  onClick={handleSave} 
-                  disabled={loading}
-                  color="primary"
-                >
-                  <SaveIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Отмена">
-                <IconButton onClick={handleCancel} color="error">
-                  <CancelIcon />
-                </IconButton>
-              </Tooltip>
+              {!isEditing && <Typography variant="subtitle2" color="text.secondary">
+                Имя
+              </Typography>}
+              {renderField('Имя', client.firstName, 'firstName')}
             </Box>
-          )}
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <Box>
-            {!isEditing && <Typography variant="subtitle2" color="text.secondary">
-              Имя
-            </Typography>}
-            {renderField('Имя', client.firstName, 'firstName')}
-          </Box>
 
-          <Box>
-            {!isEditing && <Typography variant="subtitle2" color="text.secondary">
-              Фамилия
-            </Typography>}
-            {renderField('Фамилия', client.lastName, 'lastName')}
-          </Box>
+            <Box>
+              {!isEditing && <Typography variant="subtitle2" color="text.secondary">
+                Фамилия
+              </Typography>}
+              {renderField('Фамилия', client.lastName, 'lastName')}
+            </Box>
 
-          <Divider />
-          <Box>
-            <Typography variant="h6">Контакты</Typography>
-            <Stack spacing={2}>
+            {client.patronymic && (
               <Box>
-                {!isEditing && client.contacts.phone && <Typography variant="subtitle2" color="text.secondary">
-                  Телефон
+                {!isEditing && <Typography variant="subtitle2" color="text.secondary">
+                  Отчество
                 </Typography>}
-                {renderContactField('Телефон', client.contacts.phone, 'phone')}
+                <Typography variant="body1">{client.patronymic}</Typography>
               </Box>
-              <Box>
-                {!isEditing && client.contacts.vk && <Typography variant="subtitle2" color="text.secondary">
-                  VK
-                </Typography>}
-                {renderContactField('VK', client.contacts.vk, 'vk')}
-              </Box>
-              <Box>
-                {!isEditing && client.contacts.telegram && <Typography variant="subtitle2" color="text.secondary">
-                  Telegram
-                </Typography>}
-                {renderContactField('Telegram', client.contacts.telegram, 'telegram')}
-              </Box>
-            </Stack>
-          </Box>
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Закрыть</Button>
-      </DialogActions>
-    </Dialog>
+            )}
+
+            <Divider />
+            <Box>
+              <Typography variant="h6">Контакты</Typography>
+              <Stack spacing={2}>
+                <Box>
+                  {!isEditing && client.contacts.phone && <Typography variant="subtitle2" color="text.secondary">
+                    Телефон
+                  </Typography>}
+                  {renderContactField('Телефон', client.contacts.phone, 'phone')}
+                </Box>
+                <Box>
+                  {!isEditing && client.contacts.vk && <Typography variant="subtitle2" color="text.secondary">
+                    VK
+                  </Typography>}
+                  {renderContactField('VK', client.contacts.vk, 'vk')}
+                </Box>
+                <Box>
+                  {!isEditing && client.contacts.telegram && <Typography variant="subtitle2" color="text.secondary">
+                    Telegram
+                  </Typography>}
+                  {renderContactField('Telegram', client.contacts.telegram, 'telegram')}
+                </Box>
+              </Stack>
+            </Box>
+
+            <Divider />
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Баланс
+              </Typography>
+              <Typography 
+                variant="h6" 
+                color={client.balance >= 0 ? 'success.main' : 'error.main'}
+                fontWeight="medium"
+              >
+                {client.balance.toLocaleString('ru-RU', {
+                  style: 'currency',
+                  currency: 'RUB'
+                })}
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setIsPaymentModalOpen(true)} variant="contained" color="primary">
+            Добавить платеж
+          </Button>
+          <Button onClick={onClose}>Закрыть</Button>
+        </DialogActions>
+      </Dialog>
+
+      <PaymentFormModal
+        open={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        clientId={client.id}
+        onPaymentCreated={handlePaymentCreated}
+      />
+    </>
   )
 }
 
