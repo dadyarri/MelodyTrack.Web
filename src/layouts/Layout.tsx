@@ -25,6 +25,9 @@ const Layout = ({ children }: LayoutProps) => {
                 <MuiLink component={RouterLink} to="/" color="primary" underline="none">
                   {import.meta.env.VITE_APP_NAME}
                 </MuiLink>
+                <MuiLink component={RouterLink} to="/calendar" color="primary" underline="none">
+                  Календарь
+                </MuiLink>
                 <MuiLink component={RouterLink} to="/clients" color="primary" underline="none">
                   Клиенты
                 </MuiLink>
