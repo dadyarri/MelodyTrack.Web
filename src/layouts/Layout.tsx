@@ -28,6 +28,9 @@ const Layout = ({ children }: LayoutProps) => {
                 <MuiLink component={RouterLink} to="/clients" color="primary" underline="none">
                   Клиенты
                 </MuiLink>
+                <MuiLink component={RouterLink} to="/expenses" color="primary" underline="none">
+                  Расходы
+                </MuiLink>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Typography variant="body2">

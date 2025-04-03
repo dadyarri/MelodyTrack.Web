@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
+import Expenses from './pages/Expenses'
 
 const theme = createTheme({
   palette: {
@@ -38,16 +39,26 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/clients"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Clients />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/clients"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Clients />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/expenses"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Expenses />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>

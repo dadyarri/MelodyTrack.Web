@@ -1,20 +1,19 @@
-import { Box, Typography, Button, Stack } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
+import { Box, Typography, Grid } from '@mui/material'
+import ExpensesCard from '../components/ExpensesCard'
 
 const Home = () => {
-  const navigate = useNavigate()
-
   return (
-    <Stack spacing={3}>
-      <Box>
-        <Typography variant="h2" component="h1" gutterBottom>
-          {import.meta.env.VITE_APP_NAME}
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          
-        </Typography>
-      </Box>
-    </Stack>
+    <Box>
+      <Typography variant="h2" component="h1" gutterBottom>
+        Добро пожаловать в MelodyTrack
+      </Typography>
+      
+      <Grid container spacing={3}>
+        <Grid size={{xs:12, md:4}}>
+          <ExpensesCard />
+        </Grid>
+      </Grid>
+    </Box>
   )
 }
 
