@@ -41,7 +41,6 @@ const Clients = () => {
       setLoading(true)
       setError('')
       const response = await clientService.getClients(page, pageSize)
-      console.log(response.data)
       setClients(response.data)
       setTotalPages(Math.ceil(response.info.total / pageSize))
     } catch (err) {
