@@ -18,9 +18,11 @@ import {
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AddIcon from '@mui/icons-material/Add'
+import EditIcon from '@mui/icons-material/Edit'
 import { serviceService } from '../services/service'
 import { Service } from '../types/service'
 import ServiceFormModal from '../components/ServiceFormModal'
+import UpdateServicePriceModal from '../components/UpdateServicePriceModal'
 
 const Services = () => {
   const [services, setServices] = useState<Service[]>([])
@@ -28,6 +30,8 @@ const Services = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string>('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isPriceModalOpen, setIsPriceModalOpen] = useState(false)
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
 
   const fetchServices = async () => {
     try {
@@ -55,6 +59,16 @@ const Services = () => {
 
   const handleServiceCreated = () => {
     fetchServices()
+  }
+
+  const handleOpenPriceModal = (service: Service) => {
+    setSelectedService(service)
+    setIsPriceModalOpen(true)
+  }
+
+  const handleClosePriceModal = () => {
+    setSelectedService(null)
+    setIsPriceModalOpen(false)
   }
 
   if (loading && services.length === 0) {
@@ -108,6 +122,7 @@ const Services = () => {
               <TableCell>Название</TableCell>
               <TableCell>Описание</TableCell>
               <TableCell>Текущая цена</TableCell>
+              <TableCell align="right">Действия</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -121,6 +136,17 @@ const Services = () => {
                     currency: 'RUB'
                   })}
                 </TableCell>
+                <TableCell align="right">
+                  <Tooltip title="Изменить цену">
+                    <IconButton 
+                      onClick={() => handleOpenPriceModal(service)}
+                      color="primary"
+                      size="small"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -132,6 +158,16 @@ const Services = () => {
         onClose={() => setIsCreateModalOpen(false)}
         onServiceCreated={handleServiceCreated}
       />
+
+      {selectedService && (
+        <UpdateServicePriceModal
+          open={isPriceModalOpen}
+          onClose={handleClosePriceModal}
+          serviceId={selectedService.id}
+          currentPrice={selectedService.currentPrice}
+          onPriceUpdated={handleServiceCreated}
+        />
+      )}
     </Stack>
   )
 }
