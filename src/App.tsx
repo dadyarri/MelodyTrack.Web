@@ -8,7 +8,7 @@ import Register from './pages/Register'
 import NotFound from './pages/NotFound'
 import ProtectedRoute from './components/ProtectedRoute'
 import Expenses from './pages/Expenses'
-
+import Services from './pages/Services'
 const theme = createTheme({
   palette: {
     primary: {
@@ -55,6 +55,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Expenses />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/services"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Services />
                   </Layout>
                 </ProtectedRoute>
               }
