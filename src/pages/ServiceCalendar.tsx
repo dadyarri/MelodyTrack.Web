@@ -17,6 +17,7 @@ import { ru } from 'date-fns/locale'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import EventIcon from '@mui/icons-material/Event';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { scheduleService } from '../services/serviceHistory'
 import { ServiceHistory } from '../types/serviceHistory'
 
@@ -94,6 +95,11 @@ const ServiceCalendar = () => {
                 </Typography>
 
                 <Stack direction="row" spacing={1}>
+                    <Tooltip title="Обновить">
+                        <IconButton onClick={fetchServiceHistory} color="primary">
+                            <RefreshIcon />
+                        </IconButton>
+                    </Tooltip>
                     <Tooltip title="Предыдущая неделя">
                         <IconButton onClick={handlePreviousWeek} color="primary">
                             <ChevronLeftIcon />
