@@ -10,7 +10,15 @@ import {
     Tooltip,
     Chip,
     Stack,
-    Button
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    List,
+    ListItem,
+    ListItemText,
+    Divider
 } from '@mui/material'
 import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -18,14 +26,19 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import EventIcon from '@mui/icons-material/Event';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import AddIcon from '@mui/icons-material/Add';
 import { scheduleService } from '../services/serviceHistory'
 import { ServiceHistory } from '../types/serviceHistory'
+import React from 'react'
 
 const ServiceCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date())
     const [serviceHistory, setServiceHistory] = useState<ServiceHistory[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string>('')
+    const [modalOpen, setModalOpen] = useState(false)
+    const [selectedSlot, setSelectedSlot] = useState<{ day: Date, hour: number } | null>(null)
+    const [selectedReservations, setSelectedReservations] = useState<ServiceHistory[]>([])
 
     // Get the start and end of the current week
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start from Monday
@@ -77,6 +90,24 @@ const ServiceCalendar = () => {
             const startDate = parseISO(history.startDate)
             return isSameDay(startDate, day) && startDate.getHours() === hour
         })
+    }
+
+    const handleTimeSlotClick = (day: Date, hour: number) => {
+        const reservations = getReservationsForTimeSlot(day, hour)
+        setSelectedSlot({ day, hour })
+        setSelectedReservations(reservations)
+        setModalOpen(true)
+    }
+
+    const handleCloseModal = () => {
+        setModalOpen(false)
+        setSelectedSlot(null)
+    }
+
+    const handleCreateNewReservation = () => {
+        // This would be implemented to navigate to a form or open another modal
+        console.log('Create new reservation for', selectedSlot)
+        handleCloseModal()
     }
 
     if (loading) {
@@ -198,21 +229,30 @@ const ServiceCalendar = () => {
                                                 p: 1,
                                                 display: 'flex',
                                                 flexDirection: 'column',
-                                                gap: 0.5
+                                                gap: 0.5,
+                                                cursor: 'pointer',
+                                                '&:hover': {
+                                                    bgcolor: 'action.hover'
+                                                }
                                             }}
+                                            onClick={() => handleTimeSlotClick(day, hour)}
                                         >
                                             {reservations.map(reservation => (
                                                 <Chip
                                                     key={reservation.id}
-                                                    label={`${reservation.client.name} - ${reservation.service.name}`}
+                                                    label={`${reservation.client.firstName} ${reservation.client.lastName} - ${reservation.service.name}`}
                                                     size="small"
                                                     color={reservation.completed ? "success" : "primary"}
                                                     sx={{
+                                                        width: '100%',
+                                                        height: '100%',
                                                         maxWidth: '100%',
                                                         '& .MuiChip-label': {
                                                             whiteSpace: 'nowrap',
                                                             overflow: 'hidden',
-                                                            textOverflow: 'ellipsis'
+                                                            textOverflow: 'ellipsis',
+                                                            display: 'block',
+                                                            width: '100%'
                                                         }
                                                     }}
                                                 />
@@ -225,6 +265,52 @@ const ServiceCalendar = () => {
                     ))}
                 </Grid>
             </Paper>
+
+            {/* Time Slot Modal */}
+            <Dialog 
+                open={modalOpen} 
+                onClose={handleCloseModal}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    {selectedSlot && `${format(selectedSlot.day, 'EEEE, d MMMM', { locale: ru })} - ${selectedSlot.hour}:00`}
+                </DialogTitle>
+                <DialogContent>
+                    {selectedReservations.length > 0 ? (
+                        <List>
+                            {selectedReservations.map((reservation, index) => (
+                                <React.Fragment key={reservation.id}>
+                                    <ListItem>
+                                        <ListItemText
+                                            primary={`${reservation.client.firstName} ${reservation.client.lastName} - ${reservation.service.name}`}
+                                            secondary={`Статус: ${reservation.completed ? 'Завершено' : 'Ожидает'}`}
+                                        />
+                                    </ListItem>
+                                    {index < selectedReservations.length - 1 && <Divider />}
+                                </React.Fragment>
+                            ))}
+                        </List>
+                    ) : (
+                        <Box sx={{ textAlign: 'center', py: 3 }}>
+                            <Typography variant="body1" color="text.secondary" gutterBottom>
+                                Нет записей на это время
+                            </Typography>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseModal}>Закрыть</Button>
+                    {selectedReservations.length === 0 && <Button 
+                        variant="contained" 
+                        color="primary" 
+                        startIcon={<AddIcon />}
+                        onClick={handleCreateNewReservation}
+                    >
+                        Создать запись
+                    </Button>}
+                </DialogActions>
+            </Dialog>
         </Box>
     )
 }
