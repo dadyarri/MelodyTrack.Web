@@ -1,8 +1,9 @@
-import {Box, Typography, Grid} from '@mui/material'
+import {Box, Typography, Paper} from '@mui/material'
 import ExpensesCard from '../components/ExpensesCard'
 import TimeCard from "../components/TimeCard.tsx";
 import MiniScheduleCard from "../components/MiniScheduleCard.tsx";
 import ClientsWithDebtCard from "../components/ClientsWithDebtCard.tsx";
+import {Masonry} from "@mui/lab";
 
 const Home = () => {
     return (
@@ -11,20 +12,20 @@ const Home = () => {
                 Добро пожаловать в MelodyTrack
             </Typography>
 
-            <Grid container spacing={3}>
-                <Grid size={{xs: 12, md: 4}}>
+            <Masonry columns={3} spacing={3}>
+                <Paper key={1}>
                     <ExpensesCard/>
-                </Grid>
-                <Grid size={{xs: 12, md: 4}}>
+                </Paper>
+                <Paper key={2}>
                     <TimeCard/>
-                </Grid>
-                <Grid size={{xs: 12, md: 4}}>
+                </Paper>
+                <Paper key={3}>
                     <MiniScheduleCard/>
-                </Grid>
-                <Grid size={{xs: 12, md: 4}}>
+                </Paper>
+                <Paper key={4}>
                     <ClientsWithDebtCard/>
-                </Grid>
-            </Grid>
+                </Paper>
+            </Masonry>
         </Box>
     )
 }
