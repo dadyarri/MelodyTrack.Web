@@ -15,5 +15,9 @@ export const scheduleService = {
   createServiceSchedule: async (data: CreateServiceScheduleRequest): Promise<number> => {
     const response = await api.post(`/api/schedule`, data)
     return response.data.id;
+  },
+
+  toggleServiceScheduleCompletion: async (id: number) => {
+    await api.patch(`/api/schedule/${id}/completion`)
   }
 } 

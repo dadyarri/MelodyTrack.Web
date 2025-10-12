@@ -18,7 +18,7 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider, TextField, Autocomplete
+    Divider, TextField, Autocomplete, Checkbox
 } from '@mui/material'
 import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO} from 'date-fns'
 import {ru} from 'date-fns/locale'
@@ -147,6 +147,12 @@ const ServiceCalendar = () => {
             handleCreateModalClose()
         }
 
+    }
+
+    const handleReservationCheckboxChange = async (reservation: ServiceHistory) => {
+        reservation.completed = !reservation.completed
+        await scheduleService.toggleServiceScheduleCompletion(reservation.id)
+        await fetchData()
     }
 
     if (loading) {
@@ -287,15 +293,15 @@ const ServiceCalendar = () => {
                                             {reservations.map(reservation => (
                                                 <Chip
                                                     key={reservation.id}
-                                                    label={`${reservation.client.firstName} ${reservation.client.lastName} - ${reservation.service.name}`}
-                                                    size="small"
+                                                    label={`${reservation.client.firstName} ${reservation.client.lastName}: ${reservation.service.name}`}
+                                                    size="medium"
                                                     color={reservation.completed ? "success" : "primary"}
                                                     sx={{
                                                         width: '100%',
                                                         height: '100%',
                                                         maxWidth: '100%',
                                                         '& .MuiChip-label': {
-                                                            whiteSpace: 'nowrap',
+                                                            whiteSpace: 'normal',
                                                             overflow: 'hidden',
                                                             textOverflow: 'ellipsis',
                                                             display: 'block',
@@ -328,7 +334,8 @@ const ServiceCalendar = () => {
                         <List>
                             {selectedReservations.map((reservation, index) => (
                                 <React.Fragment key={reservation.id}>
-                                    <ListItem>
+                                    <ListItem secondaryAction={<Checkbox checked={reservation.completed}
+                                                                         onChange={() => handleReservationCheckboxChange(reservation)}/>}>
                                         <ListItemText
                                             primary={`${reservation.client.firstName} ${reservation.client.lastName} - ${reservation.service.name}`}
                                             secondary={`Статус: ${reservation.completed ? 'Завершено' : 'Ожидает'}`}
