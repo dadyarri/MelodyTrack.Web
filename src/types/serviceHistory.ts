@@ -15,3 +15,15 @@ export interface CreateServiceScheduleRequest {
     serviceId: number
     start: Date
 }
+
+export interface MiniScheduleItem {
+    name: string;
+    service: string;
+    time: Date
+}
+
+export interface GetMiniScheduleResponse {
+    items: {
+        [key: string]: MiniScheduleItem[];
+    };
+}

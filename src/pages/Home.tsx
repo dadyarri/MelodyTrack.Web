@@ -1,6 +1,7 @@
 import {Box, Typography, Grid} from '@mui/material'
 import ExpensesCard from '../components/ExpensesCard'
 import TimeCard from "../components/TimeCard.tsx";
+import MiniScheduleCard from "../components/MiniScheduleCard.tsx";
 
 const Home = () => {
     return (
@@ -15,6 +16,9 @@ const Home = () => {
                 </Grid>
                 <Grid size={{xs: 12, md: 4}}>
                     <TimeCard/>
+                </Grid>
+                <Grid size={{xs: 12, md: 4}}>
+                    <MiniScheduleCard/>
                 </Grid>
             </Grid>
         </Box>

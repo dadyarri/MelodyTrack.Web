@@ -1,5 +1,5 @@
 import api from './api'
-import {CreateServiceScheduleRequest, ServiceHistory} from '../types/serviceHistory'
+import {CreateServiceScheduleRequest, GetMiniScheduleResponse, ServiceHistory} from '../types/serviceHistory'
 
 export const scheduleService = {
   getSchedule: async (startDate: string, endDate: string, timezone: string): Promise<ServiceHistory[]> => {
@@ -19,5 +19,12 @@ export const scheduleService = {
 
   toggleServiceScheduleCompletion: async (id: number) => {
     await api.patch(`/api/schedule/${id}/completion`)
+  },
+
+  getMiniSchedule: async (timezone: string) => {
+    const params = new URLSearchParams()
+    params.append('timezone', timezone)
+    const response = await api.get<GetMiniScheduleResponse>(`/api/schedule/mini?${params.toString()}`);
+    return response.data;
   }
 } 
