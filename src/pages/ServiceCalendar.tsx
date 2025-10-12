@@ -18,9 +18,9 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider, TextField, Autocomplete, Checkbox
+    Divider, TextField, Autocomplete, Checkbox, useTheme, alpha
 } from '@mui/material'
-import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, formatISO} from 'date-fns'
+import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, formatISO, isSameHour} from 'date-fns'
 import {ru} from 'date-fns/locale'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -49,6 +49,8 @@ const ServiceCalendar = () => {
     const [services, setServices] = useState<Service[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [selectedService, setSelectedService] = useState<Service | null>(null)
+
+    const theme = useTheme()
 
     // Get the start and end of the current week
     const weekStart = startOfWeek(currentDate, {weekStartsOn: 1}) // Start from Monday
@@ -271,7 +273,10 @@ const ServiceCalendar = () => {
 
                                 {timeSlots.map(hour => {
                                     const reservations = getReservationsForTimeSlot(day, hour)
+                                    const currentTime = new Date(); // Get current time inside the loop for accuracy
+                                    const slotDateTime = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour);
 
+                                    const isCurrentHour = isSameDay(slotDateTime, currentTime) && isSameHour(slotDateTime, currentTime);
                                     return (
                                         <Box
                                             key={hour}
@@ -286,7 +291,8 @@ const ServiceCalendar = () => {
                                                 cursor: 'pointer',
                                                 '&:hover': {
                                                     bgcolor: 'action.hover'
-                                                }
+                                                },
+                                                bgcolor: isCurrentHour ? alpha(theme.palette.primary.main, 0.3) : 'inherit'
                                             }}
                                             onClick={() => handleTimeSlotClick(day, hour)}
                                         >
