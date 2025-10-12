@@ -6,7 +6,7 @@ const USER_KEY = 'user'
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/api/login', credentials)
+    const response = await api.post<LoginResponse>('/api/auth/login', credentials)
     this.setToken(response.data.accessToken)
     this.setUser({
       firstName: response.data.firstName,
@@ -17,7 +17,7 @@ export const authService = {
   },
 
   async register(data: RegisterRequest): Promise<LoginResponse> {
-    const response = await api.post<LoginResponse>('/api/register', data)
+    const response = await api.post<LoginResponse>('/api/auth/register', data)
     this.setToken(response.data.accessToken)
     this.setUser({
       firstName: response.data.firstName,
