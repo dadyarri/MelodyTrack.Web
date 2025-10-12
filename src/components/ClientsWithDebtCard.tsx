@@ -16,7 +16,7 @@ import {Client} from "../types/client.ts";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
 const ClientsWithDebtCard = () => {
-    const [data, setData] = useState<Client[]>([]);
+    const [data, setData] = useState<Client[]>();
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string>('')
     const [refreshing, setRefreshing] = useState(false)
