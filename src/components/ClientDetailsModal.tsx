@@ -12,6 +12,7 @@ import {
     IconButton,
     Tooltip,
     Stack,
+    Link,
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/Save'
@@ -103,7 +104,15 @@ const ClientDetailsModal = ({open, onClose, client, onClientUpdated}: ClientDeta
         onClientUpdated()
     }
 
-    const renderField = (label: string, value: string, field: MainField) => {
+    const urlRegex =
+        /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_+.~#?&\/\/=]*)$/i
+    const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
+
+    const renderField = (
+        label: string,
+        value: string,
+        field: MainField
+    ) => {
         if (isEditing) {
             return (
                 <TextField
@@ -140,9 +149,31 @@ const ClientDetailsModal = ({open, onClose, client, onClientUpdated}: ClientDeta
             )
         }
 
-        return value ? (
-            <Typography variant="body1">{value}</Typography>
-        ) : null
+        if (value) {
+            const isLink = urlRegex.test(value)
+            const isPhoneNumber = phoneRegex.test(value)
+
+            if (isLink) {
+                const formattedLink = value.startsWith('http') ? value : `https://${value}`
+                return (
+                    <Link href={formattedLink} target="_blank" rel="noopener noreferrer">
+                        {value}
+                    </Link>
+                )
+            }
+
+            if (isPhoneNumber) {
+                return (
+                    <Link href={`tel:${value}`}>
+                        {value}
+                    </Link>
+                )
+            }
+
+            return <Typography variant="body1">{value}</Typography>
+        } else {
+            return null
+        }
     }
 
     return (
