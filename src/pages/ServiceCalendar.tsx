@@ -20,7 +20,7 @@ import {
     ListItemText,
     Divider, TextField, Autocomplete, Checkbox
 } from '@mui/material'
-import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO} from 'date-fns'
+import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, formatISO} from 'date-fns'
 import {ru} from 'date-fns/locale'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -66,8 +66,8 @@ const ServiceCalendar = () => {
             setError('')
 
             const response = await scheduleService.getSchedule(
-                format(weekStart, 'yyyy-MM-dd'),
-                format(weekEnd, 'yyyy-MM-dd'),
+                formatISO(weekStart),
+                formatISO(weekEnd),
                 Intl.DateTimeFormat().resolvedOptions().timeZone
             )
 
