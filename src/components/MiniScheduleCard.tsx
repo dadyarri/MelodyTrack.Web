@@ -1,17 +1,65 @@
-import {Box, Card, CardContent, Divider, List, ListItem, ListItemText, Typography} from "@mui/material";
+import {
+    Alert,
+    Box,
+    Card,
+    CardContent,
+    CircularProgress,
+    Divider, IconButton,
+    List,
+    ListItem,
+    ListItemText, Tooltip,
+    Typography
+} from "@mui/material";
 import {useEffect, useState} from "react";
 import React from "react";
 import {scheduleService} from "../services/serviceHistory.ts";
 import {GetMiniScheduleResponse} from "../types/serviceHistory.ts";
 import {format} from "date-fns";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 const MiniScheduleCard = () => {
     const [data, setData] = useState<GetMiniScheduleResponse>();
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string>('')
+    const [refreshing, setRefreshing] = useState(false)
+
 
     useEffect(() => {
-        scheduleService.getMiniSchedule(Intl.DateTimeFormat().resolvedOptions().timeZone)
-            .then((res) => setData(res))
+        fetchData()
     }, []);
+
+    const fetchData = async () => {
+        try {
+            setLoading(true)
+            setError('')
+            const res = await scheduleService.getMiniSchedule(Intl.DateTimeFormat().resolvedOptions().timeZone)
+            setData(res)
+        } catch (err) {
+            setError('Ошибка при загрузке расписания')
+            console.error(`Error fetching schedule: ${err}`)
+        } finally {
+            setLoading(false)
+            setRefreshing(false)
+        }
+    }
+
+    const handleRefresh = () => {
+        setRefreshing(true)
+        fetchData()
+    }
+
+    if (loading && !data) {
+        return (
+            <Card>
+                <CardContent>
+                    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100px">
+                        <CircularProgress/>
+                    </Box>
+                </CardContent>
+            </Card>
+        )
+    }
+
     return (
         <Card sx={{height: '100%'}}>
             <CardContent>
@@ -24,7 +72,25 @@ const MiniScheduleCard = () => {
                     }}
                 >
                     <Typography variant="h6">Мини-расписание</Typography>
+                    <Tooltip title="Обновить">
+                        <IconButton
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            size="small"
+                        >
+                            <RefreshIcon sx={{
+                                transform: refreshing ? 'rotate(180deg)' : 'none',
+                                transition: 'transform 0.3s ease-in-out'
+                            }}/>
+                        </IconButton>
+                    </Tooltip>
                 </Box>
+
+                {error && (
+                    <Alert severity="error" sx={{mb: 2}}>
+                        {error}
+                    </Alert>
+                )}
 
                 {data && Object.keys(data.items).length > 0 ? (
                     <List dense sx={{maxHeight: 300, overflowY: 'auto'}}>
