@@ -10,7 +10,7 @@ export interface Client {
 }
 
 export interface ClientContact {
-  id: number;
+  id?: number;
   vk?: string;
   telegram?: string;
   phone?: string;
