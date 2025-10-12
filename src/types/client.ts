@@ -11,7 +11,8 @@ export interface Client {
 
 export interface ClientContact {
   id: number;
-  email?: string;
+  vk?: string;
+  telegram?: string;
   phone?: string;
 }
 

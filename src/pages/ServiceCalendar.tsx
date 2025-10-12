@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import {useState, useEffect} from 'react'
 import {
     Box,
     Typography,
@@ -18,18 +18,23 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider
+    Divider, TextField, Autocomplete
 } from '@mui/material'
-import { format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO } from 'date-fns'
-import { ru } from 'date-fns/locale'
+import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO} from 'date-fns'
+import {ru} from 'date-fns/locale'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import EventIcon from '@mui/icons-material/Event';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import { scheduleService } from '../services/serviceHistory'
-import { ServiceHistory } from '../types/serviceHistory'
+import {scheduleService} from '../services/serviceHistory'
+import {CreateServiceScheduleRequest, ServiceHistory} from '../types/serviceHistory'
 import React from 'react'
+import {Client} from "../types/client.ts";
+import {Service} from "../types/service.ts";
+import {clientService} from "../services/client.ts";
+import {serviceService} from "../services/service.ts";
+import SaveIcon from "@mui/icons-material/Save";
 
 const ServiceCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -37,30 +42,43 @@ const ServiceCalendar = () => {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string>('')
     const [modalOpen, setModalOpen] = useState(false)
+    const [createModalOpen, setCreateModalOpen] = useState(false)
     const [selectedSlot, setSelectedSlot] = useState<{ day: Date, hour: number } | null>(null)
     const [selectedReservations, setSelectedReservations] = useState<ServiceHistory[]>([])
+    const [clients, setClients] = useState<Client[]>([])
+    const [services, setServices] = useState<Service[]>([])
+    const [selectedClient, setSelectedClient] = useState<Client | null>(null)
+    const [selectedService, setSelectedService] = useState<Service | null>(null)
 
     // Get the start and end of the current week
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }) // Start from Monday
-    const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 })
+    const weekStart = startOfWeek(currentDate, {weekStartsOn: 1}) // Start from Monday
+    const weekEnd = endOfWeek(currentDate, {weekStartsOn: 1})
 
     // Generate array of days in the current week
-    const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+    const weekDays = Array.from({length: 7}, (_, i) => addDays(weekStart, i))
 
     // Format time slots (9:00 - 21:00)
-    const timeSlots = Array.from({ length: 12 }, (_, i) => i + 9)
+    const timeSlots = Array.from({length: 12}, (_, i) => i + 9)
 
-    const fetchServiceHistory = async () => {
+    const fetchData = async () => {
         try {
             setLoading(true)
             setError('')
 
             const response = await scheduleService.getSchedule(
                 format(weekStart, 'yyyy-MM-dd'),
-                format(weekEnd, 'yyyy-MM-dd')
+                format(weekEnd, 'yyyy-MM-dd'),
+                Intl.DateTimeFormat().resolvedOptions().timeZone
             )
 
-            setServiceHistory(response.data)
+            setServiceHistory(response)
+
+            const clientsResponse = await clientService.getClients(1, 100)
+            setClients(clientsResponse.data)
+
+            const servicesResponse = await serviceService.getOwnedServices()
+            setServices(servicesResponse)
+
         } catch (err) {
             setError('Ошибка при загрузке расписания')
             console.error('Error fetching service history:', err)
@@ -70,7 +88,7 @@ const ServiceCalendar = () => {
     }
 
     useEffect(() => {
-        fetchServiceHistory()
+        fetchData()
     }, [currentDate])
 
     const handlePreviousWeek = () => {
@@ -94,52 +112,73 @@ const ServiceCalendar = () => {
 
     const handleTimeSlotClick = (day: Date, hour: number) => {
         const reservations = getReservationsForTimeSlot(day, hour)
-        setSelectedSlot({ day, hour })
+        setSelectedSlot({day, hour})
         setSelectedReservations(reservations)
         setModalOpen(true)
     }
 
     const handleCloseModal = () => {
         setModalOpen(false)
-        setSelectedSlot(null)
     }
 
     const handleCreateNewReservation = () => {
-        // This would be implemented to navigate to a form or open another modal
-        console.log('Create new reservation for', selectedSlot)
         handleCloseModal()
+        setCreateModalOpen(true)
+    }
+
+    const handleCreateModalClose = () => {
+        setCreateModalOpen(false)
+        setSelectedSlot(null)
+        setSelectedService(null)
+        setSelectedClient(null)
+    }
+
+    const handleSaveSchedule = async () => {
+        if (selectedClient && selectedService && selectedSlot) {
+            selectedSlot.day.setHours(selectedSlot?.hour)
+            const entry = {
+                clientId: selectedClient.id,
+                serviceId: selectedService.id,
+                start: selectedSlot.day,
+            } as CreateServiceScheduleRequest
+
+            await scheduleService.createServiceSchedule(entry)
+            await fetchData()
+            handleCreateModalClose()
+        }
+
     }
 
     if (loading) {
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-                <CircularProgress />
+                <CircularProgress/>
             </Box>
         )
     }
 
     return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{p: 3}}>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3}}>
                 <Typography variant="h4">
                     Расписание услуг
                 </Typography>
 
                 <Stack direction="row" spacing={1}>
                     <Tooltip title="Обновить">
-                        <IconButton onClick={fetchServiceHistory} color="primary">
-                            <RefreshIcon />
+                        <IconButton onClick={fetchData} color="primary">
+                            <RefreshIcon/>
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Предыдущая неделя">
                         <IconButton onClick={handlePreviousWeek} color="primary">
-                            <ChevronLeftIcon />
+                            <ChevronLeftIcon/>
                         </IconButton>
                     </Tooltip>
 
                     <Button
                         variant="outlined"
-                        startIcon={<EventIcon />}
+                        startIcon={<EventIcon/>}
                         onClick={handleToday}
                     >
                         Сегодня
@@ -147,28 +186,36 @@ const ServiceCalendar = () => {
 
                     <Tooltip title="Следующая неделя">
                         <IconButton onClick={handleNextWeek} color="primary">
-                            <ChevronRightIcon />
+                            <ChevronRightIcon/>
                         </IconButton>
                     </Tooltip>
                 </Stack>
             </Box>
 
-            <Typography variant="h6" sx={{ mb: 2 }}>
-                {format(weekStart, 'd MMMM', { locale: ru })} - {format(weekEnd, 'd MMMM yyyy', { locale: ru })}
+            <Typography variant="h6" sx={{mb: 2}}>
+                {format(weekStart, 'd MMMM', {locale: ru})} - {format(weekEnd, 'd MMMM yyyy', {locale: ru})}
             </Typography>
 
             {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
+                <Alert severity="error" sx={{mb: 2}}>
                     {error}
                 </Alert>
             )}
 
-            <Paper sx={{ overflow: 'auto' }}>
+            <Paper sx={{overflow: 'auto'}}>
                 <Grid container>
                     {/* Time column */}
-                    <Grid size={{ xs: 1 }}>
-                        <Box sx={{ borderRight: 1, borderColor: 'divider', height: '100%' }}>
-                            <Box sx={{ height: 60, borderBottom: 1, borderColor: 'divider', p: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Grid size={{xs: 1}}>
+                        <Box sx={{borderRight: 1, borderColor: 'divider', height: '100%'}}>
+                            <Box sx={{
+                                height: 60,
+                                borderBottom: 1,
+                                borderColor: 'divider',
+                                p: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
                                 <Typography variant="subtitle2">Время</Typography>
                             </Box>
                             {timeSlots.map(hour => (
@@ -192,8 +239,8 @@ const ServiceCalendar = () => {
 
                     {/* Days columns */}
                     {weekDays.map(day => (
-                        <Grid size={{ xs: 1.57 }} key={day.toISOString()}>
-                            <Box sx={{ borderRight: 1, borderColor: 'divider', height: '100%' }}>
+                        <Grid size={{xs: 1.57}} key={day.toISOString()}>
+                            <Box sx={{borderRight: 1, borderColor: 'divider', height: '100%'}}>
                                 <Box
                                     sx={{
                                         height: 60,
@@ -209,10 +256,10 @@ const ServiceCalendar = () => {
                                     }}
                                 >
                                     <Typography variant="subtitle2">
-                                        {format(day, 'EEEE', { locale: ru })}
+                                        {format(day, 'EEEE', {locale: ru})}
                                     </Typography>
                                     <Typography variant="body2">
-                                        {format(day, 'd MMM', { locale: ru })}
+                                        {format(day, 'd MMM', {locale: ru})}
                                     </Typography>
                                 </Box>
 
@@ -267,14 +314,14 @@ const ServiceCalendar = () => {
             </Paper>
 
             {/* Time Slot Modal */}
-            <Dialog 
-                open={modalOpen} 
+            <Dialog
+                open={modalOpen}
                 onClose={handleCloseModal}
                 maxWidth="sm"
                 fullWidth
             >
                 <DialogTitle>
-                    {selectedSlot && `${format(selectedSlot.day, 'EEEE, d MMMM', { locale: ru })} - ${selectedSlot.hour}:00`}
+                    {selectedSlot && `${format(selectedSlot.day, 'EEEE, d MMMM', {locale: ru})} - ${selectedSlot.hour}:00`}
                 </DialogTitle>
                 <DialogContent>
                     {selectedReservations.length > 0 ? (
@@ -287,12 +334,12 @@ const ServiceCalendar = () => {
                                             secondary={`Статус: ${reservation.completed ? 'Завершено' : 'Ожидает'}`}
                                         />
                                     </ListItem>
-                                    {index < selectedReservations.length - 1 && <Divider />}
+                                    {index < selectedReservations.length - 1 && <Divider/>}
                                 </React.Fragment>
                             ))}
                         </List>
                     ) : (
-                        <Box sx={{ textAlign: 'center', py: 3 }}>
+                        <Box sx={{textAlign: 'center', py: 3}}>
                             <Typography variant="body1" color="text.secondary" gutterBottom>
                                 Нет записей на это время
                             </Typography>
@@ -301,14 +348,66 @@ const ServiceCalendar = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleCloseModal}>Закрыть</Button>
-                    {selectedReservations.length === 0 && <Button 
-                        variant="contained" 
-                        color="primary" 
-                        startIcon={<AddIcon />}
+                    {selectedReservations.length === 0 && <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<AddIcon/>}
                         onClick={handleCreateNewReservation}
                     >
                         Создать запись
                     </Button>}
+                </DialogActions>
+            </Dialog>
+
+            {/* Create slot modal*/}
+            <Dialog open={createModalOpen}
+                    onClose={handleCreateModalClose}
+                    maxWidth="sm"
+                    fullWidth>
+                <DialogTitle>
+                    {selectedSlot && `Занять слот ${format(selectedSlot.day, 'EEEE, d MMMM', {locale: ru})} - ${selectedSlot.hour}:00`}
+                </DialogTitle>
+                <DialogContent>
+                    <Box>
+                        <Autocomplete renderInput={(params) => <TextField {...params} label={"Клиент"}/>}
+                                      options={clients}
+                                      renderOption={(props, option) => {
+                                          const {key, ...optionProps} = props;
+                                          return (<Box key={key} component={"li"} {...optionProps}>
+                                              {option.firstName} {option.lastName}
+                                          </Box>)
+                                      }}
+                                      onChange={(_event, value, _reason) => {
+                                          setSelectedClient(value)
+                                      }}
+                                      getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                                      sx={{p: 2}}
+                        />
+                        <Autocomplete renderInput={(params) => <TextField {...params} label={"Услуга"}/>}
+                                      options={services}
+                                      renderOption={(props, option) => {
+                                          const {key, ...optionProps} = props;
+                                          return (<Box key={key} component={"li"} {...optionProps}>
+                                              {option.name}
+                                          </Box>)
+                                      }}
+                                      getOptionLabel={(option) => option.name}
+                                      sx={{p: 2}}
+                                      onChange={(_event, value, _reason) => {
+                                          setSelectedService(value)
+                                      }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCreateModalClose}>Закрыть</Button>
+                    <IconButton
+                        onClick={handleSaveSchedule}
+                        disabled={loading}
+                        color="primary"
+                    >
+                        <SaveIcon/>
+                    </IconButton>
                 </DialogActions>
             </Dialog>
         </Box>
