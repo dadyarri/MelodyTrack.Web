@@ -23,7 +23,7 @@ const Layout = ({ children }: LayoutProps) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
               <Box sx={{ display: 'flex', gap: 3 }}>
                 <MuiLink component={RouterLink} to="/" color="primary" underline="none">
-                  {import.meta.env.VITE_APP_NAME}
+                  Главная
                 </MuiLink>
                 <MuiLink component={RouterLink} to="/calendar" color="primary" underline="none">
                   Календарь
