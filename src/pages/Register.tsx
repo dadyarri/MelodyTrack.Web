@@ -33,7 +33,8 @@ const Register = () => {
             await authService.register({firstName, lastName, username, password})
             navigate('/')
         } catch (err) {
-            setError('Такой логин уже существует')
+            setError(`Ошибка регистрации`)
+            console.error(err)
         } finally {
             setLoading(false)
         }
