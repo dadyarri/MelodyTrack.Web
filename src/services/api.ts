@@ -2,7 +2,7 @@ import axios from 'axios'
 import { authService } from './auth'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'melodytrack-backend:8000',
+  baseURL: import.meta.env.VITE_API_URL || 'melodytrack-backend:8080',
   headers: {
     'Content-Type': 'application/json',
   },
