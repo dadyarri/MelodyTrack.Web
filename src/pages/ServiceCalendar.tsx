@@ -18,9 +18,20 @@ import {
     List,
     ListItem,
     ListItemText,
-    Divider, TextField, Autocomplete, Checkbox, useTheme, alpha
+    Divider, TextField, Autocomplete, Checkbox, useTheme, alpha, useMediaQuery
 } from '@mui/material'
-import {format, addDays, startOfWeek, endOfWeek, isSameDay, parseISO, formatISO, isSameHour} from 'date-fns'
+import {
+    format,
+    addDays,
+    startOfWeek,
+    endOfWeek,
+    isSameDay,
+    parseISO,
+    formatISO,
+    isSameHour,
+    startOfDay,
+    endOfDay
+} from 'date-fns'
 import {ru} from 'date-fns/locale'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
@@ -51,13 +62,15 @@ const ServiceCalendar = () => {
     const [selectedService, setSelectedService] = useState<Service | null>(null)
 
     const theme = useTheme()
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
 
-    // Get the start and end of the current week
-    const weekStart = startOfWeek(currentDate, {weekStartsOn: 1}) // Start from Monday
-    const weekEnd = endOfWeek(currentDate, {weekStartsOn: 1})
+    // Determine view mode and dates
+    const daysOffset = isMobile ? 1 : 7
+    const startDate = isMobile ? startOfDay(currentDate) : startOfWeek(currentDate, {weekStartsOn: 1})
+    const endDate = isMobile ? endOfDay(currentDate) : endOfWeek(currentDate, {weekStartsOn: 1})
 
-    // Generate array of days in the current week
-    const weekDays = Array.from({length: 7}, (_, i) => addDays(weekStart, i))
+    // Generate array of days in the current view
+    const weekDays = Array.from({length: daysOffset}, (_, i) => addDays(startDate, i))
 
     // Format time slots (9:00 - 21:00)
     const timeSlots = Array.from({length: 12}, (_, i) => i + 9)
@@ -68,8 +81,8 @@ const ServiceCalendar = () => {
             setError('')
 
             const response = await scheduleService.getSchedule(
-                formatISO(weekStart),
-                formatISO(weekEnd),
+                formatISO(startDate),
+                formatISO(endDate),
                 Intl.DateTimeFormat().resolvedOptions().timeZone
             )
 
@@ -93,12 +106,12 @@ const ServiceCalendar = () => {
         fetchData()
     }, [currentDate])
 
-    const handlePreviousWeek = () => {
-        setCurrentDate(prev => addDays(prev, -7))
+    const handlePreviousPeriod = () => {
+        setCurrentDate(prev => addDays(prev, isMobile ? -1 : -7))
     }
 
-    const handleNextWeek = () => {
-        setCurrentDate(prev => addDays(prev, 7))
+    const handleNextPeriod = () => {
+        setCurrentDate(prev => addDays(prev, isMobile ? 1 : 7))
     }
 
     const handleToday = () => {
@@ -178,8 +191,8 @@ const ServiceCalendar = () => {
                             <RefreshIcon/>
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="Предыдущая неделя">
-                        <IconButton onClick={handlePreviousWeek} color="primary">
+                    <Tooltip title={`Предыдущая ${isMobile ? 'день' : 'неделя'}`}>
+                        <IconButton onClick={handlePreviousPeriod} color="primary">
                             <ChevronLeftIcon/>
                         </IconButton>
                     </Tooltip>
@@ -192,8 +205,8 @@ const ServiceCalendar = () => {
                         Сегодня
                     </Button>
 
-                    <Tooltip title="Следующая неделя">
-                        <IconButton onClick={handleNextWeek} color="primary">
+                    <Tooltip title={`Следующая ${isMobile ? 'день' : 'неделя'}`}>
+                        <IconButton onClick={handleNextPeriod} color="primary">
                             <ChevronRightIcon/>
                         </IconButton>
                     </Tooltip>
@@ -201,7 +214,10 @@ const ServiceCalendar = () => {
             </Box>
 
             <Typography variant="h6" sx={{mb: 2}}>
-                {format(weekStart, 'd MMMM', {locale: ru})} - {format(weekEnd, 'd MMMM yyyy', {locale: ru})}
+                {isMobile
+                    ? format(currentDate, 'EEEE, d MMMM yyyy', {locale: ru})
+                    : `${format(startDate, 'd MMMM', {locale: ru})} - ${format(endDate, 'd MMMM yyyy', {locale: ru})}`
+                }
             </Typography>
 
             {error && (
@@ -213,7 +229,7 @@ const ServiceCalendar = () => {
             <Paper sx={{overflow: 'auto'}}>
                 <Grid container>
                     {/* Time column */}
-                    <Grid size={{xs: 1}}>
+                    <Grid size={{xs: isMobile ? 2 : 1}}>
                         <Box sx={{borderRight: 1, borderColor: 'divider', height: '100%'}}>
                             <Box sx={{
                                 height: 60,
@@ -247,7 +263,7 @@ const ServiceCalendar = () => {
 
                     {/* Days columns */}
                     {weekDays.map(day => (
-                        <Grid size={{xs: 1.57}} key={day.toISOString()}>
+                        <Grid size={isMobile ? {xs: 10} : {xs: 1.57}} key={day.toISOString()}>
                             <Box sx={{borderRight: 1, borderColor: 'divider', height: '100%'}}>
                                 <Box
                                     sx={{
@@ -427,4 +443,4 @@ const ServiceCalendar = () => {
     )
 }
 
-export default ServiceCalendar 
+export default ServiceCalendar
