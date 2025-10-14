@@ -3,17 +3,17 @@ import { Service, CreateServiceData } from '../types/service'
 
 export const serviceService = {
   getOwnedServices: async () => {
-    const response = await api.get<Service[]>('/api/services')
+    const response = await api.get<Service[]>('/services')
     return response.data
   },
 
   createService: async (data: CreateServiceData) => {
-    const response = await api.post('/api/services', data)
+    const response = await api.post('/services', data)
     return response.data
   },
 
   updateServicePrice: async (serviceId: number, price: number) => {
-    const response = await api.patch(`/api/services/${serviceId}/price`, { price })
+    const response = await api.patch(`/services/${serviceId}/price`, { price })
     return response.data
   }
 }

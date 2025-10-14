@@ -8,23 +8,23 @@ export const scheduleService = {
     params.append('endDate', endDate)
     params.append('timezone', timezone)
     
-    const response = await api.get<ServiceHistory[]>(`/api/schedule?${params.toString()}`)
+    const response = await api.get<ServiceHistory[]>(`/schedule?${params.toString()}`)
     return response.data
   },
 
   createServiceSchedule: async (data: CreateServiceScheduleRequest): Promise<number> => {
-    const response = await api.post(`/api/schedule`, data)
+    const response = await api.post(`/schedule`, data)
     return response.data.id;
   },
 
   toggleServiceScheduleCompletion: async (id: number) => {
-    await api.patch(`/api/schedule/${id}/completion`)
+    await api.patch(`/schedule/${id}/completion`)
   },
 
   getMiniSchedule: async (timezone: string) => {
     const params = new URLSearchParams()
     params.append('timezone', timezone)
-    const response = await api.get<GetMiniScheduleResponse>(`/api/schedule/mini?${params.toString()}`);
+    const response = await api.get<GetMiniScheduleResponse>(`/schedule/mini?${params.toString()}`);
     return response.data;
   }
 } 
