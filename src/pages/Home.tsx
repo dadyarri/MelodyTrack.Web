@@ -12,18 +12,18 @@ const Home = () => {
                 Добро пожаловать в MelodyTrack
             </Typography>
 
-            <Masonry columns={{ xs: 1, md: 3, lg: 4 }} spacing={3}>
+            <Masonry columns={{xs: 1, md: 3, lg: 4}} spacing={3}>
                 <Paper key={1}>
-                    <ExpensesCard/>
+                    <MiniScheduleCard/>
                 </Paper>
                 <Paper key={2}>
                     <TimeCard/>
                 </Paper>
                 <Paper key={3}>
-                    <MiniScheduleCard/>
+                    <ClientsWithDebtCard/>
                 </Paper>
                 <Paper key={4}>
-                    <ClientsWithDebtCard/>
+                    <ExpensesCard/>
                 </Paper>
             </Masonry>
         </Box>
