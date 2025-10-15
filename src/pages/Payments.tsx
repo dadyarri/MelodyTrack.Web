@@ -19,7 +19,6 @@ import {
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AddIcon from '@mui/icons-material/Add'
-import {expenseService} from '../services/expense'
 import ExpenseFormModal from '../components/ExpenseFormModal'
 import {paymentService} from "../services/payment.ts";
 import {Payment} from "../types/payment.ts";
@@ -80,7 +79,7 @@ const Payments = () => {
 
     const handleDelete = async (expenseId: number) => {
         try {
-            await expenseService.deleteExpense(expenseId)
+            await paymentService.deletePayment(expenseId)
             setDeletingPaymentsId(null)
             fetchPayments() // Refresh the list
         } catch (err) {
