@@ -51,19 +51,19 @@ const Layout = ({children}: LayoutProps) => {
 
     const navLinks = (
         <>
-            <MuiLink component={RouterLink} to="/" color="primary" underline="none">
+            <MuiLink component={RouterLink} to="/" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Главная
             </MuiLink>
-            <MuiLink component={RouterLink} to="/calendar" color="primary" underline="none">
+            <MuiLink component={RouterLink} to="/calendar" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Календарь
             </MuiLink>
-            <MuiLink component={RouterLink} to="/clients" color="primary" underline="none">
+            <MuiLink component={RouterLink} to="/clients" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Клиенты
             </MuiLink>
-            <MuiLink component={RouterLink} to="/expenses" color="primary" underline="none">
+            <MuiLink component={RouterLink} to="/expenses" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Расходы
             </MuiLink>
-            <MuiLink component={RouterLink} to="/services" color="primary" underline="none">
+            <MuiLink component={RouterLink} to="/services" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Услуги
             </MuiLink>
         </>
@@ -137,7 +137,7 @@ const Layout = ({children}: LayoutProps) => {
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
                                 {!isMobile && ( // Show user info and logout button on larger screens
                                     <>
-                                        <Typography variant="body2">
+                                        <Typography variant="h6" component="div">
                                             {user?.firstName} {user?.lastName}
                                         </Typography>
                                         <Button color="inherit" onClick={handleLogout}>
