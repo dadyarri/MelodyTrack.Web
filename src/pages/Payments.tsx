@@ -152,7 +152,7 @@ const Payments = () => {
                                 <TableCell>
                                     {new Date(payment.date).toLocaleDateString('ru-RU')}
                                 </TableCell>
-                                <TableCell>{`${payment.client.firstName} ${payment.client.lastName}`}</TableCell>
+                                <TableCell>{`${payment.client.lastName} ${payment.client.firstName}`}</TableCell>
                                 <TableCell>{payment.service?.name || "—"}</TableCell>
                                 <TableCell>
                                     {payment.amount.toLocaleString('ru-RU', {

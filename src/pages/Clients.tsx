@@ -141,8 +141,8 @@ const Clients = () => {
                 <Table size={"small"}>
                     <TableHead>
                         <TableRow>
-                            <TableCell>Имя</TableCell>
                             <TableCell>Фамилия</TableCell>
+                            <TableCell>Имя</TableCell>
                             <TableCell>Баланс</TableCell>
                             <TableCell>Действия</TableCell>
                         </TableRow>
@@ -154,8 +154,8 @@ const Clients = () => {
                                     backgroundColor: 'action.hover',
                                 },
                             }}>
-                                <TableCell>{client.firstName}</TableCell>
                                 <TableCell>{client.lastName}</TableCell>
+                                <TableCell>{client.firstName}</TableCell>
                                 <TableCell>
                                     <Typography
                                         color={client.balance >= 0 ? 'success.main' : 'error.main'}

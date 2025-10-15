@@ -315,7 +315,7 @@ const ServiceCalendar = () => {
                                             {reservations.map(reservation => (
                                                 <Chip
                                                     key={reservation.id}
-                                                    label={`${reservation.client.firstName} ${reservation.client.lastName}: ${reservation.service.name}`}
+                                                    label={`${reservation.client.lastName} ${reservation.client.firstName}: ${reservation.service.name}`}
                                                     size="medium"
                                                     color={reservation.completed ? "success" : "primary"}
                                                     sx={{
@@ -359,7 +359,7 @@ const ServiceCalendar = () => {
                                     <ListItem secondaryAction={<Checkbox checked={reservation.completed}
                                                                          onChange={() => handleReservationCheckboxChange(reservation)}/>}>
                                         <ListItemText
-                                            primary={`${reservation.client.firstName} ${reservation.client.lastName} - ${reservation.service.name}`}
+                                            primary={`${reservation.client.lastName} ${reservation.client.firstName} - ${reservation.service.name}`}
                                             secondary={`Статус: ${reservation.completed ? 'Завершено' : 'Ожидает'}`}
                                         />
                                     </ListItem>
@@ -403,13 +403,13 @@ const ServiceCalendar = () => {
                                       renderOption={(props, option) => {
                                           const {key, ...optionProps} = props;
                                           return (<Box key={key} component={"li"} {...optionProps}>
-                                              {option.firstName} {option.lastName}
+                                              {option.lastName} {option.firstName}
                                           </Box>)
                                       }}
                                       onChange={(_event, value, _reason) => {
                                           setSelectedClient(value)
                                       }}
-                                      getOptionLabel={(option) => `${option.firstName} ${option.lastName}`}
+                                      getOptionLabel={(option) => `${option.lastName} ${option.firstName}`}
                                       sx={{p: 2}}
                         />
                         <Autocomplete renderInput={(params) => <TextField {...params} label={"Услуга"}/>}
