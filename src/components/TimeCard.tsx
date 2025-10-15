@@ -22,8 +22,8 @@ const TimeCard = () => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h6">Время</Typography>
-                <Typography variant="h4">
+                <Typography variant="h5">Время</Typography>
+                <Typography variant="h5">
                     {format(currentTime, 'HH:mm:ss')}
                 </Typography>
             </Box>

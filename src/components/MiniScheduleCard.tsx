@@ -71,7 +71,7 @@ const MiniScheduleCard = () => {
                         mb: 2,
                     }}
                 >
-                    <Typography variant="h6">Мини-расписание</Typography>
+                    <Typography variant="h5">Мини-расписание</Typography>
                     <Tooltip title="Обновить">
                         <IconButton
                             onClick={handleRefresh}
@@ -93,14 +93,14 @@ const MiniScheduleCard = () => {
                 )}
 
                 {data && Object.keys(data.items).length > 0 ? (
-                    <List dense sx={{maxHeight: 300, overflowY: 'auto'}}>
+                    <List dense sx={{ overflowY: 'auto'}}>
                         {Object.entries(data.items).map(([groupName, items], index) => (
                             <React.Fragment key={groupName}>
                                 {index > 0 && <Divider component="li" sx={{my: 1}}/>} {/* Divider between groups */}
                                 <ListItem sx={{py: 0.5}}>
                                     <ListItemText
                                         primary={
-                                            <Typography variant="subtitle1" color="text.secondary">
+                                            <Typography variant="h6" color="text.secondary">
                                                 {groupName}
                                             </Typography>
                                         }
@@ -114,19 +114,23 @@ const MiniScheduleCard = () => {
                                             <ListItemText
                                                 primary={item.name}
                                                 secondary={item.service}
+                                                slotProps={{
+                                                    primary: {fontSize: '1.1rem', fontWeight: 'bold'},
+                                                    secondary: {fontSize: '1rem', color: 'text.secondary'}
+                                                }}
                                             />
                                         </ListItem>
                                     ))
                                 ) : (
                                     <ListItem sx={{pl: 4, py: 0.5}}>
-                                        <ListItemText secondary="Нет записей"/>
+                                        <ListItemText primary="Нет записей" slotProps={{primary: {fontSize: '1.1rem'}}}/>
                                     </ListItem>
                                 )}
                             </React.Fragment>
                         ))}
                     </List>
                 ) : (
-                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                    <Typography variant="body1" color="text.secondary" sx={{mt: 2}}>
                         Нет занятий в ближайшие дни
                     </Typography>
                 )}

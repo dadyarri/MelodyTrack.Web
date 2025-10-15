@@ -50,7 +50,7 @@ const ExpensesCard = () => {
         <Card>
             <CardContent>
                 <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2}}>
-                    <Typography variant="h6">
+                    <Typography variant="h5">
                         Расходы за текущий месяц
                     </Typography>
                     <Tooltip title="Обновить">

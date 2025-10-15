@@ -67,7 +67,7 @@ const ClientsWithDebtCard = () => {
                     mb: 2,
                 }}
             >
-                <Typography variant="h6">Должники</Typography>
+                <Typography variant="h5">Должники</Typography>
                 <Tooltip title="Обновить">
                     <IconButton
                         onClick={handleRefresh}
