@@ -103,7 +103,7 @@ const ClientsWithDebtCard = () => {
                                 })}
                             </Typography>}>
                             <ListItemText
-                                primary={`${item.firstName} ${item.lastName}`}
+                                primary={`${item.lastName} ${item.firstName}`}
                             />
                         </ListItem>
                     ))}
