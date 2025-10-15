@@ -46,6 +46,8 @@ import {Service} from "../types/service.ts";
 import {clientService} from "../services/client.ts";
 import {serviceService} from "../services/service.ts";
 import SaveIcon from "@mui/icons-material/Save";
+import DeleteIcon from '@mui/icons-material/Delete';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 
 const ServiceCalendar = () => {
     const [currentDate, setCurrentDate] = useState(new Date())
@@ -60,6 +62,7 @@ const ServiceCalendar = () => {
     const [services, setServices] = useState<Service[]>([])
     const [selectedClient, setSelectedClient] = useState<Client | null>(null)
     const [selectedService, setSelectedService] = useState<Service | null>(null)
+    const [deletingReservationId, setDeletingReservationId] = useState<number | null>(null)
 
     const theme = useTheme()
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
@@ -169,6 +172,22 @@ const ServiceCalendar = () => {
         await scheduleService.toggleServiceScheduleCompletion(reservation.id)
         await fetchData()
     }
+
+    const handleDelete = async (id: number) => {
+        await scheduleService.deleteServiceSchedule(id)
+        setModalOpen(false)
+        await fetchData()
+    }
+
+    const handleDeleteReservation = async (id: number) => {
+        if (deletingReservationId === id) {
+            await handleDelete(id)
+            setDeletingReservationId(null)
+        } else {
+            setDeletingReservationId(id)
+        }
+    }
+
 
     if (loading) {
         return (
@@ -356,8 +375,14 @@ const ServiceCalendar = () => {
                         <List>
                             {selectedReservations.map((reservation, index) => (
                                 <React.Fragment key={reservation.id}>
-                                    <ListItem secondaryAction={<Checkbox checked={reservation.completed}
-                                                                         onChange={() => handleReservationCheckboxChange(reservation)}/>}>
+                                    <ListItem secondaryAction={<Box>
+                                        <Checkbox checked={reservation.completed}
+                                                  onChange={() => handleReservationCheckboxChange(reservation)}/>
+                                        <IconButton onClick={() => handleDeleteReservation(reservation.id)}>
+                                            {deletingReservationId === reservation.id ? <DeleteSweepIcon color={"error"}/> :
+                                                <DeleteIcon/>}
+                                        </IconButton>
+                                    </Box>}>
                                         <ListItemText
                                             primary={`${reservation.client.lastName} ${reservation.client.firstName} - ${reservation.service.name}`}
                                             secondary={`Статус: ${reservation.completed ? 'Завершено' : 'Ожидает'}`}
