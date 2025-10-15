@@ -5,3 +5,5 @@ export interface CreatePaymentData {
     date: string,
     service: number | null
 } 
+    serviceId: number | null
+}

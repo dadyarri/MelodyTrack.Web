@@ -51,7 +51,7 @@ const PaymentFormModal = ({open, onClose, clientId, onPaymentCreated}: PaymentFo
                 amount: Number(amount),
                 description: description || 'Платеж',
                 date: new Date().toISOString(),
-                service: selectedService?.id || null
+                serviceId: selectedService?.id || null
             })
 
             onPaymentCreated()
