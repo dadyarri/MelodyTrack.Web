@@ -19,7 +19,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import CancelIcon from '@mui/icons-material/Cancel'
 import {Client, UpdateClientRequest} from '../types/client'
 import {clientService} from '../services/client'
-import PaymentFormModal from './PaymentFormModal'
+import PaymentFormModalInClient from './PaymentFormModalInClient.tsx'
 
 interface ClientDetailsModalProps {
     open: boolean
@@ -287,7 +287,7 @@ const ClientDetailsModal = ({open, onClose, client, onClientUpdated}: ClientDeta
                 </DialogActions>
             </Dialog>
 
-            <PaymentFormModal
+            <PaymentFormModalInClient
                 open={isPaymentModalOpen}
                 onClose={() => setIsPaymentModalOpen(false)}
                 clientId={client.id}

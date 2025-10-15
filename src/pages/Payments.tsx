@@ -19,9 +19,9 @@ import {
 } from '@mui/material'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import AddIcon from '@mui/icons-material/Add'
-import ExpenseFormModal from '../components/ExpenseFormModal'
 import {paymentService} from "../services/payment.ts";
 import {Payment} from "../types/payment.ts";
+import PaymentFormModal from "../components/PaymentFormModal.tsx";
 
 const Payments = () => {
     const [payments, setPayments] = useState<Payment[]>([])
@@ -188,10 +188,10 @@ const Payments = () => {
                 />
             </Box>
 
-            <ExpenseFormModal
+            <PaymentFormModal
                 open={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
-                onExpenseCreated={handlePaymentCreated}
+                onPaymentCreated={handlePaymentCreated}
             />
         </Stack>
     )
