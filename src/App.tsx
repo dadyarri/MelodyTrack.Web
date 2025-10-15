@@ -122,6 +122,13 @@ const theme = createTheme({
                 },
             },
         },
+        MuiTableCell: {
+            styleOverrides: {
+                root: {
+                    fontSize: '1.2rem',
+                }
+            }
+        }
     },
     typography: {
         fontFamily: [
