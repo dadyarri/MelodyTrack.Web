@@ -8,8 +8,8 @@ import {Masonry} from "@mui/lab";
 const Home = () => {
     return (
         <Box>
-            <Typography variant="h2" component="h1" gutterBottom>
-                Добро пожаловать в MelodyTrack
+            <Typography variant="h3" component="h1" gutterBottom>
+                MelodyTrack
             </Typography>
 
             <Masonry columns={{xs: 1, md: 3, lg: 4}} spacing={3}>
