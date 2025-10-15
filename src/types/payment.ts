@@ -1,6 +1,7 @@
 export interface CreatePaymentData {
-  clientId: number
-  amount: number
-  description: string
-  date: string
+    clientId: number
+    amount: number
+    description: string
+    date: string,
+    service: number | null
 } 
