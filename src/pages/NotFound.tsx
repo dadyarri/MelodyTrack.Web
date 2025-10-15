@@ -7,10 +7,10 @@ const NotFound = () => {
   return (
     <Stack spacing={3} alignItems="center" justifyContent="center" sx={{ minHeight: '60vh' }}>
       <Box textAlign="center">
-        <Typography variant="h1" component="h1" gutterBottom>
+        <Typography variant="h3" component="h1" gutterBottom>
           404
         </Typography>
-        <Typography variant="h6" color="text.secondary" paragraph>
+        <Typography variant="h6" color="text.secondary">
           Page not found
         </Typography>
         <Button variant="contained" onClick={() => navigate('/')}>

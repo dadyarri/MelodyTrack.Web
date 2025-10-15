@@ -100,7 +100,7 @@ const Expenses = () => {
   return (
     <Stack spacing={3}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h2" component="h1">
+        <Typography variant="h3" component="h1">
           Расходы
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
