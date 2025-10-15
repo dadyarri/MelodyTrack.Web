@@ -63,6 +63,9 @@ const Layout = ({children}: LayoutProps) => {
             <MuiLink component={RouterLink} to="/expenses" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Расходы
             </MuiLink>
+            <MuiLink component={RouterLink} to="/payments" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
+                Платежи
+            </MuiLink>
             <MuiLink component={RouterLink} to="/services" color="primary" underline="none" sx={{fontSize: '1.3rem'}}>
                 Услуги
             </MuiLink>
@@ -82,6 +85,7 @@ const Layout = ({children}: LayoutProps) => {
                     {text: 'Календарь', path: '/calendar'},
                     {text: 'Клиенты', path: '/clients'},
                     {text: 'Расходы', path: '/expenses'},
+                    {text: 'Платежи', path: '/payments'},
                     {text: 'Услуги', path: '/services'},
                 ].map((item) => (
                     <ListItem key={item.text} disablePadding>

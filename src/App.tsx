@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Expenses from './pages/Expenses'
 import Services from './pages/Services'
 import ServiceCalendar from './pages/ServiceCalendar'
+import Payments from "./pages/Payments"
 
 const theme = createTheme({
     palette: {
@@ -172,6 +173,16 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <Expenses/>
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/payments"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <Payments/>
                                 </Layout>
                             </ProtectedRoute>
                         }
