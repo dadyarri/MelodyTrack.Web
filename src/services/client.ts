@@ -25,7 +25,7 @@ export const clientService = {
   },
 
   async deleteClient(id: number): Promise<void> {
-    await api.delete(`/api/clients/${id}`)
+    await api.delete(`/clients/${id}`)
   },
 
   async getClientsWithDebt() {
