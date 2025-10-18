@@ -132,17 +132,22 @@ const theme = createTheme({
     },
 })
 
-export const App = () => {
+const InnerApp = () => {
     const auth = useAuth();
+
+    return (<ThemeProvider theme={theme}>
+        <CssBaseline/>
+        <RouterProvider router={router} context={{auth}}/>
+        {process.env.NODE_ENV === "development" && (
+            <TanStackRouterDevtools router={router} initialIsOpen={false}/>
+        )}
+    </ThemeProvider>)
+}
+
+export const App = () => {
     return (
         <AuthProvider>
-            <ThemeProvider theme={theme}>
-                <CssBaseline/>
-                <RouterProvider router={router} context={{auth}}/>
-                {process.env.NODE_ENV === "development" && (
-                    <TanStackRouterDevtools router={router} initialIsOpen={false}/>
-                )}
-            </ThemeProvider>
+            <InnerApp/>
         </AuthProvider>
     )
 }
