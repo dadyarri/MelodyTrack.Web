@@ -1,14 +1,14 @@
 import * as React from 'react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
+import * as Router from '@tanstack/react-router'
 
-export const Route = createRootRoute({
-  component: RootComponent,
+export const Route = Router.createRootRoute({
+    component: RootComponent,
 })
 
 function RootComponent() {
-  return (
-    <React.Fragment>
-      <Outlet />
-    </React.Fragment>
-  )
+    return (
+        <React.Fragment>
+            <Router.Outlet/>
+        </React.Fragment>
+    )
 }
