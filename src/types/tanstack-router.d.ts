@@ -1,7 +1,5 @@
-import "@tanstack/react-router";
+import type {AuthContext} from "../hooks/useAuth.ts";
 
-declare module '@tanstack/react-router' {
-    interface Register {
-        router: typeof router
-    }
+export interface RouterContext {
+    auth?: AuthContext | null;
 }
