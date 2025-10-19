@@ -1,6 +1,6 @@
 import * as React from "react";
 import {type ReactNode} from "react";
-import { AuthContext } from "../hooks/useAuth";
+import {AuthContext} from "../hooks/useAuth";
 
 const key = 'tanstack.auth.user';
 
