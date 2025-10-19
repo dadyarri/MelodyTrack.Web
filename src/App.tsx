@@ -4,6 +4,8 @@ import {router} from './router';
 import {RouterProvider} from "@tanstack/react-router";
 import {TanStackRouterDevtools} from "@tanstack/react-router-devtools";
 import {useAuth} from "./hooks/useAuth.ts";
+import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
+import {ReactQueryDevtools} from '@tanstack/react-query-devtools'
 
 const theme = createTheme({
     palette: {
@@ -134,14 +136,22 @@ const theme = createTheme({
 
 const InnerApp = () => {
     const auth = useAuth();
+    const queryClient = new QueryClient();
 
-    return (<ThemeProvider theme={theme}>
-        <CssBaseline/>
-        <RouterProvider router={router} context={{auth}}/>
-        {process.env.NODE_ENV === "development" && (
-            <TanStackRouterDevtools router={router} initialIsOpen={false}/>
-        )}
-    </ThemeProvider>)
+    return (
+        <ThemeProvider theme={theme}>
+            <QueryClientProvider client={queryClient}>
+                <CssBaseline/>
+                <RouterProvider router={router} context={{auth, queryClient}}/>
+                {process.env.NODE_ENV === "development" && (
+                    <TanStackRouterDevtools router={router} initialIsOpen={false}/>
+                )}
+                {process.env.NODE_ENV === "development" && (
+                    <ReactQueryDevtools client={queryClient} initialIsOpen={false}/>
+                )}
+            </QueryClientProvider>
+        </ThemeProvider>
+    )
 }
 
 export const App = () => {
