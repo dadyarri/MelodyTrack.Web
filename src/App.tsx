@@ -6,6 +6,8 @@ import {TanStackRouterDevtools} from "@tanstack/react-router-devtools";
 import {useAuth} from "./hooks/useAuth.ts";
 import {QueryClient, QueryClientProvider} from "@tanstack/react-query";
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools'
+import {createClient, type NormalizeOAS} from "fets";
+import type api from "./types/api"
 
 const theme = createTheme({
     palette: {
@@ -137,12 +139,15 @@ const theme = createTheme({
 const InnerApp = () => {
     const auth = useAuth();
     const queryClient = new QueryClient();
+    const client = createClient<NormalizeOAS<typeof api>>({
+        endpoint: process.env.NODE_ENV === "development" ? "http://localhost:5230" : "https://mt.dadyarri.ru/api"
+    })
 
     return (
         <ThemeProvider theme={theme}>
             <QueryClientProvider client={queryClient}>
                 <CssBaseline/>
-                <RouterProvider router={router} context={{auth, queryClient}}/>
+                <RouterProvider router={router} context={{auth, queryClient, client}}/>
                 {process.env.NODE_ENV === "development" && (
                     <TanStackRouterDevtools router={router} initialIsOpen={false}/>
                 )}
