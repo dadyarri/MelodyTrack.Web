@@ -1,0 +1,103 @@
+#!/bin/sh
+echo "🚀 Running pre-push checks..."
+echo ""
+echo "This ensures the entire codebase is production-ready before pushing."
+echo ""
+
+# Check if any source files changed since last push  
+CHANGED_FILES=$(git diff --name-only @{push}..HEAD 2>/dev/null || git diff --name-only HEAD~1..HEAD 2>/dev/null || git diff --name-only --cached)
+SOURCE_CHANGED=$(echo "$CHANGED_FILES" | grep -E '\.(ts|tsx|js|jsx|json|css)$' || true)
+
+if [ -z "$SOURCE_CHANGED" ]; then
+  echo "📦 No source files changed since last push."
+  echo "✅ Skipping pre-push checks."
+  echo ""
+  exit 0
+fi
+
+echo "📦 Source files changed detected. Running comprehensive checks..."
+echo ""
+
+# Step 1: Quick ESLint check (no auto-fix to avoid conflicts)
+echo "🔍 Step 1/4: Running ESLint check..."
+npm run lint
+LINT_EXIT_CODE=$?
+
+if [ $LINT_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ ESLint failed!"
+  echo ""
+  echo "There are linting errors in your code."
+  echo "Run 'npm run lint:fix' locally to auto-fix issues."
+  echo ""
+  exit 1
+fi
+
+echo "✅ ESLint check passed!"
+echo ""
+
+# Step 2: Prettier check (no formatting to avoid conflicts)
+echo "💅 Step 2/4: Checking code formatting..."
+npm run format:check
+FORMAT_EXIT_CODE=$?
+
+if [ $FORMAT_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ Code formatting check failed!"
+  echo ""
+  echo "Some files are not properly formatted."
+  echo "Run 'npm run format' locally to fix formatting."
+  echo ""
+  exit 1
+fi
+
+echo "✅ Code formatting check passed!"
+echo ""
+
+# Step 3: TypeScript type-check
+echo "🔍 Step 3/4: Running TypeScript type-check..."
+npm run type-check
+TYPE_EXIT_CODE=$?
+
+if [ $TYPE_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ TypeScript type-check failed!"
+  echo ""
+  echo "There are type errors in your code."
+  echo "Please fix the type errors above before pushing."
+  echo ""
+  exit 1
+fi
+
+echo "✅ TypeScript type-check passed!"
+echo ""
+
+# Step 4: Production build
+echo "🏗️  Step 4/4: Running production build..."
+npm run build
+BUILD_EXIT_CODE=$?
+
+if [ $BUILD_EXIT_CODE -ne 0 ]; then
+  echo ""
+  echo "❌ Production build failed!"
+  echo ""
+  echo "Your code has build errors. Cannot push broken builds."
+  echo "Please fix the build errors above before pushing."
+  echo ""
+  exit 1
+fi
+
+echo "✅ Production build successful!"
+echo ""
+
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║  🎉 All pre-push checks passed successfully!          ║"
+echo "║                                                        ║"
+echo "║  ✅ ESLint     - No linting errors                    ║"
+echo "║  ✅ Prettier   - Code properly formatted              ║"
+echo "║  ✅ TypeScript - No type errors                       ║"
+echo "║  ✅ Build      - Production build successful          ║"
+echo "║                                                        ║"
+echo "║  Your code is production-ready! 🚀                    ║"
+echo "╚════════════════════════════════════════════════════════╝"
+echo ""
