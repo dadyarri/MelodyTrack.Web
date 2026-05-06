@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, Col, Empty, List, Row, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { clientsApi, scheduleApi } from "../api/crm";
 import { Appointment } from "../api/types";
@@ -18,44 +18,42 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title="Обзор" />
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Должники" value={debtorsQuery.data?.length ?? 0} loading={debtorsQuery.isLoading} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Записи сегодня" value={todayAppointments.length} loading={miniQuery.isLoading} />
-          </Card>
-        </Col>
-        <Col xs={24} md={8}>
-          <Card>
-            <Statistic title="Записи завтра" value={tomorrowAppointments.length} loading={miniQuery.isLoading} />
-          </Card>
-        </Col>
-      </Row>
-      <Card title="Ближайшее расписание" loading={miniQuery.isLoading}>
-        {upcomingAppointments.length > 0 ? (
-          <List
-            dataSource={upcomingAppointments}
-            renderItem={(appointment) => <ScheduleItem appointment={appointment} />}
+
+      <div className="dashboard-grid">
+        <Card className="dashboard-widget dashboard-widget-small">
+          <Statistic title="Должники" value={debtorsQuery.data?.length ?? 0} loading={debtorsQuery.isLoading} />
+        </Card>
+        <Card className="dashboard-widget dashboard-widget-small">
+          <Statistic title="Записи сегодня" value={todayAppointments.length} loading={miniQuery.isLoading} />
+        </Card>
+        <Card className="dashboard-widget dashboard-widget-small">
+          <Statistic title="Записи завтра" value={tomorrowAppointments.length} loading={miniQuery.isLoading} />
+        </Card>
+
+        <Card className="dashboard-widget dashboard-widget-large" title="Ближайшее расписание" loading={miniQuery.isLoading}>
+          {upcomingAppointments.length > 0 ? (
+            <List
+              dataSource={upcomingAppointments}
+              renderItem={(appointment) => <ScheduleItem appointment={appointment} />}
+            />
+          ) : (
+            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет записей на сегодня и завтра" />
+          )}
+        </Card>
+
+        <Card className="dashboard-widget dashboard-widget-large" title="Клиенты с отрицательным балансом">
+          <Table
+            rowKey="id"
+            loading={debtorsQuery.isLoading}
+            dataSource={debtorsQuery.data}
+            pagination={false}
+            columns={[
+              { title: "Клиент", render: (_, row) => `${row.lastName} ${row.firstName}` },
+              { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{value}</Tag> },
+            ]}
           />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет записей на сегодня и завтра" />
-        )}
-      </Card>
-      <Table
-        rowKey="id"
-        title={() => "Клиенты с отрицательным балансом"}
-        loading={debtorsQuery.isLoading}
-        dataSource={debtorsQuery.data}
-        pagination={false}
-        columns={[
-          { title: "Клиент", render: (_, row) => `${row.lastName} ${row.firstName}` },
-          { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{value}</Tag> },
-        ]}
-      />
+        </Card>
+      </div>
     </>
   );
 }
