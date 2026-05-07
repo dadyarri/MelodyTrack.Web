@@ -169,6 +169,9 @@ body {
 }
 
 .ant-input,
+.ant-input-affix-wrapper,
+.ant-input-affix-wrapper .ant-input,
+.ant-input-group-addon,
 .ant-input-number,
 .ant-picker,
 .ant-select-selector {
@@ -177,10 +180,14 @@ body {
 }
 
 .ant-input:hover,
+.ant-input-affix-wrapper:hover,
+.ant-input-affix-wrapper-focused,
+.ant-input-group-wrapper:hover .ant-input-group-addon,
 .ant-input-number:hover,
 .ant-picker:hover,
 .ant-select-selector:hover,
 .ant-input:focus,
+.ant-input-affix-wrapper:focus,
 .ant-picker-focused,
 .ant-select-focused .ant-select-selector {
   border-color: #8b6226 !important;

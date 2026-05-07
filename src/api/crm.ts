@@ -2,7 +2,7 @@ import { Appointment, Client, ClientWithBalance, CreateEntityResponse, Expense, 
 import { http } from "./http";
 
 export const clientsApi = {
-  list(params: PaginatedParams & Partial<Client>) {
+  list(params: PaginatedParams & Partial<Client> & { search?: string }) {
     return http.get<PaginatedResponse<Client>>("/clients", { params }).then((response) => response.data);
   },
   get(id: Ulid) {
@@ -13,7 +13,7 @@ export const clientsApi = {
       .get<{ clients: LookupClient[] }>("/clients/lookup", { params: search ? { search } : undefined })
       .then((response) => response.data.clients);
   },
-  create(input: { firstName: string; lastName: string; telegram?: string; vk?: string; phone?: string }) {
+  create(input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string }) {
     return http.post<CreateEntityResponse>("/clients", input).then((response) => response.data);
   },
   update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }) {
@@ -50,7 +50,7 @@ export const paymentsApi = {
   list(params: PaginatedParams & { firstName?: string; lastName?: string }) {
     return http.get<PaginatedResponse<Payment>>("/payments", { params }).then((response) => response.data);
   },
-  create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description: string }) {
+  create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }) {
     return http.post<CreateEntityResponse>("/payments", input).then((response) => response.data);
   },
   remove(id: Ulid) {

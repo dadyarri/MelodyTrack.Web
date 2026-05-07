@@ -8,11 +8,11 @@ export function ClientSelect({ value, onChange }: { value?: string; onChange?: (
   const [search, setSearch] = useState("");
   const query = useQuery({ queryKey: ["clients", "lookup", search], queryFn: () => clientsApi.lookup(search) });
   const options = useMemo<DefaultOptionType[]>(
-    () => query.data?.map((client) => ({ value: client.id, label: `${client.lastName} ${client.firstName}` })) ?? [],
+    () => query.data?.map((client) => ({ value: client.id, label: [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ") })) ?? [],
     [query.data],
   );
 
-  return <Select showSearch filterOption={false} onSearch={setSearch} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select showSearch={{ filterOption: false, onSearch: setSearch }} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
 export function ServiceSelect({ value, onChange, allowClear = true }: { value?: string; onChange?: (value: string) => void; allowClear?: boolean }) {

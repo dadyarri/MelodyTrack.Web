@@ -35,6 +35,7 @@ export interface Client {
   lastName: string;
   patronymic?: string | null;
   contacts?: ClientContacts | null;
+  balance: number;
 }
 
 export interface ClientWithBalance extends Client {
@@ -45,6 +46,7 @@ export interface LookupClient {
   id: Ulid;
   firstName: string;
   lastName: string;
+  patronymic?: string | null;
 }
 
 export interface Service {
