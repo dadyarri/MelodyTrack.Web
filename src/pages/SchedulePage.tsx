@@ -68,6 +68,7 @@ export function SchedulePage() {
         loading={query.isLoading}
         dataSource={query.data}
         pagination={false}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: "Начало", dataIndex: "startDate", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
           { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },

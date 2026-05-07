@@ -65,6 +65,7 @@ export function DashboardPage() {
             loading={debtorsQuery.isLoading}
             dataSource={debtorsQuery.data}
             pagination={false}
+            scroll={{ x: "max-content" }}
             columns={[
               { title: "Клиент", render: (_, row) => `${row.lastName} ${row.firstName}` },
               { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag> },

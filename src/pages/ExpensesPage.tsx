@@ -45,6 +45,7 @@ export function ExpensesPage() {
         loading={query.isLoading}
         dataSource={query.data?.data}
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: "Дата", dataIndex: "date", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
           { title: "Описание", dataIndex: "description" },

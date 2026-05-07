@@ -48,6 +48,7 @@ export function ServicesPage() {
         loading={query.isLoading}
         dataSource={query.data?.data}
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: "Название", dataIndex: "name" },
           { title: "Описание", dataIndex: "description" },

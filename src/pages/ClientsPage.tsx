@@ -123,6 +123,7 @@ export function ClientsPage() {
           total: query.data?.info.total,
           onChange: setPage,
         }}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: "ФИО", render: (_, row) => formatClientName(row) },
           { title: "Баланс", dataIndex: "balance", render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag> },

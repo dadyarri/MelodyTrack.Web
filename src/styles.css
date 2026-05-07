@@ -65,6 +65,10 @@ body {
   margin-bottom: 6px;
 }
 
+.page-header > div:first-child {
+  min-width: 0;
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -140,10 +144,19 @@ body {
   border: 1px solid #d8c8a7;
   border-radius: 6px;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .ant-table {
   background: #f8edcf;
+}
+
+.ant-table-content {
+  overflow-x: auto !important;
+}
+
+.ant-table-cell {
+  white-space: nowrap;
 }
 
 .ant-table-title {
@@ -215,12 +228,46 @@ body {
 }
 
 @media (max-width: 720px) {
+  .app-shell {
+    position: relative;
+  }
+
+  .app-sider {
+    position: fixed !important;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 1001;
+    box-shadow: 12px 0 24px rgba(72, 52, 27, 0.18);
+  }
+
+  .app-sider.ant-layout-sider-collapsed {
+    box-shadow: none;
+  }
+
+  .app-sider .ant-layout-sider-children {
+    background: #efe1be;
+  }
+
   .app-content {
     padding: 16px;
   }
 
   .page-header {
     flex-direction: column;
+    gap: 12px;
+  }
+
+  .page-header h2 {
+    font-size: 24px !important;
+    line-height: 1.2 !important;
+  }
+
+  .page-header > .ant-space {
+    width: 100%;
+  }
+
+  .page-header .ant-picker-range {
+    width: 100%;
   }
 
   .content-stack {
@@ -238,7 +285,24 @@ body {
   }
 
   .app-header {
-    padding: 0 16px;
+    padding: 0 12px 0 60px;
+    gap: 8px;
+  }
+
+  .app-header .ant-typography {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .app-sider .ant-layout-sider-zero-width-trigger {
+    top: 12px;
+    inset-inline-end: -48px;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 6px;
+    background: #8b6226;
   }
 }
 

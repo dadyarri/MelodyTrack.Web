@@ -14,6 +14,7 @@ export function UsersPage() {
         loading={query.isLoading}
         dataSource={query.data}
         pagination={false}
+        scroll={{ x: "max-content" }}
         columns={[
           { title: "Фамилия", dataIndex: "lastName" },
           { title: "Имя", dataIndex: "firstName" },
