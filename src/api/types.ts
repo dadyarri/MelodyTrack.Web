@@ -47,6 +47,7 @@ export interface LookupClient {
   firstName: string;
   lastName: string;
   patronymic?: string | null;
+  contacts?: ClientContacts | null;
 }
 
 export interface Service {
