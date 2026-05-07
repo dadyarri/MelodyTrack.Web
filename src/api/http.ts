@@ -1,7 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { authStore } from "../features/auth/authStore";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5230";
+
+const baseURL = import.meta.env.DEV
+  ? "http://localhost:5230"
+  : "https://mt.dadyarri.ru/api";
 export const authExpiredEventName = "melodytrack:auth-expired";
 
 export const http = axios.create({
