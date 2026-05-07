@@ -18,7 +18,7 @@ export function PaymentsPage() {
   const query = useQuery({ queryKey: ["payments", page], queryFn: () => paymentsApi.list({ page, page_size: 10 }) });
 
   const createMutation = useMutation({
-    mutationFn: (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description: string }) =>
+    mutationFn: (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description?: string }) =>
       paymentsApi.create({ ...values, date: values.date.toISOString() }),
     onSuccess: async () => {
       message.success("Платеж создан");
@@ -69,7 +69,7 @@ export function PaymentsPage() {
           <Form.Item name="date" label="Дата" rules={[{ required: true }]}>
             <DatePicker showTime className="wide" />
           </Form.Item>
-          <Form.Item name="description" label="Описание" rules={[{ required: true }]}>
+          <Form.Item name="description" label="Описание">
             <Input />
           </Form.Item>
         </Form>
