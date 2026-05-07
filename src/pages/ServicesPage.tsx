@@ -6,6 +6,7 @@ import { servicesApi } from "../api/crm";
 import { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
+import { formatMoney } from "../utils/money";
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
@@ -50,7 +51,7 @@ export function ServicesPage() {
         columns={[
           { title: "Название", dataIndex: "name" },
           { title: "Описание", dataIndex: "description" },
-          { title: "Цена", dataIndex: "price" },
+          { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
           { title: "", width: 72, render: (_, row) => <Button icon={<DollarOutlined />} onClick={() => { setPricing(row); priceForm.setFieldValue("price", row.price); }} /> },
         ]}
       />

@@ -1,4 +1,4 @@
-import { Appointment, Client, ClientWithBalance, CreateEntityResponse, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, Service, Ulid, User } from "./types";
+import { Appointment, Client, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, Service, Ulid, User } from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -26,6 +26,12 @@ export const clientsApi = {
     return http
       .get<{ debtors: ClientWithBalance[] }>("/clients/inDebt")
       .then((response) => response.data.debtors);
+  },
+};
+
+export const dashboardApi = {
+  stats(timezone: string) {
+    return http.get<DashboardStats>("/dashboard/stats", { params: { timezone } }).then((response) => response.data);
   },
 };
 

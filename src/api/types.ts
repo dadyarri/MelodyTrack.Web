@@ -111,3 +111,14 @@ export interface Expense {
   amount: number;
   date: string;
 }
+
+export interface DashboardStats {
+  totalClients: number;
+  debtorsCount: number;
+  totalDebt: number;
+  appointmentsToday: number;
+  appointmentsTomorrow: number;
+  monthIncome: number;
+  monthExpenses: number;
+  monthNet: number;
+}

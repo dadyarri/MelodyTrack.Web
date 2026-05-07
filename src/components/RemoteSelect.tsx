@@ -12,7 +12,20 @@ export function ClientSelect({ value, onChange }: { value?: string; onChange?: (
     [query.data],
   );
 
-  return <Select showSearch={{ filterOption: false, onSearch: setSearch }} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return (
+    <Select
+      showSearch={{
+        filterOption: false,
+        onSearch: setSearch,
+      }}
+      allowClear
+      loading={query.isLoading}
+      options={options}
+      placeholder="Начните вводить ФИО"
+      value={value}
+      onChange={onChange}
+    />
+  );
 }
 
 export function ServiceSelect({ value, onChange, allowClear = true }: { value?: string; onChange?: (value: string) => void; allowClear?: boolean }) {

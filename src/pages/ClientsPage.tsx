@@ -8,6 +8,7 @@ import { clientsApi } from "../api/crm";
 import { Client } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
+import { formatMoney } from "../utils/money";
 
 type ClientFormValues = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
 type ClientRow = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
@@ -124,7 +125,7 @@ export function ClientsPage() {
         }}
         columns={[
           { title: "ФИО", render: (_, row) => formatClientName(row) },
-          { title: "Баланс", dataIndex: "balance", render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{row.balance} ₽</Tag> },
+          { title: "Баланс", dataIndex: "balance", render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag> },
           { title: "Телефон", render: (_, row) => renderPhoneLink(getContactValue(row, "phone")) },
           { title: "Telegram", render: (_, row) => renderSocialLink(getContactValue(row, "telegram"), "telegram") },
           { title: "VK", render: (_, row) => renderSocialLink(getContactValue(row, "vk"), "vk") },

@@ -7,6 +7,7 @@ import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
+import { formatMoney } from "../utils/money";
 
 export function PaymentsPage() {
   const [page, setPage] = useState(1);
@@ -50,7 +51,7 @@ export function PaymentsPage() {
           { title: "Дата", dataIndex: "date", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
           { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
           { title: "Услуга", render: (_, row) => row.service?.name },
-          { title: "Сумма", dataIndex: "amount" },
+          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
           { title: "Описание", dataIndex: "description" },
           { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate(row.id) })} /> },
         ]}

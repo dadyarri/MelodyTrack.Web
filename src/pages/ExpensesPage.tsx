@@ -6,6 +6,7 @@ import { useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
+import { formatMoney } from "../utils/money";
 
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
@@ -47,7 +48,7 @@ export function ExpensesPage() {
         columns={[
           { title: "Дата", dataIndex: "date", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
           { title: "Описание", dataIndex: "description" },
-          { title: "Сумма", dataIndex: "amount" },
+          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
           { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
         ]}
       />
