@@ -66,6 +66,12 @@ export interface User {
   id: Ulid;
   firstName: string;
   lastName: string;
+  roleDisplayName: string;
+}
+
+export interface Role {
+  id: Ulid;
+  displayName: string;
 }
 
 export interface AppointmentRecurrenceRule {

@@ -3,7 +3,7 @@ import { authStore } from "../features/auth/authStore";
 
 
 const baseURL = import.meta.env.DEV
-  ? "http://localhost:5230"
+  ? "http://localhost:5000"
   : "https://mt.dadyarri.ru/api";
 export const authExpiredEventName = "melodytrack:auth-expired";
 

@@ -24,9 +24,21 @@ export interface Verify2FaInput {
   otpSecret: string;
 }
 
+export interface CreateInviteInput {
+  email: string;
+  role: string;
+}
+
+export interface CreateInviteResponse {
+  url: string;
+}
+
 export const authApi = {
   getInviteInfo(inviteCode: string) {
     return http.get<InviteInfo>("/auth/invite", { params: { inviteCode } }).then((response) => response.data);
+  },
+  createInvite(input: CreateInviteInput) {
+    return http.post<CreateInviteResponse>("/auth/invite", input).then((response) => response.data);
   },
   register(input: RegisterInput) {
     return http.post<RegisterResponse>("/auth/register", input).then((response) => response.data);

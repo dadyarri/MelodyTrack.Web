@@ -1,7 +1,7 @@
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Alert, Button, Card, Form, Input, QRCode, Segmented, Space, Typography, App as AntdApp } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
 import { authApi, RegisterInput } from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
@@ -21,6 +21,7 @@ export function AuthPage() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<AuthMode>(searchParams.has("inviteCode") ? "register" : "login");
   const [totpSetup, setTotpSetup] = useState<TotpSetup | null>(null);
+  const [registerForm] = Form.useForm<RegisterInput>();
   const inviteCode = searchParams.get("inviteCode") ?? "";
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
@@ -30,6 +31,18 @@ export function AuthPage() {
     queryFn: () => authApi.getInviteInfo(inviteCode),
     enabled: mode === "register" && Boolean(inviteCode),
   });
+  const inviteEmail = inviteQuery.data?.email ?? "";
+
+  useEffect(() => {
+    if (!inviteCode && !inviteEmail) {
+      return;
+    }
+
+    registerForm.setFieldsValue({
+      inviteCode,
+      ...(inviteEmail ? { email: inviteEmail } : {}),
+    });
+  }, [inviteCode, inviteEmail, registerForm]);
 
   const loginMutation = useMutation({
     mutationFn: auth.login,
@@ -47,7 +60,7 @@ export function AuthPage() {
         }
 
         setTotpSetup({
-          email: inviteQuery.data?.email ?? input.email,
+          email: inviteEmail || input.email,
           secret: data.secret,
           otpUrl: data.otpUrl,
         });
@@ -144,17 +157,18 @@ export function AuthPage() {
             </Form>
           ) : (
             <Form
+              form={registerForm}
               layout="vertical"
-              initialValues={{ inviteCode, email: inviteQuery.data?.email ?? "" }}
+              initialValues={{ inviteCode, email: inviteEmail }}
               onFinish={(values) => registerMutation.mutate(values)}
               requiredMark={false}
             >
               {!inviteCode ? <Alert type="info" showIcon message="Для регистрации нужен inviteCode из ссылки приглашения." /> : null}
               <Form.Item name="inviteCode" label="Invite code" rules={[{ required: true }]}>
-                <Input />
+                <Input disabled={Boolean(inviteCode)} />
               </Form.Item>
               <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-                <Input prefix={<MailOutlined />} />
+                <Input prefix={<MailOutlined />} disabled={Boolean(inviteEmail)} />
               </Form.Item>
               <Form.Item name="firstName" label="Имя" rules={[{ required: true }]}>
                 <Input prefix={<UserOutlined />} />

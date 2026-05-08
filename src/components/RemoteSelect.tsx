@@ -2,7 +2,7 @@ import { Select } from "antd";
 import { DefaultOptionType } from "antd/es/select";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { clientsApi, servicesApi, usersApi } from "../api/crm";
+import { clientsApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 
 export function ClientSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
   const [search, setSearch] = useState("");
@@ -47,4 +47,14 @@ export function UserSelect({ value, onChange }: { value?: string; onChange?: (va
   );
 
   return <Select allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+}
+
+export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+  const query = useQuery({ queryKey: ["roles", "lookup"], queryFn: rolesApi.lookup });
+  const options = useMemo<DefaultOptionType[]>(
+    () => query.data?.map((role) => ({ value: role.id, label: role.displayName })) ?? [],
+    [query.data],
+  );
+
+  return <Select loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
