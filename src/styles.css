@@ -239,6 +239,24 @@ body {
   border-bottom: 1px solid var(--border-soft-alt);
 }
 
+.schedule-hour-slot-button {
+  width: 100%;
+  padding: 0;
+  display: block;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.schedule-hour-slot-button:hover,
+.schedule-hour-slot-button:focus-visible {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
+}
+
 .schedule-event {
   min-height: 48px;
   padding: 7px;

@@ -107,6 +107,19 @@ export function SchedulePage() {
     onError: showErrors,
   });
 
+  const openCreateModalAt = (startDate: Dayjs) => {
+    form.setFieldsValue({
+      clientId: undefined,
+      serviceId: undefined,
+      providerId: undefined,
+      startDate: startDate.second(0).millisecond(0),
+      recurrenceTypeId: undefined,
+      patternEndDate: undefined,
+      weeklyDays: undefined,
+    });
+    setOpen(true);
+  };
+
   return (
     <>
       <PageHeader
@@ -126,6 +139,7 @@ export function SchedulePage() {
         appointments={query.data ?? []}
         loading={query.isLoading}
         range={range}
+        onCreateAt={openCreateModalAt}
         onSelect={setSelectedAppointment}
       />
       <AppointmentDetailsModal
@@ -283,11 +297,13 @@ function AppointmentsCalendar({
   appointments,
   loading,
   range,
+  onCreateAt,
   onSelect,
 }: {
   appointments: Appointment[];
   loading: boolean;
   range: [Dayjs, Dayjs];
+  onCreateAt: (startDate: Dayjs) => void;
   onSelect: (appointment: Appointment) => void;
 }) {
   const days = getDays(range);
@@ -323,7 +339,13 @@ function AppointmentsCalendar({
           {days.map((day) => (
             <div className="schedule-day-column" key={day.format("YYYY-MM-DD")}>
               {hours.map((hour) => (
-                <div className="schedule-hour-line" key={hour} />
+                <button
+                  type="button"
+                  className="schedule-hour-line schedule-hour-slot-button"
+                  key={hour}
+                  aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
+                  onClick={() => onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0))}
+                />
               ))}
               {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
                 <AppointmentStack
