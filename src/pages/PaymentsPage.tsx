@@ -7,6 +7,7 @@ import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
+import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
 export function PaymentsPage() {
@@ -49,7 +50,7 @@ export function PaymentsPage() {
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
         scroll={{ x: "max-content" }}
         columns={[
-          { title: "Дата", dataIndex: "date", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
+          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
           { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
           { title: "Услуга", render: (_, row) => row.service?.name },
           { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
@@ -69,7 +70,7 @@ export function PaymentsPage() {
             <InputNumber min={0} className="wide" />
           </Form.Item>
           <Form.Item name="date" label="Дата" rules={[{ required: true }]}>
-            <DatePicker showTime className="wide" />
+            <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
           </Form.Item>
           <Form.Item name="description" label="Описание">
             <Input />

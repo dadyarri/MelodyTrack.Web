@@ -1,11 +1,11 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Table } from "antd";
-import dayjs from "dayjs";
 import { useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
+import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
 export function ExpensesPage() {
@@ -47,7 +47,7 @@ export function ExpensesPage() {
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
         scroll={{ x: "max-content" }}
         columns={[
-          { title: "Дата", dataIndex: "date", render: (value: string) => dayjs(value).format("DD.MM.YYYY HH:mm") },
+          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
           { title: "Описание", dataIndex: "description" },
           { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
           { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },

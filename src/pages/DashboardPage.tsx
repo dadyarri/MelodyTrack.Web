@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
+import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
 export function DashboardPage() {
@@ -91,7 +92,7 @@ function ScheduleItem({ appointment }: { appointment: Appointment }) {
     <List.Item>
       <Space direction="vertical" size={2} className="wide">
         <Space wrap>
-          <Typography.Text strong>{start.format("DD.MM HH:mm")}</Typography.Text>
+          <Typography.Text strong>{formatDateTime(start)}</Typography.Text>
           {status}
         </Space>
         <Typography.Text>
