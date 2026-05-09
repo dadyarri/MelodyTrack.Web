@@ -81,6 +81,12 @@ export interface AppointmentRecurrenceRule {
   recurrencePattern?: number | null;
 }
 
+export interface RecurrenceType {
+  id: Ulid;
+  key: "daily" | "weekly" | "monthly";
+  displayName: string;
+}
+
 export interface Appointment {
   id: Ulid;
   client: LookupClient;

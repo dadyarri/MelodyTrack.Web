@@ -1,4 +1,4 @@
-import { Appointment, Client, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, Role, Service, Ulid, User } from "./types";
+import { Appointment, Client, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, RecurrenceType, Role, Service, Ulid, User } from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -82,6 +82,11 @@ export const scheduleApi = {
   },
   mini(timezone: string) {
     return http.get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", { params: { timezone } }).then((response) => response.data.appointments);
+  },
+  recurrenceTypes() {
+    return http
+      .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
+      .then((response) => response.data.recurrenceTypes);
   },
   create(input: {
     clientId: Ulid;

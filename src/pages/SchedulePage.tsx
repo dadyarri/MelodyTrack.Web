@@ -1,14 +1,14 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, DatePicker, Empty, Form, Modal, Space, Tag, Typography } from "antd";
+import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
-import { CSSProperties } from "react";
-import { useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { scheduleApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
-import { Appointment } from "../api/types";
+import { Appointment, RecurrenceType } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
+import { DATE_FORMAT, DATE_TIME_FORMAT, formatDate, formatDateTime, TIME_FORMAT } from "../utils/date";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const defaultStartHour = 10;
@@ -23,12 +23,31 @@ const serviceColors = [
   { background: "#d98aa0", border: "#c85f7d" },
   { background: "#6eb79e", border: "#3f9b7c" },
 ];
+const weeklyDayOptions: { label: string; value: number }[] = [
+  { label: "Пн", value: 1 },
+  { label: "Вт", value: 2 },
+  { label: "Ср", value: 4 },
+  { label: "Чт", value: 8 },
+  { label: "Пт", value: 16 },
+  { label: "Сб", value: 32 },
+  { label: "Вс", value: 64 },
+];
+
+type AppointmentFormValues = {
+  clientId: string;
+  serviceId: string;
+  providerId?: string;
+  startDate: Dayjs;
+  recurrenceTypeId?: string;
+  patternEndDate?: Dayjs;
+  weeklyDays?: number[];
+};
 
 export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
   const [isOpen, setOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<AppointmentFormValues>();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
@@ -38,10 +57,14 @@ export function SchedulePage() {
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
   });
+  const recurrenceTypesQuery = useQuery({
+    queryKey: ["appointments", "recurrenceTypes"],
+    queryFn: scheduleApi.recurrenceTypes,
+  });
 
   const createMutation = useMutation({
-    mutationFn: (values: { clientId: string; serviceId: string; providerId?: string; startDate: dayjs.Dayjs }) =>
-      scheduleApi.create({ ...values, startDate: values.startDate.toISOString() }),
+    mutationFn: (values: AppointmentFormValues) =>
+      scheduleApi.create(buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [])),
     onSuccess: async () => {
       message.success("Запись создана");
       setOpen(false);
@@ -113,23 +136,146 @@ export function SchedulePage() {
         onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false } })}
         onDelete={(appointment) => modal.confirm({ title: "Удалить запись?", onOk: () => deleteMutation.mutate(appointment.id) })}
       />
-      <Modal open={isOpen} title="Новая запись" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" requiredMark={false} initialValues={{ startDate: dayjs() }} onFinish={(values) => createMutation.mutate(values)}>
-          <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
-            <ClientSelect />
-          </Form.Item>
-          <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
-            <ServiceSelect allowClear={false} />
-          </Form.Item>
-          <Form.Item name="providerId" label="Специалист">
-            <UserSelect />
-          </Form.Item>
-          <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
-            <DatePicker showTime className="wide" />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <AppointmentCreateModal
+        createPending={createMutation.isPending}
+        form={form}
+        onCancel={() => setOpen(false)}
+        onSubmit={(values) => createMutation.mutate(values)}
+        open={isOpen}
+        recurrenceTypes={recurrenceTypesQuery.data ?? []}
+        recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
+      />
     </>
+  );
+}
+
+function AppointmentCreateModal({
+  createPending,
+  form,
+  onCancel,
+  onSubmit,
+  open,
+  recurrenceTypes,
+  recurrenceTypesLoading,
+}: {
+  createPending: boolean;
+  form: FormInstance<AppointmentFormValues>;
+  onCancel: () => void;
+  onSubmit: (values: AppointmentFormValues) => void;
+  open: boolean;
+  recurrenceTypes: RecurrenceType[];
+  recurrenceTypesLoading: boolean;
+}) {
+  const recurrenceTypeId = Form.useWatch("recurrenceTypeId", form);
+  const startDate = Form.useWatch("startDate", form);
+  const weeklyDays = Form.useWatch("weeklyDays", form);
+  const recurrenceType = recurrenceTypes.find((item) => item.id === recurrenceTypeId);
+  const recurrenceKey = recurrenceType?.key;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    if (!form.getFieldValue("startDate")) {
+      form.setFieldValue("startDate", dayjs());
+    }
+  }, [form, open]);
+
+  const handleRecurrenceTypeChange = (value?: string) => {
+    form.setFieldValue("recurrenceTypeId", value);
+
+    if (!value) {
+      form.setFieldsValue({ patternEndDate: undefined, weeklyDays: undefined });
+      return;
+    }
+
+    const nextType = recurrenceTypes.find((item) => item.id === value);
+    if (nextType?.key === "weekly") {
+      const nextStartDate = form.getFieldValue("startDate") ?? dayjs();
+      const selectedDays = form.getFieldValue("weeklyDays");
+      if (!selectedDays?.length) {
+        form.setFieldValue("weeklyDays", [getWeeklyBitmaskValue(nextStartDate)]);
+      }
+    } else {
+      form.setFieldValue("weeklyDays", undefined);
+    }
+  };
+
+  return (
+    <Modal open={open} title="Новая запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={createPending}>
+      <Form<AppointmentFormValues>
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        initialValues={{ startDate: dayjs() }}
+        onFinish={onSubmit}
+      >
+        <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
+          <ClientSelect />
+        </Form.Item>
+        <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
+          <ServiceSelect allowClear={false} />
+        </Form.Item>
+        <Form.Item name="providerId" label="Специалист">
+          <UserSelect />
+        </Form.Item>
+          <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
+            <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
+          </Form.Item>
+        <Form.Item name="recurrenceTypeId" label="Повторение">
+          <Select
+            allowClear
+            loading={recurrenceTypesLoading}
+            options={recurrenceTypes.map((item) => ({ value: item.id, label: item.displayName }))}
+            placeholder="Без повтора"
+            value={recurrenceTypeId}
+            onChange={handleRecurrenceTypeChange}
+          />
+        </Form.Item>
+        {recurrenceKey ? (
+          <>
+            <Form.Item
+              name="patternEndDate"
+              label="Повторять до"
+              rules={[{ required: true, message: "Укажите дату окончания повторения" }]}
+            >
+              <DatePicker
+                format={DATE_FORMAT}
+                className="wide"
+                disabledDate={(current) => {
+                  const nextStartDate = startDate ?? dayjs();
+                  return current.isBefore(nextStartDate.startOf("day"));
+                }}
+              />
+            </Form.Item>
+            {recurrenceKey === "weekly" ? (
+              <Form.Item
+                name="weeklyDays"
+                label="Дни недели"
+                rules={[
+                  {
+                    validator: async (_, value?: number[]) => {
+                      if (value?.length) {
+                        return;
+                      }
+                      throw new Error("Выберите хотя бы один день недели");
+                    },
+                  },
+                ]}
+              >
+                <Checkbox.Group className="schedule-weekly-days" options={weeklyDayOptions} />
+              </Form.Item>
+            ) : null}
+            <div className="schedule-recurrence-hint">
+              <Typography.Text type="secondary">
+                {getRecurrenceSummary(recurrenceKey, startDate, weeklyDays)}
+              </Typography.Text>
+            </div>
+          </>
+        ) : null}
+      </Form>
+    </Modal>
   );
 }
 
@@ -198,7 +344,7 @@ function AppointmentsCalendar({
           return (
             <section className="schedule-agenda-day" key={day.format("YYYY-MM-DD")}>
               <div className="schedule-agenda-heading">
-                <Typography.Text strong>{day.format("D MMMM")}</Typography.Text>
+                <Typography.Text strong>{formatDate(day)}</Typography.Text>
                 <Typography.Text type="secondary">{formatWeekday(day)}</Typography.Text>
               </div>
               {dayAppointments.length > 0 ? (
@@ -218,6 +364,63 @@ function AppointmentsCalendar({
       </div>
     </section>
   );
+}
+
+function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrenceTypes: RecurrenceType[]) {
+  const recurrenceType = recurrenceTypes.find((item) => item.id === values.recurrenceTypeId);
+
+  return {
+    clientId: values.clientId,
+    serviceId: values.serviceId,
+    providerId: values.providerId,
+    startDate: values.startDate.toISOString(),
+    recurrenceTypeId: recurrenceType?.id,
+    patternEndDate: recurrenceType ? values.patternEndDate?.endOf("day").toISOString() : undefined,
+    recurrencePattern: recurrenceType ? getRecurrencePattern(recurrenceType.key, values.startDate, values.weeklyDays) : undefined,
+  };
+}
+
+function getRecurrencePattern(key: RecurrenceType["key"], startDate: Dayjs, weeklyDays?: number[]) {
+  if (key === "daily") {
+    return 1;
+  }
+
+  if (key === "weekly") {
+    return (weeklyDays ?? []).reduce((sum, day) => sum + day, 0);
+  }
+
+  return startDate.date();
+}
+
+function getRecurrenceSummary(key: RecurrenceType["key"], startDate?: Dayjs, weeklyDays?: number[]) {
+  if (key === "daily") {
+    return "Будет создаваться каждый день в это же время.";
+  }
+
+  if (key === "weekly") {
+    const days = weeklyDayOptions
+      .filter((item) => weeklyDays?.includes(item.value))
+      .map((item) => item.label)
+      .join(", ");
+
+    return days ? `Будет создаваться каждую неделю: ${days}.` : "Выберите дни недели для повторения.";
+  }
+
+  if (!startDate) {
+    return "Будет создаваться ежемесячно в выбранную дату.";
+  }
+
+  return `Будет создаваться ${startDate.date()} числа каждого месяца в это же время.`;
+}
+
+function getWeeklyBitmaskValue(date: Dayjs) {
+  const day = date.day();
+
+  if (day === 0) {
+    return 64;
+  }
+
+  return 2 ** (day - 1);
 }
 
 function AppointmentStack({
@@ -325,7 +528,7 @@ function AppointmentContent({
   return (
     <div className={`schedule-event-content schedule-event-content-${density}`}>
       <div className="schedule-event-topline">
-        <div className="schedule-event-time">{start.format("HH:mm")} - {end.format("HH:mm")}</div>
+        <div className="schedule-event-time">{start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}</div>
         <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
           {renderAppointmentStatusIcon(appointment)}
         </span>
@@ -372,7 +575,7 @@ function AppointmentDetailsModal({
         <div className="schedule-details-header">
           <div>
             <Typography.Title level={3}>{clientName}</Typography.Title>
-            <Typography.Text type="secondary">{start.format("DD.MM.YYYY HH:mm")} - {end.format("HH:mm")}</Typography.Text>
+            <Typography.Text type="secondary">{formatDateTime(start)} - {end.format(TIME_FORMAT)}</Typography.Text>
           </div>
           {hasClientContacts(appointment.client.contacts) ? (
             <Space wrap className="schedule-contact-links">

@@ -492,6 +492,17 @@ body {
   flex: 0 0 auto;
 }
 
+.schedule-weekly-days {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  gap: 10px 14px;
+}
+
+.schedule-recurrence-hint {
+  margin-top: -10px;
+  margin-bottom: 4px;
+}
+
 .page-header h2,
 .auth-card h1 {
   margin: 0;
@@ -747,6 +758,10 @@ body {
   .schedule-agenda-item,
   .schedule-details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-weekly-days {
+    grid-template-columns: repeat(2, minmax(0, max-content));
   }
 
   .schedule-details-header {
