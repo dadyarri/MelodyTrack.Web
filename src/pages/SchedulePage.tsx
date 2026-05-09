@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RightOutlined, SendOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, DatePicker, Empty, Form, Modal, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
@@ -13,14 +13,15 @@ import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSel
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const defaultStartHour = 10;
 const defaultEndHour = 20;
-const hourHeight = 64;
+const hourHeight = 72;
+const stackOffset = 8;
 const serviceColors = [
-  { background: "#dff0ff", border: "#4e8fc8" },
-  { background: "#fff2c2", border: "#b8860b" },
-  { background: "#dff0d4", border: "#5f8f4d" },
-  { background: "#eadfff", border: "#7b61c8" },
-  { background: "#ffdfe7", border: "#c85f7d" },
-  { background: "#dff7ef", border: "#3f9b7c" },
+  { background: "#84b6ea", border: "#4e8fc8" },
+  { background: "#d8b35a", border: "#b8860b" },
+  { background: "#7cb071", border: "#5f8f4d" },
+  { background: "#9a84dc", border: "#7b61c8" },
+  { background: "#d98aa0", border: "#c85f7d" },
+  { background: "#6eb79e", border: "#3f9b7c" },
 ];
 
 export function SchedulePage() {
@@ -52,6 +53,21 @@ export function SchedulePage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: { isCompleted?: boolean; isCanceled?: boolean } }) => scheduleApi.update(id, input),
+    onMutate: async ({ id, input }) => {
+      const nextState = (appointment: Appointment) =>
+        appointment.id === id
+          ? {
+              ...appointment,
+              ...(input.isCompleted !== undefined ? { isCompleted: input.isCompleted } : {}),
+              ...(input.isCanceled !== undefined ? { isCanceled: input.isCanceled } : {}),
+            }
+          : appointment;
+
+      setSelectedAppointment((current) => (current ? nextState(current) : current));
+      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) =>
+        current ? current.map(nextState) : current,
+      );
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
@@ -62,6 +78,7 @@ export function SchedulePage() {
     mutationFn: scheduleApi.remove,
     onSuccess: async () => {
       message.success("Запись удалена");
+      setSelectedAppointment(null);
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: showErrors,
@@ -93,6 +110,7 @@ export function SchedulePage() {
         onClose={() => setSelectedAppointment(null)}
         onComplete={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: true, isCanceled: false } })}
         onCancel={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCanceled: true } })}
+        onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false } })}
         onDelete={(appointment) => modal.confirm({ title: "Удалить запись?", onOk: () => deleteMutation.mutate(appointment.id) })}
       />
       <Modal open={isOpen} title="Новая запись" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
@@ -127,7 +145,7 @@ function AppointmentsCalendar({
   onSelect: (appointment: Appointment) => void;
 }) {
   const days = getDays(range);
-  const hours = getHours(appointments);
+  const hours = getHours();
   const appointmentsByDay = groupAppointmentsByDay(appointments);
 
   return (
@@ -161,12 +179,12 @@ function AppointmentsCalendar({
               {hours.map((hour) => (
                 <div className="schedule-hour-line" key={hour} />
               ))}
-              {(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointment) => (
-                <AppointmentBlock
-                  appointment={appointment}
+              {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
+                <AppointmentStack
+                  appointments={appointmentsInSlot}
                   day={day}
                   startHour={hours[0]}
-                  key={appointment.id}
+                  key={appointmentsInSlot.map((appointment) => appointment.id).join(":")}
                   onSelect={onSelect}
                 />
               ))}
@@ -202,38 +220,66 @@ function AppointmentsCalendar({
   );
 }
 
-function AppointmentBlock({
-  appointment,
+function AppointmentStack({
+  appointments,
   day,
   startHour,
   onSelect,
 }: {
-  appointment: Appointment;
+  appointments: Appointment[];
   day: Dayjs;
   startHour: number;
   onSelect: (appointment: Appointment) => void;
 }) {
+  const appointment = appointments[0];
   const start = dayjs(appointment.startDate);
-  const end = dayjs(appointment.endDate);
+  const longestEnd = appointments.reduce((latest, current) => {
+    const currentEnd = dayjs(current.endDate);
+    return currentEnd.isAfter(latest) ? currentEnd : latest;
+  }, dayjs(appointment.endDate));
   const top = Math.max(0, start.diff(day.hour(startHour).minute(0).second(0), "minute") / 60 * hourHeight);
-  const height = Math.max(48, end.diff(start, "minute") / 60 * hourHeight);
+  const height = Math.max(48, longestEnd.diff(start, "minute") / 60 * hourHeight);
+  const totalOffset = appointments.length > 1 ? stackOffset * (appointments.length - 1) : 0;
+  const cardHeight = Math.max(48, height - totalOffset);
+  const expandedOffset = 56;
+  const slotTop = Math.floor(top / hourHeight) * hourHeight;
 
   return (
-    <article
-      role="button"
-      tabIndex={0}
-      className={`schedule-event ${getAppointmentClassName(appointment)}`}
-      style={{ "--event-top": `${top}px`, "--event-height": `${height}px`, ...getServiceColorVars(appointment) } as CSSProperties}
-      onClick={() => onSelect(appointment)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect(appointment);
-        }
-      }}
+    <div
+      className="schedule-stack"
+      style={{
+        "--event-top": `${top}px`,
+        "--event-height": `${height}px`,
+        "--stack-size": appointments.length,
+        "--stack-expanded-height": `${height + expandedOffset * (appointments.length - 1)}px`,
+        "--badge-top": `${slotTop - top + 4}px`,
+      } as CSSProperties}
     >
-      <AppointmentContent appointment={appointment} compact />
-    </article>
+      {appointments.length > 1 ? <div className="schedule-stack-badge">{appointments.length}</div> : null}
+      {appointments.map((item, index) => (
+        <article
+          role="button"
+          tabIndex={0}
+          className={`schedule-event schedule-event-stacked ${getAppointmentClassName(item)}`}
+          style={{
+            "--stack-index": index,
+            "--stack-top": `${index * stackOffset}px`,
+            "--stack-card-height": `${cardHeight}px`,
+            ...getServiceColorVars(item),
+          } as CSSProperties}
+          key={item.id}
+          onClick={() => onSelect(item)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onSelect(item);
+            }
+          }}
+        >
+          <AppointmentContent appointment={item} density={getStackDensity(appointments.length)} />
+        </article>
+      ))}
+    </div>
   );
 }
 
@@ -263,12 +309,21 @@ function AppointmentAgendaItem({
   );
 }
 
-function AppointmentContent({ appointment, compact = false }: { appointment: Appointment; compact?: boolean }) {
+function AppointmentContent({
+  appointment,
+  density = "full",
+}: {
+  appointment: Appointment;
+  density?: "full" | "compact" | "dense";
+}) {
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName].filter(Boolean).join(" ");
+  const showProvider = density === "full" && appointment.provider;
+  const showService = density !== "dense";
+
   return (
-    <div className="schedule-event-content">
+    <div className={`schedule-event-content schedule-event-content-${density}`}>
       <div className="schedule-event-topline">
         <div className="schedule-event-time">{start.format("HH:mm")} - {end.format("HH:mm")}</div>
         <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
@@ -276,28 +331,13 @@ function AppointmentContent({ appointment, compact = false }: { appointment: App
         </span>
       </div>
       <div className="schedule-event-title">{clientName}</div>
-      <div className="schedule-event-service">{appointment.service.name}{!compact && appointment.provider ? ` · ${appointment.provider.lastName} ${appointment.provider.firstName}` : ""}</div>
+      {showService ? (
+        <div className="schedule-event-service">
+          {appointment.service.name}
+          {showProvider ? ` · ${appointment.provider!.lastName} ${appointment.provider!.firstName}` : ""}
+        </div>
+      ) : null}
     </div>
-  );
-}
-
-function AppointmentActions({
-  appointment,
-  onComplete,
-  onCancel,
-  onDelete,
-}: {
-  appointment: Appointment;
-  onComplete: (appointment: Appointment) => void;
-  onCancel: (appointment: Appointment) => void;
-  onDelete: (appointment: Appointment) => void;
-}) {
-  return (
-    <Space size={4} className="schedule-event-actions">
-      <Button size="small" icon={<CheckOutlined />} onClick={() => onComplete(appointment)} />
-      <Button size="small" icon={<CloseOutlined />} onClick={() => onCancel(appointment)} />
-      <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(appointment)} />
-    </Space>
   );
 }
 
@@ -306,12 +346,14 @@ function AppointmentDetailsModal({
   onClose,
   onComplete,
   onCancel,
+  onRestore,
   onDelete,
 }: {
   appointment: Appointment | null;
   onClose: () => void;
   onComplete: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
+  onRestore: (appointment: Appointment) => void;
   onDelete: (appointment: Appointment) => void;
 }) {
   if (!appointment) {
@@ -321,6 +363,8 @@ function AppointmentDetailsModal({
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName, appointment.client.patronymic].filter(Boolean).join(" ");
+  const isPlanned = !appointment.isCanceled && !appointment.isCompleted;
+  const isCompleted = appointment.isCompleted;
 
   return (
     <Modal open title="Запись" onCancel={onClose} footer={null}>
@@ -355,12 +399,21 @@ function AppointmentDetailsModal({
           </div>
         </div>
         <Space wrap>
-          <Button icon={<CheckOutlined />} onClick={() => onComplete(appointment)}>
-            Завершить
-          </Button>
-          <Button icon={<CloseOutlined />} onClick={() => onCancel(appointment)}>
-            Отменить
-          </Button>
+          {isPlanned ? (
+            <Button icon={<CheckOutlined />} onClick={() => onComplete(appointment)}>
+              Завершить
+            </Button>
+          ) : null}
+          {isPlanned || isCompleted ? (
+            <Button icon={<CloseOutlined />} onClick={() => onCancel(appointment)}>
+              Отменить
+            </Button>
+          ) : null}
+          {!isPlanned ? (
+            <Button icon={<RedoOutlined />} onClick={() => onRestore(appointment)}>
+              Вернуть в запланированные
+            </Button>
+          ) : null}
           <Button danger icon={<DeleteOutlined />} onClick={() => onDelete(appointment)}>
             Удалить
           </Button>
@@ -381,8 +434,8 @@ function getDays(range: [Dayjs, Dayjs]) {
   return days.filter((day) => day.day() !== 1 && day.day() !== 2);
 }
 
-function getHours(_appointments: Appointment[]) {
-  return Array.from({ length: defaultEndHour - defaultStartHour + 1 }, (_, index) => defaultStartHour + index);
+function getHours() {
+  return Array.from({ length: defaultEndHour - defaultStartHour }, (_, index) => defaultStartHour + index);
 }
 
 function groupAppointmentsByDay(appointments: Appointment[]) {
@@ -396,15 +449,37 @@ function groupAppointmentsByDay(appointments: Appointment[]) {
   }, new Map<string, Appointment[]>());
 }
 
+function groupAppointmentsBySlot(appointments: Appointment[]) {
+  const groups = new Map<string, Appointment[]>();
+
+  for (const appointment of appointments) {
+    const key = dayjs(appointment.startDate).format("YYYY-MM-DDTHH:mm");
+    const items = groups.get(key) ?? [];
+    items.push(appointment);
+    groups.set(key, items);
+  }
+
+  return [...groups.values()].map((items) =>
+    items.sort((left, right) => {
+      if (left.isCanceled !== right.isCanceled) {
+        return Number(left.isCanceled) - Number(right.isCanceled);
+      }
+
+      if (left.isCompleted !== right.isCompleted) {
+        return Number(left.isCompleted) - Number(right.isCompleted);
+      }
+
+      return dayjs(left.endDate).valueOf() - dayjs(right.endDate).valueOf();
+    }),
+  );
+}
+
 function formatWeekday(day: Dayjs) {
   return day.format("dd").toUpperCase();
 }
 
-function formatVisibleWeekRange(range: [Dayjs, Dayjs]) {
-  const days = getDays(range);
-  const first = days[0] ?? range[0];
-  const last = days.at(-1) ?? range[1];
-  return `${first.format("D MMMM")} - ${last.format("D MMMM YYYY")}`;
+function getStackDensity(stackSize: number): "compact" | "dense" {
+  return stackSize >= 3 ? "dense" : "compact";
 }
 
 function getAppointmentClassName(appointment: Appointment) {

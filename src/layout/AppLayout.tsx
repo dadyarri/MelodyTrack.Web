@@ -1,6 +1,7 @@
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, LogoutOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
-import { Button, Layout, Menu, Space, Typography } from "antd";
+import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
+import { Button, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
+import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
 
 const navItems = [
@@ -15,6 +16,7 @@ const navItems = [
 
 export function AppLayout() {
   const auth = useAuth();
+  const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const selectedKey = navItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
@@ -32,12 +34,32 @@ export function AppLayout() {
       </Layout.Sider>
       <Layout>
         <Layout.Header className="app-header">
-          <Typography.Text type="secondary">
-            {auth.user?.firstName} {auth.user?.lastName}
-          </Typography.Text>
-          <Button icon={<LogoutOutlined />} onClick={() => void auth.logout()}>
-            Выйти
-          </Button>
+          <Popover
+            trigger="hover"
+            placement="bottomRight"
+            content={
+              <Space direction="vertical" className="header-user-pane">
+                <Button block icon={<SettingOutlined />} onClick={() => navigate("/profile")}>
+                  Профиль
+                </Button>
+                <Button block icon={mode === "dark" ? <SunOutlined /> : <MoonOutlined />} onClick={toggleMode}>
+                  {mode === "dark" ? "Светлая тема" : "Темная тема"}
+                </Button>
+                <Button block danger icon={<LogoutOutlined />} onClick={() => void auth.logout()}>
+                  Выйти
+                </Button>
+              </Space>
+            }
+          >
+            <Button type="text" className="header-user-trigger">
+              <Space size={8}>
+                <UserOutlined />
+                <Typography.Text>
+                  {auth.user?.firstName} {auth.user?.lastName}
+                </Typography.Text>
+              </Space>
+            </Button>
+          </Popover>
         </Layout.Header>
         <Layout.Content className="app-content">
           <Space direction="vertical" size={18} className="content-stack">
