@@ -1,0 +1,81 @@
+import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
+import { App as AntdApp, Button, Card, Space, Typography } from "antd";
+
+export interface RecoveryCodeItem {
+  code: string;
+  wasUsed: boolean;
+}
+
+interface RecoveryCodesCardProps {
+  items: RecoveryCodeItem[];
+  title?: string;
+  description?: string;
+  downloadFileName: string;
+}
+
+export function RecoveryCodesCard({
+  items,
+  title = "Коды восстановления",
+  description = "Сохраните эти коды в надежном месте. Использованные коды остаются в списке, но не попадают в копирование и экспорт.",
+  downloadFileName,
+}: RecoveryCodesCardProps) {
+  const { message } = AntdApp.useApp();
+  const activeCodes = items.filter((item) => !item.wasUsed).map((item) => item.code);
+
+  async function copyCodes() {
+    if (activeCodes.length === 0) {
+      message.warning("Не осталось активных кодов для копирования.");
+      return;
+    }
+
+    await navigator.clipboard.writeText(activeCodes.join("\n"));
+    message.success("Активные коды восстановления скопированы.");
+  }
+
+  function downloadCodes() {
+    if (activeCodes.length === 0) {
+      message.warning("Не осталось активных кодов для экспорта.");
+      return;
+    }
+
+    const blob = new Blob([activeCodes.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = downloadFileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    message.success("TXT с активными кодами подготовлен.");
+  }
+
+  return (
+    <Card
+      title={title}
+      extra={
+        <Space wrap>
+          <Button icon={<CopyOutlined />} onClick={() => void copyCodes()}>
+            Копировать активные
+          </Button>
+          <Button icon={<DownloadOutlined />} onClick={downloadCodes}>
+            Скачать TXT
+          </Button>
+        </Space>
+      }
+    >
+      <Space direction="vertical" className="wide" size={14}>
+        <Typography.Text type="secondary">{description}</Typography.Text>
+        <div className="recovery-codes-grid">
+          {items.map((item) => (
+            <Typography.Text
+              key={item.code}
+              code
+              className={item.wasUsed ? "recovery-code recovery-code-used" : "recovery-code"}
+            >
+              {item.code}
+            </Typography.Text>
+          ))}
+        </div>
+      </Space>
+    </Card>
+  );
+}

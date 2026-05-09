@@ -29,7 +29,16 @@ http.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
-    const publicAuthUrls = ["/auth/login", "/auth/register", "/auth/invite", "/auth/2fa/verify"];
+    const publicAuthUrls = [
+      "/auth/login",
+      "/auth/register",
+      "/auth/invite",
+      "/auth/2fa/verify",
+      "/auth/2fa/recover",
+      "/auth/forgotPassword",
+      "/auth/resetPassword",
+      "/auth/2fa/enabled",
+    ];
     const isPublicAuthRequest = Boolean(original?.url && publicAuthUrls.some((url) => original.url?.includes(url)));
 
     if (error.response?.status !== 401 || !original || original._retry || isPublicAuthRequest || original.url?.includes("/auth/refresh")) {

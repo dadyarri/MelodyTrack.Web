@@ -7,6 +7,8 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { ExpensesPage } from "../pages/ExpensesPage";
 import { InviteRedirect } from "../pages/InviteRedirect";
 import { PaymentsPage } from "../pages/PaymentsPage";
+import { ProfilePage } from "../pages/ProfilePage";
+import { RestorePasswordPage } from "../pages/RestorePasswordPage";
 import { SchedulePage } from "../pages/SchedulePage";
 import { ServicesPage } from "../pages/ServicesPage";
 import { UsersPage } from "../pages/UsersPage";
@@ -14,6 +16,7 @@ import { UsersPage } from "../pages/UsersPage";
 export const router = createBrowserRouter([
   { path: "/invite/:inviteCode", element: <InviteRedirect /> },
   { path: "/login", element: <AuthPage /> },
+  { path: "/restore", element: <RestorePasswordPage /> },
   {
     path: "/",
     element: (
@@ -29,6 +32,7 @@ export const router = createBrowserRouter([
       { path: "expenses", element: <ExpensesPage /> },
       { path: "schedule", element: <SchedulePage /> },
       { path: "users", element: <UsersPage /> },
+      { path: "profile", element: <ProfilePage /> },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

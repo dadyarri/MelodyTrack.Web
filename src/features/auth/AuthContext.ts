@@ -5,6 +5,7 @@ interface LoginInput {
   email: string;
   password: string;
   otp?: string;
+  recoveryCode?: string;
 }
 
 export interface AuthContextValue {
