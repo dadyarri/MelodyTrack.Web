@@ -102,8 +102,8 @@ export const scheduleApi = {
   update(id: Ulid, input: Partial<{ clientId: Ulid; serviceId: Ulid; providerId: Ulid; startDate: string; isCompleted: boolean; isCanceled: boolean }>) {
     return http.patch(`/appointments/${id}`, input).then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete(`/appointments/${id}`).then((response) => response.data);
+  remove(id: Ulid, scope?: "single" | "this-and-following" | "all") {
+    return http.delete(`/appointments/${id}`, { params: scope ? { scope } : undefined }).then((response) => response.data);
   },
 };
 

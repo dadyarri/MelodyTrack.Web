@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
@@ -43,10 +43,13 @@ type AppointmentFormValues = {
   weeklyDays?: number[];
 };
 
+type AppointmentDeleteScope = "single" | "this-and-following" | "all";
+
 export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
   const [isOpen, setOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [form] = Form.useForm<AppointmentFormValues>();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
@@ -98,10 +101,11 @@ export function SchedulePage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: scheduleApi.remove,
+    mutationFn: ({ id, scope }: { id: string; scope?: AppointmentDeleteScope }) => scheduleApi.remove(id, scope),
     onSuccess: async () => {
       message.success("Запись удалена");
       setSelectedAppointment(null);
+      setAppointmentToDelete(null);
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: showErrors,
@@ -141,6 +145,7 @@ export function SchedulePage() {
         range={range}
         onCreateAt={openCreateModalAt}
         onSelect={setSelectedAppointment}
+        selectedAppointmentId={selectedAppointment?.id ?? null}
       />
       <AppointmentDetailsModal
         appointment={selectedAppointment}
@@ -148,7 +153,23 @@ export function SchedulePage() {
         onComplete={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: true, isCanceled: false } })}
         onCancel={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCanceled: true } })}
         onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false } })}
-        onDelete={(appointment) => modal.confirm({ title: "Удалить запись?", onOk: () => deleteMutation.mutate(appointment.id) })}
+        onDelete={(appointment) => {
+          if (appointment.recurringRule) {
+            setAppointmentToDelete(appointment);
+            return;
+          }
+
+          modal.confirm({
+            title: "Удалить запись?",
+            onOk: () => deleteMutation.mutate({ id: appointment.id }),
+          });
+        }}
+      />
+      <RecurringDeleteModal
+        appointment={appointmentToDelete}
+        deletePending={deleteMutation.isPending}
+        onCancel={() => setAppointmentToDelete(null)}
+        onDelete={(appointment, scope) => deleteMutation.mutate({ id: appointment.id, scope })}
       />
       <AppointmentCreateModal
         createPending={createMutation.isPending}
@@ -299,12 +320,14 @@ function AppointmentsCalendar({
   range,
   onCreateAt,
   onSelect,
+  selectedAppointmentId,
 }: {
   appointments: Appointment[];
   loading: boolean;
   range: [Dayjs, Dayjs];
   onCreateAt: (startDate: Dayjs) => void;
   onSelect: (appointment: Appointment) => void;
+  selectedAppointmentId: string | null;
 }) {
   const days = getDays(range);
   const hours = getHours();
@@ -354,6 +377,7 @@ function AppointmentsCalendar({
                   startHour={hours[0]}
                   key={appointmentsInSlot.map((appointment) => appointment.id).join(":")}
                   onSelect={onSelect}
+                  selectedAppointmentId={selectedAppointmentId}
                 />
               ))}
             </div>
@@ -365,7 +389,7 @@ function AppointmentsCalendar({
           const dayAppointments = appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? [];
           return (
             <section className="schedule-agenda-day" key={day.format("YYYY-MM-DD")}>
-              <div className="schedule-agenda-heading">
+              <div className={day.isSame(dayjs(), "day") ? "schedule-agenda-heading schedule-agenda-heading-today" : "schedule-agenda-heading"}>
                 <Typography.Text strong>{formatDate(day)}</Typography.Text>
                 <Typography.Text type="secondary">{formatWeekday(day)}</Typography.Text>
               </div>
@@ -373,6 +397,7 @@ function AppointmentsCalendar({
                 dayAppointments.map((appointment) => (
                   <AppointmentAgendaItem
                     appointment={appointment}
+                    isSelected={appointment.id === selectedAppointmentId}
                     key={appointment.id}
                     onSelect={onSelect}
                   />
@@ -450,11 +475,13 @@ function AppointmentStack({
   day,
   startHour,
   onSelect,
+  selectedAppointmentId,
 }: {
   appointments: Appointment[];
   day: Dayjs;
   startHour: number;
   onSelect: (appointment: Appointment) => void;
+  selectedAppointmentId: string | null;
 }) {
   const appointment = appointments[0];
   const start = dayjs(appointment.startDate);
@@ -485,7 +512,7 @@ function AppointmentStack({
         <article
           role="button"
           tabIndex={0}
-          className={`schedule-event schedule-event-stacked ${getAppointmentClassName(item)}`}
+          className={`schedule-entry schedule-event schedule-event-stacked ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}`}
           style={{
             "--stack-index": index,
             "--stack-top": `${index * stackOffset}px`,
@@ -510,16 +537,18 @@ function AppointmentStack({
 
 function AppointmentAgendaItem({
   appointment,
+  isSelected,
   onSelect,
 }: {
   appointment: Appointment;
+  isSelected: boolean;
   onSelect: (appointment: Appointment) => void;
 }) {
   return (
     <article
       role="button"
       tabIndex={0}
-      className={`schedule-agenda-item ${getAppointmentClassName(appointment)}`}
+      className={`schedule-entry schedule-agenda-item ${getAppointmentClassName(appointment)}${isSelected ? " schedule-entry-selected" : ""}`}
       style={getServiceColorVars(appointment) as CSSProperties}
       onClick={() => onSelect(appointment)}
       onKeyDown={(event) => {
@@ -548,12 +577,19 @@ function AppointmentContent({
   const showService = density !== "dense";
 
   return (
-    <div className={`schedule-event-content schedule-event-content-${density}`}>
+      <div className={`schedule-event-content schedule-event-content-${density}`}>
       <div className="schedule-event-topline">
         <div className="schedule-event-time">{start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}</div>
-        <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
-          {renderAppointmentStatusIcon(appointment)}
-        </span>
+        <div className="schedule-event-icons">
+          <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
+            {renderAppointmentStatusIcon(appointment)}
+          </span>
+          {appointment.recurringRule ? (
+            <span className="schedule-event-status-icon schedule-event-recurring-icon" title="Повторяющаяся запись">
+              <SyncOutlined />
+            </span>
+          ) : null}
+        </div>
       </div>
       <div className="schedule-event-title">{clientName}</div>
       {showService ? (
@@ -563,6 +599,50 @@ function AppointmentContent({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function RecurringDeleteModal({
+  appointment,
+  deletePending,
+  onCancel,
+  onDelete,
+}: {
+  appointment: Appointment | null;
+  deletePending: boolean;
+  onCancel: () => void;
+  onDelete: (appointment: Appointment, scope: AppointmentDeleteScope) => void;
+}) {
+  return (
+    <Modal
+      open={appointment !== null}
+      title="Удалить повторяющуюся запись"
+      onCancel={deletePending ? undefined : onCancel}
+      footer={null}
+      destroyOnHidden
+    >
+      {appointment ? (
+        <Space direction="vertical" size={16} className="wide">
+          <Typography.Text>
+            Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.
+          </Typography.Text>
+          <Space direction="vertical" className="wide recurring-delete-actions">
+            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "single")}>
+              Только эту запись
+            </Button>
+            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "this-and-following")}>
+              Эту и следующие
+            </Button>
+            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "all")}>
+              Все записи
+            </Button>
+            <Button block disabled={deletePending} onClick={onCancel}>
+              Отмена
+            </Button>
+          </Space>
+        </Space>
+      ) : null}
+    </Modal>
   );
 }
 
@@ -590,6 +670,7 @@ function AppointmentDetailsModal({
   const clientName = [appointment.client.lastName, appointment.client.firstName, appointment.client.patronymic].filter(Boolean).join(" ");
   const isPlanned = !appointment.isCanceled && !appointment.isCompleted;
   const isCompleted = appointment.isCompleted;
+  const recurrenceSummary = appointment.recurringRule ? formatRecurringRuleSummary(appointment.recurringRule) : null;
 
   return (
     <Modal open title="Запись" onCancel={onClose} footer={null}>
@@ -622,6 +703,12 @@ function AppointmentDetailsModal({
             <div>{renderAppointmentStatus(appointment)}</div>
             <Typography.Text type="secondary">Статус</Typography.Text>
           </div>
+          {recurrenceSummary ? (
+            <div>
+              <div className="schedule-detail-value">{recurrenceSummary}</div>
+              <Typography.Text type="secondary">Повторение</Typography.Text>
+            </div>
+          ) : null}
         </div>
         <Space wrap>
           {isPlanned ? (
@@ -765,4 +852,32 @@ function getStableColorIndex(value: string, modulo: number) {
 
 function hasClientContacts(contacts: Appointment["client"]["contacts"]) {
   return Boolean(contacts?.phone || contacts?.telegram || contacts?.vk);
+}
+
+function formatRecurringRuleSummary(rule: NonNullable<Appointment["recurringRule"]>) {
+  const ruleStart = dayjs(rule.startDate);
+  const until = rule.endDate ? ` до ${dayjs(rule.endDate).format(DATE_FORMAT)}` : "";
+
+  if (rule.key === "daily") {
+    return `Каждый день с ${ruleStart.format(DATE_FORMAT)}${until}`;
+  }
+
+  if (rule.key === "weekly") {
+    const weeklyDays = formatWeeklyPattern(rule.recurrencePattern);
+    return `Каждую неделю: ${weeklyDays} с ${ruleStart.format(DATE_FORMAT)}${until}`;
+  }
+
+  const dayOfMonth = rule.recurrencePattern ?? ruleStart.date();
+  return `Каждый месяц ${dayOfMonth} числа с ${ruleStart.format(DATE_FORMAT)}${until}`;
+}
+
+function formatWeeklyPattern(pattern?: number | null) {
+  if (!pattern) {
+    return "дни не указаны";
+  }
+
+  return weeklyDayOptions
+    .filter((item) => (pattern & item.value) === item.value)
+    .map((item) => item.label)
+    .join(", ");
 }

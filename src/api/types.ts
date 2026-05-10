@@ -78,6 +78,7 @@ export interface AppointmentRecurrenceRule {
   id: Ulid;
   startDate: string;
   endDate?: string | null;
+  key: "daily" | "weekly" | "monthly";
   recurrencePattern?: number | null;
 }
 
