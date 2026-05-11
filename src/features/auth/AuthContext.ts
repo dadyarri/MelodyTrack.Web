@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { StoredUser } from "./authStore";
+import { MeResponse } from "../../api/auth";
 
 interface LoginInput {
   email: string;
@@ -9,9 +9,11 @@ interface LoginInput {
 }
 
 export interface AuthContextValue {
+  isLoading: boolean;
   isAuthenticated: boolean;
-  user: StoredUser | null;
+  user: MeResponse | null;
   login: (input: LoginInput) => Promise<void>;
+  establishSession: (accessToken: string, refreshToken: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 

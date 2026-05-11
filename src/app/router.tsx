@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { AppLayout } from "../layout/AppLayout";
+import { AdminRoute } from "../layout/AdminRoute";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
 import { AuthPage } from "../pages/AuthPage";
 import { ClientsPage } from "../pages/ClientsPage";
@@ -31,7 +32,14 @@ export const router = createBrowserRouter([
       { path: "payments", element: <PaymentsPage /> },
       { path: "expenses", element: <ExpensesPage /> },
       { path: "schedule", element: <SchedulePage /> },
-      { path: "users", element: <UsersPage /> },
+      {
+        path: "users",
+        element: (
+          <AdminRoute>
+            <UsersPage />
+          </AdminRoute>
+        ),
+      },
       { path: "profile", element: <ProfilePage /> },
     ],
   },

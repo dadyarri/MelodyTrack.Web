@@ -1,8 +1,8 @@
-import { LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, App as AntdApp, Button, Card, Form, Input, List, QRCode, Space, Tag, Typography } from "antd";
 import { useState } from "react";
-import { authApi, MeResponse, RecoveryCodeItem, Setup2FaResponse } from "../api/auth";
+import { authApi, MeResponse, RecoveryCodeItem, SessionDto, Setup2FaResponse } from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { PageHeader } from "../components/PageHeader";
@@ -13,6 +13,7 @@ type TotpSetupState = Setup2FaResponse & { password: string };
 export function ProfilePage() {
   const auth = useAuth();
   const { message } = AntdApp.useApp();
+  const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
@@ -99,6 +100,21 @@ export function ProfilePage() {
     onError: showErrors,
   });
 
+  const revokeSessionMutation = useMutation({
+    mutationFn: (session: SessionDto) => authApi.revokeSession(session.id),
+    onSuccess: async (_, session) => {
+      message.success(session.isCurrent ? "Текущая сессия завершена." : "Сессия завершена.");
+
+      if (session.isCurrent) {
+        await auth.logout();
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    },
+    onError: showErrors,
+  });
+
   function openRecoveryCodes(codes: RecoveryCodeItem[]) {
     setRecoveryCodes(codes);
   }
@@ -135,10 +151,8 @@ export function ProfilePage() {
 
         <Card title="2FA и коды восстановления">
           <Space direction="vertical" className="wide">
-            <Typography.Text>
-              {me?.isTwoFactorEnabled ? "2FA включен." : "2FA пока не настроен."}
-            </Typography.Text>
-            {me?.isTwoFactorRequired ? <Alert type="info" showIcon message="Для этой роли 2FA обязателен и не может быть отключен." /> : null}
+            <Typography.Text>{me?.isTwoFactorEnabled ? "Вход через приложение-аутентификатор уже включен." : "Подключите приложение-аутентификатор и сохраните коды восстановления."}</Typography.Text>
+            {me?.isTwoFactorRequired ? <Alert type="info" showIcon message="Для этой роли двухфакторная защита обязательна, поэтому отключить ее нельзя." /> : null}
             <Space wrap>
               <Button onClick={() => getRecoveryCodesMutation.mutate()} disabled={!me?.isTwoFactorEnabled} loading={getRecoveryCodesMutation.isPending}>
                 Показать коды
@@ -150,14 +164,16 @@ export function ProfilePage() {
                 Отключить 2FA
               </Button>
             </Space>
-            <Form layout="vertical" onFinish={(values) => setup2FaMutation.mutate(values)} requiredMark={false}>
-              <Form.Item name="password" label="Подтвердите текущий пароль для настройки 2FA" rules={[{ required: true }]}>
-                <Input.Password autoComplete="current-password" />
-              </Form.Item>
-              <Button type="primary" icon={<SafetyCertificateOutlined />} htmlType="submit" loading={setup2FaMutation.isPending}>
-                Получить QR и секрет
-              </Button>
-            </Form>
+            {!me?.isTwoFactorEnabled ? (
+              <Form layout="vertical" onFinish={(values) => setup2FaMutation.mutate(values)} requiredMark={false}>
+                <Form.Item name="password" label="Подтвердите текущий пароль" rules={[{ required: true }]}>
+                  <Input.Password autoComplete="current-password" />
+                </Form.Item>
+                <Button type="primary" icon={<SafetyCertificateOutlined />} htmlType="submit" loading={setup2FaMutation.isPending}>
+                  Получить QR-код и секрет
+                </Button>
+              </Form>
+            ) : null}
             {setupState ? (
               <Card size="small" className="profile-setup-card">
                 <Space direction="vertical" className="wide">
@@ -200,8 +216,29 @@ export function ProfilePage() {
           dataSource={sessionsQuery.data?.data ?? []}
           locale={{ emptyText: "Нет активных сессий" }}
           renderItem={(session) => (
-            <List.Item>
-              <Typography.Text>{session.deviceInfo || "Неизвестное устройство"}</Typography.Text>
+            <List.Item
+              actions={[
+                <Button
+                  key="revoke"
+                  danger
+                  type="text"
+                  icon={<DisconnectOutlined />}
+                  loading={revokeSessionMutation.isPending && revokeSessionMutation.variables?.id === session.id}
+                  onClick={() => revokeSessionMutation.mutate(session)}
+                >
+                  {session.isCurrent ? "Выйти" : "Завершить"}
+                </Button>,
+              ]}
+            >
+              <Space direction="vertical" size={2}>
+                <Space size={8} wrap>
+                  <Typography.Text>{session.deviceInfo || "Неизвестное устройство"}</Typography.Text>
+                  {session.isCurrent ? <Tag color="green">Текущая</Tag> : null}
+                </Space>
+                <Typography.Text type="secondary">
+                  Последняя активность: {formatSessionTime(session.lastSeenAtUtc)}
+                </Typography.Text>
+              </Space>
             </List.Item>
           )}
         />
@@ -230,4 +267,11 @@ function toRecoveryFileStem(me?: MeResponse) {
   const source = me?.email?.split("@")[0] || [me?.firstName, me?.lastName].filter(Boolean).join("_");
   const stem = source.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "_");
   return stem || "user";
+}
+
+function formatSessionTime(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(value));
 }

@@ -24,6 +24,11 @@ export interface Verify2FaInput {
   otpSecret: string;
 }
 
+export interface Recover2FaInput {
+  email: string;
+  recoveryCode: string;
+}
+
 export interface RecoveryCodesResponse {
   codes: string[];
   allCodes: RecoveryCodeItem[];
@@ -34,9 +39,17 @@ export interface RecoveryCodeItem {
   wasUsed: boolean;
 }
 
+export interface Recover2FaResponse {
+  accessToken: string;
+  refreshToken: string;
+  secret: string;
+  otpUrl: string;
+  codes: string[];
+  allCodes: RecoveryCodeItem[];
+}
+
 export interface ForgotPasswordResponse {
-  token: string;
-  url: string;
+  message: string;
 }
 
 export interface LoginInput {
@@ -67,6 +80,8 @@ export interface MeResponse {
   firstName: string;
   lastName: string;
   roleDisplayName: string;
+  isAdmin: boolean;
+  isSuperuser: boolean;
   isTwoFactorEnabled: boolean;
   isTwoFactorRequired: boolean;
 }
@@ -79,6 +94,8 @@ export interface ChangePasswordInput {
 export interface SessionDto {
   id: string;
   deviceInfo: string;
+  isCurrent: boolean;
+  lastSeenAtUtc: string;
 }
 
 export interface SessionsResponse {
@@ -107,6 +124,9 @@ export const authApi = {
   verify2Fa(input: Verify2FaInput) {
     return http.post<RecoveryCodesResponse>("/auth/2fa/verify", input).then((response) => response.data);
   },
+  recover2Fa(input: Recover2FaInput) {
+    return http.post<Recover2FaResponse>("/auth/2fa/recover", input).then((response) => response.data);
+  },
   forgotPassword(email: string) {
     return http.post<ForgotPasswordResponse>("/auth/forgotPassword", { email }).then((response) => response.data);
   },
@@ -133,6 +153,9 @@ export const authApi = {
   },
   getSessions() {
     return http.get<SessionsResponse>("/auth/sessions").then((response) => response.data);
+  },
+  revokeSession(id: string) {
+    return http.delete<void>(`/auth/sessions/${id}`).then((response) => response.data);
   },
   logoutAll() {
     return http.post<void>("/auth/logoutAll").then((response) => response.data);

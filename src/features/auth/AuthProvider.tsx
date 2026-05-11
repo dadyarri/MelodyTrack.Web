@@ -1,37 +1,65 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { authApi, MeResponse } from "../../api/auth";
 import { authExpiredEventName, http } from "../../api/http";
-import { authStore, StoredUser } from "./authStore";
+import { authStore } from "./authStore";
 import { AuthContext, AuthContextValue } from "./AuthContext";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<StoredUser | null>(() => authStore.getUser());
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(authStore.getAccessToken()));
+  const queryClient = useQueryClient();
+  const [hasSession, setHasSession] = useState(() => authStore.hasSession());
+
+  const handleSessionExpired = useCallback(() => {
+    setHasSession(false);
+    void queryClient.cancelQueries({ queryKey: ["auth", "me"] });
+    queryClient.removeQueries({ queryKey: ["auth", "me"] });
+  }, [queryClient]);
+
+  const meQuery = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: authApi.getMe,
+    enabled: hasSession,
+    retry: false,
+  });
 
   useEffect(() => {
-    function handleAuthExpired() {
-      setUser(null);
-      setIsAuthenticated(false);
+    window.addEventListener(authExpiredEventName, handleSessionExpired);
+    return () => window.removeEventListener(authExpiredEventName, handleSessionExpired);
+  }, [handleSessionExpired]);
+
+  useEffect(() => {
+    if (!hasSession || !meQuery.isError) {
+      return;
     }
 
-    window.addEventListener(authExpiredEventName, handleAuthExpired);
-    return () => window.removeEventListener(authExpiredEventName, handleAuthExpired);
-  }, []);
+    authStore.clear();
+    window.dispatchEvent(new Event(authExpiredEventName));
+  }, [hasSession, meQuery.isError]);
+
+  const loadMe = useCallback(async (accessToken: string, refreshToken: string) => {
+    authStore.setSession(accessToken, refreshToken);
+    setHasSession(true);
+    await queryClient.fetchQuery<MeResponse>({
+      queryKey: ["auth", "me"],
+      queryFn: authApi.getMe,
+      staleTime: 0,
+    });
+  }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      isAuthenticated,
-      user,
+      isLoading: hasSession && meQuery.isPending,
+      isAuthenticated: meQuery.isSuccess,
+      user: meQuery.data ?? null,
       async login(input) {
         const response = await http.post<{
           accessToken: string;
           refreshToken: string;
-          firstName: string;
-          lastName: string;
         }>("/auth/login", input);
-        const nextUser = { firstName: response.data.firstName, lastName: response.data.lastName };
-        authStore.setSession(response.data.accessToken, response.data.refreshToken, nextUser);
-        setUser(nextUser);
-        setIsAuthenticated(true);
+        await loadMe(response.data.accessToken, response.data.refreshToken);
+      },
+      async establishSession(accessToken, refreshToken) {
+        await loadMe(accessToken, refreshToken);
       },
       async logout() {
         const refreshToken = authStore.getRefreshToken();
@@ -39,11 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await http.post("/auth/logout", { refreshToken }).catch(() => undefined);
         }
         authStore.clear();
-        setUser(null);
-        setIsAuthenticated(false);
+        handleSessionExpired();
       },
     }),
-    [isAuthenticated, user],
+    [handleSessionExpired, hasSession, loadMe, meQuery.data, meQuery.isPending, meQuery.isSuccess],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

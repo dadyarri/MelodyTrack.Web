@@ -1,11 +1,5 @@
 const accessTokenKey = "melodytrack.accessToken";
 const refreshTokenKey = "melodytrack.refreshToken";
-const userKey = "melodytrack.user";
-
-export interface StoredUser {
-  firstName: string;
-  lastName: string;
-}
 
 export const authStore = {
   getAccessToken() {
@@ -14,14 +8,12 @@ export const authStore = {
   getRefreshToken() {
     return localStorage.getItem(refreshTokenKey);
   },
-  getUser(): StoredUser | null {
-    const raw = localStorage.getItem(userKey);
-    return raw ? (JSON.parse(raw) as StoredUser) : null;
+  hasSession() {
+    return Boolean(localStorage.getItem(accessTokenKey) && localStorage.getItem(refreshTokenKey));
   },
-  setSession(accessToken: string, refreshToken: string, user: StoredUser) {
+  setSession(accessToken: string, refreshToken: string) {
     localStorage.setItem(accessTokenKey, accessToken);
     localStorage.setItem(refreshTokenKey, refreshToken);
-    localStorage.setItem(userKey, JSON.stringify(user));
   },
   setTokens(accessToken: string, refreshToken: string) {
     localStorage.setItem(accessTokenKey, accessToken);
@@ -30,6 +22,5 @@ export const authStore = {
   clear() {
     localStorage.removeItem(accessTokenKey);
     localStorage.removeItem(refreshTokenKey);
-    localStorage.removeItem(userKey);
   },
 };

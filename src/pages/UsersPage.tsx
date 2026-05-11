@@ -1,21 +1,22 @@
 import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { App as AntdApp, Button, Form, Input, Modal, Space, Table } from "antd";
+import { Alert, App as AntdApp, Button, Form, Input, Modal, Space, Table } from "antd";
 import { useState } from "react";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { RoleSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
+import { useAuth } from "../features/auth/useAuth";
 
 export function UsersPage() {
+  const auth = useAuth();
   const [isInviteOpen, setInviteOpen] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
   const [form] = Form.useForm();
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
   const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list });
-
   const createInviteMutation = useMutation({
     mutationFn: authApi.createInvite,
     onSuccess: (data) => {
@@ -24,6 +25,10 @@ export function UsersPage() {
     },
     onError: showErrors,
   });
+
+  if (!auth.user?.isAdmin) {
+    return <Alert type="error" showIcon message="Доступ к управлению пользователями есть только у администраторов." />;
+  }
 
   const closeInviteModal = () => {
     setInviteOpen(false);

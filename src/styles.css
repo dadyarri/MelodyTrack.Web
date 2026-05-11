@@ -618,6 +618,11 @@ body {
   margin-bottom: 12px !important;
 }
 
+.auth-secondary-action {
+  padding-inline: 0 !important;
+  align-self: flex-start;
+}
+
 .recovery-codes-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -665,6 +670,21 @@ body {
 
 .ant-card .ant-card-head {
   border-bottom-color: var(--border-soft);
+}
+
+.ant-alert {
+  border: 1px solid var(--border-main);
+}
+
+.ant-alert-info {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card)) !important;
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border-main)) !important;
+}
+
+.ant-alert-info .ant-alert-message,
+.ant-alert-info .ant-alert-description,
+.ant-alert-info .ant-alert-icon {
+  color: var(--text-main) !important;
 }
 
 .ant-menu {

@@ -3,17 +3,19 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Alert, App as AntdApp, Button, Card, Form, Input, QRCode, Segmented, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
-import { authApi, RecoveryCodeItem, RecoveryCodesResponse, RegisterInput } from "../api/auth";
-import { getApiErrorMessages } from "../api/http";
+import { authApi, Recover2FaResponse, RecoveryCodeItem, RecoveryCodesResponse, RegisterInput } from "../api/auth";
+import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { useAuth } from "../features/auth/useAuth";
 
-type AuthMode = "login" | "register";
+type AuthMode = "login" | "register" | "recover2fa";
 type TotpSetup = {
   email: string;
   secret: string;
   otpUrl: string;
 };
+type Recover2FaState = Recover2FaResponse & { email: string };
+type SecondFactorMode = "otp" | "recoveryCode";
 
 export function AuthPage() {
   const auth = useAuth();
@@ -24,29 +26,39 @@ export function AuthPage() {
   const [totpSetup, setTotpSetup] = useState<TotpSetup | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
   const [recoveryCodeUsername, setRecoveryCodeUsername] = useState<string>("user");
+  const [recover2FaState, setRecover2FaState] = useState<Recover2FaState | null>(null);
+  const [loginSecondFactorMode, setLoginSecondFactorMode] = useState<SecondFactorMode>("otp");
+  const [isForgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [loginForm] = Form.useForm<{ email: string; password: string; otp?: string; recoveryCode?: string }>();
   const [registerForm] = Form.useForm<RegisterInput>();
   const [forgotPasswordForm] = Form.useForm<{ email: string }>();
+  const [recover2FaForm] = Form.useForm<{ email: string; recoveryCode: string }>();
   const inviteCode = searchParams.get("inviteCode") ?? "";
+  const registerInviteCode = (Form.useWatch("inviteCode", registerForm) ?? inviteCode).trim();
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
 
   const inviteQuery = useQuery({
-    queryKey: ["invite", inviteCode],
-    queryFn: () => authApi.getInviteInfo(inviteCode),
-    enabled: mode === "register" && Boolean(inviteCode),
+    queryKey: ["invite", registerInviteCode],
+    queryFn: () => authApi.getInviteInfo(registerInviteCode),
+    enabled: mode === "register" && Boolean(registerInviteCode),
+    retry: false,
   });
   const inviteEmail = inviteQuery.data?.email ?? "";
+  const inviteErrorMessage = inviteQuery.error ? getApiErrorMessage(inviteQuery.error) : null;
+  const inviteLookupFinished = !inviteQuery.isPending;
+  const canSubmitRegistration = Boolean(registerInviteCode) && !inviteQuery.isError && !inviteQuery.isPending;
 
   useEffect(() => {
-    if (!inviteCode && !inviteEmail) {
+    if (!registerInviteCode && !inviteEmail) {
       return;
     }
 
     registerForm.setFieldsValue({
-      inviteCode,
+      inviteCode: registerInviteCode,
       ...(inviteEmail ? { email: inviteEmail } : {}),
     });
-  }, [inviteCode, inviteEmail, registerForm]);
+  }, [registerInviteCode, inviteEmail, registerForm]);
 
   const loginMutation = useMutation({
     mutationFn: auth.login,
@@ -104,8 +116,17 @@ export function AuthPage() {
   const forgotPasswordMutation = useMutation({
     mutationFn: ({ email }: { email: string }) => authApi.forgotPassword(email),
     onSuccess: (data) => {
-      message.success("Ссылка на восстановление создана.");
-      void navigate(`/restore?code=${data.token}`);
+      message.success(data.message);
+    },
+    onError: showErrors,
+  });
+
+  const recover2FaMutation = useMutation({
+    mutationFn: ({ email, recoveryCode }: { email: string; recoveryCode: string }) => authApi.recover2Fa({ email, recoveryCode }),
+    onSuccess: (data, values) => {
+      setRecover2FaState({ ...data, email: values.email });
+      setRecoveryCodeUsername(values.email);
+      message.success("Доступ восстановлен. Настройте новое приложение и сохраните новые коды восстановления.");
     },
     onError: showErrors,
   });
@@ -115,7 +136,11 @@ export function AuthPage() {
     message.success("Секрет скопирован.");
   }
 
-  if (auth.isAuthenticated) {
+  if (auth.isLoading && !recover2FaState) {
+    return null;
+  }
+
+  if (auth.isAuthenticated && !recover2FaState) {
     return <Navigate to="/" replace />;
   }
 
@@ -125,9 +150,9 @@ export function AuthPage() {
         <Space direction="vertical" size={18} className="wide">
           <div>
             <Typography.Title level={1}>MelodyTrack</Typography.Title>
-            <Typography.Text type="secondary">Вход в CRM</Typography.Text>
+            <Typography.Text type="secondary">Войдите, чтобы открыть рабочее пространство.</Typography.Text>
           </div>
-          {totpSetup || recoveryCodes ? null : (
+          {totpSetup || recoveryCodes || recover2FaState ? null : (
             <Segmented<AuthMode>
               block
               value={mode}
@@ -135,6 +160,7 @@ export function AuthPage() {
               options={[
                 { label: "Вход", value: "login" },
                 { label: "Регистрация", value: "register" },
+                { label: "Сброс 2FA", value: "recover2fa" },
               ]}
             />
           )}
@@ -144,7 +170,7 @@ export function AuthPage() {
                 type="info"
                 showIcon
                 message="Настройка 2FA"
-                description="Отсканируйте QR-код или введите секрет вручную в Bitwarden/Authy/Google Authenticator, затем подтвердите одноразовый код."
+                description="Отсканируйте QR-код или введите секрет вручную в Bitwarden/Authy/Google Authenticator. Пока вы не подтвердите код и не сохраните коды восстановления, вход для этой учетной записи не будет завершен."
               />
               <div className="totp-qr">
                 <QRCode value={totpSetup.otpUrl} size={200} />
@@ -167,6 +193,42 @@ export function AuthPage() {
                 </Button>
               </Form>
             </Space>
+          ) : recover2FaState ? (
+            <Space direction="vertical" size={16} className="wide">
+              <Alert
+                type="warning"
+                showIcon
+                message="Доступ к 2FA восстановлен"
+                description="Добавьте новый секрет в приложение-аутентификатор и сохраните новые коды восстановления. Старые коды больше не действуют."
+              />
+              <div className="totp-qr">
+                <QRCode value={recover2FaState.otpUrl} size={200} />
+              </div>
+              <Form.Item label="Секрет для ручного ввода" className="compact-form-item">
+                <Input
+                  readOnly
+                  value={recover2FaState.secret}
+                  suffix={
+                    <Button type="text" icon={<CopyOutlined />} onClick={() => void copySecret(recover2FaState.secret)} />
+                  }
+                />
+              </Form.Item>
+              <RecoveryCodesCard
+                items={recover2FaState.allCodes}
+                downloadFileName={`MelodyTrackRecovery_${toRecoveryFileStem(recoveryCodeUsername)}.txt`}
+                description="Эти коды замещают старые. Каждый код одноразовый."
+              />
+              <Button
+                block
+                type="primary"
+                onClick={async () => {
+                  await auth.establishSession(recover2FaState.accessToken, recover2FaState.refreshToken);
+                  void navigate("/", { replace: true });
+                }}
+              >
+                Продолжить
+              </Button>
+            </Space>
           ) : recoveryCodes ? (
             <RecoveryCodesBlock
               codes={recoveryCodes}
@@ -178,38 +240,87 @@ export function AuthPage() {
             />
           ) : mode === "login" ? (
             <Space direction="vertical" size={16} className="wide">
-              <Form layout="vertical" onFinish={(values) => loginMutation.mutate(values)} requiredMark={false}>
+              <Alert
+                type="info"
+                showIcon
+                message="Если для вашей роли включен обязательный 2FA, используйте код из приложения-аутентификатора. Если устройство потеряно, переключитесь на код восстановления или выберите «Сброс 2FA»."
+              />
+              <Form form={loginForm} layout="vertical" onFinish={(values) => loginMutation.mutate(values)} requiredMark={false}>
                 <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
                   <Input prefix={<MailOutlined />} autoComplete="email" />
                 </Form.Item>
                 <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
                   <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
                 </Form.Item>
-                <Form.Item name="otp" label="Код 2FA">
-                  <Input prefix={<SafetyCertificateOutlined />} inputMode="numeric" autoComplete="one-time-code" />
-                </Form.Item>
-                <Form.Item name="recoveryCode" label="Или код восстановления">
-                  <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
-                </Form.Item>
+                <Segmented<SecondFactorMode>
+                  block
+                  value={loginSecondFactorMode}
+                  onChange={(value) => {
+                    setLoginSecondFactorMode(value);
+                    if (value === "otp") {
+                      loginForm.setFieldValue("recoveryCode", undefined);
+                      return;
+                    }
+                    loginForm.setFieldValue("otp", undefined);
+                  }}
+                  options={[
+                    { label: "Код 2FA", value: "otp" },
+                    { label: "Код восстановления", value: "recoveryCode" },
+                  ]}
+                />
+                {loginSecondFactorMode === "otp" ? (
+                  <Form.Item name="otp" label="Код 2FA">
+                    <Input prefix={<SafetyCertificateOutlined />} inputMode="numeric" autoComplete="one-time-code" />
+                  </Form.Item>
+                ) : (
+                  <Form.Item name="recoveryCode" label="Код восстановления">
+                    <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
+                  </Form.Item>
+                )}
                 <Button block type="primary" htmlType="submit" loading={loginMutation.isPending}>
                   Войти
                 </Button>
               </Form>
-              <Card size="small">
-                <Form form={forgotPasswordForm} layout="vertical" onFinish={(values) => forgotPasswordMutation.mutate(values)} requiredMark={false}>
-                  <Typography.Text strong>Забыли пароль?</Typography.Text>
-                  <Typography.Paragraph type="secondary" className="helper-text">
-                    Для этого проекта ссылка создается сразу без email-рассылки.
-                  </Typography.Paragraph>
-                  <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-                    <Input prefix={<MailOutlined />} autoComplete="email" />
-                  </Form.Item>
-                  <Button block htmlType="submit" loading={forgotPasswordMutation.isPending}>
-                    Получить ссылку для восстановления
-                  </Button>
-                </Form>
-              </Card>
+              <Space direction="vertical" size={10} className="wide">
+                <Button type="link" className="auth-secondary-action" onClick={() => setForgotPasswordOpen((current) => !current)}>
+                  {isForgotPasswordOpen ? "Скрыть восстановление пароля" : "Забыли пароль?"}
+                </Button>
+                {isForgotPasswordOpen ? (
+                  <Card size="small">
+                    <Form form={forgotPasswordForm} layout="vertical" onFinish={(values) => forgotPasswordMutation.mutate(values)} requiredMark={false}>
+                      <Typography.Text strong>Восстановление пароля</Typography.Text>
+                      <Typography.Paragraph type="secondary" className="helper-text">
+                        Укажите email, и система подготовит новую ссылку для восстановления.
+                      </Typography.Paragraph>
+                      <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+                        <Input prefix={<MailOutlined />} autoComplete="email" />
+                      </Form.Item>
+                      <Button block htmlType="submit" loading={forgotPasswordMutation.isPending}>
+                        Запросить ссылку
+                      </Button>
+                    </Form>
+                  </Card>
+                ) : null}
+              </Space>
             </Space>
+          ) : mode === "recover2fa" ? (
+            <Card size="small">
+              <Form form={recover2FaForm} layout="vertical" onFinish={(values) => recover2FaMutation.mutate(values)} requiredMark={false}>
+                <Typography.Text strong>Потеряли доступ к приложению-аутентификатору?</Typography.Text>
+                <Typography.Paragraph type="secondary" className="helper-text">
+                  Введите email и один из сохраненных кодов восстановления. После этого вы получите новый секрет и новый набор кодов.
+                </Typography.Paragraph>
+                <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+                  <Input prefix={<MailOutlined />} autoComplete="email" />
+                </Form.Item>
+                <Form.Item name="recoveryCode" label="Код восстановления" rules={[{ required: true }]}>
+                  <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
+                </Form.Item>
+                <Button block type="primary" htmlType="submit" loading={recover2FaMutation.isPending}>
+                  Восстановить доступ
+                </Button>
+              </Form>
+            </Card>
           ) : (
             <Form
               form={registerForm}
@@ -218,8 +329,17 @@ export function AuthPage() {
               onFinish={(values) => registerMutation.mutate(values)}
               requiredMark={false}
             >
-              {!inviteCode ? <Alert type="info" showIcon message="Для регистрации нужен inviteCode из ссылки приглашения." /> : null}
-              <Form.Item name="inviteCode" label="Invite code" rules={[{ required: true }]}>
+              {!inviteCode ? <Alert type="info" showIcon message="Для регистрации нужна ссылка-приглашение от администратора." /> : null}
+              {inviteQuery.isPending ? <Alert type="info" showIcon message="Проверяем ссылку приглашения..." /> : null}
+              {inviteErrorMessage ? <Alert type="error" showIcon message={inviteErrorMessage} /> : null}
+              {canSubmitRegistration && inviteLookupFinished ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Если для вашей роли обязателен 2FA, после регистрации нужно сразу подтвердить код из приложения и сохранить коды восстановления."
+                />
+              ) : null}
+              <Form.Item name="inviteCode" label="Код приглашения" rules={[{ required: true }]}>
                 <Input disabled={Boolean(inviteCode)} />
               </Form.Item>
               <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
@@ -234,7 +354,7 @@ export function AuthPage() {
               <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
                 <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
               </Form.Item>
-              <Button block type="primary" htmlType="submit" loading={registerMutation.isPending}>
+              <Button block type="primary" htmlType="submit" loading={registerMutation.isPending} disabled={!canSubmitRegistration}>
                 Зарегистрироваться
               </Button>
             </Form>

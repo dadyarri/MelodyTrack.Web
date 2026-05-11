@@ -11,7 +11,7 @@ const navItems = [
   { key: "/services", icon: <ToolOutlined />, label: "Услуги" },
   { key: "/payments", icon: <CreditCardOutlined />, label: "Платежи" },
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы" },
-  { key: "/users", icon: <UserOutlined />, label: "Пользователи" },
+  { key: "/users", icon: <UserOutlined />, label: "Пользователи", adminOnly: true },
 ];
 
 export function AppLayout() {
@@ -19,7 +19,8 @@ export function AppLayout() {
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedKey = navItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
+  const availableNavItems = navItems.filter((item) => !item.adminOnly || auth.user?.isAdmin);
+  const selectedKey = availableNavItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
 
   return (
     <Layout className="app-shell">
@@ -28,7 +29,7 @@ export function AppLayout() {
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={navItems}
+          items={availableNavItems}
           onClick={({ key }) => navigate(key)}
         />
       </Layout.Sider>
