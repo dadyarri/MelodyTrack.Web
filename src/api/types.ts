@@ -42,6 +42,41 @@ export interface ClientWithBalance extends Client {
   balance: number;
 }
 
+export interface ClientHistorySummary {
+  totalPayments: number;
+  paymentsCount: number;
+  completedAppointmentsCount: number;
+  upcomingAppointmentsCount: number;
+  lastPaymentAtUtc?: string | null;
+  lastVisitAtUtc?: string | null;
+  nextAppointmentAtUtc?: string | null;
+}
+
+export interface ClientHistoryPayment {
+  id: Ulid;
+  amount: number;
+  date: string;
+  description: string;
+  serviceName?: string | null;
+}
+
+export interface ClientHistoryAppointment {
+  id: Ulid;
+  startDate: string;
+  endDate: string;
+  serviceName: string;
+  providerDisplayName?: string | null;
+  isCompleted: boolean;
+  isCanceled: boolean;
+}
+
+export interface ClientHistory {
+  client: Client;
+  summary: ClientHistorySummary;
+  recentPayments: ClientHistoryPayment[];
+  recentAppointments: ClientHistoryAppointment[];
+}
+
 export interface LookupClient {
   id: Ulid;
   firstName: string;

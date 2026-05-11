@@ -653,8 +653,23 @@ body {
   gap: 20px;
 }
 
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .profile-setup-card {
   background: var(--bg-elevated);
+}
+
+.table-link-button {
+  padding-inline: 0 !important;
+}
+
+.list-justify {
+  display: flex;
+  justify-content: space-between;
 }
 
 .ant-layout {
@@ -908,6 +923,7 @@ body {
 
 @media (max-width: 900px) {
   .profile-grid,
+  .detail-grid,
   .recovery-codes-grid {
     grid-template-columns: 1fr;
   }

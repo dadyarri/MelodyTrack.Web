@@ -1,4 +1,4 @@
-import { Appointment, Client, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, RecurrenceType, Role, Service, Ulid, User } from "./types";
+import { Appointment, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, RecurrenceType, Role, Service, Ulid, User } from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -7,6 +7,9 @@ export const clientsApi = {
   },
   get(id: Ulid) {
     return http.get<Client>(`/clients/${id}`).then((response) => response.data);
+  },
+  history(id: Ulid) {
+    return http.get<ClientHistory>(`/clients/${id}/history`).then((response) => response.data);
   },
   lookup(search?: string) {
     return http

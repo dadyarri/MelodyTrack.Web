@@ -1,13 +1,14 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Form, Input, Modal, Space, Table, Tag, type InputProps, type InputRef } from "antd";
+import { App as AntdApp, Button, Card, Descriptions, Drawer, Empty, Form, Input, List, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
 import { useState } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { clientsApi } from "../api/crm";
-import { Client } from "../api/types";
+import { Client, ClientHistory } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
+import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
 type ClientFormValues = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
@@ -45,6 +46,7 @@ export function ClientsPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
   const [isCreateOpen, setCreateOpen] = useState(false);
+  const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
@@ -52,6 +54,11 @@ export function ClientsPage() {
   const query = useQuery({
     queryKey: ["clients", page, search],
     queryFn: () => clientsApi.list({ page, page_size: 10, search: search.trim() || undefined }),
+  });
+  const historyQuery = useQuery({
+    queryKey: ["clients", "history", historyClient?.id],
+    queryFn: () => clientsApi.history(historyClient!.id),
+    enabled: Boolean(historyClient),
   });
 
   const saveMutation = useMutation({
@@ -125,7 +132,14 @@ export function ClientsPage() {
         }}
         scroll={{ x: "max-content" }}
         columns={[
-          { title: "ФИО", render: (_, row) => formatClientName(row) },
+          {
+            title: "ФИО",
+            render: (_, row) => (
+              <Button type="link" className="table-link-button" onClick={() => setHistoryClient(row)}>
+                {formatClientName(row)}
+              </Button>
+            ),
+          },
           { title: "Баланс", dataIndex: "balance", render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag> },
           { title: "Телефон", render: (_, row) => renderPhoneLink(getContactValue(row, "phone")) },
           { title: "Telegram", render: (_, row) => renderSocialLink(getContactValue(row, "telegram"), "telegram") },
@@ -135,6 +149,7 @@ export function ClientsPage() {
             width: 112,
             render: (_, row) => (
               <Space>
+                <Button icon={<ProfileOutlined />} onClick={() => setHistoryClient(row)} />
                 <Button icon={<EditOutlined />} onClick={() => openEditor(row)} />
                 <Button
                   danger
@@ -201,7 +216,99 @@ export function ClientsPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <Drawer
+        title={historyClient ? `История клиента: ${formatClientName(historyClient)}` : "История клиента"}
+        width={720}
+        open={Boolean(historyClient)}
+        onClose={() => setHistoryClient(null)}
+        destroyOnHidden
+      >
+        {historyQuery.data ? <ClientHistoryContent data={historyQuery.data} /> : null}
+        {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
+      </Drawer>
     </>
+  );
+}
+
+function ClientHistoryContent({ data }: { data: ClientHistory }) {
+  return (
+    <Space direction="vertical" size={16} className="wide">
+      <div className="detail-grid">
+        <Card size="small">
+          <Descriptions size="small" title="Контакты" column={1}>
+            <Descriptions.Item label="Телефон">{renderPhoneLink(getContactValue(data.client, "phone")) || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="Telegram">{renderSocialLink(getContactValue(data.client, "telegram"), "telegram") || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="VK">{renderSocialLink(getContactValue(data.client, "vk"), "vk") || "Не указан"}</Descriptions.Item>
+          </Descriptions>
+        </Card>
+        <Card size="small">
+          <Descriptions size="small" title="Сводка" column={1}>
+            <Descriptions.Item label="Баланс">
+              <Tag color={data.client.balance < 0 ? "red" : "green"}>{formatMoney(data.client.balance)}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Платежей">{data.summary.paymentsCount}</Descriptions.Item>
+            <Descriptions.Item label="Всего оплачено">{formatMoney(data.summary.totalPayments)}</Descriptions.Item>
+            <Descriptions.Item label="Завершенных визитов">{data.summary.completedAppointmentsCount}</Descriptions.Item>
+            <Descriptions.Item label="Будущих записей">{data.summary.upcomingAppointmentsCount}</Descriptions.Item>
+            <Descriptions.Item label="Последний платеж">{formatOptionalDateTime(data.summary.lastPaymentAtUtc)}</Descriptions.Item>
+            <Descriptions.Item label="Последний визит">{formatOptionalDateTime(data.summary.lastVisitAtUtc)}</Descriptions.Item>
+            <Descriptions.Item label="Следующая запись">{formatOptionalDateTime(data.summary.nextAppointmentAtUtc)}</Descriptions.Item>
+          </Descriptions>
+        </Card>
+      </div>
+
+      <Card size="small" title="Последние платежи">
+        {data.recentPayments.length > 0 ? (
+          <List
+            dataSource={data.recentPayments}
+            renderItem={(payment) => (
+              <List.Item>
+                <div className="wide">
+                  <Space className="wide list-justify" wrap>
+                    <Typography.Text strong>{formatMoney(payment.amount)}</Typography.Text>
+                    <Typography.Text type="secondary">{formatDateTime(payment.date)}</Typography.Text>
+                  </Space>
+                  <Typography.Text>{payment.description}</Typography.Text>
+                  {payment.serviceName ? (
+                    <div>
+                      <Typography.Text type="secondary">Услуга: {payment.serviceName}</Typography.Text>
+                    </div>
+                  ) : null}
+                </div>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Платежей пока нет" />
+        )}
+      </Card>
+
+      <Card size="small" title="Последние записи">
+        {data.recentAppointments.length > 0 ? (
+          <List
+            dataSource={data.recentAppointments}
+            renderItem={(appointment) => (
+              <List.Item>
+                <div className="wide">
+                  <Space className="wide list-justify" wrap>
+                    <Typography.Text strong>{appointment.serviceName}</Typography.Text>
+                    <Space wrap size={8}>
+                      {renderAppointmentStatus(appointment)}
+                      <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
+                    </Space>
+                  </Space>
+                  <Typography.Text type="secondary">
+                    {appointment.providerDisplayName ? `Мастер: ${appointment.providerDisplayName}` : "Мастер не назначен"}
+                  </Typography.Text>
+                </div>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Записей пока нет" />
+        )}
+      </Card>
+    </Space>
   );
 }
 
@@ -247,6 +354,22 @@ function renderSocialLink(value: string | null | undefined, type: "telegram" | "
       @{getSocialHandle(normalized)}
     </a>
   );
+}
+
+function renderAppointmentStatus(appointment: ClientHistory["recentAppointments"][number]) {
+  if (appointment.isCanceled) {
+    return <Tag color="default">Отменена</Tag>;
+  }
+
+  if (appointment.isCompleted) {
+    return <Tag color="green">Завершена</Tag>;
+  }
+
+  return <Tag color="blue">Запланирована</Tag>;
+}
+
+function formatOptionalDateTime(value?: string | null) {
+  return value ? formatDateTime(value) : "Нет данных";
 }
 
 function getSocialHandle(value: string) {
