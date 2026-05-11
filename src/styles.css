@@ -660,11 +660,30 @@ body {
 }
 
 .filters-stack {
+  display: flex;
+  flex-direction: column;
+  width: 30%;
+  gap: 5px;
   margin-bottom: 16px;
 }
 
 .filter-field {
   min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-field-wide {
+  min-width: 420px;
+}
+
+.filter-field-service {
+  min-width: 320px;
+}
+
+.filter-field .ant-picker {
+  min-width: 240px;
 }
 
 .summary-grid {

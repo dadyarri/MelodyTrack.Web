@@ -52,67 +52,75 @@ export function ExpensesPage() {
   return (
     <>
       <PageHeader title="Расходы" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>} />
-      <div className="filters-stack">
-        <Space wrap>
-          <Input.Search
-            allowClear
-            placeholder="Поиск по описанию расхода"
-            style={{ width: 320 }}
-            onSearch={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            onChange={(event) => {
-              if (!event.target.value) {
+      <Space direction="vertical" size={16} className="wide">
+        <div className="filters-stack">
+            <div className="filter-field filter-field-wide">
+              <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
+              <Input.Search
+                allowClear
+                placeholder="Введите часть описания или название статьи"
+                onSearch={(value) => {
+                  setSearch(value);
+                  setPage(1);
+                }}
+                onChange={(event) => {
+                  if (!event.target.value) {
+                    setSearch("");
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
+            <div className="filter-field">
+              <Typography.Text type="secondary">Период</Typography.Text>
+              <DatePicker.RangePicker
+                value={dateRange}
+                format={DATE_FORMAT}
+                onChange={(value) => {
+                  setDateRange(value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="filter-field">
+              <Typography.Text type="secondary">Действия</Typography.Text>
+              <Button onClick={() => {
                 setSearch("");
+                setDateRange(null);
                 setPage(1);
-              }
-            }}
-          />
-          <DatePicker.RangePicker
-            value={dateRange}
-            format={DATE_FORMAT}
-            onChange={(value) => {
-              setDateRange(value);
-              setPage(1);
-            }}
-          />
-          <Button onClick={() => {
-            setSearch("");
-            setDateRange(null);
-            setPage(1);
-          }}>
-            Сбросить
-          </Button>
-        </Space>
-      </div>
-      <div className="summary-grid">
-        <Card size="small">
-          <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
-          <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
-        </Card>
-        <Card size="small">
-          <Typography.Text type="secondary">Расходов найдено</Typography.Text>
-          <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
-        </Card>
-        <Card size="small">
-          <Typography.Text type="secondary">Последний расход</Typography.Text>
-          <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastExpenseAtUtc)}</div>
-        </Card>
-      </div>
-      <Table
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data?.data}
-        pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        scroll={{ x: "max-content" }}
-        columns={[
-          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-          { title: "Описание", dataIndex: "description" },
-          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-          { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
-        ]}
-      />
+              }}>
+                Сбросить
+              </Button>
+            </div>
+        </div>
+        <div className="summary-grid">
+          <Card size="small">
+            <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
+            <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Расходов найдено</Typography.Text>
+            <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Последний расход</Typography.Text>
+            <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastExpenseAtUtc)}</div>
+          </Card>
+        </div>
+        <Table
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data?.data}
+          pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+          scroll={{ x: "max-content" }}
+          columns={[
+            { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+            { title: "Описание", dataIndex: "description" },
+            { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+            { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
+          ]}
+        />
+      </Space>
       <Modal open={isOpen} title="Новый расход" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
         <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => createMutation.mutate(values)}>
           <Form.Item name="description" label="Описание" rules={[{ required: true }]}>

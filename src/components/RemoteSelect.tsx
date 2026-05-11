@@ -14,6 +14,7 @@ export function ClientSelect({ value, onChange }: { value?: string; onChange?: (
 
   return (
     <Select
+      className="wide"
       showSearch={{
         filterOption: false,
         onSearch: setSearch,
@@ -36,7 +37,7 @@ export function ServiceSelect({ value, onChange, allowClear = true }: { value?: 
     [query.data],
   );
 
-  return <Select showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select className="wide" showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
 export function UserSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
@@ -46,7 +47,7 @@ export function UserSelect({ value, onChange }: { value?: string; onChange?: (va
     [query.data],
   );
 
-  return <Select allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select className="wide" allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
 export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
@@ -56,5 +57,5 @@ export function RoleSelect({ value, onChange }: { value?: string; onChange?: (va
     [query.data],
   );
 
-  return <Select loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select className="wide" loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }

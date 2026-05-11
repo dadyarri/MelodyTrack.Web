@@ -58,78 +58,88 @@ export function PaymentsPage() {
   return (
     <>
       <PageHeader title="Платежи" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>} />
-      <div className="filters-stack">
-        <Space wrap>
-          <Input.Search
-            allowClear
-            placeholder="Поиск по клиенту, услуге или описанию"
-            style={{ width: 320 }}
-            onSearch={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            onChange={(event) => {
-              if (!event.target.value) {
+      <Space vertical size={16} className="wide">
+        <div className="filters-stack">
+            <div className="filter-field filter-field-wide">
+              <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
+              <Input.Search
+                allowClear
+                placeholder="Введите имя клиента, услугу или текст описания"
+                onSearch={(value) => {
+                  setSearch(value);
+                  setPage(1);
+                }}
+                onChange={(event) => {
+                  if (!event.target.value) {
+                    setSearch("");
+                    setPage(1);
+                  }
+                }}
+              />
+            </div>
+            <div className="filter-field">
+              <Typography.Text type="secondary">Клиент</Typography.Text>
+              <ClientSelect value={clientId} onChange={(value) => { setClientId(value); setPage(1); }} />
+            </div>
+            <div className="filter-field filter-field-service">
+              <Typography.Text type="secondary">Услуга</Typography.Text>
+              <ServiceSelect value={serviceId} onChange={(value) => { setServiceId(value); setPage(1); }} />
+            </div>
+            <div className="filter-field">
+              <Typography.Text type="secondary">Период</Typography.Text>
+              <DatePicker.RangePicker
+                value={dateRange}
+                format={DATE_TIME_FORMAT}
+                showTime={{ format: TIME_FORMAT }}
+                onChange={(value) => {
+                  setDateRange(value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="filter-field">
+              <Typography.Text type="secondary">Действия</Typography.Text>
+              <Button onClick={() => {
                 setSearch("");
+                setClientId(undefined);
+                setServiceId(undefined);
+                setDateRange(null);
                 setPage(1);
-              }
-            }}
-          />
-          <div className="filter-field">
-            <ClientSelect value={clientId} onChange={(value) => { setClientId(value); setPage(1); }} />
-          </div>
-          <div className="filter-field">
-            <ServiceSelect value={serviceId} onChange={(value) => { setServiceId(value); setPage(1); }} />
-          </div>
-          <DatePicker.RangePicker
-            value={dateRange}
-            format={DATE_TIME_FORMAT}
-            showTime={{ format: TIME_FORMAT }}
-            onChange={(value) => {
-              setDateRange(value);
-              setPage(1);
-            }}
-          />
-          <Button onClick={() => {
-            setSearch("");
-            setClientId(undefined);
-            setServiceId(undefined);
-            setDateRange(null);
-            setPage(1);
-          }}>
-            Сбросить
-          </Button>
-        </Space>
-      </div>
-      <div className="summary-grid">
-        <Card size="small">
-          <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
-          <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
-        </Card>
-        <Card size="small">
-          <Typography.Text type="secondary">Платежей найдено</Typography.Text>
-          <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
-        </Card>
-        <Card size="small">
-          <Typography.Text type="secondary">Последний платеж</Typography.Text>
-          <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastPaymentAtUtc)}</div>
-        </Card>
-      </div>
-      <Table
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data?.data}
-        pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        scroll={{ x: "max-content" }}
-        columns={[
-          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-          { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
-          { title: "Услуга", render: (_, row) => row.service?.name },
-          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-          { title: "Описание", dataIndex: "description" },
-          { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate(row.id) })} /> },
-        ]}
-      />
+              }}>
+                Сбросить
+              </Button>
+            </div>
+        </div>
+        <div className="summary-grid">
+          <Card size="small">
+            <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
+            <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Платежей найдено</Typography.Text>
+            <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Последний платеж</Typography.Text>
+            <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastPaymentAtUtc)}</div>
+          </Card>
+        </div>
+        <Table
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data?.data}
+          pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+          scroll={{ x: "max-content" }}
+          columns={[
+            { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+            { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
+            { title: "Услуга", render: (_, row) => row.service?.name },
+            { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+            { title: "Описание", dataIndex: "description" },
+            { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate(row.id) })} /> },
+          ]}
+        />
+      </Space>
       <Modal open={isOpen} title="Новый платеж" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
         <Form form={form} layout="vertical" requiredMark={false} initialValues={{ date: dayjs() }} onFinish={(values) => createMutation.mutate(values)}>
           <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
