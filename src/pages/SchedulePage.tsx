@@ -1,4 +1,4 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
+import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
@@ -43,14 +43,23 @@ type AppointmentFormValues = {
   weeklyDays?: number[];
 };
 
+type AppointmentEditFormValues = {
+  clientId: string;
+  serviceId: string;
+  providerId?: string;
+  startDate: Dayjs;
+};
+
 type AppointmentDeleteScope = "single" | "this-and-following" | "all";
 
 export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
   const [isOpen, setOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [form] = Form.useForm<AppointmentFormValues>();
+  const [editForm] = Form.useForm<AppointmentEditFormValues>();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
@@ -95,6 +104,22 @@ export function SchedulePage() {
       );
     },
     onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: showErrors,
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: AppointmentEditFormValues }) =>
+      scheduleApi.update(id, {
+        clientId: input.clientId,
+        serviceId: input.serviceId,
+        providerId: input.providerId,
+        startDate: input.startDate.toISOString(),
+      }),
+    onSuccess: async () => {
+      message.success("Запись обновлена");
+      setAppointmentToEdit(null);
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: showErrors,
@@ -150,6 +175,10 @@ export function SchedulePage() {
       <AppointmentDetailsModal
         appointment={selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
+        onEdit={(appointment) => {
+          setSelectedAppointment(null);
+          setAppointmentToEdit(appointment);
+        }}
         onComplete={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: true, isCanceled: false } })}
         onCancel={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCanceled: true } })}
         onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false } })}
@@ -180,7 +209,74 @@ export function SchedulePage() {
         recurrenceTypes={recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
       />
+      <AppointmentEditModal
+        appointment={appointmentToEdit}
+        editPending={editMutation.isPending}
+        form={editForm}
+        onCancel={() => setAppointmentToEdit(null)}
+        onSubmit={(values) => {
+          if (!appointmentToEdit) {
+            return;
+          }
+
+          editMutation.mutate({ id: appointmentToEdit.id, input: values });
+        }}
+      />
     </>
+  );
+}
+
+function AppointmentEditModal({
+  appointment,
+  editPending,
+  form,
+  onCancel,
+  onSubmit,
+}: {
+  appointment: Appointment | null;
+  editPending: boolean;
+  form: FormInstance<AppointmentEditFormValues>;
+  onCancel: () => void;
+  onSubmit: (values: AppointmentEditFormValues) => void;
+}) {
+  useEffect(() => {
+    if (!appointment) {
+      form.resetFields();
+      return;
+    }
+
+    form.setFieldsValue({
+      clientId: appointment.client.id,
+      serviceId: appointment.service.id,
+      providerId: appointment.provider?.id,
+      startDate: dayjs(appointment.startDate),
+    });
+  }, [appointment, form]);
+
+  return (
+    <Modal open={appointment !== null} title="Редактировать запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={editPending} destroyOnHidden>
+      {appointment ? (
+        <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+          <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
+            <ClientSelect />
+          </Form.Item>
+          <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
+            <ServiceSelect allowClear={false} />
+          </Form.Item>
+          <Form.Item name="providerId" label="Специалист">
+            <UserSelect />
+          </Form.Item>
+          <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
+            <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
+          </Form.Item>
+          {appointment.recurringRule ? (
+            <Typography.Text type="secondary">
+              Изменяются только клиент, услуга, специалист и время. Повторяющаяся серия останется без изменений.
+            </Typography.Text>
+          ) : null}
+        </Form>
+      ) : null}
+    </Modal>
   );
 }
 
@@ -649,6 +745,7 @@ function RecurringDeleteModal({
 function AppointmentDetailsModal({
   appointment,
   onClose,
+  onEdit,
   onComplete,
   onCancel,
   onRestore,
@@ -656,6 +753,7 @@ function AppointmentDetailsModal({
 }: {
   appointment: Appointment | null;
   onClose: () => void;
+  onEdit: (appointment: Appointment) => void;
   onComplete: (appointment: Appointment) => void;
   onCancel: (appointment: Appointment) => void;
   onRestore: (appointment: Appointment) => void;
@@ -711,6 +809,9 @@ function AppointmentDetailsModal({
           ) : null}
         </div>
         <Space wrap>
+          <Button icon={<EditOutlined />} onClick={() => onEdit(appointment)}>
+            Изменить
+          </Button>
           {isPlanned ? (
             <Button icon={<CheckOutlined />} onClick={() => onComplete(appointment)}>
               Завершить
