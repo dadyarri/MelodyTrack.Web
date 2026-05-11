@@ -1,4 +1,4 @@
-import { Appointment, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, Expense, LookupClient, LookupService, PaginatedParams, PaginatedResponse, Payment, RecurrenceType, Role, Service, Ulid, User } from "./types";
+import { Appointment, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, ExpensesResponse, LookupClient, LookupService, PaginatedParams, PaginatedResponse, PaymentsResponse, RecurrenceType, Role, Service, Ulid, User } from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -56,8 +56,8 @@ export const servicesApi = {
 };
 
 export const paymentsApi = {
-  list(params: PaginatedParams & { firstName?: string; lastName?: string }) {
-    return http.get<PaginatedResponse<Payment>>("/payments", { params }).then((response) => response.data);
+  list(params: PaginatedParams & { firstName?: string; lastName?: string; search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
+    return http.get<PaymentsResponse>("/payments", { params }).then((response) => response.data);
   },
   create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }) {
     return http.post<CreateEntityResponse>("/payments", input).then((response) => response.data);
@@ -68,8 +68,8 @@ export const paymentsApi = {
 };
 
 export const expensesApi = {
-  list(params: PaginatedParams & { start?: string; end?: string }) {
-    return http.get<PaginatedResponse<Expense>>("/expenses", { params }).then((response) => response.data);
+  list(params: PaginatedParams & { start?: string; end?: string; search?: string }) {
+    return http.get<ExpensesResponse>("/expenses", { params }).then((response) => response.data);
   },
   create(input: { description: string; amount: number }) {
     return http.post<CreateEntityResponse>("/expenses", input).then((response) => response.data);

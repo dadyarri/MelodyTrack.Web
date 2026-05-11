@@ -659,6 +659,32 @@ body {
   gap: 16px;
 }
 
+.filters-stack {
+  margin-bottom: 16px;
+}
+
+.filter-field {
+  min-width: 220px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.summary-value {
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.summary-caption {
+  margin-top: 8px;
+  color: var(--text-main);
+  font-weight: 650;
+}
+
 .profile-setup-card {
   background: var(--bg-elevated);
 }
@@ -924,6 +950,7 @@ body {
 @media (max-width: 900px) {
   .profile-grid,
   .detail-grid,
+  .summary-grid,
   .recovery-codes-grid {
     grid-template-columns: 1fr;
   }

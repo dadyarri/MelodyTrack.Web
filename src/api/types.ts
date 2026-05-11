@@ -13,6 +13,15 @@ export interface PaginatedResponse<T> {
   info: PagedInfo;
 }
 
+export interface MoneyListSummary {
+  totalAmount: number;
+  itemsCount: number;
+  firstPaymentAtUtc?: string | null;
+  lastPaymentAtUtc?: string | null;
+  firstExpenseAtUtc?: string | null;
+  lastExpenseAtUtc?: string | null;
+}
+
 export interface PaginatedParams {
   page?: number;
   page_size?: number;
@@ -154,11 +163,29 @@ export interface Payment {
   description: string;
 }
 
+export interface PaymentsResponse extends PaginatedResponse<Payment> {
+  summary: {
+    totalAmount: number;
+    itemsCount: number;
+    firstPaymentAtUtc?: string | null;
+    lastPaymentAtUtc?: string | null;
+  };
+}
+
 export interface Expense {
   id: Ulid;
   description: string;
   amount: number;
   date: string;
+}
+
+export interface ExpensesResponse extends PaginatedResponse<Expense> {
+  summary: {
+    totalAmount: number;
+    itemsCount: number;
+    firstExpenseAtUtc?: string | null;
+    lastExpenseAtUtc?: string | null;
+  };
 }
 
 export interface DashboardStats {
