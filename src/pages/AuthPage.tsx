@@ -23,7 +23,8 @@ export function AuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const [mode, setMode] = useState<AuthMode>(searchParams.has("inviteCode") ? "register" : "login");
+  const hasInviteCode = searchParams.has("inviteCode");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [totpSetup, setTotpSetup] = useState<TotpSetup | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
   const [recoveryCodeUsername, setRecoveryCodeUsername] = useState<string>("user");
@@ -42,7 +43,7 @@ export function AuthPage() {
   const inviteQuery = useQuery({
     queryKey: ["invite", registerInviteCode],
     queryFn: () => authApi.getInviteInfo(registerInviteCode),
-    enabled: mode === "register" && Boolean(registerInviteCode),
+    enabled: hasInviteCode && Boolean(registerInviteCode),
     retry: false,
   });
   const inviteEmail = inviteQuery.data?.email ?? "";
@@ -153,14 +154,13 @@ export function AuthPage() {
             <Typography.Title level={1}>MelodyTrack</Typography.Title>
             <Typography.Text type="secondary">Войдите, чтобы открыть рабочее пространство.</Typography.Text>
           </div>
-          {totpSetup || recoveryCodes || recover2FaState ? null : (
+          {totpSetup || recoveryCodes || recover2FaState || hasInviteCode ? null : (
             <Segmented<AuthMode>
               block
               value={mode}
               onChange={setMode}
               options={[
                 { label: "Вход", value: "login" },
-                { label: "Регистрация", value: "register" },
                 { label: "Сброс 2FA", value: "recover2fa" },
               ]}
             />
@@ -239,6 +239,42 @@ export function AuthPage() {
                 void navigate("/login", { replace: true });
               }}
             />
+          ) : hasInviteCode ? (
+            <Form
+              form={registerForm}
+              layout="vertical"
+              initialValues={{ inviteCode, email: inviteEmail }}
+              onFinish={(values) => registerMutation.mutate(values)}
+              requiredMark={false}
+            >
+              <StatusBanner type="info" message="Регистрация доступна только по ссылке-приглашению." />
+              {inviteQuery.isPending ? <StatusBanner type="info" message="Проверяем ссылку приглашения..." /> : null}
+              {inviteErrorMessage ? <StatusBanner type="error" message={inviteErrorMessage} /> : null}
+              {canSubmitRegistration && inviteLookupFinished ? (
+                <StatusBanner
+                  type="warning"
+                  message="Если для вашей роли обязателен 2FA, после регистрации нужно сразу подтвердить код из приложения и сохранить коды восстановления."
+                />
+              ) : null}
+              <Form.Item name="inviteCode" label="Код приглашения" rules={[{ required: true }]}>
+                <Input disabled />
+              </Form.Item>
+              <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+                <Input prefix={<MailOutlined />} disabled={Boolean(inviteEmail)} />
+              </Form.Item>
+              <Form.Item name="firstName" label="Имя" rules={[{ required: true }]}>
+                <Input prefix={<UserOutlined />} />
+              </Form.Item>
+              <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
+                <Input prefix={<UserOutlined />} />
+              </Form.Item>
+              <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
+                <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
+              </Form.Item>
+              <Button block type="primary" htmlType="submit" loading={registerMutation.isPending} disabled={!canSubmitRegistration}>
+                Зарегистрироваться
+              </Button>
+            </Form>
           ) : mode === "login" ? (
             <Space direction="vertical" size={16} className="wide">
               <Alert
@@ -323,41 +359,9 @@ export function AuthPage() {
               </Form>
             </Card>
           ) : (
-            <Form
-              form={registerForm}
-              layout="vertical"
-              initialValues={{ inviteCode, email: inviteEmail }}
-              onFinish={(values) => registerMutation.mutate(values)}
-              requiredMark={false}
-            >
-              {!inviteCode ? <StatusBanner type="info" message="Для регистрации нужна ссылка-приглашение от администратора." /> : null}
-              {inviteQuery.isPending ? <StatusBanner type="info" message="Проверяем ссылку приглашения..." /> : null}
-              {inviteErrorMessage ? <StatusBanner type="error" message={inviteErrorMessage} /> : null}
-              {canSubmitRegistration && inviteLookupFinished ? (
-                <StatusBanner
-                  type="warning"
-                  message="Если для вашей роли обязателен 2FA, после регистрации нужно сразу подтвердить код из приложения и сохранить коды восстановления."
-                />
-              ) : null}
-              <Form.Item name="inviteCode" label="Код приглашения" rules={[{ required: true }]}>
-                <Input disabled={Boolean(inviteCode)} />
-              </Form.Item>
-              <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-                <Input prefix={<MailOutlined />} disabled={Boolean(inviteEmail)} />
-              </Form.Item>
-              <Form.Item name="firstName" label="Имя" rules={[{ required: true }]}>
-                <Input prefix={<UserOutlined />} />
-              </Form.Item>
-              <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
-                <Input prefix={<UserOutlined />} />
-              </Form.Item>
-              <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
-                <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
-              </Form.Item>
-              <Button block type="primary" htmlType="submit" loading={registerMutation.isPending} disabled={!canSubmitRegistration}>
-                Зарегистрироваться
-              </Button>
-            </Form>
+            <Card size="small">
+              <Typography.Text type="secondary">Неверное состояние экрана входа.</Typography.Text>
+            </Card>
           )}
         </Space>
       </Card>

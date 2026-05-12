@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       isLoading: hasSession && meQuery.isPending,
-      isAuthenticated: meQuery.isSuccess,
+      isAuthenticated: hasSession && meQuery.isSuccess,
       user: meQuery.data ?? null,
       async login(input) {
         const response = await http.post<{
