@@ -40,14 +40,14 @@ export function ServiceSelect({ value, onChange, allowClear = true }: { value?: 
   return <Select className="wide" showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
-export function UserSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+export function UserSelect({ value, onChange, disabled = false }: { value?: string; onChange?: (value: string) => void; disabled?: boolean }) {
   const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list });
   const options = useMemo<DefaultOptionType[]>(
     () => query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ?? [],
     [query.data],
   );
 
-  return <Select className="wide" allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select className="wide" allowClear disabled={disabled} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
 export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {

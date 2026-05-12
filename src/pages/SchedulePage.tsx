@@ -67,6 +67,8 @@ export function SchedulePage() {
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
+  const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
+  const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;
 
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
@@ -90,7 +92,7 @@ export function SchedulePage() {
     //   return false;
     // }
 
-    if (providerFilterId && appointment.provider?.id !== providerFilterId) {
+    if (effectiveProviderFilterId && appointment.provider?.id !== effectiveProviderFilterId) {
       return false;
     }
 
@@ -205,16 +207,17 @@ export function SchedulePage() {
           <div className="schedule-quick-filters">
             <Typography.Text type="secondary">Специалист</Typography.Text>
             <Space.Compact className="schedule-quick-filters-controls">
-              <UserSelect value={providerFilterId} onChange={setProviderFilterId} />
+              <UserSelect value={effectiveProviderFilterId} onChange={setProviderFilterId} disabled={isSpecialistFilterLocked} />
               <Button
-                type={providerFilterId === auth.user?.id ? "primary" : "default"}
+                type={effectiveProviderFilterId === auth.user?.id ? "primary" : "default"}
                 disabled={!auth.user?.id}
+                hidden={isSpecialistFilterLocked}
                 onClick={() => setProviderFilterId((current) => current === auth.user?.id ? undefined : auth.user?.id)}
               >
                 Моё
               </Button>
               <Button
-                disabled={!providerFilterId}
+                disabled={isSpecialistFilterLocked || !effectiveProviderFilterId}
                 onClick={() => {
                   setProviderFilterId(undefined);
                 }}
