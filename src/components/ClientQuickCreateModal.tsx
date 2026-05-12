@@ -5,6 +5,7 @@ import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { createReplayKey } from "../utils/drafts";
+import { createOfflineTempId, enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 
 type ClientQuickCreateValues = {
   firstName: string;
@@ -18,7 +19,7 @@ type ClientQuickCreateValues = {
 type ClientQuickCreateModalProps = {
   open: boolean;
   onCancel: () => void;
-  onCreated: (client: { id: string; displayName: string }) => void;
+  onCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => void;
 };
 
 const russianPhoneMask = {
@@ -63,15 +64,37 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         vk: normalizeSocialLink(values.vk, "vk"),
       };
 
-      return clientsApi.create(input, { replayKey: replayKeyRef.current });
+      try {
+        return {
+          created: await clientsApi.create(input, { replayKey: replayKeyRef.current }),
+          offline: false as const,
+        };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        const tempId = createOfflineTempId("client");
+        enqueueOfflineCreate({
+          kind: "clients:create",
+          replayKey: replayKeyRef.current,
+          tempId,
+          payload: input,
+        });
+        return {
+          created: { id: tempId },
+          offline: true as const,
+        };
+      }
     },
-    onSuccess: (created, values) => {
-      message.success("Клиент создан");
+    onSuccess: (result, values) => {
+      message.success(result.offline ? "Клиент сохранен локально" : "Клиент создан");
       form.resetFields();
       replayKeyRef.current = createReplayKey();
       onCreated({
-        id: created.id,
+        id: result.created.id,
         displayName: formatClientName(values),
+        isOffline: result.offline,
       });
     },
     onError: showErrors,

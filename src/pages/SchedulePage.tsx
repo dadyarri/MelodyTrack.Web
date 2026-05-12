@@ -15,6 +15,7 @@ import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
 import { useAuth } from "../features/auth/useAuth";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDate, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
@@ -77,6 +78,9 @@ export function SchedulePage() {
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
   const draftReplayKeyRef = useRef(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
   const isDraftHydratingRef = useRef(false);
+  const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
+  const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
+  const [createProviderLabel, setCreateProviderLabel] = useState<string | undefined>();
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
@@ -179,14 +183,54 @@ export function SchedulePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: AppointmentFormValues) =>
-      scheduleApi.create(buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? []), { replayKey: draftReplayKeyRef.current }),
-    onSuccess: async () => {
-      message.success("Запись создана");
+    mutationFn: async (values: AppointmentFormValues) => {
+      const input = buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? []);
+      try {
+        return { input, offline: false as const, response: await scheduleApi.create(input, { replayKey: draftReplayKeyRef.current }) };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        enqueueOfflineCreate({
+          kind: "appointments:create",
+          replayKey: draftReplayKeyRef.current,
+          payload: {
+            ...input,
+            clientLabel: createClientLabel,
+            serviceLabel: createServiceLabel,
+            providerLabel: createProviderLabel,
+          },
+        });
+        return { input, offline: true as const, response: null };
+      }
+    },
+    onSuccess: async (result) => {
+      message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
+      if (result.offline) {
+        queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => {
+          if (!current) {
+            return current;
+          }
+
+          const optimisticAppointment = buildOptimisticOfflineAppointment(
+            result.input,
+            draftReplayKeyRef.current,
+            recurrenceTypesQuery.data?.find((item) => item.id === result.input.recurrenceTypeId)?.key,
+            createClientLabel,
+            createServiceLabel,
+            createProviderLabel,
+          );
+
+          return [...current, optimisticAppointment];
+        });
+      }
       closeCreateModal();
       clearDraft(APPOINTMENT_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      if (!result.offline) {
+        await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      }
     },
     onError: showErrors,
   });
@@ -411,6 +455,9 @@ export function SchedulePage() {
         onCancel={closeCreateModal}
         onDraftChange={handleCreateDraftChange}
         onSubmit={(values) => createMutation.mutate(values)}
+        onClientLabelChange={setCreateClientLabel}
+        onServiceLabelChange={setCreateServiceLabel}
+        onProviderLabelChange={setCreateProviderLabel}
         open={isCreateModalOpen}
         recurrenceTypes={recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
@@ -435,8 +482,9 @@ export function SchedulePage() {
         open={isQuickClientCreateOpen}
         onCancel={() => setQuickClientCreateOpen(false)}
         onCreated={(client) => {
-          const option = { value: client.id, label: client.displayName };
+          const option = { value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName };
           setCreatedClientOptions((current) => [option, ...current]);
+          setCreateClientLabel(client.displayName);
 
           if (isCreateModalOpen) {
             form.setFieldValue("clientId", client.id);
@@ -527,6 +575,9 @@ function AppointmentCreateModal({
   onCreateClient,
   onCancel,
   onDraftChange,
+  onClientLabelChange,
+  onServiceLabelChange,
+  onProviderLabelChange,
   onSubmit,
   open,
   recurrenceTypes,
@@ -540,6 +591,9 @@ function AppointmentCreateModal({
   onCreateClient: () => void;
   onCancel: () => void;
   onDraftChange: (values: AppointmentFormValues) => void;
+  onClientLabelChange: (label?: string) => void;
+  onServiceLabelChange: (label?: string) => void;
+  onProviderLabelChange: (label?: string) => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
   recurrenceTypes: RecurrenceType[];
@@ -591,16 +645,16 @@ function AppointmentCreateModal({
         <Form.Item label="Клиент">
           <Space direction="vertical" size={8} className="wide">
             <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
-              <ClientSelect extraOptions={createdClientOptions} />
+              <ClientSelect extraOptions={createdClientOptions} onResolvedLabelChange={onClientLabelChange} />
             </Form.Item>
             <Button onClick={onCreateClient}>Новый клиент</Button>
           </Space>
         </Form.Item>
         <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
-          <ServiceSelect allowClear={false} />
+          <ServiceSelect allowClear={false} onResolvedLabelChange={onServiceLabelChange} />
         </Form.Item>
         <Form.Item name="providerId" label="Специалист">
-          <UserSelect disabled={Boolean(lockedProviderId)} />
+          <UserSelect disabled={Boolean(lockedProviderId)} onResolvedLabelChange={onProviderLabelChange} />
         </Form.Item>
           <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
             <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
@@ -834,6 +888,57 @@ function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDr
     recurrenceTypeId: values.recurrenceTypeId,
     patternEndDate: values.patternEndDate?.toISOString(),
     weeklyDays: values.weeklyDays,
+  };
+}
+
+function buildOptimisticOfflineAppointment(
+  input: ReturnType<typeof buildCreateAppointmentPayload>,
+  replayKey: string,
+  recurrenceKey: RecurrenceType["key"] | undefined,
+  clientLabel?: string,
+  serviceLabel?: string,
+  providerLabel?: string,
+): Appointment {
+  const clientNameParts = (clientLabel ?? input.clientId).split(" ");
+  const serviceName = serviceLabel ?? input.serviceId;
+  const providerNameParts = (providerLabel ?? "").split(" ").filter(Boolean);
+  const startDate = dayjs(input.startDate);
+  const endDate = startDate.add(1, "hour");
+
+  return {
+    id: `offline:${replayKey}`,
+    client: {
+      id: input.clientId,
+      firstName: clientNameParts[1] ?? clientNameParts[0] ?? "Клиент",
+      lastName: clientNameParts[0] ?? "Клиент",
+      patronymic: clientNameParts.slice(2).join(" ") || undefined,
+    },
+    service: {
+      id: input.serviceId,
+      name: serviceName,
+    },
+    provider: providerNameParts.length
+      ? {
+          id: input.providerId ?? "offline-provider",
+          firstName: providerNameParts[1] ?? providerNameParts[0] ?? "Специалист",
+          lastName: providerNameParts[0] ?? "Специалист",
+          roleDisplayName: "",
+        }
+      : undefined,
+    startDate: input.startDate,
+    endDate: endDate.toISOString(),
+    isCompleted: false,
+    isCanceled: false,
+    recurringRule: input.recurrenceTypeId
+      ? {
+          id: `offline-rule:${replayKey}`,
+          startDate: input.startDate,
+          endDate: input.patternEndDate ?? null,
+          key: recurrenceKey ?? "daily",
+          recurrencePattern: input.recurrencePattern ?? null,
+        }
+      : null,
+    lastActivity: null,
   };
 }
 

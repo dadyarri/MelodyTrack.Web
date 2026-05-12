@@ -10,6 +10,7 @@ import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { formatMoney } from "../utils/money";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
@@ -28,15 +29,31 @@ export function ServicesPage() {
   const query = useQuery({ queryKey: ["services", page], queryFn: () => servicesApi.list({ page, page_size: 10 }) });
 
   const createMutation = useMutation({
-    mutationFn: (values: ServiceCreateInput) =>
-      servicesApi.create(values, { replayKey: draftReplayKeyRef.current }),
-    onSuccess: async () => {
-      message.success("Услуга создана");
+    mutationFn: async (values: ServiceCreateInput) => {
+      try {
+        return { offline: false as const, response: await servicesApi.create(values, { replayKey: draftReplayKeyRef.current }) };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        enqueueOfflineCreate({
+          kind: "services:create",
+          replayKey: draftReplayKeyRef.current,
+          payload: values,
+        });
+        return { offline: true as const, response: null };
+      }
+    },
+    onSuccess: async (result) => {
+      message.success(result.offline ? "Услуга сохранена локально" : "Услуга создана");
       setCreateOpen(false);
       clearDraft(SERVICE_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
       pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
-      await queryClient.invalidateQueries({ queryKey: ["services"] });
+      if (!result.offline) {
+        await queryClient.invalidateQueries({ queryKey: ["services"] });
+      }
     },
     onError: showErrors,
   });

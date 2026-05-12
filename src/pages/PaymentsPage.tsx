@@ -17,6 +17,7 @@ import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
@@ -37,6 +38,8 @@ export function PaymentsPage() {
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
+  const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
+  const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
   const draftReplayKeyRef = useRef(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
   const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
@@ -62,14 +65,31 @@ export function PaymentsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description?: string }) =>
-      paymentsApi.create({ ...values, date: values.date.toISOString() }, { replayKey: draftReplayKeyRef.current }),
-    onSuccess: async () => {
-      message.success("Платеж создан");
+    mutationFn: async (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description?: string }) => {
+      const input = { ...values, date: values.date.toISOString() };
+      try {
+        return { offline: false as const, response: await paymentsApi.create(input, { replayKey: draftReplayKeyRef.current }) };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        enqueueOfflineCreate({
+          kind: "payments:create",
+          replayKey: draftReplayKeyRef.current,
+          payload: { ...input, clientLabel: createClientLabel, serviceLabel: createServiceLabel },
+        });
+        return { offline: true as const, response: null };
+      }
+    },
+    onSuccess: async (result) => {
+      message.success(result.offline ? "Платеж сохранен локально" : "Платеж создан");
       closeCreateModal();
       clearDraft(PAYMENT_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
-      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      if (!result.offline) {
+        await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      }
     },
     onError: showErrors,
   });
@@ -288,13 +308,13 @@ export function PaymentsPage() {
           <Form.Item label="Клиент">
             <Space direction="vertical" size={8} className="wide">
               <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
-                <ClientSelect extraOptions={createdClientOptions} />
+            <ClientSelect extraOptions={createdClientOptions} onResolvedLabelChange={setCreateClientLabel} />
               </Form.Item>
               <Button onClick={() => setQuickClientCreateOpen(true)}>Новый клиент</Button>
             </Space>
           </Form.Item>
           <Form.Item name="serviceId" label="Услуга">
-            <ServiceSelect />
+            <ServiceSelect onResolvedLabelChange={setCreateServiceLabel} />
           </Form.Item>
           <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
@@ -311,7 +331,8 @@ export function PaymentsPage() {
         open={isQuickClientCreateOpen}
         onCancel={() => setQuickClientCreateOpen(false)}
         onCreated={(client) => {
-          setCreatedClientOptions((current) => [{ value: client.id, label: client.displayName }, ...current]);
+          setCreatedClientOptions((current) => [{ value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName }, ...current]);
+          setCreateClientLabel(client.displayName);
           form.setFieldValue("clientId", client.id);
           setQuickClientCreateOpen(false);
         }}

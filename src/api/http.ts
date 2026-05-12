@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig, type AxiosResponse } from "axios";
 import { authStore } from "../features/auth/authStore";
 
 
@@ -15,6 +15,7 @@ export const http = axios.create({
 });
 
 let refreshRequest: Promise<string | null> | null = null;
+const cacheStorageKeyPrefix = "melodytrack:http-cache:";
 
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = authStore.getAccessToken();
@@ -22,11 +23,27 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    const method = (config.method ?? "get").toLowerCase();
+    if (method === "get") {
+      const cachedResponse = tryGetCachedResponse(config);
+      if (cachedResponse) {
+        config.adapter = async () => cachedResponse;
+        return config;
+      }
+    } else {
+      return Promise.reject(new AxiosError("Сеть недоступна", AxiosError.ERR_NETWORK, config));
+    }
+  }
+
   return config;
 });
 
 http.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    cacheSuccessfulGet(response);
+    return response;
+  },
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     const publicAuthUrls = [
@@ -42,6 +59,11 @@ http.interceptors.response.use(
     const isPublicAuthRequest = Boolean(original?.url && publicAuthUrls.some((url) => original.url?.includes(url)));
 
     if (error.response?.status !== 401 || !original || original._retry || isPublicAuthRequest || original.url?.includes("/auth/refresh")) {
+      const cachedResponse = tryGetCachedResponse(original);
+      if (cachedResponse) {
+        return Promise.resolve(cachedResponse);
+      }
+
       return Promise.reject(error);
     }
 
@@ -61,6 +83,80 @@ http.interceptors.response.use(
     return http(original);
   },
 );
+
+function cacheSuccessfulGet(response: AxiosResponse) {
+  if ((response.config.method ?? "get").toLowerCase() !== "get" || response.config.responseType === "blob" || response.config.responseType === "arraybuffer") {
+    return;
+  }
+
+  try {
+    const cacheKey = buildCacheKey(response.config);
+    window.localStorage.setItem(cacheKey, JSON.stringify({ data: response.data, status: response.status, statusText: response.statusText, headers: response.headers }));
+  } catch {
+    // Ignore cache failures.
+  }
+}
+
+function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
+  if (!config || (config.method ?? "get").toLowerCase() !== "get" || config.responseType === "blob" || config.responseType === "arraybuffer") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(buildCacheKey(config));
+    if (!raw) {
+      return null;
+    }
+
+    const cached = JSON.parse(raw) as { data: unknown; status: number; statusText: string; headers: Record<string, string> };
+    return {
+      data: cached.data,
+      status: cached.status,
+      statusText: cached.statusText,
+      headers: cached.headers,
+      config,
+      request: undefined,
+    } satisfies AxiosResponse;
+  } catch {
+    return null;
+  }
+}
+
+function buildCacheKey(config: InternalAxiosRequestConfig) {
+  const url = new URL(config.url ?? "", baseURL);
+  const params = new URLSearchParams();
+  const entries = Object.entries(config.params ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  for (const [key, value] of entries) {
+    if (value === undefined || value === null || value === "") {
+      continue;
+    }
+
+    params.append(key, String(value));
+  }
+
+  const query = params.toString();
+  return `${cacheStorageKeyPrefix}${(config.method ?? "get").toLowerCase()}:${url.pathname}${query ? `?${query}` : ""}`;
+}
+
+export async function probeBackendReachable() {
+  const accessToken = authStore.getAccessToken();
+  if (!accessToken) {
+    return false;
+  }
+
+  try {
+    await axios.get(`${baseURL}/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      timeout: 3000,
+      validateStatus: () => true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function refreshAccessToken() {
   const refreshToken = authStore.getRefreshToken();

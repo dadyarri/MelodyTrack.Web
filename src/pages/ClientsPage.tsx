@@ -15,6 +15,7 @@ import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { formatMoney } from "../utils/money";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
@@ -74,18 +75,41 @@ export function ClientsPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (values: ClientFormValues) => {
+    mutationFn: async (values: ClientFormValues) => {
       const input = prepareClientInput(values);
-      return editing ? clientsApi.update(editing.id, input) : clientsApi.create(input, { replayKey: draftReplayKeyRef.current });
+      if (editing) {
+        return { offline: false as const, response: await clientsApi.update(editing.id, input) };
+      }
+
+      try {
+        return {
+          offline: false as const,
+          response: await clientsApi.create(input, { replayKey: draftReplayKeyRef.current }),
+        };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        enqueueOfflineCreate({
+          kind: "clients:create",
+          replayKey: draftReplayKeyRef.current,
+          tempId: `offline:client:${draftReplayKeyRef.current}`,
+          payload: input,
+        });
+        return { offline: true as const, response: null };
+      }
     },
-    onSuccess: async () => {
-      message.success("Клиент сохранен");
+    onSuccess: async (result) => {
+      message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
       setCreateOpen(false);
       setEditing(null);
       clearDraft(CLIENT_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
       pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      if (!result.offline) {
+        await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      }
     },
     onError: showErrors,
   });

@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router";
 import { App as AntdApp, ConfigProvider } from "antd";
 import ruRu from "antd/locale/ru_RU";
 import { ApiErrorNotifier } from "../components/ApiErrorNotifier";
+import { OfflineQueueSync } from "../components/OfflineQueueSync";
 import { AuthProvider } from "../features/auth/AuthProvider";
 import { router } from "./router";
 
@@ -23,6 +24,7 @@ export function App() {
       <ConfigProvider locale={ruRu}>
         <AntdApp>
           <ApiErrorNotifier />
+          <OfflineQueueSync />
           <AuthProvider>
             <RouterProvider router={router} />
           </AuthProvider>

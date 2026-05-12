@@ -12,6 +12,7 @@ import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
@@ -41,14 +42,32 @@ export function ExpensesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: ExpenseDraftValues) => expensesApi.create(values as { description: string; amount: number }, { replayKey: draftReplayKeyRef.current }),
-    onSuccess: async () => {
-      message.success("Расход создан");
+    mutationFn: async (values: ExpenseDraftValues) => {
+      const input = values as { description: string; amount: number };
+      try {
+        return { offline: false as const, response: await expensesApi.create(input, { replayKey: draftReplayKeyRef.current }) };
+      } catch (error) {
+        if (!shouldQueueOfflineError(error)) {
+          throw error;
+        }
+
+        enqueueOfflineCreate({
+          kind: "expenses:create",
+          replayKey: draftReplayKeyRef.current,
+          payload: input,
+        });
+        return { offline: true as const, response: null };
+      }
+    },
+    onSuccess: async (result) => {
+      message.success(result.offline ? "Расход сохранен локально" : "Расход создан");
       setOpen(false);
       clearDraft(EXPENSE_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
       pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      if (!result.offline) {
+        await queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      }
     },
     onError: showErrors,
   });

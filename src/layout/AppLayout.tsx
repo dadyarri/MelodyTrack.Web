@@ -2,6 +2,7 @@ import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileSearchOutl
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
+import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
 import { ShortcutButton } from "../components/ShortcutButton";
@@ -112,6 +113,7 @@ export function AppLayout() {
             onClick={() => setMobileNavOpen(true)}
           />
           <div className="app-header-spacer" />
+          <OfflineQueueIndicator />
           <Popover
             trigger={["hover", "click"]}
             placement="bottomRight"

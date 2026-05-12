@@ -1,3 +1,4 @@
+import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { authApi, MeResponse } from "../../api/auth";
@@ -5,12 +6,20 @@ import { authExpiredEventName, http } from "../../api/http";
 import { authStore } from "./authStore";
 import { AuthContext, AuthContextValue } from "./AuthContext";
 
+const cachedMeStorageKey = "melodytrack:auth:me";
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [hasSession, setHasSession] = useState(() => authStore.hasSession());
+  const [cachedUser, setCachedUser] = useState<MeResponse | null>(() => loadCachedUser());
 
   const handleSessionExpired = useCallback(() => {
+    authStore.clear();
     setHasSession(false);
+    setCachedUser(null);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(cachedMeStorageKey);
+    }
     void queryClient.cancelQueries({ queryKey: ["auth", "me"] });
     queryClient.removeQueries({ queryKey: ["auth", "me"] });
   }, [queryClient]);
@@ -32,25 +41,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    authStore.clear();
-    window.dispatchEvent(new Event(authExpiredEventName));
-  }, [hasSession, meQuery.isError]);
+    if (axios.isAxiosError(meQuery.error) && meQuery.error.response?.status === 401) {
+      const timeoutId = window.setTimeout(() => handleSessionExpired(), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
+  }, [hasSession, handleSessionExpired, meQuery.error, meQuery.isError]);
 
   const loadMe = useCallback(async (accessToken: string, refreshToken: string) => {
     authStore.setSession(accessToken, refreshToken);
     setHasSession(true);
-    await queryClient.fetchQuery<MeResponse>({
+    const me = await queryClient.fetchQuery<MeResponse>({
       queryKey: ["auth", "me"],
       queryFn: authApi.getMe,
       staleTime: 0,
     });
+    setCachedUser(me);
+    saveCachedUser(me);
   }, [queryClient]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       isLoading: hasSession && meQuery.isPending,
-      isAuthenticated: hasSession && meQuery.isSuccess,
-      user: meQuery.data ?? null,
+      isAuthenticated: hasSession && Boolean(meQuery.data ?? cachedUser),
+      user: meQuery.data ?? cachedUser,
       async login(input) {
         const response = await http.post<{
           accessToken: string;
@@ -70,8 +83,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         handleSessionExpired();
       },
     }),
-    [handleSessionExpired, hasSession, loadMe, meQuery.data, meQuery.isPending, meQuery.isSuccess],
+    [cachedUser, handleSessionExpired, hasSession, loadMe, meQuery.data, meQuery.isPending],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function loadCachedUser() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(cachedMeStorageKey);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw) as MeResponse;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedUser(user: MeResponse) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(cachedMeStorageKey, JSON.stringify(user));
 }
