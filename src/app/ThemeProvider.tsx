@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { ConfigProvider, theme as antdTheme, ThemeConfig } from "antd";
 import ruRU from "antd/locale/ru_RU";
 import { ThemeContext, ThemeContextValue, ThemeMode } from "./ThemeContext";
@@ -96,6 +96,21 @@ function getInitialMode(): ThemeMode {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<ThemeMode>(getInitialMode);
 
+  const changeMode = useCallback((nextMode: ThemeMode) => {
+    const transitionDocument = document as Document & {
+      startViewTransition?: (updateCallback: () => void) => ViewTransition;
+    };
+
+    if (!transitionDocument.startViewTransition) {
+      setMode(nextMode);
+      return;
+    }
+
+    transitionDocument.startViewTransition(() => {
+      setMode(nextMode);
+    });
+  }, []);
+
   useEffect(() => {
     document.documentElement.dataset.theme = mode;
     localStorage.setItem(storageKey, mode);
@@ -104,9 +119,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo<ThemeContextValue>(
     () => ({
       mode,
-      toggleMode: () => setMode((current) => (current === "light" ? "dark" : "light")),
+      toggleMode: () => {
+        const nextMode = mode === "light" ? "dark" : "light";
+        changeMode(nextMode);
+      },
     }),
-    [mode],
+    [changeMode, mode],
   );
 
   return (
