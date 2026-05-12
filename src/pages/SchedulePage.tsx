@@ -188,7 +188,7 @@ export function SchedulePage() {
     form.setFieldsValue({
       clientId: undefined,
       serviceId: undefined,
-      providerId: undefined,
+      providerId: isSpecialistFilterLocked ? auth.user?.id : undefined,
       startDate: startDate.second(0).millisecond(0),
       recurrenceTypeId: undefined,
       patternEndDate: undefined,
@@ -325,6 +325,7 @@ export function SchedulePage() {
         createPending={createMutation.isPending}
         form={form}
         initialClientId={createPrefillClientId}
+        lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
         onCancel={closeCreateModal}
         onSubmit={(values) => createMutation.mutate(values)}
         open={isCreateModalOpen}
@@ -335,6 +336,7 @@ export function SchedulePage() {
         appointment={appointmentToEdit}
         editPending={editMutation.isPending}
         form={editForm}
+        lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
         onCancel={() => setAppointmentToEdit(null)}
         onSubmit={(values) => {
           if (!appointmentToEdit) {
@@ -352,12 +354,14 @@ function AppointmentEditModal({
   appointment,
   editPending,
   form,
+  lockedProviderId,
   onCancel,
   onSubmit,
 }: {
   appointment: Appointment | null;
   editPending: boolean;
   form: FormInstance<AppointmentEditFormValues>;
+  lockedProviderId?: string;
   onCancel: () => void;
   onSubmit: (values: AppointmentEditFormValues) => void;
 }) {
@@ -370,10 +374,10 @@ function AppointmentEditModal({
     form.setFieldsValue({
       clientId: appointment.client.id,
       serviceId: appointment.service.id,
-      providerId: appointment.provider?.id,
+      providerId: lockedProviderId ?? appointment.provider?.id,
       startDate: dayjs(appointment.startDate),
     });
-  }, [appointment, form]);
+  }, [appointment, form, lockedProviderId]);
 
   return (
     <Modal open={appointment !== null} title="Редактировать запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={editPending} destroyOnHidden>
@@ -386,7 +390,7 @@ function AppointmentEditModal({
             <ServiceSelect allowClear={false} />
           </Form.Item>
           <Form.Item name="providerId" label="Специалист">
-            <UserSelect />
+            <UserSelect disabled={Boolean(lockedProviderId)} />
           </Form.Item>
           <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
             <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
@@ -406,6 +410,7 @@ function AppointmentCreateModal({
   createPending,
   form,
   initialClientId,
+  lockedProviderId,
   onCancel,
   onSubmit,
   open,
@@ -415,6 +420,7 @@ function AppointmentCreateModal({
   createPending: boolean;
   form: FormInstance<AppointmentFormValues>;
   initialClientId?: string;
+  lockedProviderId?: string;
   onCancel: () => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
@@ -434,9 +440,10 @@ function AppointmentCreateModal({
 
     form.setFieldsValue({
       clientId: initialClientId,
+      providerId: lockedProviderId,
       startDate: form.getFieldValue("startDate") ?? dayjs(),
     });
-  }, [form, initialClientId, open]);
+  }, [form, initialClientId, lockedProviderId, open]);
 
   const handleRecurrenceTypeChange = (value?: string) => {
     form.setFieldValue("recurrenceTypeId", value);
@@ -474,7 +481,7 @@ function AppointmentCreateModal({
           <ServiceSelect allowClear={false} />
         </Form.Item>
         <Form.Item name="providerId" label="Специалист">
-          <UserSelect />
+          <UserSelect disabled={Boolean(lockedProviderId)} />
         </Form.Item>
           <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
             <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
