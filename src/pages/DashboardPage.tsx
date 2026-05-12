@@ -1,19 +1,29 @@
 import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Drawer, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
+import { useState } from "react";
+import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
-import { Appointment } from "../api/types";
+import { Appointment, Client, ClientHistory } from "../api/types";
+import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
 
 export function DashboardPage() {
+  const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  const navigate = useNavigate();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const statsQuery = useQuery({ queryKey: ["dashboard", "stats", timezone], queryFn: () => dashboardApi.stats(timezone) });
   const debtorsQuery = useQuery({ queryKey: ["clients", "debtors"], queryFn: clientsApi.debtors });
   const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
+  const historyQuery = useQuery({
+    queryKey: ["clients", "history", historyClient?.id],
+    queryFn: () => clientsApi.history(historyClient!.id),
+    enabled: Boolean(historyClient),
+  });
   const debtorsExportMutation = useMutation({
     mutationFn: clientsApi.exportDebtors,
     onSuccess: (blob) => downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`),
@@ -83,14 +93,41 @@ export function DashboardPage() {
             pagination={false}
             scroll={{ x: "max-content" }}
             columns={[
-              { title: "Клиент", render: (_, row) => `${row.lastName} ${row.firstName}` },
+              {
+                title: "Клиент",
+                render: (_, row) => (
+                  <Button type="link" className="table-link-button" onClick={() => setHistoryClient(row)}>
+                    {`${row.lastName} ${row.firstName}`}
+                  </Button>
+                ),
+              },
               { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag> },
             ]}
           />
         </Card>
       </div>
+      <Drawer
+        title={historyClient ? `История клиента: ${formatClientName(historyClient)}` : "История клиента"}
+        width={720}
+        open={Boolean(historyClient)}
+        onClose={() => setHistoryClient(null)}
+        destroyOnHidden
+      >
+        {historyQuery.data ? (
+          <ClientHistoryPanel
+            data={historyQuery.data}
+            onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
+            onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
+          />
+        ) : null}
+        {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
+      </Drawer>
     </>
   );
+}
+
+function formatClientName(client: Pick<ClientHistory["client"], "firstName" | "lastName" | "patronymic">) {
+  return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
 }
 
 function ReminderList({

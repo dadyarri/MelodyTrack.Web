@@ -1,15 +1,15 @@
-import { CalendarOutlined, CreditCardOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, Descriptions, Drawer, Empty, Form, Input, List, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
+import { App as AntdApp, Button, Drawer, Form, Input, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
 import { useState } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { useNavigate } from "react-router";
 import { clientsApi } from "../api/crm";
-import { Client, ClientHistory } from "../api/types";
+import { Client } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
+import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { PageHeader } from "../components/PageHeader";
-import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
 type ClientFormValues = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
@@ -227,7 +227,7 @@ export function ClientsPage() {
         destroyOnHidden
       >
         {historyQuery.data ? (
-          <ClientHistoryContent
+          <ClientHistoryPanel
             data={historyQuery.data}
             onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
             onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
@@ -236,104 +236,6 @@ export function ClientsPage() {
         {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
       </Drawer>
     </>
-  );
-}
-
-function ClientHistoryContent({
-  data,
-  onCreateAppointment,
-  onCreatePayment,
-}: {
-  data: ClientHistory;
-  onCreateAppointment: (client: ClientHistory["client"]) => void;
-  onCreatePayment: (client: ClientHistory["client"]) => void;
-}) {
-  return (
-    <Space direction="vertical" size={16} className="wide">
-      <Space>
-        <Button icon={<CalendarOutlined />} onClick={() => onCreateAppointment(data.client)}>
-          Записать
-        </Button>
-        <Button type="primary" icon={<CreditCardOutlined />} onClick={() => onCreatePayment(data.client)}>
-          Добавить платеж
-        </Button>
-      </Space>
-      <div className="detail-grid">
-        <Card size="small">
-          <Descriptions size="small" title="Контакты" column={1}>
-            <Descriptions.Item label="Телефон">{renderPhoneLink(getContactValue(data.client, "phone")) || "Не указан"}</Descriptions.Item>
-            <Descriptions.Item label="Telegram">{renderSocialLink(getContactValue(data.client, "telegram"), "telegram") || "Не указан"}</Descriptions.Item>
-            <Descriptions.Item label="VK">{renderSocialLink(getContactValue(data.client, "vk"), "vk") || "Не указан"}</Descriptions.Item>
-          </Descriptions>
-        </Card>
-        <Card size="small">
-          <Descriptions size="small" title="Сводка" column={1}>
-            <Descriptions.Item label="Баланс">
-              <Tag color={data.client.balance < 0 ? "red" : "green"}>{formatMoney(data.client.balance)}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Платежей">{data.summary.paymentsCount}</Descriptions.Item>
-            <Descriptions.Item label="Всего оплачено">{formatMoney(data.summary.totalPayments)}</Descriptions.Item>
-            <Descriptions.Item label="Завершенных визитов">{data.summary.completedAppointmentsCount}</Descriptions.Item>
-            <Descriptions.Item label="Будущих записей">{data.summary.upcomingAppointmentsCount}</Descriptions.Item>
-            <Descriptions.Item label="Последний платеж">{formatOptionalDateTime(data.summary.lastPaymentAtUtc)}</Descriptions.Item>
-            <Descriptions.Item label="Последний визит">{formatOptionalDateTime(data.summary.lastVisitAtUtc)}</Descriptions.Item>
-            <Descriptions.Item label="Следующая запись">{formatOptionalDateTime(data.summary.nextAppointmentAtUtc)}</Descriptions.Item>
-          </Descriptions>
-        </Card>
-      </div>
-
-      <Card size="small" title="Последние платежи">
-        {data.recentPayments.length > 0 ? (
-          <List
-            dataSource={data.recentPayments}
-            renderItem={(payment) => (
-              <List.Item>
-                <div className="wide">
-                  <Space className="wide list-justify" wrap>
-                    <Typography.Text strong>{formatMoney(payment.amount)}</Typography.Text>
-                    <Typography.Text type="secondary">{formatDateTime(payment.date)}</Typography.Text>
-                  </Space>
-                  <Typography.Text>{payment.description}</Typography.Text>
-                  {payment.serviceName ? (
-                    <div>
-                      <Typography.Text type="secondary">Услуга: {payment.serviceName}</Typography.Text>
-                    </div>
-                  ) : null}
-                </div>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Платежей пока нет" />
-        )}
-      </Card>
-
-      <Card size="small" title="Последние записи">
-        {data.recentAppointments.length > 0 ? (
-          <List
-            dataSource={data.recentAppointments}
-            renderItem={(appointment) => (
-              <List.Item>
-                <div className="wide">
-                  <Space className="wide list-justify" wrap>
-                    <Typography.Text strong>{appointment.serviceName}</Typography.Text>
-                    <Space wrap size={8}>
-                      {renderAppointmentStatus(appointment)}
-                      <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
-                    </Space>
-                  </Space>
-                  <Typography.Text type="secondary">
-                    {appointment.providerDisplayName ? `Мастер: ${appointment.providerDisplayName}` : "Мастер не назначен"}
-                  </Typography.Text>
-                </div>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Записей пока нет" />
-        )}
-      </Card>
-    </Space>
   );
 }
 
@@ -379,22 +281,6 @@ function renderSocialLink(value: string | null | undefined, type: "telegram" | "
       @{getSocialHandle(normalized)}
     </a>
   );
-}
-
-function renderAppointmentStatus(appointment: ClientHistory["recentAppointments"][number]) {
-  if (appointment.isCanceled) {
-    return <Tag color="default">Отменена</Tag>;
-  }
-
-  if (appointment.isCompleted) {
-    return <Tag color="green">Завершена</Tag>;
-  }
-
-  return <Tag color="blue">Запланирована</Tag>;
-}
-
-function formatOptionalDateTime(value?: string | null) {
-  return value ? formatDateTime(value) : "Нет данных";
 }
 
 function getSocialHandle(value: string) {
