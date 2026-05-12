@@ -98,11 +98,13 @@ body {
 .app-content {
   padding: 24px;
   background: var(--bg-app);
+  min-height: 0;
 }
 
 .content-stack {
   width: 100%;
   gap: 28px !important;
+  min-height: 0;
 }
 
 .page-header {
@@ -149,6 +151,24 @@ body {
   white-space: nowrap;
 }
 
+.schedule-page {
+  height: calc(100dvh - 64px - 48px);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.schedule-page-toolbar {
+  flex: 0 0 auto;
+}
+
+.schedule-page-calendar {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+}
+
 .schedule-calendar {
   border: 1px solid var(--border-main);
   border-radius: 8px;
@@ -156,10 +176,19 @@ body {
   box-shadow: var(--shadow-soft);
   overflow: hidden;
   max-width: 100%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .schedule-calendar-desktop {
-  overflow-x: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
 }
 
 .schedule-calendar-header {
@@ -211,6 +240,7 @@ body {
 .schedule-calendar-grid {
   display: grid;
   min-width: max-content;
+  flex: 0 0 auto;
 }
 
 .schedule-time-rail {
@@ -686,6 +716,22 @@ body {
   min-width: 240px;
 }
 
+.schedule-quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.schedule-quick-filters-controls {
+  max-width: 100%;
+}
+
+.schedule-quick-filters-controls .ant-select {
+  min-width: 220px;
+}
+
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -896,6 +942,15 @@ body {
 
   .schedule-week-label {
     margin-top: -12px;
+  }
+
+  .schedule-page {
+    height: auto;
+    min-height: 0;
+  }
+
+  .schedule-page-calendar {
+    display: block;
   }
 
   .content-stack {

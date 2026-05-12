@@ -25,6 +25,7 @@ type ClientSubmitInput = {
 const russianPhoneMask = {
   mask: "+{7} (000) 000-00-00",
 };
+const tableScrollY = 520;
 const formatRussianPhone = IMask.createPipe(russianPhoneMask, IMask.PIPE_TYPE.UNMASKED, IMask.PIPE_TYPE.MASKED);
 type MaskedAntdInputProps = IMaskInputProps<HTMLInputElement> & Pick<InputProps, "placeholder" | "inputMode" | "autoComplete" | "disabled" | "status" | "size">;
 const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ inputRef, ...props }) => (
@@ -130,7 +131,7 @@ export function ClientsPage() {
           total: query.data?.info.total,
           onChange: setPage,
         }}
-        scroll={{ x: "max-content" }}
+        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           {
             title: "ФИО",

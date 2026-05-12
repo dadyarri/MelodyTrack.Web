@@ -1,6 +1,6 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
+import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useEffect, useState } from "react";
 import { scheduleApi } from "../api/crm";
@@ -8,6 +8,7 @@ import { getApiErrorMessages } from "../api/http";
 import { Appointment, RecurrenceType } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
+import { useAuth } from "../features/auth/useAuth";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDate, formatDateTime, TIME_FORMAT } from "../utils/date";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -58,10 +59,8 @@ export function SchedulePage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
-  const [clientFilterId, setClientFilterId] = useState<string | undefined>();
-  const [serviceFilterId, setServiceFilterId] = useState<string | undefined>();
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
-  const [statusFilter, setStatusFilter] = useState<"planned" | "completed" | "canceled" | undefined>();
+  const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
   const queryClient = useQueryClient();
@@ -78,35 +77,38 @@ export function SchedulePage() {
     queryFn: scheduleApi.recurrenceTypes,
   });
   const filteredAppointments = (query.data ?? []).filter((appointment) => {
-    if (clientFilterId && appointment.client.id !== clientFilterId) {
-      return false;
-    }
-
-    if (serviceFilterId && appointment.service.id !== serviceFilterId) {
-      return false;
-    }
+    // Kept for quick restore if broader appointment filtering becomes necessary again.
+    // const clientFilterId = undefined as string | undefined;
+    // const serviceFilterId = undefined as string | undefined;
+    // const statusFilter = undefined as "planned" | "completed" | "canceled" | undefined;
+    //
+    // if (clientFilterId && appointment.client.id !== clientFilterId) {
+    //   return false;
+    // }
+    //
+    // if (serviceFilterId && appointment.service.id !== serviceFilterId) {
+    //   return false;
+    // }
 
     if (providerFilterId && appointment.provider?.id !== providerFilterId) {
       return false;
     }
 
-    if (!statusFilter) {
-      return true;
-    }
-
-    if (statusFilter === "planned") {
-      return !appointment.isCanceled && !appointment.isCompleted;
-    }
-
-    if (statusFilter === "completed") {
-      return appointment.isCompleted;
-    }
-
-    return appointment.isCanceled;
+    // if (!statusFilter) {
+    //   return true;
+    // }
+    //
+    // if (statusFilter === "planned") {
+    //   return !appointment.isCanceled && !appointment.isCompleted;
+    // }
+    //
+    // if (statusFilter === "completed") {
+    //   return appointment.isCompleted;
+    // }
+    //
+    // return appointment.isCanceled;
+    return true;
   });
-  const plannedCount = filteredAppointments.filter((appointment) => !appointment.isCanceled && !appointment.isCompleted).length;
-  const completedCount = filteredAppointments.filter((appointment) => appointment.isCompleted).length;
-  const canceledCount = filteredAppointments.filter((appointment) => appointment.isCanceled).length;
 
   const createMutation = useMutation({
     mutationFn: (values: AppointmentFormValues) =>
@@ -185,87 +187,81 @@ export function SchedulePage() {
 
   return (
     <>
-      <PageHeader
-        title="Расписание"
-        actions={
-          <>
-            <Space.Compact className="schedule-week-controls">
-              <Button icon={<LeftOutlined />} onClick={() => setWeekStart((value) => value.subtract(1, "week"))} />
-              <Button onClick={() => setWeekStart(dayjs().startOf("week"))}>Сегодня</Button>
-              <Button icon={<RightOutlined />} onClick={() => setWeekStart((value) => value.add(1, "week"))} />
-            </Space.Compact>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>
-          </>
-        }
-      />
-      <Space direction="vertical" size={16} className="wide">
-        <div className="filters-stack">
-          <div className="filter-field">
-            <Typography.Text type="secondary">Клиент</Typography.Text>
-            <ClientSelect value={clientFilterId} onChange={setClientFilterId} />
-          </div>
-          <div className="filter-field filter-field-service">
-            <Typography.Text type="secondary">Услуга</Typography.Text>
-            <ServiceSelect value={serviceFilterId} onChange={setServiceFilterId} />
-          </div>
-          <div className="filter-field">
+      <section className="schedule-page">
+        <PageHeader
+          title="Расписание"
+          actions={
+            <>
+              <Space.Compact className="schedule-week-controls">
+                <Button icon={<LeftOutlined />} onClick={() => setWeekStart((value) => value.subtract(1, "week"))} />
+                <Button onClick={() => setWeekStart(dayjs().startOf("week"))}>Сегодня</Button>
+                <Button icon={<RightOutlined />} onClick={() => setWeekStart((value) => value.add(1, "week"))} />
+              </Space.Compact>
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>
+            </>
+          }
+        />
+        <div className="schedule-page-toolbar">
+          <div className="schedule-quick-filters">
             <Typography.Text type="secondary">Специалист</Typography.Text>
-            <UserSelect value={providerFilterId} onChange={setProviderFilterId} />
-          </div>
-          <div className="filter-field">
-            <Typography.Text type="secondary">Статус</Typography.Text>
-            <Select
-              allowClear
-              className="wide"
-              placeholder="Все статусы"
-              options={[
-                { value: "planned", label: "Запланирована" },
-                { value: "completed", label: "Завершена" },
-                { value: "canceled", label: "Отменена" },
-              ]}
-              value={statusFilter}
-              onChange={setStatusFilter}
-            />
-          </div>
-          <div className="filter-field">
-            <Typography.Text type="secondary">Действия</Typography.Text>
-            <Button onClick={() => {
-              setClientFilterId(undefined);
-              setServiceFilterId(undefined);
-              setProviderFilterId(undefined);
-              setStatusFilter(undefined);
-            }}>
-              Сбросить
-            </Button>
+            <Space.Compact className="schedule-quick-filters-controls">
+              <UserSelect value={providerFilterId} onChange={setProviderFilterId} />
+              <Button
+                type={providerFilterId === auth.user?.id ? "primary" : "default"}
+                disabled={!auth.user?.id}
+                onClick={() => setProviderFilterId((current) => current === auth.user?.id ? undefined : auth.user?.id)}
+              >
+                Моё
+              </Button>
+              <Button
+                disabled={!providerFilterId}
+                onClick={() => {
+                  setProviderFilterId(undefined);
+                }}
+              >
+                Сбросить
+              </Button>
+            </Space.Compact>
+            {/*
+            <div className="filters-stack">
+              <div className="filter-field">
+                <Typography.Text type="secondary">Клиент</Typography.Text>
+                <ClientSelect value={clientFilterId} onChange={setClientFilterId} />
+              </div>
+              <div className="filter-field filter-field-service">
+                <Typography.Text type="secondary">Услуга</Typography.Text>
+                <ServiceSelect value={serviceFilterId} onChange={setServiceFilterId} />
+              </div>
+              <div className="filter-field">
+                <Typography.Text type="secondary">Статус</Typography.Text>
+                <Select
+                  allowClear
+                  className="wide"
+                  placeholder="Все статусы"
+                  options={[
+                    { value: "planned", label: "Запланирована" },
+                    { value: "completed", label: "Завершена" },
+                    { value: "canceled", label: "Отменена" },
+                  ]}
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                />
+              </div>
+            </div>
+            */}
           </div>
         </div>
-        <div className="summary-grid">
-          <Card size="small">
-            <Typography.Text type="secondary">Показываем записей</Typography.Text>
-            <div className="summary-value">{filteredAppointments.length}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Запланировано</Typography.Text>
-            <div className="summary-value">{plannedCount}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Завершено</Typography.Text>
-            <div className="summary-value">{completedCount}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Отменено</Typography.Text>
-            <div className="summary-value">{canceledCount}</div>
-          </Card>
+        <div className="schedule-page-calendar">
+          <AppointmentsCalendar
+            appointments={filteredAppointments}
+            loading={query.isLoading}
+            range={range}
+            onCreateAt={openCreateModalAt}
+            onSelect={setSelectedAppointment}
+            selectedAppointmentId={selectedAppointment?.id ?? null}
+          />
         </div>
-      </Space>
-      <AppointmentsCalendar
-        appointments={filteredAppointments}
-        loading={query.isLoading}
-        range={range}
-        onCreateAt={openCreateModalAt}
-        onSelect={setSelectedAppointment}
-        selectedAppointmentId={selectedAppointment?.id ?? null}
-      />
+      </section>
       <AppointmentDetailsModal
         appointment={selectedAppointment}
         onClose={() => setSelectedAppointment(null)}

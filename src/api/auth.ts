@@ -76,6 +76,7 @@ export interface Setup2FaResponse {
 }
 
 export interface MeResponse {
+  id: string;
   email: string;
   firstName: string;
   lastName: string;

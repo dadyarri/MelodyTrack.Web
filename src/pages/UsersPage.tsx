@@ -9,6 +9,8 @@ import { RoleSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../features/auth/useAuth";
 
+const tableScrollY = 520;
+
 export function UsersPage() {
   const auth = useAuth();
   const [isInviteOpen, setInviteOpen] = useState(false);
@@ -56,7 +58,7 @@ export function UsersPage() {
         loading={query.isLoading}
         dataSource={query.data}
         pagination={false}
-        scroll={{ x: "max-content" }}
+        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           { title: "Фамилия", dataIndex: "lastName" },
           { title: "Имя", dataIndex: "firstName" },

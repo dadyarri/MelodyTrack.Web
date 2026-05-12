@@ -9,6 +9,8 @@ import { PageHeader } from "../components/PageHeader";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
+const tableScrollY = 520;
+
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
   const [isOpen, setOpen] = useState(false);
@@ -112,7 +114,7 @@ export function ExpensesPage() {
           loading={query.isLoading}
           dataSource={query.data?.data}
           pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-          scroll={{ x: "max-content" }}
+          scroll={{ x: "max-content", y: tableScrollY }}
           columns={[
             { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
             { title: "Описание", dataIndex: "description" },

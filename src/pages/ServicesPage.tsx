@@ -8,6 +8,8 @@ import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
 import { formatMoney } from "../utils/money";
 
+const tableScrollY = 520;
+
 export function ServicesPage() {
   const [page, setPage] = useState(1);
   const [isCreateOpen, setCreateOpen] = useState(false);
@@ -48,7 +50,7 @@ export function ServicesPage() {
         loading={query.isLoading}
         dataSource={query.data?.data}
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        scroll={{ x: "max-content" }}
+        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           { title: "Название", dataIndex: "name" },
           { title: "Описание", dataIndex: "description" },
