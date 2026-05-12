@@ -1,11 +1,12 @@
-import { LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
+import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
 import { formatDateTime } from "../utils/date";
+import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
 
 export function DashboardPage() {
@@ -13,6 +14,10 @@ export function DashboardPage() {
   const statsQuery = useQuery({ queryKey: ["dashboard", "stats", timezone], queryFn: () => dashboardApi.stats(timezone) });
   const debtorsQuery = useQuery({ queryKey: ["clients", "debtors"], queryFn: clientsApi.debtors });
   const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
+  const debtorsExportMutation = useMutation({
+    mutationFn: clientsApi.exportDebtors,
+    onSuccess: (blob) => downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`),
+  });
 
   const todayKey = dayjs().format("YYYY-MM-DD");
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
@@ -62,7 +67,15 @@ export function DashboardPage() {
           />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title="Клиенты с отрицательным балансом">
+        <Card
+          className="dashboard-widget dashboard-widget-large"
+          title="Клиенты с отрицательным балансом"
+          extra={
+            <Button icon={<DownloadOutlined />} loading={debtorsExportMutation.isPending} onClick={() => debtorsExportMutation.mutate()}>
+              Экспорт
+            </Button>
+          }
+        >
           <Table
             rowKey="id"
             loading={debtorsQuery.isLoading}

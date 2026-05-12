@@ -1,12 +1,13 @@
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
-import type { Dayjs } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { PageHeader } from "../components/PageHeader";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
+import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
 
 const tableScrollY = 520;
@@ -51,9 +52,32 @@ export function ExpensesPage() {
     onError: showErrors,
   });
 
+  const exportMutation = useMutation({
+    mutationFn: () => expensesApi.export({
+      search: search.trim() || undefined,
+      start: dateRange?.[0]?.startOf("day").toISOString(),
+      end: dateRange?.[1]?.endOf("day").toISOString(),
+    }),
+    onSuccess: (blob) => {
+      downloadBlob(blob, `expenses_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
+      message.success("Экспорт готов");
+    },
+    onError: showErrors,
+  });
+
   return (
     <>
-      <PageHeader title="Расходы" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>} />
+      <PageHeader
+        title="Расходы"
+        actions={
+          <Space>
+            <Button icon={<DownloadOutlined />} loading={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
+              Экспорт
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>
+          </Space>
+        }
+      />
       <Space direction="vertical" size={16} className="wide">
         <div className="filters-stack">
             <div className="filter-field filter-field-wide">

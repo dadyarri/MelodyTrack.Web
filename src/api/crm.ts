@@ -30,6 +30,9 @@ export const clientsApi = {
       .get<{ debtors: ClientWithBalance[] }>("/clients/inDebt")
       .then((response) => response.data.debtors);
   },
+  exportDebtors() {
+    return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
+  },
 };
 
 export const dashboardApi = {
@@ -59,6 +62,9 @@ export const paymentsApi = {
   list(params: PaginatedParams & { firstName?: string; lastName?: string; search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
     return http.get<PaymentsResponse>("/payments", { params }).then((response) => response.data);
   },
+  export(params: { search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
+    return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
+  },
   create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }) {
     return http.post<CreateEntityResponse>("/payments", input).then((response) => response.data);
   },
@@ -70,6 +76,9 @@ export const paymentsApi = {
 export const expensesApi = {
   list(params: PaginatedParams & { start?: string; end?: string; search?: string }) {
     return http.get<ExpensesResponse>("/expenses", { params }).then((response) => response.data);
+  },
+  export(params: { start?: string; end?: string; search?: string }) {
+    return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
   },
   create(input: { description: string; amount: number }) {
     return http.post<CreateEntityResponse>("/expenses", input).then((response) => response.data);

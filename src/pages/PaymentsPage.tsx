@@ -1,4 +1,4 @@
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
@@ -11,6 +11,7 @@ import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
+import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
 
 const tableScrollY = 520;
@@ -71,6 +72,21 @@ export function PaymentsPage() {
     onError: showErrors,
   });
 
+  const exportMutation = useMutation({
+    mutationFn: () => paymentsApi.export({
+      search: search.trim() || undefined,
+      clientId,
+      serviceId,
+      start: dateRange?.[0]?.startOf("day").toISOString(),
+      end: dateRange?.[1]?.endOf("day").toISOString(),
+    }),
+    onSuccess: (blob) => {
+      downloadBlob(blob, `payments_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
+      message.success("Экспорт готов");
+    },
+    onError: showErrors,
+  });
+
   function openCreateModal() {
     form.setFieldsValue({
       clientId: undefined,
@@ -104,7 +120,17 @@ export function PaymentsPage() {
 
   return (
     <>
-      <PageHeader title="Платежи" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Добавить</Button>} />
+      <PageHeader
+        title="Платежи"
+        actions={
+          <Space>
+            <Button icon={<DownloadOutlined />} loading={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
+              Экспорт
+            </Button>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Добавить</Button>
+          </Space>
+        }
+      />
       <Space vertical size={16} className="wide">
         <div className="filters-stack">
             <div className="filter-field filter-field-wide">
