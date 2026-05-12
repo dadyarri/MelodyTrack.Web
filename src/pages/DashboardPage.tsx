@@ -1,5 +1,6 @@
+import { LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment } from "../api/types";
@@ -17,8 +18,6 @@ export function DashboardPage() {
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
   const todayAppointments = miniQuery.data?.[todayKey] ?? [];
   const tomorrowAppointments = miniQuery.data?.[tomorrowKey] ?? [];
-  const upcomingAppointments = [...todayAppointments, ...tomorrowAppointments];
-
   return (
     <>
       <PageHeader title="Обзор" />
@@ -49,15 +48,18 @@ export function DashboardPage() {
           <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title="Ближайшее расписание" loading={miniQuery.isLoading}>
-          {upcomingAppointments.length > 0 ? (
-            <List
-              dataSource={upcomingAppointments}
-              renderItem={(appointment) => <ScheduleItem appointment={appointment} />}
-            />
-          ) : (
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Нет записей на сегодня и завтра" />
-          )}
+        <Card className="dashboard-widget dashboard-widget-large" title="Записи на сегодня" loading={miniQuery.isLoading}>
+          <ReminderList
+            appointments={todayAppointments}
+            emptyDescription="На сегодня записей нет"
+          />
+        </Card>
+
+        <Card className="dashboard-widget dashboard-widget-large" title="Записи на завтра" loading={miniQuery.isLoading}>
+          <ReminderList
+            appointments={tomorrowAppointments}
+            emptyDescription="На завтра записей нет"
+          />
         </Card>
 
         <Card className="dashboard-widget dashboard-widget-large" title="Клиенты с отрицательным балансом">
@@ -78,6 +80,25 @@ export function DashboardPage() {
   );
 }
 
+function ReminderList({
+  appointments,
+  emptyDescription,
+}: {
+  appointments: Appointment[];
+  emptyDescription: string;
+}) {
+  if (appointments.length === 0) {
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription} />;
+  }
+
+  return (
+    <List
+      dataSource={appointments}
+      renderItem={(appointment) => <ScheduleItem appointment={appointment} />}
+    />
+  );
+}
+
 function ScheduleItem({ appointment }: { appointment: Appointment }) {
   const start = dayjs(appointment.startDate);
   const status = appointment.isCanceled ? (
@@ -91,9 +112,22 @@ function ScheduleItem({ appointment }: { appointment: Appointment }) {
   return (
     <List.Item>
       <Space direction="vertical" size={2} className="wide">
-        <Space wrap>
-          <Typography.Text strong>{formatDateTime(start)}</Typography.Text>
-          {status}
+        <Space wrap align="start" className="wide" style={{ justifyContent: "space-between" }}>
+          <Space wrap>
+            <Typography.Text strong>{formatDateTime(start)}</Typography.Text>
+            {status}
+          </Space>
+          <Space size={4}>
+            {appointment.client.contacts?.phone ? (
+              <Button shape="circle" size="small" icon={<PhoneOutlined />} href={`tel:${appointment.client.contacts.phone}`} title={appointment.client.contacts.phone} />
+            ) : null}
+            {appointment.client.contacts?.telegram ? (
+              <Button shape="circle" size="small" icon={<SendOutlined />} href={appointment.client.contacts.telegram} target="_blank" rel="noreferrer" title="Telegram" />
+            ) : null}
+            {appointment.client.contacts?.vk ? (
+              <Button shape="circle" size="small" icon={<LinkOutlined />} href={appointment.client.contacts.vk} target="_blank" rel="noreferrer" title="VK" />
+            ) : null}
+          </Space>
         </Space>
         <Typography.Text>
           {appointment.client.lastName} {appointment.client.firstName} - {appointment.service.name}
