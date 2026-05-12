@@ -68,6 +68,13 @@ export function PaymentsPage() {
   });
 
   function openCreateModal() {
+    form.setFieldsValue({
+      clientId: undefined,
+      serviceId: undefined,
+      amount: undefined,
+      date: dayjs(),
+      description: undefined,
+    });
     setOpen(true);
   }
 
@@ -81,7 +88,13 @@ export function PaymentsPage() {
 
   function closeCreateModal() {
     setOpen(false);
-    form.resetFields();
+    form.setFieldsValue({
+      clientId: undefined,
+      serviceId: undefined,
+      amount: undefined,
+      date: dayjs(),
+      description: undefined,
+    });
     clearCreateRouteState();
   }
 
@@ -170,12 +183,29 @@ export function PaymentsPage() {
           ]}
         />
       </Space>
-      <Modal open={isCreateModalOpen} title="Новый платеж" onCancel={closeCreateModal} onOk={() => form.submit()} confirmLoading={createMutation.isPending} destroyOnHidden>
+      <Modal
+        open={isCreateModalOpen}
+        title="Новый платеж"
+        onCancel={closeCreateModal}
+        onOk={() => form.submit()}
+        confirmLoading={createMutation.isPending}
+        destroyOnHidden
+        afterOpenChange={(open) => {
+          if (!open || !createPrefillClientId) {
+            return;
+          }
+
+          form.setFieldsValue({
+            clientId: createPrefillClientId,
+            date: form.getFieldValue("date") ?? dayjs(),
+          });
+        }}
+      >
         <Form
           form={form}
           layout="vertical"
           requiredMark={false}
-          initialValues={{ clientId: createPrefillClientId, date: dayjs() }}
+          initialValues={{ date: dayjs() }}
           onFinish={(values) => createMutation.mutate(values)}
         >
           <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
