@@ -90,6 +90,35 @@ body {
   border-right: 1px solid var(--border-strong);
 }
 
+.app-nav-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.app-nav-shortcut {
+  min-width: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border-main) 45%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--text-subtle);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  line-height: 1;
+}
+
+[data-theme="dark"] .app-nav-shortcut {
+  background: color-mix(in srgb, var(--bg-elevated) 42%, transparent);
+}
+
 .brand {
   height: 64px;
   display: flex;
@@ -132,6 +161,14 @@ body {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+.header-user-mobile {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-weight: 600;
 }
 
 .header-user-pane {
@@ -190,8 +227,51 @@ body {
   margin-bottom: 8px;
 }
 
-.schedule-week-controls {
+.schedule-header-actions {
+  justify-content: flex-end;
+}
+
+.shortcut-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 12px;
+  border-radius: 6px;
+}
+
+.shortcut-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   white-space: nowrap;
+}
+
+.shortcut-button-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.shortcut-button-keycap {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border-main) 45%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg-elevated) 60%, transparent);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--text-subtle);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  line-height: 1;
+}
+
+[data-theme="dark"] .shortcut-button-keycap {
+  background: color-mix(in srgb, var(--bg-elevated) 42%, transparent);
 }
 
 .schedule-page {
@@ -738,29 +818,35 @@ body {
 
 .filters-stack {
   display: flex;
-  flex-direction: column;
-  width: 30%;
-  gap: 5px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-bottom: 16px;
 }
 
 .filter-field {
-  min-width: 220px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .filter-field-wide {
-  min-width: 420px;
+  flex-basis: 420px;
 }
 
 .filter-field-service {
-  min-width: 320px;
+  flex-basis: 320px;
 }
 
 .filter-field .ant-picker {
-  min-width: 240px;
+  width: 100%;
+  min-width: 0;
 }
 
 .schedule-quick-filters {
@@ -769,10 +855,15 @@ body {
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .schedule-quick-filters-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
 }
 
 .schedule-quick-filters-controls .ant-select {
@@ -966,6 +1057,16 @@ body {
     justify-content: center;
   }
 
+  .app-nav-shortcut,
+  .shortcut-button-keycap {
+    display: none;
+  }
+
+  .app-nav-label {
+    justify-content: flex-start;
+    gap: 0;
+  }
+
   .app-content {
     padding: 16px;
   }
@@ -988,8 +1089,12 @@ body {
     width: 100%;
   }
 
-  .schedule-week-controls,
-  .schedule-week-controls .ant-btn {
+  .schedule-header-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .shortcut-button {
     width: 100%;
   }
 
@@ -1046,10 +1151,65 @@ body {
     gap: 8px;
   }
 
+  .header-user-trigger {
+    display: none !important;
+  }
+
+  .header-user-mobile {
+    display: inline-flex;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .app-header .ant-typography {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .schedule-quick-filters {
+    align-items: stretch;
+  }
+
+  .schedule-quick-filters-controls {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .schedule-quick-filters-controls > * {
+    flex: 1 1 100%;
+    min-width: 0 !important;
+  }
+
+  .schedule-quick-filters-controls .ant-space-compact-item {
+    width: 100%;
+  }
+
+  .schedule-quick-filters-controls .ant-select {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .filters-stack {
+    flex-direction: column;
+  }
+
+  .filter-field,
+  .filter-field-wide,
+  .filter-field-service {
+    width: 100%;
+    flex: 1 1 100%;
+    flex-basis: auto;
+  }
+
+  .filters-stack .ant-select,
+  .filters-stack .ant-picker,
+  .filters-stack .ant-input,
+  .filters-stack .ant-input-affix-wrapper {
+    width: 100%;
+    min-width: 0;
   }
 
   .app-sider .ant-layout-sider-zero-width-trigger {

@@ -1,7 +1,7 @@
 import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, Modal, Space } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
@@ -9,7 +9,9 @@ import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
 import { ListTable } from "../components/ListTable";
 import { RoleSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { useAuth } from "../features/auth/useAuth";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function UsersPage() {
   const auth = useAuth();
@@ -28,10 +30,6 @@ export function UsersPage() {
     onError: showErrors,
   });
 
-  if (!auth.user?.isAdmin) {
-    return <AccessDeniedNotice message="Доступ к управлению пользователями есть только у администраторов." />;
-  }
-
   const closeInviteModal = () => {
     setInviteOpen(false);
     setInviteUrl("");
@@ -43,15 +41,31 @@ export function UsersPage() {
     message.success("Ссылка скопирована");
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "a")) {
+        event.preventDefault();
+        setInviteOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  if (!auth.user?.isAdmin) {
+    return <AccessDeniedNotice message="Доступ к управлению пользователями есть только у администраторов." />;
+  }
+
   return (
     <>
       <PageHeader
         title="Пользователи"
-        actions={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setInviteOpen(true)}>
-            Создать приглашение
-          </Button>
-        }
+        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Создать приглашение" onClick={() => setInviteOpen(true)} />}
       />
       <ListTable
         rowKey="id"

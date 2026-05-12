@@ -1,13 +1,15 @@
 import { DollarOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { servicesApi } from "../api/crm";
 import { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { formatMoney } from "../utils/money";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
@@ -41,9 +43,28 @@ export function ServicesPage() {
     onError: showErrors,
   });
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "a")) {
+        event.preventDefault();
+        setCreateOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <>
-      <PageHeader title="Услуги" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>Добавить</Button>} />
+      <PageHeader
+        title="Услуги"
+        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setCreateOpen(true)} />}
+      />
       <ListTable
         rowKey="id"
         loading={query.isLoading}

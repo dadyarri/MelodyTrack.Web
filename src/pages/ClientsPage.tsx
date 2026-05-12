@@ -2,7 +2,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@an
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Drawer, Form, Input, Modal, Space, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { useNavigate } from "react-router";
 import { clientsApi } from "../api/crm";
@@ -12,7 +12,9 @@ import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { formatMoney } from "../utils/money";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 type ClientFormValues = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
 type ClientRow = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
@@ -89,30 +91,52 @@ export function ClientsPage() {
     onError: showErrors,
   });
 
-  function openEditor(client?: Client) {
-    setEditing(client ?? null);
-    setCreateOpen(true);
-    form.resetFields();
-    form.setFieldsValue(
-      client
-        ? {
-            ...client,
-            telegram: getContactValue(client, "telegram"),
-            vk: getContactValue(client, "vk"),
-            phone: getRussianPhoneDigits(getContactValue(client, "phone")),
-          }
-        : {},
-    );
-  }
+  const openEditor = useCallback(
+    (client?: Client) => {
+      setEditing(client ?? null);
+      setCreateOpen(true);
+      form.resetFields();
+      form.setFieldsValue(
+        client
+          ? {
+              ...client,
+              telegram: getContactValue(client, "telegram"),
+              vk: getContactValue(client, "vk"),
+              phone: getRussianPhoneDigits(getContactValue(client, "phone")),
+            }
+          : {},
+      );
+    },
+    [form],
+  );
 
   function handleSearch(value: string) {
     setSearch(value);
     setPage(1);
   }
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "a")) {
+        event.preventDefault();
+        openEditor();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [openEditor]);
+
   return (
     <>
-      <PageHeader title="Клиенты" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>Добавить</Button>} />
+      <PageHeader
+        title="Клиенты"
+        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => openEditor()} />}
+      />
       <ListFilters>
         <div className="filter-field filter-field-wide">
           <Input.Search

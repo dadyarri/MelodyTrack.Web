@@ -2,15 +2,17 @@ import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@an
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Card, Drawer, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment, Client, ClientHistory } from "../api/types";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function DashboardPage() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
@@ -28,6 +30,22 @@ export function DashboardPage() {
     mutationFn: clientsApi.exportDebtors,
     onSuccess: (blob) => downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`),
   });
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "x")) {
+        event.preventDefault();
+        debtorsExportMutation.mutate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [debtorsExportMutation]);
 
   const todayKey = dayjs().format("YYYY-MM-DD");
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
@@ -81,9 +99,7 @@ export function DashboardPage() {
           className="dashboard-widget dashboard-widget-large"
           title="Клиенты с отрицательным балансом"
           extra={
-            <Button icon={<DownloadOutlined />} loading={debtorsExportMutation.isPending} onClick={() => debtorsExportMutation.mutate()}>
-              Экспорт
-            </Button>
+            <ShortcutButton shortcut="X" leadingIcon={<DownloadOutlined />} loading={debtorsExportMutation.isPending} label="Экспорт" onClick={() => debtorsExportMutation.mutate()} />
           }
         >
           <Table

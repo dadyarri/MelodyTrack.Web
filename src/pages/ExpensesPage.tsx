@@ -2,16 +2,18 @@ import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icon
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
@@ -66,16 +68,36 @@ export function ExpensesPage() {
     onError: showErrors,
   });
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "a")) {
+        event.preventDefault();
+        setOpen(true);
+        return;
+      }
+
+      if (matchesPlainKey(event, "x")) {
+        event.preventDefault();
+        exportMutation.mutate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [exportMutation]);
+
   return (
     <>
       <PageHeader
         title="Расходы"
         actions={
           <Space>
-            <Button icon={<DownloadOutlined />} loading={exportMutation.isPending} onClick={() => exportMutation.mutate()}>
-              Экспорт
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>
+            <ShortcutButton shortcut="X" leadingIcon={<DownloadOutlined />} loading={exportMutation.isPending} label="Экспорт" onClick={() => exportMutation.mutate()} />
+            <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
           </Space>
         }
       />

@@ -1,12 +1,14 @@
 import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, App as AntdApp, Button, Card, Form, Input, List, QRCode, Space, Tag, Typography } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authApi, MeResponse, RecoveryCodeItem, SessionDto, Setup2FaResponse } from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { useAuth } from "../features/auth/useAuth";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
 
@@ -121,6 +123,34 @@ export function ProfilePage() {
 
   const me = meQuery.data;
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target) || !me?.isTwoFactorEnabled) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "r")) {
+        event.preventDefault();
+        getRecoveryCodesMutation.mutate();
+        return;
+      }
+
+      if (matchesPlainKey(event, "g")) {
+        event.preventDefault();
+        regenerateRecoveryCodesMutation.mutate();
+        return;
+      }
+
+      if (matchesPlainKey(event, "o") && !me.isTwoFactorRequired) {
+        event.preventDefault();
+        remove2FaMutation.mutate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [getRecoveryCodesMutation, me?.isTwoFactorEnabled, me?.isTwoFactorRequired, regenerateRecoveryCodesMutation, remove2FaMutation]);
+
   return (
     <Space direction="vertical" size={20} className="wide">
       <PageHeader
@@ -154,24 +184,16 @@ export function ProfilePage() {
             <Typography.Text>{me?.isTwoFactorEnabled ? "Вход через приложение-аутентификатор уже включен." : "Подключите приложение-аутентификатор и сохраните коды восстановления."}</Typography.Text>
             {me?.isTwoFactorRequired ? <Alert type="info" showIcon message="Для этой роли двухфакторная защита обязательна, поэтому отключить ее нельзя." /> : null}
             <Space wrap>
-              <Button onClick={() => getRecoveryCodesMutation.mutate()} disabled={!me?.isTwoFactorEnabled} loading={getRecoveryCodesMutation.isPending}>
-                Показать коды
-              </Button>
-              <Button icon={<ReloadOutlined />} onClick={() => regenerateRecoveryCodesMutation.mutate()} disabled={!me?.isTwoFactorEnabled} loading={regenerateRecoveryCodesMutation.isPending}>
-                Перегенерировать коды
-              </Button>
-              <Button danger onClick={() => remove2FaMutation.mutate()} disabled={!me?.isTwoFactorEnabled || me?.isTwoFactorRequired} loading={remove2FaMutation.isPending}>
-                Отключить 2FA
-              </Button>
+              <ShortcutButton shortcut="R" disabled={!me?.isTwoFactorEnabled} loading={getRecoveryCodesMutation.isPending} label="Показать коды" onClick={() => getRecoveryCodesMutation.mutate()} />
+              <ShortcutButton shortcut="G" leadingIcon={<ReloadOutlined />} disabled={!me?.isTwoFactorEnabled} loading={regenerateRecoveryCodesMutation.isPending} label="Перегенерировать коды" onClick={() => regenerateRecoveryCodesMutation.mutate()} />
+              <ShortcutButton shortcut="O" danger disabled={!me?.isTwoFactorEnabled || me?.isTwoFactorRequired} label="Отключить 2FA" onClick={() => remove2FaMutation.mutate()} />
             </Space>
             {!me?.isTwoFactorEnabled ? (
               <Form layout="vertical" onFinish={(values) => setup2FaMutation.mutate(values)} requiredMark={false}>
                 <Form.Item name="password" label="Подтвердите текущий пароль" rules={[{ required: true }]}>
                   <Input.Password autoComplete="current-password" />
                 </Form.Item>
-                <Button type="primary" icon={<SafetyCertificateOutlined />} htmlType="submit" loading={setup2FaMutation.isPending}>
-                  Получить QR-код и секрет
-                </Button>
+                <ShortcutButton shortcut="F" type="primary" leadingIcon={<SafetyCertificateOutlined />} htmlType="submit" loading={setup2FaMutation.isPending} label="Получить QR-код и секрет" />
               </Form>
             ) : null}
             {setupState ? (
@@ -207,9 +229,7 @@ export function ProfilePage() {
       <Card
         title="Активные сессии"
         extra={
-          <Button danger icon={<LogoutOutlined />} onClick={() => logoutAllMutation.mutate()} loading={logoutAllMutation.isPending}>
-            Выйти везде
-          </Button>
+          <ShortcutButton shortcut="W" danger leadingIcon={<LogoutOutlined />} loading={logoutAllMutation.isPending} label="Выйти везде" onClick={() => logoutAllMutation.mutate()} />
         }
       >
         <List

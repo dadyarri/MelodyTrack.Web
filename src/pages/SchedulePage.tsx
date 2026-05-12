@@ -10,9 +10,11 @@ import { getApiErrorMessages } from "../api/http";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { Appointment, RecurrenceType } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
+import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
 import { useAuth } from "../features/auth/useAuth";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDate, formatDateTime, TIME_FORMAT } from "../utils/date";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const defaultStartHour = 10;
@@ -86,45 +88,35 @@ export function SchedulePage() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
         return;
       }
 
-      const target = event.target as HTMLElement | null;
-      if (target?.isContentEditable) {
-        return;
-      }
-
-      const tagName = target?.tagName;
-      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
-        return;
-      }
-
-      if (event.key === "ArrowLeft") {
+      if (matchesPlainKey(event, "arrowleft")) {
         event.preventDefault();
         setWeekStart((value) => value.subtract(1, "week"));
         return;
       }
 
-      if (event.key === "ArrowRight") {
+      if (matchesPlainKey(event, "arrowright")) {
         event.preventDefault();
         setWeekStart((value) => value.add(1, "week"));
         return;
       }
 
-      if (event.key === "Home") {
+      if (matchesPlainKey(event, "home")) {
         event.preventDefault();
         setWeekStart(dayjs().startOf("week"));
         return;
       }
 
-      if (event.key === "n" || event.key === "N") {
+      if (matchesPlainKey(event, "a")) {
         event.preventDefault();
         setOpen(true);
         return;
       }
 
-      if ((event.key === "m" || event.key === "M") && !isSpecialistFilterLocked && auth.user?.id) {
+      if (matchesPlainKey(event, "m") && !isSpecialistFilterLocked && auth.user?.id) {
         event.preventDefault();
         setProviderFilterId((current) => (current === auth.user?.id ? undefined : auth.user?.id));
       }
@@ -251,10 +243,6 @@ export function SchedulePage() {
     setOpen(true);
   };
 
-  function openCreateModal() {
-    setOpen(true);
-  }
-
   function clearCreateRouteState() {
     if (!location.state) {
       return;
@@ -274,16 +262,13 @@ export function SchedulePage() {
       <section className="schedule-page">
         <PageHeader
           title="Расписание"
-          description="Клавиши: ←/→ неделя, Home сегодня, N новая запись, M мои записи."
           actions={
-            <>
-              <Space.Compact className="schedule-week-controls">
-                <Button icon={<LeftOutlined />} onClick={() => setWeekStart((value) => value.subtract(1, "week"))} />
-                <Button onClick={() => setWeekStart(dayjs().startOf("week"))}>Сегодня</Button>
-                <Button icon={<RightOutlined />} onClick={() => setWeekStart((value) => value.add(1, "week"))} />
-              </Space.Compact>
-              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Добавить</Button>
-            </>
+            <Space wrap className="schedule-header-actions">
+              <ShortcutButton shortcut="←" leadingIcon={<LeftOutlined />} label="Пред." onClick={() => setWeekStart((value) => value.subtract(1, "week"))} />
+              <ShortcutButton shortcut="Home" label="Сегодня" onClick={() => setWeekStart(dayjs().startOf("week"))} />
+              <ShortcutButton shortcut="→" leadingIcon={<RightOutlined />} label="След." onClick={() => setWeekStart((value) => value.add(1, "week"))} />
+              <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
+            </Space>
           }
         />
         <div className="schedule-page-toolbar">
@@ -291,14 +276,15 @@ export function SchedulePage() {
             <Typography.Text type="secondary">Специалист</Typography.Text>
             <Space.Compact className="schedule-quick-filters-controls">
               <UserSelect value={effectiveProviderFilterId} onChange={setProviderFilterId} disabled={isSpecialistFilterLocked} />
-              <Button
-                type={effectiveProviderFilterId === auth.user?.id ? "primary" : "default"}
-                disabled={!auth.user?.id}
-                hidden={isSpecialistFilterLocked}
-                onClick={() => setProviderFilterId((current) => current === auth.user?.id ? undefined : auth.user?.id)}
-              >
-                Моё
-              </Button>
+              {!isSpecialistFilterLocked && auth.user?.id ? (
+                <ShortcutButton
+                  shortcut="M"
+                  type={effectiveProviderFilterId === auth.user?.id ? "primary" : "default"}
+                  disabled={!auth.user?.id}
+                  label="Моё"
+                  onClick={() => setProviderFilterId((current) => current === auth.user?.id ? undefined : auth.user?.id)}
+                />
+              ) : null}
               <Button
                 disabled={isSpecialistFilterLocked || !effectiveProviderFilterId}
                 onClick={() => {
