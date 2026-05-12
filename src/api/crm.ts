@@ -1,4 +1,4 @@
-import { Appointment, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, ExpensesResponse, LookupClient, LookupService, PaginatedParams, PaginatedResponse, PaymentsResponse, RecurrenceType, Role, Service, Ulid, User } from "./types";
+import { Appointment, AuditLog, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, ExpensesResponse, LookupClient, LookupService, PaginatedParams, PaginatedResponse, PaymentsResponse, RecurrenceType, Role, Service, Ulid, User } from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -38,6 +38,12 @@ export const clientsApi = {
 export const dashboardApi = {
   stats(timezone: string) {
     return http.get<DashboardStats>("/dashboard/stats", { params: { timezone } }).then((response) => response.data);
+  },
+};
+
+export const auditApi = {
+  list(params: PaginatedParams & { search?: string }) {
+    return http.get<PaginatedResponse<AuditLog>>("/audit-logs", { params }).then((response) => response.data);
   },
 };
 

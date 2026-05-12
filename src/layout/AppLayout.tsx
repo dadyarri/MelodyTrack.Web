@@ -1,4 +1,4 @@
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
 import { Button, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useTheme } from "../app/useTheme";
@@ -11,6 +11,7 @@ const navItems = [
   { key: "/services", icon: <ToolOutlined />, label: "Услуги" },
   { key: "/payments", icon: <CreditCardOutlined />, label: "Платежи" },
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы" },
+  { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", adminOnly: true },
   { key: "/users", icon: <UserOutlined />, label: "Пользователи", adminOnly: true },
 ];
 

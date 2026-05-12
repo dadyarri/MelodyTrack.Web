@@ -198,3 +198,15 @@ export interface DashboardStats {
   monthExpenses: number;
   monthNet: number;
 }
+
+export interface AuditLog {
+  id: Ulid;
+  createdAtUtc: string;
+  category: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  actorEmail?: string | null;
+  actorDisplayName?: string | null;
+  details?: string | null;
+}

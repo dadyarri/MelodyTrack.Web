@@ -3,6 +3,7 @@ import { AppLayout } from "../layout/AppLayout";
 import { AdminRoute } from "../layout/AdminRoute";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
 import { AuthPage } from "../pages/AuthPage";
+import { AuditPage } from "../pages/AuditPage";
 import { ClientsPage } from "../pages/ClientsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { ExpensesPage } from "../pages/ExpensesPage";
@@ -28,6 +29,14 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: "clients", element: <ClientsPage /> },
+      {
+        path: "audit",
+        element: (
+          <AdminRoute>
+            <AuditPage />
+          </AdminRoute>
+        ),
+      },
       { path: "services", element: <ServicesPage /> },
       { path: "payments", element: <PaymentsPage /> },
       { path: "expenses", element: <ExpensesPage /> },
