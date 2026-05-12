@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
@@ -12,6 +13,11 @@ import { formatMoney } from "../utils/money";
 
 const tableScrollY = 520;
 
+type PaymentPageLocationState = {
+  openCreate?: boolean;
+  clientId?: string;
+};
+
 export function PaymentsPage() {
   const [page, setPage] = useState(1);
   const [isOpen, setOpen] = useState(false);
@@ -20,9 +26,14 @@ export function PaymentsPage() {
   const [serviceId, setServiceId] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [form] = Form.useForm();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const locationState = (location.state ?? null) as PaymentPageLocationState | null;
+  const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
+  const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
   const query = useQuery({
     queryKey: ["payments", page, search, clientId, serviceId, dateRange?.[0]?.toISOString(), dateRange?.[1]?.toISOString()],
     queryFn: () => paymentsApi.list({
@@ -41,8 +52,7 @@ export function PaymentsPage() {
       paymentsApi.create({ ...values, date: values.date.toISOString() }),
     onSuccess: async () => {
       message.success("Платеж создан");
-      setOpen(false);
-      form.resetFields();
+      closeCreateModal();
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
     onError: showErrors,
@@ -57,9 +67,27 @@ export function PaymentsPage() {
     onError: showErrors,
   });
 
+  function openCreateModal() {
+    setOpen(true);
+  }
+
+  function clearCreateRouteState() {
+    if (!location.state) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }
+
+  function closeCreateModal() {
+    setOpen(false);
+    form.resetFields();
+    clearCreateRouteState();
+  }
+
   return (
     <>
-      <PageHeader title="Платежи" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>} />
+      <PageHeader title="Платежи" actions={<Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Добавить</Button>} />
       <Space vertical size={16} className="wide">
         <div className="filters-stack">
             <div className="filter-field filter-field-wide">
@@ -142,8 +170,14 @@ export function PaymentsPage() {
           ]}
         />
       </Space>
-      <Modal open={isOpen} title="Новый платеж" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" requiredMark={false} initialValues={{ date: dayjs() }} onFinish={(values) => createMutation.mutate(values)}>
+      <Modal open={isCreateModalOpen} title="Новый платеж" onCancel={closeCreateModal} onOk={() => form.submit()} confirmLoading={createMutation.isPending} destroyOnHidden>
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          initialValues={{ clientId: createPrefillClientId, date: dayjs() }}
+          onFinish={(values) => createMutation.mutate(values)}
+        >
           <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
             <ClientSelect />
           </Form.Item>

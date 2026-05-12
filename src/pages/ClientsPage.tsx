@@ -1,9 +1,10 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
+import { CreditCardOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, Descriptions, Drawer, Empty, Form, Input, List, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
 import { useState } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
+import { useNavigate } from "react-router";
 import { clientsApi } from "../api/crm";
 import { Client, ClientHistory } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
@@ -49,6 +50,7 @@ export function ClientsPage() {
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
@@ -224,16 +226,21 @@ export function ClientsPage() {
         onClose={() => setHistoryClient(null)}
         destroyOnHidden
       >
-        {historyQuery.data ? <ClientHistoryContent data={historyQuery.data} /> : null}
+        {historyQuery.data ? <ClientHistoryContent data={historyQuery.data} onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })} /> : null}
         {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
       </Drawer>
     </>
   );
 }
 
-function ClientHistoryContent({ data }: { data: ClientHistory }) {
+function ClientHistoryContent({ data, onCreatePayment }: { data: ClientHistory; onCreatePayment: (client: ClientHistory["client"]) => void }) {
   return (
     <Space direction="vertical" size={16} className="wide">
+      <Space>
+        <Button type="primary" icon={<CreditCardOutlined />} onClick={() => onCreatePayment(data.client)}>
+          Добавить платеж
+        </Button>
+      </Space>
       <div className="detail-grid">
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
