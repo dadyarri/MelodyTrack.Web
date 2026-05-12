@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Input, Table, Typography } from "antd";
+import { Input, Typography } from "antd";
 import { useState } from "react";
 import { auditApi } from "../api/crm";
+import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
+import { ListFilters } from "../components/ListFilters";
+import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../features/auth/useAuth";
 import { formatDateTime } from "../utils/date";
-
-const tableScrollY = 520;
 
 const categoryLabels: Record<string, string> = {
   auth: "Авторизация",
@@ -61,7 +62,7 @@ export function AuditPage() {
   });
 
   if (!auth.user?.isSuperuser) {
-    return <Alert type="error" showIcon message="Доступ к журналу действий есть только у суперпользователя." />;
+    return <AccessDeniedNotice message="Доступ к журналу действий есть только у суперпользователя." />;
   }
 
   return (
@@ -70,7 +71,7 @@ export function AuditPage() {
         title="Аудит действий"
         description="Журналирует ключевые изменения в системе и действия пользователей."
       />
-      <div className="filters-stack">
+      <ListFilters>
         <div className="filter-field filter-field-wide">
           <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
           <Input.Search
@@ -88,13 +89,12 @@ export function AuditPage() {
             }}
           />
         </div>
-      </div>
-      <Table
+      </ListFilters>
+      <ListTable
         rowKey="id"
         loading={query.isLoading}
         dataSource={query.data?.data}
         pagination={{ current: page, pageSize: 20, total: query.data?.info.total, onChange: setPage }}
-        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           { title: "Когда", dataIndex: "createdAtUtc", width: 170, render: (value: string) => formatDateTime(value) },
           {

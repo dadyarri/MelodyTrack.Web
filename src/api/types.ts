@@ -16,10 +16,8 @@ export interface PaginatedResponse<T> {
 export interface MoneyListSummary {
   totalAmount: number;
   itemsCount: number;
-  firstPaymentAtUtc?: string | null;
-  lastPaymentAtUtc?: string | null;
-  firstExpenseAtUtc?: string | null;
-  lastExpenseAtUtc?: string | null;
+  firstItemAtUtc?: string | null;
+  lastItemAtUtc?: string | null;
 }
 
 export interface PaginatedParams {
@@ -164,12 +162,7 @@ export interface Payment {
 }
 
 export interface PaymentsResponse extends PaginatedResponse<Payment> {
-  summary: {
-    totalAmount: number;
-    itemsCount: number;
-    firstPaymentAtUtc?: string | null;
-    lastPaymentAtUtc?: string | null;
-  };
+  summary: MoneyListSummary;
 }
 
 export interface Expense {
@@ -180,12 +173,7 @@ export interface Expense {
 }
 
 export interface ExpensesResponse extends PaginatedResponse<Expense> {
-  summary: {
-    totalAmount: number;
-    itemsCount: number;
-    firstExpenseAtUtc?: string | null;
-    lastExpenseAtUtc?: string | null;
-  };
+  summary: MoneyListSummary;
 }
 
 export interface DashboardStats {

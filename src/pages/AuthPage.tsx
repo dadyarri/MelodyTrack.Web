@@ -6,6 +6,7 @@ import { Navigate, useLocation, useNavigate, useSearchParams } from "react-route
 import { authApi, Recover2FaResponse, RecoveryCodeItem, RecoveryCodesResponse, RegisterInput } from "../api/auth";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
+import { StatusBanner } from "../components/StatusBanner";
 import { useAuth } from "../features/auth/useAuth";
 
 type AuthMode = "login" | "register" | "recover2fa";
@@ -329,13 +330,12 @@ export function AuthPage() {
               onFinish={(values) => registerMutation.mutate(values)}
               requiredMark={false}
             >
-              {!inviteCode ? <Alert type="info" showIcon message="Для регистрации нужна ссылка-приглашение от администратора." /> : null}
-              {inviteQuery.isPending ? <Alert type="info" showIcon message="Проверяем ссылку приглашения..." /> : null}
-              {inviteErrorMessage ? <Alert type="error" showIcon message={inviteErrorMessage} /> : null}
+              {!inviteCode ? <StatusBanner type="info" message="Для регистрации нужна ссылка-приглашение от администратора." /> : null}
+              {inviteQuery.isPending ? <StatusBanner type="info" message="Проверяем ссылку приглашения..." /> : null}
+              {inviteErrorMessage ? <StatusBanner type="error" message={inviteErrorMessage} /> : null}
               {canSubmitRegistration && inviteLookupFinished ? (
-                <Alert
+                <StatusBanner
                   type="warning"
-                  showIcon
                   message="Если для вашей роли обязателен 2FA, после регистрации нужно сразу подтвердить код из приложения и сохранить коды восстановления."
                 />
               ) : null}

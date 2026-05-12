@@ -1,10 +1,11 @@
 import { KeyOutlined, LockOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { useMutation } from "@tanstack/react-query";
-import { Alert, App as AntdApp, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
+import { App as AntdApp, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { authApi } from "../api/auth";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
+import { StatusBanner } from "../components/StatusBanner";
 
 type SecondFactorMode = "otp" | "recoveryCode";
 
@@ -42,15 +43,14 @@ export function RestorePasswordPage() {
             <Typography.Title level={1}>Восстановление пароля</Typography.Title>
             <Typography.Text type="secondary">Если 2FA включен, используйте одноразовый код или код восстановления.</Typography.Text>
           </div>
-          {!token ? <Alert type="error" showIcon message="В ссылке нет токена восстановления." /> : null}
+          {!token ? <StatusBanner type="error" message="В ссылке нет токена восстановления." /> : null}
           {token ? (
-            <Alert
+            <StatusBanner
               type="info"
-              showIcon
               message="Если ссылка уже использована или просрочена, запросите новую ссылку."
             />
           ) : null}
-          {submitError ? <Alert type="error" showIcon message={submitError} /> : null}
+          {submitError ? <StatusBanner type="error" message={submitError} /> : null}
           <Form layout="vertical" onFinish={(values) => resetPasswordMutation.mutate(values)} requiredMark={false}>
             <Form.Item name="newPassword" label="Новый пароль" rules={[{ required: true }]}>
               <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />

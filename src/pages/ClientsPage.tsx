@@ -1,6 +1,6 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Drawer, Form, Input, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
+import { App as AntdApp, Button, Drawer, Form, Input, Modal, Space, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
 import { useState } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
@@ -9,6 +9,8 @@ import { clientsApi } from "../api/crm";
 import { Client } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
+import { ListFilters } from "../components/ListFilters";
+import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { formatMoney } from "../utils/money";
 
@@ -26,7 +28,6 @@ type ClientSubmitInput = {
 const russianPhoneMask = {
   mask: "+{7} (000) 000-00-00",
 };
-const tableScrollY = 520;
 const formatRussianPhone = IMask.createPipe(russianPhoneMask, IMask.PIPE_TYPE.UNMASKED, IMask.PIPE_TYPE.MASKED);
 type MaskedAntdInputProps = IMaskInputProps<HTMLInputElement> & Pick<InputProps, "placeholder" | "inputMode" | "autoComplete" | "disabled" | "status" | "size">;
 const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ inputRef, ...props }) => (
@@ -112,18 +113,21 @@ export function ClientsPage() {
   return (
     <>
       <PageHeader title="Клиенты" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => openEditor()}>Добавить</Button>} />
-      <Input.Search
-        allowClear
-        placeholder="Поиск по ФИО"
-        style={{ maxWidth: 360, marginBottom: 16 }}
-        onSearch={handleSearch}
-        onChange={(event) => {
-          if (!event.target.value) {
-            handleSearch("");
-          }
-        }}
-      />
-      <Table
+      <ListFilters>
+        <div className="filter-field filter-field-wide">
+          <Input.Search
+            allowClear
+            placeholder="Поиск по ФИО"
+            onSearch={handleSearch}
+            onChange={(event) => {
+              if (!event.target.value) {
+                handleSearch("");
+              }
+            }}
+          />
+        </div>
+      </ListFilters>
+      <ListTable
         rowKey="id"
         loading={query.isLoading}
         dataSource={query.data?.data}
@@ -133,7 +137,6 @@ export function ClientsPage() {
           total: query.data?.info.total,
           onChange: setPage,
         }}
-        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           {
             title: "ФИО",

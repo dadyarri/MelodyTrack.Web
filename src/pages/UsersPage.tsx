@@ -1,15 +1,15 @@
 import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Alert, App as AntdApp, Button, Form, Input, Modal, Space, Table } from "antd";
+import { App as AntdApp, Button, Form, Input, Modal, Space } from "antd";
 import { useState } from "react";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
+import { ListTable } from "../components/ListTable";
 import { RoleSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
 import { useAuth } from "../features/auth/useAuth";
-
-const tableScrollY = 520;
 
 export function UsersPage() {
   const auth = useAuth();
@@ -29,7 +29,7 @@ export function UsersPage() {
   });
 
   if (!auth.user?.isAdmin) {
-    return <Alert type="error" showIcon message="Доступ к управлению пользователями есть только у администраторов." />;
+    return <AccessDeniedNotice message="Доступ к управлению пользователями есть только у администраторов." />;
   }
 
   const closeInviteModal = () => {
@@ -53,12 +53,11 @@ export function UsersPage() {
           </Button>
         }
       />
-      <Table
+      <ListTable
         rowKey="id"
         loading={query.isLoading}
         dataSource={query.data}
         pagination={false}
-        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           { title: "Фамилия", dataIndex: "lastName" },
           { title: "Имя", dataIndex: "firstName" },

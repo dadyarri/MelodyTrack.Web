@@ -1,16 +1,17 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
+import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { ListFilters } from "../components/ListFilters";
+import { ListTable } from "../components/ListTable";
+import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
-
-const tableScrollY = 520;
 
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
@@ -79,66 +80,58 @@ export function ExpensesPage() {
         }
       />
       <Space direction="vertical" size={16} className="wide">
-        <div className="filters-stack">
-            <div className="filter-field filter-field-wide">
-              <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
-              <Input.Search
-                allowClear
-                placeholder="Введите часть описания или название статьи"
-                onSearch={(value) => {
-                  setSearch(value);
-                  setPage(1);
-                }}
-                onChange={(event) => {
-                  if (!event.target.value) {
-                    setSearch("");
-                    setPage(1);
-                  }
-                }}
-              />
-            </div>
-            <div className="filter-field">
-              <Typography.Text type="secondary">Период</Typography.Text>
-              <DatePicker.RangePicker
-                value={dateRange}
-                format={DATE_FORMAT}
-                onChange={(value) => {
-                  setDateRange(value);
-                  setPage(1);
-                }}
-              />
-            </div>
-            <div className="filter-field">
-              <Typography.Text type="secondary">Действия</Typography.Text>
-              <Button onClick={() => {
-                setSearch("");
-                setDateRange(null);
+        <ListFilters>
+          <div className="filter-field filter-field-wide">
+            <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
+            <Input.Search
+              allowClear
+              placeholder="Введите часть описания или название статьи"
+              onSearch={(value) => {
+                setSearch(value);
                 setPage(1);
-              }}>
-                Сбросить
-              </Button>
-            </div>
-        </div>
-        <div className="summary-grid">
-          <Card size="small">
-            <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
-            <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Расходов найдено</Typography.Text>
-            <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Последний расход</Typography.Text>
-            <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastExpenseAtUtc)}</div>
-          </Card>
-        </div>
-        <Table
+              }}
+              onChange={(event) => {
+                if (!event.target.value) {
+                  setSearch("");
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Период</Typography.Text>
+            <DatePicker.RangePicker
+              value={dateRange}
+              format={DATE_FORMAT}
+              onChange={(value) => {
+                setDateRange(value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Действия</Typography.Text>
+            <Button onClick={() => {
+              setSearch("");
+              setDateRange(null);
+              setPage(1);
+            }}>
+              Сбросить
+            </Button>
+          </div>
+        </ListFilters>
+        <MoneyListSummaryCards
+          totalAmount={query.data?.summary.totalAmount}
+          itemsCount={query.data?.summary.itemsCount}
+          lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
+          itemsTitle="Расходов найдено"
+          lastItemTitle="Последний расход"
+        />
+        <ListTable
           rowKey="id"
           loading={query.isLoading}
           dataSource={query.data?.data}
           pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-          scroll={{ x: "max-content", y: tableScrollY }}
           columns={[
             { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
             { title: "Описание", dataIndex: "description" },

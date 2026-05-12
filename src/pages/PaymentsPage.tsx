@@ -1,6 +1,6 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
+import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
 import { useState } from "react";
@@ -8,13 +8,14 @@ import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
+import { ListFilters } from "../components/ListFilters";
+import { ListTable } from "../components/ListTable";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
+import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
-
-const tableScrollY = 520;
 
 type PaymentPageLocationState = {
   openCreate?: boolean;
@@ -132,77 +133,69 @@ export function PaymentsPage() {
         }
       />
       <Space vertical size={16} className="wide">
-        <div className="filters-stack">
-            <div className="filter-field filter-field-wide">
-              <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
-              <Input.Search
-                allowClear
-                placeholder="Введите имя клиента, услугу или текст описания"
-                onSearch={(value) => {
-                  setSearch(value);
-                  setPage(1);
-                }}
-                onChange={(event) => {
-                  if (!event.target.value) {
-                    setSearch("");
-                    setPage(1);
-                  }
-                }}
-              />
-            </div>
-            <div className="filter-field">
-              <Typography.Text type="secondary">Клиент</Typography.Text>
-              <ClientSelect value={clientId} onChange={(value) => { setClientId(value); setPage(1); }} />
-            </div>
-            <div className="filter-field filter-field-service">
-              <Typography.Text type="secondary">Услуга</Typography.Text>
-              <ServiceSelect value={serviceId} onChange={(value) => { setServiceId(value); setPage(1); }} />
-            </div>
-            <div className="filter-field">
-              <Typography.Text type="secondary">Период</Typography.Text>
-              <DatePicker.RangePicker
-                value={dateRange}
-                format={DATE_TIME_FORMAT}
-                showTime={{ format: TIME_FORMAT }}
-                onChange={(value) => {
-                  setDateRange(value);
-                  setPage(1);
-                }}
-              />
-            </div>
-            <div className="filter-field">
-              <Typography.Text type="secondary">Действия</Typography.Text>
-              <Button onClick={() => {
-                setSearch("");
-                setClientId(undefined);
-                setServiceId(undefined);
-                setDateRange(null);
+        <ListFilters>
+          <div className="filter-field filter-field-wide">
+            <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
+            <Input.Search
+              allowClear
+              placeholder="Введите имя клиента, услугу или текст описания"
+              onSearch={(value) => {
+                setSearch(value);
                 setPage(1);
-              }}>
-                Сбросить
-              </Button>
-            </div>
-        </div>
-        <div className="summary-grid">
-          <Card size="small">
-            <Typography.Text type="secondary">Сумма по выборке</Typography.Text>
-            <div className="summary-value">{formatMoney(query.data?.summary.totalAmount)}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Платежей найдено</Typography.Text>
-            <div className="summary-value">{query.data?.summary.itemsCount ?? 0}</div>
-          </Card>
-          <Card size="small">
-            <Typography.Text type="secondary">Последний платеж</Typography.Text>
-            <div className="summary-caption">{formatOptionalDateTime(query.data?.summary.lastPaymentAtUtc)}</div>
-          </Card>
-        </div>
-        <Table
+              }}
+              onChange={(event) => {
+                if (!event.target.value) {
+                  setSearch("");
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Клиент</Typography.Text>
+            <ClientSelect value={clientId} onChange={(value) => { setClientId(value); setPage(1); }} />
+          </div>
+          <div className="filter-field filter-field-service">
+            <Typography.Text type="secondary">Услуга</Typography.Text>
+            <ServiceSelect value={serviceId} onChange={(value) => { setServiceId(value); setPage(1); }} />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Период</Typography.Text>
+            <DatePicker.RangePicker
+              value={dateRange}
+              format={DATE_TIME_FORMAT}
+              showTime={{ format: TIME_FORMAT }}
+              onChange={(value) => {
+                setDateRange(value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Действия</Typography.Text>
+            <Button onClick={() => {
+              setSearch("");
+              setClientId(undefined);
+              setServiceId(undefined);
+              setDateRange(null);
+              setPage(1);
+            }}>
+              Сбросить
+            </Button>
+          </div>
+        </ListFilters>
+        <MoneyListSummaryCards
+          totalAmount={query.data?.summary.totalAmount}
+          itemsCount={query.data?.summary.itemsCount}
+          lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
+          itemsTitle="Платежей найдено"
+          lastItemTitle="Последний платеж"
+        />
+        <ListTable
           rowKey="id"
           loading={query.isLoading}
           dataSource={query.data?.data}
           pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-          scroll={{ x: "max-content", y: tableScrollY }}
           columns={[
             { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
             { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },

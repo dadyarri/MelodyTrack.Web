@@ -1,14 +1,13 @@
 import { DollarOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Table } from "antd";
+import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
 import { useState } from "react";
 import { servicesApi } from "../api/crm";
 import { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
+import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { formatMoney } from "../utils/money";
-
-const tableScrollY = 520;
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
@@ -45,12 +44,11 @@ export function ServicesPage() {
   return (
     <>
       <PageHeader title="Услуги" actions={<Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateOpen(true)}>Добавить</Button>} />
-      <Table
+      <ListTable
         rowKey="id"
         loading={query.isLoading}
         dataSource={query.data?.data}
         pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        scroll={{ x: "max-content", y: tableScrollY }}
         columns={[
           { title: "Название", dataIndex: "name" },
           { title: "Описание", dataIndex: "description" },
