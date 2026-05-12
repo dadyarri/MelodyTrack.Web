@@ -8,23 +8,34 @@ export function ClientSelect({
   value,
   onChange,
   extraOptions,
-}: {
+  }: {
   value?: string;
   onChange?: (value: string) => void;
   extraOptions?: DefaultOptionType[];
 }) {
   const [search, setSearch] = useState("");
   const query = useQuery({ queryKey: ["clients", "lookup", search], queryFn: () => clientsApi.lookup(search) });
+  const selectedQuery = useQuery({
+    queryKey: ["clients", "selected", value],
+    queryFn: () => clientsApi.get(value!),
+    enabled: Boolean(value),
+  });
   const options = useMemo<DefaultOptionType[]>(
     () => {
+      const selectedOption = selectedQuery.data
+        ? [{
+            value: selectedQuery.data.id,
+            label: [selectedQuery.data.lastName, selectedQuery.data.firstName, selectedQuery.data.patronymic].filter(Boolean).join(" "),
+          }]
+        : [];
       const lookupOptions = query.data?.map((client) => ({ value: client.id, label: [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ") })) ?? [];
-      const mergedOptions = [...(extraOptions ?? []), ...lookupOptions];
+      const mergedOptions = [...selectedOption, ...(extraOptions ?? []), ...lookupOptions];
 
       return mergedOptions.filter((option, index, items) =>
         items.findIndex((item) => item.value === option.value) === index,
       );
     },
-    [extraOptions, query.data],
+    [extraOptions, query.data, selectedQuery.data],
   );
 
   return (
@@ -35,7 +46,7 @@ export function ClientSelect({
         onSearch: setSearch,
       }}
       allowClear
-      loading={query.isLoading}
+      loading={query.isLoading || selectedQuery.isLoading}
       options={options}
       placeholder="Начните вводить ФИО"
       value={value}

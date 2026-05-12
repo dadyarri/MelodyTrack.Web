@@ -16,8 +16,13 @@ export const clientsApi = {
       .get<{ clients: LookupClient[] }>("/clients/lookup", { params: search ? { search } : undefined })
       .then((response) => response.data.clients);
   },
-  create(input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string }) {
-    return http.post<CreateEntityResponse>("/clients", input).then((response) => response.data);
+  create(
+    input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string },
+    options?: { replayKey?: string },
+  ) {
+    return http
+      .post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey))
+      .then((response) => response.data);
   },
   update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }) {
     return http.put(`/clients/${id}`, input).then((response) => response.data);
@@ -56,8 +61,8 @@ export const servicesApi = {
       .get<{ services: LookupService[] }>("/services/lookup", { params: name ? { name } : undefined })
       .then((response) => response.data.services);
   },
-  create(input: { name: string; description?: string; price: number }) {
-    return http.post<CreateEntityResponse>("/services", input).then((response) => response.data);
+  create(input: { name: string; description?: string; price: number }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   updatePrice(id: Ulid, price: number) {
     return http.patch(`/services/${id}/price`, { price }).then((response) => response.data);
@@ -71,8 +76,8 @@ export const paymentsApi = {
   export(params: { search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
     return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }) {
-    return http.post<CreateEntityResponse>("/payments", input).then((response) => response.data);
+  create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid) {
     return http.delete(`/payments/${id}`).then((response) => response.data);
@@ -86,8 +91,8 @@ export const expensesApi = {
   export(params: { start?: string; end?: string; search?: string }) {
     return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: { description: string; amount: number }) {
-    return http.post<CreateEntityResponse>("/expenses", input).then((response) => response.data);
+  create(input: { description: string; amount: number }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/expenses", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid) {
     return http.delete(`/expenses/${id}`).then((response) => response.data);
@@ -114,8 +119,8 @@ export const scheduleApi = {
     startDate: string;
     patternEndDate?: string;
     recurrencePattern?: number;
-  }) {
-    return http.post<CreateEntityResponse>("/appointments", input).then((response) => response.data);
+  }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   update(id: Ulid, input: Partial<{ clientId: Ulid; serviceId: Ulid; providerId: Ulid; startDate: string; isCompleted: boolean; isCanceled: boolean }>) {
     return http.patch(`/appointments/${id}`, input).then((response) => response.data);
@@ -124,6 +129,16 @@ export const scheduleApi = {
     return http.delete(`/appointments/${id}`, { params: scope ? { scope } : undefined }).then((response) => response.data);
   },
 };
+
+function buildReplayConfig(replayKey?: string) {
+  return replayKey
+    ? {
+        headers: {
+          "Idempotency-Key": replayKey,
+        },
+      }
+    : undefined;
+}
 
 export const usersApi = {
   list() {

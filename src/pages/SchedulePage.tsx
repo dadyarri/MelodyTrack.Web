@@ -3,16 +3,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
-import { CSSProperties, useEffect, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { scheduleApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { Appointment, RecurrenceType } from "../api/types";
+import { DraftModalTitle } from "../components/DraftModalTitle";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
 import { useAuth } from "../features/auth/useAuth";
+import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDate, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
@@ -64,13 +66,17 @@ type SchedulePageLocationState = {
 
 export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
-  const [isOpen, setOpen] = useState(false);
+  const hasCreateDraft = Boolean(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY));
+  const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
+  const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
+  const draftReplayKeyRef = useRef(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const isDraftHydratingRef = useRef(false);
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
@@ -85,6 +91,10 @@ export function SchedulePage() {
   const locationState = (location.state ?? null) as SchedulePageLocationState | null;
   const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
   const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
+  const openCreateModal = useCallback(() => {
+    setPendingCreateStartDate(null);
+    setOpen(true);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -112,7 +122,7 @@ export function SchedulePage() {
 
       if (matchesPlainKey(event, "a")) {
         event.preventDefault();
-        setOpen(true);
+        openCreateModal();
         return;
       }
 
@@ -124,7 +134,7 @@ export function SchedulePage() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [auth.user?.id, isSpecialistFilterLocked]);
+  }, [auth.user?.id, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
@@ -170,11 +180,12 @@ export function SchedulePage() {
 
   const createMutation = useMutation({
     mutationFn: (values: AppointmentFormValues) =>
-      scheduleApi.create(buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [])),
+      scheduleApi.create(buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? []), { replayKey: draftReplayKeyRef.current }),
     onSuccess: async () => {
       message.success("Запись создана");
-      setOpen(false);
-      form.resetFields();
+      closeCreateModal();
+      clearDraft(APPOINTMENT_CREATE_DRAFT_KEY);
+      draftReplayKeyRef.current = createReplayKey();
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: showErrors,
@@ -230,18 +241,45 @@ export function SchedulePage() {
     onError: showErrors,
   });
 
-  const openCreateModalAt = (startDate: Dayjs) => {
-    form.setFieldsValue({
-      clientId: undefined,
-      serviceId: undefined,
-      providerId: isSpecialistFilterLocked ? auth.user?.id : undefined,
-      startDate: startDate.second(0).millisecond(0),
-      recurrenceTypeId: undefined,
-      patternEndDate: undefined,
-      weeklyDays: undefined,
+  const handleCreateDraftChange = (values: AppointmentFormValues) => {
+    if (isDraftHydratingRef.current) {
+      return;
+    }
+
+    saveDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, {
+      replayKey: draftReplayKeyRef.current,
+      updatedAtUtc: new Date().toISOString(),
+      values: serializeAppointmentDraft(values),
     });
+  };
+
+  const openCreateModalAt = (startDate: Dayjs) => {
+    setPendingCreateStartDate(startDate.second(0).millisecond(0));
     setOpen(true);
   };
+
+  useEffect(() => {
+    if (!isCreateModalOpen) {
+      return;
+    }
+
+    const draft = loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
+    const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : pendingCreateStartDate ?? dayjs();
+    const providerId = isSpecialistFilterLocked ? auth.user?.id : draft?.values.providerId;
+
+    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue({
+        clientId: draft?.values.clientId ?? createPrefillClientId,
+        serviceId: draft?.values.serviceId,
+        providerId,
+        startDate,
+        recurrenceTypeId: draft?.values.recurrenceTypeId,
+        patternEndDate: draft?.values.patternEndDate ? dayjs(draft.values.patternEndDate) : undefined,
+        weeklyDays: draft?.values.weeklyDays,
+      });
+    });
+  }, [auth.user?.id, createPrefillClientId, form, isCreateModalOpen, isSpecialistFilterLocked, pendingCreateStartDate]);
 
   function clearCreateRouteState() {
     if (!location.state) {
@@ -253,7 +291,8 @@ export function SchedulePage() {
 
   function closeCreateModal() {
     setOpen(false);
-    form.resetFields();
+    setPendingCreateStartDate(null);
+    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
     clearCreateRouteState();
   }
 
@@ -267,7 +306,7 @@ export function SchedulePage() {
               <ShortcutButton shortcut="←" leadingIcon={<LeftOutlined />} label="Пред." onClick={() => setWeekStart((value) => value.subtract(1, "week"))} />
               <ShortcutButton shortcut="Home" label="Сегодня" onClick={() => setWeekStart(dayjs().startOf("week"))} />
               <ShortcutButton shortcut="→" leadingIcon={<RightOutlined />} label="След." onClick={() => setWeekStart((value) => value.add(1, "week"))} />
-              <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
+              <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={openCreateModal} />
             </Space>
           }
         />
@@ -365,11 +404,12 @@ export function SchedulePage() {
       <AppointmentCreateModal
         createPending={createMutation.isPending}
         createdClientOptions={createdClientOptions}
+        draftRestored={hasCreateDraft && isCreateModalOpen}
         form={form}
-        initialClientId={createPrefillClientId}
         lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
         onCreateClient={() => setQuickClientCreateOpen(true)}
         onCancel={closeCreateModal}
+        onDraftChange={handleCreateDraftChange}
         onSubmit={(values) => createMutation.mutate(values)}
         open={isCreateModalOpen}
         recurrenceTypes={recurrenceTypesQuery.data ?? []}
@@ -450,9 +490,11 @@ function AppointmentEditModal({
     <Modal open={appointment !== null} title="Редактировать запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={editPending} destroyOnHidden>
       {appointment ? (
         <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
-          <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
+          <Form.Item label="Клиент">
             <Space direction="vertical" size={8} className="wide">
-              <ClientSelect extraOptions={createdClientOptions} />
+              <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
+                <ClientSelect extraOptions={createdClientOptions} />
+              </Form.Item>
               <Button onClick={onCreateClient}>Новый клиент</Button>
             </Space>
           </Form.Item>
@@ -479,11 +521,12 @@ function AppointmentEditModal({
 function AppointmentCreateModal({
   createPending,
   createdClientOptions,
+  draftRestored,
   form,
-  initialClientId,
   lockedProviderId,
   onCreateClient,
   onCancel,
+  onDraftChange,
   onSubmit,
   open,
   recurrenceTypes,
@@ -491,11 +534,12 @@ function AppointmentCreateModal({
 }: {
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
+  draftRestored: boolean;
   form: FormInstance<AppointmentFormValues>;
-  initialClientId?: string;
   lockedProviderId?: string;
   onCreateClient: () => void;
   onCancel: () => void;
+  onDraftChange: (values: AppointmentFormValues) => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
   recurrenceTypes: RecurrenceType[];
@@ -506,18 +550,6 @@ function AppointmentCreateModal({
   const weeklyDays = Form.useWatch("weeklyDays", form);
   const recurrenceType = recurrenceTypes.find((item) => item.id === recurrenceTypeId);
   const recurrenceKey = recurrenceType?.key;
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    form.setFieldsValue({
-      clientId: initialClientId,
-      providerId: lockedProviderId,
-      startDate: form.getFieldValue("startDate") ?? dayjs(),
-    });
-  }, [form, initialClientId, lockedProviderId, open]);
 
   const handleRecurrenceTypeChange = (value?: string) => {
     form.setFieldValue("recurrenceTypeId", value);
@@ -540,17 +572,27 @@ function AppointmentCreateModal({
   };
 
   return (
-    <Modal open={open} title="Новая запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={createPending} destroyOnHidden>
+    <Modal
+      open={open}
+      title={<DraftModalTitle title="Новая запись" restored={draftRestored} />}
+      onCancel={onCancel}
+      onOk={() => form.submit()}
+      confirmLoading={createPending}
+      destroyOnHidden
+    >
       <Form<AppointmentFormValues>
         form={form}
         layout="vertical"
         requiredMark={false}
         initialValues={{ startDate: dayjs() }}
         onFinish={onSubmit}
+        onValuesChange={(_, values) => onDraftChange(values)}
       >
-        <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
+        <Form.Item label="Клиент">
           <Space direction="vertical" size={8} className="wide">
-            <ClientSelect extraOptions={createdClientOptions} />
+            <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
+              <ClientSelect extraOptions={createdClientOptions} />
+            </Form.Item>
             <Button onClick={onCreateClient}>Новый клиент</Button>
           </Space>
         </Form.Item>
@@ -774,6 +816,38 @@ function getWeeklyBitmaskValue(date: Dayjs) {
 
   return 2 ** (day - 1);
 }
+
+function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
+  ref.current = true;
+  action();
+  queueMicrotask(() => {
+    ref.current = false;
+  });
+}
+
+function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDraftValues {
+  return {
+    clientId: values.clientId,
+    serviceId: values.serviceId,
+    providerId: values.providerId,
+    startDate: values.startDate.toISOString(),
+    recurrenceTypeId: values.recurrenceTypeId,
+    patternEndDate: values.patternEndDate?.toISOString(),
+    weeklyDays: values.weeklyDays,
+  };
+}
+
+type AppointmentDraftValues = {
+  clientId?: string;
+  serviceId?: string;
+  providerId?: string;
+  startDate?: string;
+  recurrenceTypeId?: string;
+  patternEndDate?: string;
+  weeklyDays?: number[];
+};
+
+const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
 
 function AppointmentStack({
   appointments,

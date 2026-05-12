@@ -3,18 +3,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import type { Payment } from "../api/types";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
+import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
+import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
@@ -27,13 +29,16 @@ type PaymentPageLocationState = {
 
 export function PaymentsPage() {
   const [page, setPage] = useState(1);
-  const [isOpen, setOpen] = useState(false);
+  const hasCreateDraft = Boolean(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY));
+  const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [clientId, setClientId] = useState<string | undefined>();
   const [serviceId, setServiceId] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
+  const draftReplayKeyRef = useRef(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
   const location = useLocation();
   const navigate = useNavigate();
@@ -58,10 +63,12 @@ export function PaymentsPage() {
 
   const createMutation = useMutation({
     mutationFn: (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description?: string }) =>
-      paymentsApi.create({ ...values, date: values.date.toISOString() }),
+      paymentsApi.create({ ...values, date: values.date.toISOString() }, { replayKey: draftReplayKeyRef.current }),
     onSuccess: async () => {
       message.success("Платеж создан");
       closeCreateModal();
+      clearDraft(PAYMENT_CREATE_DRAFT_KEY);
+      draftReplayKeyRef.current = createReplayKey();
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
     onError: showErrors,
@@ -92,15 +99,28 @@ export function PaymentsPage() {
   });
 
   const openCreateModal = useCallback(() => {
-    form.setFieldsValue({
-      clientId: undefined,
-      serviceId: undefined,
-      amount: undefined,
-      date: dayjs(),
-      description: undefined,
-    });
     setOpen(true);
-  }, [form]);
+  }, []);
+
+  useEffect(() => {
+    if (!isCreateModalOpen) {
+      return;
+    }
+
+    const draft = loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
+    const draftValues = draft?.values ?? {};
+
+    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue({
+        clientId: draftValues.clientId ?? createPrefillClientId,
+        serviceId: draftValues.serviceId,
+        amount: draftValues.amount,
+        date: draftValues.date ? dayjs(draftValues.date) : dayjs(),
+        description: draftValues.description,
+      });
+    });
+  }, [createPrefillClientId, form, isCreateModalOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -134,12 +154,14 @@ export function PaymentsPage() {
 
   function closeCreateModal() {
     setOpen(false);
-    form.setFieldsValue({
-      clientId: undefined,
-      serviceId: undefined,
-      amount: undefined,
-      date: dayjs(),
-      description: undefined,
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue({
+        clientId: undefined,
+        serviceId: undefined,
+        amount: undefined,
+        date: dayjs(),
+        description: undefined,
+      });
     });
     clearCreateRouteState();
   }
@@ -236,21 +258,11 @@ export function PaymentsPage() {
       </Space>
       <Modal
         open={isCreateModalOpen}
-        title="Новый платеж"
+        title={<DraftModalTitle title="Новый платеж" restored={hasCreateDraft && isCreateModalOpen} />}
         onCancel={closeCreateModal}
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
         destroyOnHidden
-        afterOpenChange={(open) => {
-          if (!open || !createPrefillClientId) {
-            return;
-          }
-
-          form.setFieldsValue({
-            clientId: createPrefillClientId,
-            date: form.getFieldValue("date") ?? dayjs(),
-          });
-        }}
       >
         <Form
           form={form}
@@ -258,10 +270,26 @@ export function PaymentsPage() {
           requiredMark={false}
           initialValues={{ date: dayjs() }}
           onFinish={(values) => createMutation.mutate(values)}
+          onValuesChange={(_, values) => {
+            if (isDraftHydratingRef.current) {
+              return;
+            }
+
+            saveDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, {
+              replayKey: draftReplayKeyRef.current,
+              updatedAtUtc: new Date().toISOString(),
+              values: {
+                ...values,
+                date: values.date ? values.date.toISOString() : undefined,
+              },
+            });
+          }}
         >
-          <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
+          <Form.Item label="Клиент">
             <Space direction="vertical" size={8} className="wide">
-              <ClientSelect extraOptions={createdClientOptions} />
+              <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
+                <ClientSelect extraOptions={createdClientOptions} />
+              </Form.Item>
               <Button onClick={() => setQuickClientCreateOpen(true)}>Новый клиент</Button>
             </Space>
           </Form.Item>
@@ -291,6 +319,24 @@ export function PaymentsPage() {
     </>
   );
 }
+
+function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
+  ref.current = true;
+  action();
+  queueMicrotask(() => {
+    ref.current = false;
+  });
+}
+
+type PaymentDraftValues = {
+  clientId?: string;
+  serviceId?: string;
+  amount?: number;
+  date?: string;
+  description?: string;
+};
+
+const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";

@@ -1,21 +1,26 @@
 import { DollarOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { servicesApi } from "../api/crm";
 import { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
+import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
+import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { formatMoney } from "../utils/money";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
-  const [isCreateOpen, setCreateOpen] = useState(false);
+  const hasCreateDraft = Boolean(loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY));
+  const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
+  const draftReplayKeyRef = useRef(loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const isDraftHydratingRef = useRef(false);
   const [pricing, setPricing] = useState<Service | null>(null);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<ServiceDraftValues>();
   const [priceForm] = Form.useForm();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
@@ -23,11 +28,14 @@ export function ServicesPage() {
   const query = useQuery({ queryKey: ["services", page], queryFn: () => servicesApi.list({ page, page_size: 10 }) });
 
   const createMutation = useMutation({
-    mutationFn: servicesApi.create,
+    mutationFn: (values: ServiceCreateInput) =>
+      servicesApi.create(values, { replayKey: draftReplayKeyRef.current }),
     onSuccess: async () => {
       message.success("Услуга создана");
       setCreateOpen(false);
-      form.resetFields();
+      clearDraft(SERVICE_CREATE_DRAFT_KEY);
+      draftReplayKeyRef.current = createReplayKey();
+      pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
       await queryClient.invalidateQueries({ queryKey: ["services"] });
     },
     onError: showErrors,
@@ -42,6 +50,18 @@ export function ServicesPage() {
     },
     onError: showErrors,
   });
+
+  useLayoutEffect(() => {
+    if (!isCreateOpen) {
+      return;
+    }
+
+    const draft = loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue(draft?.values ?? {});
+    });
+  }, [form, isCreateOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -77,8 +97,30 @@ export function ServicesPage() {
           { title: "", width: 72, render: (_, row) => <Button icon={<DollarOutlined />} onClick={() => { setPricing(row); priceForm.setFieldValue("price", row.price); }} /> },
         ]}
       />
-      <Modal open={isCreateOpen} title="Новая услуга" onCancel={() => setCreateOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => createMutation.mutate(values)}>
+      <Modal
+        open={isCreateOpen}
+        title={<DraftModalTitle title="Новая услуга" restored={hasCreateDraft && isCreateOpen} />}
+        onCancel={() => setCreateOpen(false)}
+        onOk={() => form.submit()}
+        confirmLoading={createMutation.isPending}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={(values) => createMutation.mutate(values as ServiceCreateInput)}
+          onValuesChange={(_, values) => {
+            if (isDraftHydratingRef.current) {
+              return;
+            }
+
+            saveDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, {
+              replayKey: draftReplayKeyRef.current,
+              updatedAtUtc: new Date().toISOString(),
+              values,
+            });
+          }}
+        >
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -99,4 +141,26 @@ export function ServicesPage() {
       </Modal>
     </>
   );
+}
+
+type ServiceDraftValues = {
+  name?: string;
+  description?: string;
+  price?: number;
+};
+
+type ServiceCreateInput = {
+  name: string;
+  description?: string;
+  price: number;
+};
+
+const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
+
+function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
+  ref.current = true;
+  action();
+  queueMicrotask(() => {
+    ref.current = false;
+  });
 }

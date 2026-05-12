@@ -2,14 +2,16 @@ import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icon
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
+import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
@@ -17,9 +19,12 @@ import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
-  const [isOpen, setOpen] = useState(false);
+  const hasCreateDraft = Boolean(loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY));
+  const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const draftReplayKeyRef = useRef(loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
@@ -36,11 +41,13 @@ export function ExpensesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: expensesApi.create,
+    mutationFn: (values: ExpenseDraftValues) => expensesApi.create(values as { description: string; amount: number }, { replayKey: draftReplayKeyRef.current }),
     onSuccess: async () => {
       message.success("Расход создан");
       setOpen(false);
-      form.resetFields();
+      clearDraft(EXPENSE_CREATE_DRAFT_KEY);
+      draftReplayKeyRef.current = createReplayKey();
+      pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
       await queryClient.invalidateQueries({ queryKey: ["expenses"] });
     },
     onError: showErrors,
@@ -67,6 +74,18 @@ export function ExpensesPage() {
     },
     onError: showErrors,
   });
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const draft = loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue(draft?.values ?? {});
+    });
+  }, [form, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -162,8 +181,30 @@ export function ExpensesPage() {
           ]}
         />
       </Space>
-      <Modal open={isOpen} title="Новый расход" onCancel={() => setOpen(false)} onOk={() => form.submit()} confirmLoading={createMutation.isPending}>
-        <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => createMutation.mutate(values)}>
+      <Modal
+        open={isOpen}
+        title={<DraftModalTitle title="Новый расход" restored={hasCreateDraft && isOpen} />}
+        onCancel={() => setOpen(false)}
+        onOk={() => form.submit()}
+        confirmLoading={createMutation.isPending}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={(values) => createMutation.mutate(values)}
+          onValuesChange={(_, values) => {
+            if (isDraftHydratingRef.current) {
+              return;
+            }
+
+            saveDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, {
+              replayKey: draftReplayKeyRef.current,
+              updatedAtUtc: new Date().toISOString(),
+              values,
+            });
+          }}
+        >
           <Form.Item name="description" label="Описание" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -175,6 +216,21 @@ export function ExpensesPage() {
     </>
   );
 }
+
+function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
+  ref.current = true;
+  action();
+  queueMicrotask(() => {
+    ref.current = false;
+  });
+}
+
+type ExpenseDraftValues = {
+  description?: string;
+  amount?: number;
+};
+
+const EXPENSE_CREATE_DRAFT_KEY = "draft:expenses:create";
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";

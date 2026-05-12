@@ -1,8 +1,10 @@
 import { App as AntdApp, Form, Input, Modal, type InputProps, type InputRef } from "antd";
 import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { createReplayKey } from "../utils/drafts";
 
 type ClientQuickCreateValues = {
   firstName: string;
@@ -40,8 +42,15 @@ const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ in
 
 export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuickCreateModalProps) {
   const [form] = Form.useForm<ClientQuickCreateValues>();
+  const replayKeyRef = useRef(createReplayKey());
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+
+  useEffect(() => {
+    if (open) {
+      replayKeyRef.current = createReplayKey();
+    }
+  }, [open]);
 
   const createMutation = useMutation({
     mutationFn: async (values: ClientQuickCreateValues) => {
@@ -54,11 +63,12 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         vk: normalizeSocialLink(values.vk, "vk"),
       };
 
-      return clientsApi.create(input);
+      return clientsApi.create(input, { replayKey: replayKeyRef.current });
     },
     onSuccess: (created, values) => {
       message.success("Клиент создан");
       form.resetFields();
+      replayKeyRef.current = createReplayKey();
       onCreated({
         id: created.id,
         displayName: formatClientName(values),
