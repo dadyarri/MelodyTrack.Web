@@ -1,5 +1,6 @@
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
-import { Button, Layout, Menu, Popover, Space, Typography } from "antd";
+import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileSearchOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
+import { Button, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
+import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
@@ -20,6 +21,7 @@ export function AppLayout() {
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const availableNavItems = navItems.filter((item) => {
     if (item.superuserOnly) {
       return auth.user?.isSuperuser;
@@ -42,8 +44,16 @@ export function AppLayout() {
       </Layout.Sider>
       <Layout>
         <Layout.Header className="app-header">
+          <Button
+            type="text"
+            className="app-mobile-menu-button"
+            icon={<MenuOutlined />}
+            aria-label="Открыть навигацию"
+            onClick={() => setMobileNavOpen(true)}
+          />
+          <div className="app-header-spacer" />
           <Popover
-            trigger="hover"
+            trigger="click"
             placement="bottomRight"
             content={
               <Space direction="vertical" className="header-user-pane">
@@ -59,7 +69,7 @@ export function AppLayout() {
               </Space>
             }
           >
-            <Button type="text" className="header-user-trigger">
+            <Button type="text" className="header-user-trigger" aria-label="Открыть меню пользователя">
               <Space size={8}>
                 <UserOutlined />
                 <Typography.Text>
@@ -75,6 +85,56 @@ export function AppLayout() {
           </Space>
         </Layout.Content>
       </Layout>
+      <Drawer
+        open={mobileNavOpen}
+        placement="left"
+        width={280}
+        onClose={() => setMobileNavOpen(false)}
+        title="Навигация"
+        className="mobile-nav-drawer"
+      >
+        <Space direction="vertical" size={16} className="wide">
+          <div className="brand">MelodyTrack</div>
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={availableNavItems}
+            onClick={({ key }) => {
+              navigate(key);
+              setMobileNavOpen(false);
+            }}
+          />
+          <Space direction="vertical" className="wide mobile-nav-actions">
+            <Button block icon={<SettingOutlined />} onClick={() => {
+              setMobileNavOpen(false);
+              navigate("/profile");
+            }}>
+              Профиль
+            </Button>
+            <Button
+              block
+              icon={mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
+              onClick={() => {
+                toggleMode();
+                setMobileNavOpen(false);
+              }}
+            >
+              {mode === "dark" ? "Светлая тема" : "Темная тема"}
+            </Button>
+            <Button
+              block
+              danger
+              icon={<LogoutOutlined />}
+              onClick={() => {
+                setMobileNavOpen(false);
+                void auth.logout();
+              }}
+            >
+              Выйти
+            </Button>
+          </Space>
+        </Space>
+      </Drawer>
     </Layout>
   );
 }

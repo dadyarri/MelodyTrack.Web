@@ -84,6 +84,56 @@ export function SchedulePage() {
   const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
   const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable) {
+        return;
+      }
+
+      const tagName = target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setWeekStart((value) => value.subtract(1, "week"));
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setWeekStart((value) => value.add(1, "week"));
+        return;
+      }
+
+      if (event.key === "Home") {
+        event.preventDefault();
+        setWeekStart(dayjs().startOf("week"));
+        return;
+      }
+
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        setOpen(true);
+        return;
+      }
+
+      if ((event.key === "m" || event.key === "M") && !isSpecialistFilterLocked && auth.user?.id) {
+        event.preventDefault();
+        setProviderFilterId((current) => (current === auth.user?.id ? undefined : auth.user?.id));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [auth.user?.id, isSpecialistFilterLocked]);
+
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
@@ -224,6 +274,7 @@ export function SchedulePage() {
       <section className="schedule-page">
         <PageHeader
           title="Расписание"
+          description="Клавиши: ←/→ неделя, Home сегодня, N новая запись, M мои записи."
           actions={
             <>
               <Space.Compact className="schedule-week-controls">

@@ -79,8 +79,21 @@ body {
   border-bottom: 1px solid var(--border-main);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 16px;
+}
+
+.app-header-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-mobile-menu-button {
+  display: none;
+  padding-inline: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .header-user-trigger {
@@ -614,6 +627,10 @@ body {
   margin-bottom: 4px;
 }
 
+.mobile-nav-actions .ant-btn {
+  justify-content: flex-start;
+}
+
 .recurring-delete-actions {
   gap: 10px !important;
 }
@@ -913,6 +930,12 @@ body {
     background: var(--bg-sider);
   }
 
+  .app-mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .app-content {
     padding: 16px;
   }
@@ -989,7 +1012,7 @@ body {
   }
 
   .app-header {
-    padding: 0 12px 0 60px;
+    padding: 0 12px;
     gap: 8px;
   }
 
@@ -1000,13 +1023,7 @@ body {
   }
 
   .app-sider .ant-layout-sider-zero-width-trigger {
-    top: 12px;
-    inset-inline-end: -48px;
-    width: 40px;
-    height: 40px;
-    line-height: 40px;
-    border-radius: 6px;
-    background: var(--accent);
+    display: none;
   }
 }
 
