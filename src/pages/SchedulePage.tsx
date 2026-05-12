@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { scheduleApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { Appointment, RecurrenceType } from "../api/types";
@@ -52,6 +53,10 @@ type AppointmentEditFormValues = {
 };
 
 type AppointmentDeleteScope = "single" | "this-and-following" | "all";
+type SchedulePageLocationState = {
+  openCreate?: boolean;
+  clientId?: string;
+};
 
 export function SchedulePage() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
@@ -63,12 +68,17 @@ export function SchedulePage() {
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
   const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
   const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;
+  const locationState = (location.state ?? null) as SchedulePageLocationState | null;
+  const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
+  const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
 
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
@@ -187,6 +197,24 @@ export function SchedulePage() {
     setOpen(true);
   };
 
+  function openCreateModal() {
+    setOpen(true);
+  }
+
+  function clearCreateRouteState() {
+    if (!location.state) {
+      return;
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }
+
+  function closeCreateModal() {
+    setOpen(false);
+    form.resetFields();
+    clearCreateRouteState();
+  }
+
   return (
     <>
       <section className="schedule-page">
@@ -199,7 +227,7 @@ export function SchedulePage() {
                 <Button onClick={() => setWeekStart(dayjs().startOf("week"))}>Сегодня</Button>
                 <Button icon={<RightOutlined />} onClick={() => setWeekStart((value) => value.add(1, "week"))} />
               </Space.Compact>
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>Добавить</Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>Добавить</Button>
             </>
           }
         />
@@ -296,9 +324,10 @@ export function SchedulePage() {
       <AppointmentCreateModal
         createPending={createMutation.isPending}
         form={form}
-        onCancel={() => setOpen(false)}
+        initialClientId={createPrefillClientId}
+        onCancel={closeCreateModal}
         onSubmit={(values) => createMutation.mutate(values)}
-        open={isOpen}
+        open={isCreateModalOpen}
         recurrenceTypes={recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
       />
@@ -376,6 +405,7 @@ function AppointmentEditModal({
 function AppointmentCreateModal({
   createPending,
   form,
+  initialClientId,
   onCancel,
   onSubmit,
   open,
@@ -384,6 +414,7 @@ function AppointmentCreateModal({
 }: {
   createPending: boolean;
   form: FormInstance<AppointmentFormValues>;
+  initialClientId?: string;
   onCancel: () => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
@@ -401,10 +432,11 @@ function AppointmentCreateModal({
       return;
     }
 
-    if (!form.getFieldValue("startDate")) {
-      form.setFieldValue("startDate", dayjs());
-    }
-  }, [form, open]);
+    form.setFieldsValue({
+      clientId: initialClientId,
+      startDate: form.getFieldValue("startDate") ?? dayjs(),
+    });
+  }, [form, initialClientId, open]);
 
   const handleRecurrenceTypeChange = (value?: string) => {
     form.setFieldValue("recurrenceTypeId", value);
@@ -427,7 +459,7 @@ function AppointmentCreateModal({
   };
 
   return (
-    <Modal open={open} title="Новая запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={createPending}>
+    <Modal open={open} title="Новая запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={createPending} destroyOnHidden>
       <Form<AppointmentFormValues>
         form={form}
         layout="vertical"

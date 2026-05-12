@@ -1,4 +1,4 @@
-import { CreditCardOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
+import { CalendarOutlined, CreditCardOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, Descriptions, Drawer, Empty, Form, Input, List, Modal, Space, Table, Tag, Typography, type InputProps, type InputRef } from "antd";
 import IMask from "imask";
@@ -226,17 +226,34 @@ export function ClientsPage() {
         onClose={() => setHistoryClient(null)}
         destroyOnHidden
       >
-        {historyQuery.data ? <ClientHistoryContent data={historyQuery.data} onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })} /> : null}
+        {historyQuery.data ? (
+          <ClientHistoryContent
+            data={historyQuery.data}
+            onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
+            onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
+          />
+        ) : null}
         {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
       </Drawer>
     </>
   );
 }
 
-function ClientHistoryContent({ data, onCreatePayment }: { data: ClientHistory; onCreatePayment: (client: ClientHistory["client"]) => void }) {
+function ClientHistoryContent({
+  data,
+  onCreateAppointment,
+  onCreatePayment,
+}: {
+  data: ClientHistory;
+  onCreateAppointment: (client: ClientHistory["client"]) => void;
+  onCreatePayment: (client: ClientHistory["client"]) => void;
+}) {
   return (
     <Space direction="vertical" size={16} className="wide">
       <Space>
+        <Button icon={<CalendarOutlined />} onClick={() => onCreateAppointment(data.client)}>
+          Записать
+        </Button>
         <Button type="primary" icon={<CreditCardOutlined />} onClick={() => onCreatePayment(data.client)}>
           Добавить платеж
         </Button>
