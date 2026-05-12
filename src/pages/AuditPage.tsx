@@ -8,6 +8,49 @@ import { formatDateTime } from "../utils/date";
 
 const tableScrollY = 520;
 
+const categoryLabels: Record<string, string> = {
+  auth: "Авторизация",
+  clients: "Клиенты",
+  services: "Услуги",
+  payments: "Платежи",
+  expenses: "Расходы",
+  schedule: "Расписание",
+};
+
+const actionLabels: Record<string, string> = {
+  invite_created: "Создано приглашение",
+  user_registered: "Пользователь зарегистрирован",
+  login_succeeded: "Вход выполнен",
+  logout_succeeded: "Выход из сессии",
+  logout_all_succeeded: "Выход из всех сессий",
+  session_revoked: "Сессия завершена",
+  password_changed: "Пароль изменен",
+  password_reset_requested: "Запрошено восстановление пароля",
+  password_reset_completed: "Пароль восстановлен",
+  two_factor_removed: "2FA отключена",
+  recovery_codes_regenerated: "Коды восстановления обновлены",
+  client_created: "Клиент создан",
+  client_updated: "Клиент обновлен",
+  client_deleted: "Клиент удален",
+  service_created: "Услуга создана",
+  service_price_updated: "Цена услуги изменена",
+  payment_created: "Платеж создан",
+  payment_deleted: "Платеж удален",
+  expense_created: "Расход создан",
+  expense_deleted: "Расход удален",
+  appointment_created: "Встреча создана",
+  recurring_appointment_created: "Повторяющаяся встреча создана",
+  appointment_updated: "Встреча обновлена",
+  recurring_appointment_detached_and_updated: "Повторяющаяся встреча изменена отдельно",
+  appointment_deleted: "Встреча удалена",
+  appointments_deleted_this_and_following: "Удалены эта и следующие встречи",
+  appointments_deleted_all: "Удалена вся серия",
+};
+
+function formatAuditLabel(value: string, labels: Record<string, string>) {
+  return labels[value] ?? value;
+}
+
 export function AuditPage() {
   const auth = useAuth();
   const [page, setPage] = useState(1);
@@ -17,8 +60,8 @@ export function AuditPage() {
     queryFn: () => auditApi.list({ page, page_size: 20, search: search.trim() || undefined }),
   });
 
-  if (!auth.user?.isAdmin) {
-    return <Alert type="error" showIcon message="Доступ к журналу действий есть только у администраторов." />;
+  if (!auth.user?.isSuperuser) {
+    return <Alert type="error" showIcon message="Доступ к журналу действий есть только у суперпользователя." />;
   }
 
   return (
@@ -59,8 +102,8 @@ export function AuditPage() {
             width: 260,
             render: (_, row) => row.actorDisplayName || row.actorEmail || "Система",
           },
-          { title: "Категория", dataIndex: "category", width: 120 },
-          { title: "Действие", dataIndex: "action", width: 220 },
+          { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
+          { title: "Действие", dataIndex: "action", width: 260, render: (value: string) => formatAuditLabel(value, actionLabels) },
           {
             title: "Объект",
             width: 220,

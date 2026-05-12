@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { AppLayout } from "../layout/AppLayout";
 import { AdminRoute } from "../layout/AdminRoute";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
+import { SuperuserRoute } from "../layout/SuperuserRoute";
 import { AuthPage } from "../pages/AuthPage";
 import { AuditPage } from "../pages/AuditPage";
 import { ClientsPage } from "../pages/ClientsPage";
@@ -32,9 +33,9 @@ export const router = createBrowserRouter([
       {
         path: "audit",
         element: (
-          <AdminRoute>
+          <SuperuserRoute>
             <AuditPage />
-          </AdminRoute>
+          </SuperuserRoute>
         ),
       },
       { path: "services", element: <ServicesPage /> },

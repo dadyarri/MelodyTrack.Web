@@ -11,7 +11,7 @@ const navItems = [
   { key: "/services", icon: <ToolOutlined />, label: "Услуги" },
   { key: "/payments", icon: <CreditCardOutlined />, label: "Платежи" },
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы" },
-  { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", adminOnly: true },
+  { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", superuserOnly: true },
   { key: "/users", icon: <UserOutlined />, label: "Пользователи", adminOnly: true },
 ];
 
@@ -20,7 +20,13 @@ export function AppLayout() {
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const availableNavItems = navItems.filter((item) => !item.adminOnly || auth.user?.isAdmin);
+  const availableNavItems = navItems.filter((item) => {
+    if (item.superuserOnly) {
+      return auth.user?.isSuperuser;
+    }
+
+    return !item.adminOnly || auth.user?.isAdmin;
+  });
   const selectedKey = availableNavItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
 
   return (
