@@ -1,6 +1,6 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
+import { App as AntdApp, Button, Card, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useEffect, useState } from "react";
 import { scheduleApi } from "../api/crm";
@@ -58,6 +58,10 @@ export function SchedulePage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [clientFilterId, setClientFilterId] = useState<string | undefined>();
+  const [serviceFilterId, setServiceFilterId] = useState<string | undefined>();
+  const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
+  const [statusFilter, setStatusFilter] = useState<"planned" | "completed" | "canceled" | undefined>();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
   const queryClient = useQueryClient();
@@ -73,6 +77,36 @@ export function SchedulePage() {
     queryKey: ["appointments", "recurrenceTypes"],
     queryFn: scheduleApi.recurrenceTypes,
   });
+  const filteredAppointments = (query.data ?? []).filter((appointment) => {
+    if (clientFilterId && appointment.client.id !== clientFilterId) {
+      return false;
+    }
+
+    if (serviceFilterId && appointment.service.id !== serviceFilterId) {
+      return false;
+    }
+
+    if (providerFilterId && appointment.provider?.id !== providerFilterId) {
+      return false;
+    }
+
+    if (!statusFilter) {
+      return true;
+    }
+
+    if (statusFilter === "planned") {
+      return !appointment.isCanceled && !appointment.isCompleted;
+    }
+
+    if (statusFilter === "completed") {
+      return appointment.isCompleted;
+    }
+
+    return appointment.isCanceled;
+  });
+  const plannedCount = filteredAppointments.filter((appointment) => !appointment.isCanceled && !appointment.isCompleted).length;
+  const completedCount = filteredAppointments.filter((appointment) => appointment.isCompleted).length;
+  const canceledCount = filteredAppointments.filter((appointment) => appointment.isCanceled).length;
 
   const createMutation = useMutation({
     mutationFn: (values: AppointmentFormValues) =>
@@ -164,8 +198,68 @@ export function SchedulePage() {
           </>
         }
       />
+      <Space direction="vertical" size={16} className="wide">
+        <div className="filters-stack">
+          <div className="filter-field">
+            <Typography.Text type="secondary">Клиент</Typography.Text>
+            <ClientSelect value={clientFilterId} onChange={setClientFilterId} />
+          </div>
+          <div className="filter-field filter-field-service">
+            <Typography.Text type="secondary">Услуга</Typography.Text>
+            <ServiceSelect value={serviceFilterId} onChange={setServiceFilterId} />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Специалист</Typography.Text>
+            <UserSelect value={providerFilterId} onChange={setProviderFilterId} />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Статус</Typography.Text>
+            <Select
+              allowClear
+              className="wide"
+              placeholder="Все статусы"
+              options={[
+                { value: "planned", label: "Запланирована" },
+                { value: "completed", label: "Завершена" },
+                { value: "canceled", label: "Отменена" },
+              ]}
+              value={statusFilter}
+              onChange={setStatusFilter}
+            />
+          </div>
+          <div className="filter-field">
+            <Typography.Text type="secondary">Действия</Typography.Text>
+            <Button onClick={() => {
+              setClientFilterId(undefined);
+              setServiceFilterId(undefined);
+              setProviderFilterId(undefined);
+              setStatusFilter(undefined);
+            }}>
+              Сбросить
+            </Button>
+          </div>
+        </div>
+        <div className="summary-grid">
+          <Card size="small">
+            <Typography.Text type="secondary">Показываем записей</Typography.Text>
+            <div className="summary-value">{filteredAppointments.length}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Запланировано</Typography.Text>
+            <div className="summary-value">{plannedCount}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Завершено</Typography.Text>
+            <div className="summary-value">{completedCount}</div>
+          </Card>
+          <Card size="small">
+            <Typography.Text type="secondary">Отменено</Typography.Text>
+            <div className="summary-value">{canceledCount}</div>
+          </Card>
+        </div>
+      </Space>
       <AppointmentsCalendar
-        appointments={query.data ?? []}
+        appointments={filteredAppointments}
         loading={query.isLoading}
         range={range}
         onCreateAt={openCreateModalAt}
