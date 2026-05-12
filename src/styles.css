@@ -901,6 +901,17 @@ body {
   justify-content: space-between;
 }
 
+.activity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activity-details {
+  margin: 4px 0 0;
+  color: var(--text-main);
+}
+
 .ant-layout {
   background: var(--bg-app);
 }

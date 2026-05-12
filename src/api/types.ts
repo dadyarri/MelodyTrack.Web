@@ -77,9 +77,20 @@ export interface ClientHistoryAppointment {
   isCanceled: boolean;
 }
 
+export interface RecordActivity {
+  createdAtUtc: string;
+  category: string;
+  action: string;
+  actorEmail?: string | null;
+  actorDisplayName?: string | null;
+  sourceIpAddress?: string | null;
+  details?: string | null;
+}
+
 export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
+  recentActivity: RecordActivity[];
   recentPayments: ClientHistoryPayment[];
   recentAppointments: ClientHistoryAppointment[];
 }
@@ -140,6 +151,7 @@ export interface Appointment {
   isCompleted: boolean;
   isCanceled: boolean;
   recurringRule?: AppointmentRecurrenceRule | null;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface PaymentClient {
@@ -159,6 +171,7 @@ export interface Payment {
   amount: number;
   date: string;
   description: string;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface PaymentsResponse extends PaginatedResponse<Payment> {
@@ -196,5 +209,6 @@ export interface AuditLog {
   entityId?: string | null;
   actorEmail?: string | null;
   actorDisplayName?: string | null;
+  sourceIpAddress?: string | null;
   details?: string | null;
 }

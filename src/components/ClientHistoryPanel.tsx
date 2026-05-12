@@ -45,6 +45,31 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
         </Card>
       </div>
 
+      <Card size="small" title="Последние действия">
+        {data.recentActivity.length > 0 ? (
+          <List
+            dataSource={data.recentActivity}
+            renderItem={(activity) => (
+              <List.Item>
+                <div className="wide">
+                  <Space className="wide list-justify" wrap>
+                    <Typography.Text strong>{formatActivityLabel(activity)}</Typography.Text>
+                    <Typography.Text type="secondary">{formatDateTime(activity.createdAtUtc)}</Typography.Text>
+                  </Space>
+                  <Typography.Text type="secondary">
+                    {activity.actorDisplayName || activity.actorEmail || "Система"}
+                    {activity.sourceIpAddress ? ` · ${activity.sourceIpAddress}` : ""}
+                  </Typography.Text>
+                  {activity.details ? <Typography.Paragraph className="activity-details">{activity.details}</Typography.Paragraph> : null}
+                </div>
+              </List.Item>
+            )}
+          />
+        ) : (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Действий пока нет" />
+        )}
+      </Card>
+
       <Card size="small" title="Последние платежи">
         {data.recentPayments.length > 0 ? (
           <List
@@ -134,6 +159,11 @@ function renderAppointmentStatus(appointment: ClientHistory["recentAppointments"
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";
+}
+
+function formatActivityLabel(activity: ClientHistory["recentActivity"][number]) {
+  const suffix = activity.action.replaceAll("_", " ");
+  return `${activity.category}: ${suffix}`;
 }
 
 function getSocialHandle(value: string, type: "telegram" | "vk") {

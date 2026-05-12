@@ -1,6 +1,6 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
+import { App as AntdApp, Button, Card, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useEffect, useState } from "react";
@@ -1017,6 +1017,18 @@ function AppointmentDetailsModal({
             </div>
           ) : null}
         </div>
+        {appointment.lastActivity ? (
+          <Card size="small" title="Последнее изменение">
+            <Space direction="vertical" size={4} className="wide">
+              <Typography.Text strong>{appointment.lastActivity.actorDisplayName || appointment.lastActivity.actorEmail || "Система"}</Typography.Text>
+              <Typography.Text type="secondary">{formatDateTime(appointment.lastActivity.createdAtUtc)}</Typography.Text>
+              {appointment.lastActivity.sourceIpAddress ? (
+                <Typography.Text type="secondary">{appointment.lastActivity.sourceIpAddress}</Typography.Text>
+              ) : null}
+              {appointment.lastActivity.details ? <Typography.Paragraph className="activity-details">{appointment.lastActivity.details}</Typography.Paragraph> : null}
+            </Space>
+          </Card>
+        ) : null}
         <Space wrap>
           <Button icon={<EditOutlined />} onClick={() => onEdit(appointment)}>
             Изменить

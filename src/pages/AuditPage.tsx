@@ -100,7 +100,12 @@ export function AuditPage() {
           {
             title: "Кто",
             width: 260,
-            render: (_, row) => row.actorDisplayName || row.actorEmail || "Система",
+            render: (_, row) => (
+              <div className="activity-cell">
+                <Typography.Text strong>{row.actorDisplayName || row.actorEmail || "Система"}</Typography.Text>
+                {row.sourceIpAddress ? <Typography.Text type="secondary">{row.sourceIpAddress}</Typography.Text> : null}
+              </div>
+            ),
           },
           { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
           { title: "Действие", dataIndex: "action", width: 260, render: (value: string) => formatAuditLabel(value, actionLabels) },

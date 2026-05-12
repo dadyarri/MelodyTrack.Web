@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import type { Payment } from "../api/types";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
@@ -224,6 +225,11 @@ export function PaymentsPage() {
             { title: "Услуга", render: (_, row) => row.service?.name },
             { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
             { title: "Описание", dataIndex: "description" },
+            {
+              title: "Последнее изменение",
+              width: 240,
+              render: (_, row) => row.lastActivity ? renderActivityCell(row.lastActivity) : <Typography.Text type="secondary">Нет данных</Typography.Text>,
+            },
             { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate(row.id) })} /> },
           ]}
         />
@@ -288,4 +294,14 @@ export function PaymentsPage() {
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";
+}
+
+function renderActivityCell(activity: NonNullable<Payment["lastActivity"]>) {
+  return (
+    <div className="activity-cell">
+      <Typography.Text strong>{activity.actorDisplayName || activity.actorEmail || "Система"}</Typography.Text>
+      <Typography.Text type="secondary">{formatDateTime(activity.createdAtUtc)}</Typography.Text>
+      {activity.sourceIpAddress ? <Typography.Text type="secondary">{activity.sourceIpAddress}</Typography.Text> : null}
+    </div>
+  );
 }
