@@ -1,11 +1,13 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { scheduleApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { Appointment, RecurrenceType } from "../api/types";
 import { PageHeader } from "../components/PageHeader";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
@@ -64,6 +66,8 @@ export function SchedulePage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
+  const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
@@ -323,9 +327,11 @@ export function SchedulePage() {
       />
       <AppointmentCreateModal
         createPending={createMutation.isPending}
+        createdClientOptions={createdClientOptions}
         form={form}
         initialClientId={createPrefillClientId}
         lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
+        onCreateClient={() => setQuickClientCreateOpen(true)}
         onCancel={closeCreateModal}
         onSubmit={(values) => createMutation.mutate(values)}
         open={isCreateModalOpen}
@@ -334,9 +340,11 @@ export function SchedulePage() {
       />
       <AppointmentEditModal
         appointment={appointmentToEdit}
+        createdClientOptions={createdClientOptions}
         editPending={editMutation.isPending}
         form={editForm}
         lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
+        onCreateClient={() => setQuickClientCreateOpen(true)}
         onCancel={() => setAppointmentToEdit(null)}
         onSubmit={(values) => {
           if (!appointmentToEdit) {
@@ -346,22 +354,44 @@ export function SchedulePage() {
           editMutation.mutate({ id: appointmentToEdit.id, input: values });
         }}
       />
+      <ClientQuickCreateModal
+        open={isQuickClientCreateOpen}
+        onCancel={() => setQuickClientCreateOpen(false)}
+        onCreated={(client) => {
+          const option = { value: client.id, label: client.displayName };
+          setCreatedClientOptions((current) => [option, ...current]);
+
+          if (isCreateModalOpen) {
+            form.setFieldValue("clientId", client.id);
+          }
+
+          if (appointmentToEdit) {
+            editForm.setFieldValue("clientId", client.id);
+          }
+
+          setQuickClientCreateOpen(false);
+        }}
+      />
     </>
   );
 }
 
 function AppointmentEditModal({
   appointment,
+  createdClientOptions,
   editPending,
   form,
   lockedProviderId,
+  onCreateClient,
   onCancel,
   onSubmit,
 }: {
   appointment: Appointment | null;
+  createdClientOptions: DefaultOptionType[];
   editPending: boolean;
   form: FormInstance<AppointmentEditFormValues>;
   lockedProviderId?: string;
+  onCreateClient: () => void;
   onCancel: () => void;
   onSubmit: (values: AppointmentEditFormValues) => void;
 }) {
@@ -384,7 +414,10 @@ function AppointmentEditModal({
       {appointment ? (
         <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
           <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
-            <ClientSelect />
+            <Space direction="vertical" size={8} className="wide">
+              <ClientSelect extraOptions={createdClientOptions} />
+              <Button onClick={onCreateClient}>Новый клиент</Button>
+            </Space>
           </Form.Item>
           <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
             <ServiceSelect allowClear={false} />
@@ -408,9 +441,11 @@ function AppointmentEditModal({
 
 function AppointmentCreateModal({
   createPending,
+  createdClientOptions,
   form,
   initialClientId,
   lockedProviderId,
+  onCreateClient,
   onCancel,
   onSubmit,
   open,
@@ -418,9 +453,11 @@ function AppointmentCreateModal({
   recurrenceTypesLoading,
 }: {
   createPending: boolean;
+  createdClientOptions: DefaultOptionType[];
   form: FormInstance<AppointmentFormValues>;
   initialClientId?: string;
   lockedProviderId?: string;
+  onCreateClient: () => void;
   onCancel: () => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
@@ -475,7 +512,10 @@ function AppointmentCreateModal({
         onFinish={onSubmit}
       >
         <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
-          <ClientSelect />
+          <Space direction="vertical" size={8} className="wide">
+            <ClientSelect extraOptions={createdClientOptions} />
+            <Button onClick={onCreateClient}>Новый клиент</Button>
+          </Space>
         </Form.Item>
         <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
           <ServiceSelect allowClear={false} />

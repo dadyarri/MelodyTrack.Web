@@ -1,11 +1,13 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, DatePicker, Form, Input, InputNumber, Modal, Space, Table, Typography } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { PageHeader } from "../components/PageHeader";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
@@ -25,6 +27,8 @@ export function PaymentsPage() {
   const [clientId, setClientId] = useState<string | undefined>();
   const [serviceId, setServiceId] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
+  const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [form] = Form.useForm();
   const location = useLocation();
   const navigate = useNavigate();
@@ -209,7 +213,10 @@ export function PaymentsPage() {
           onFinish={(values) => createMutation.mutate(values)}
         >
           <Form.Item name="clientId" label="Клиент" rules={[{ required: true }]}>
-            <ClientSelect />
+            <Space direction="vertical" size={8} className="wide">
+              <ClientSelect extraOptions={createdClientOptions} />
+              <Button onClick={() => setQuickClientCreateOpen(true)}>Новый клиент</Button>
+            </Space>
           </Form.Item>
           <Form.Item name="serviceId" label="Услуга">
             <ServiceSelect />
@@ -225,6 +232,15 @@ export function PaymentsPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <ClientQuickCreateModal
+        open={isQuickClientCreateOpen}
+        onCancel={() => setQuickClientCreateOpen(false)}
+        onCreated={(client) => {
+          setCreatedClientOptions((current) => [{ value: client.id, label: client.displayName }, ...current]);
+          form.setFieldValue("clientId", client.id);
+          setQuickClientCreateOpen(false);
+        }}
+      />
     </>
   );
 }

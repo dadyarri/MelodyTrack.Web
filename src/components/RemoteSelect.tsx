@@ -4,12 +4,27 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clientsApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 
-export function ClientSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
+export function ClientSelect({
+  value,
+  onChange,
+  extraOptions,
+}: {
+  value?: string;
+  onChange?: (value: string) => void;
+  extraOptions?: DefaultOptionType[];
+}) {
   const [search, setSearch] = useState("");
   const query = useQuery({ queryKey: ["clients", "lookup", search], queryFn: () => clientsApi.lookup(search) });
   const options = useMemo<DefaultOptionType[]>(
-    () => query.data?.map((client) => ({ value: client.id, label: [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ") })) ?? [],
-    [query.data],
+    () => {
+      const lookupOptions = query.data?.map((client) => ({ value: client.id, label: [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ") })) ?? [];
+      const mergedOptions = [...(extraOptions ?? []), ...lookupOptions];
+
+      return mergedOptions.filter((option, index, items) =>
+        items.findIndex((item) => item.value === option.value) === index,
+      );
+    },
+    [extraOptions, query.data],
   );
 
   return (
