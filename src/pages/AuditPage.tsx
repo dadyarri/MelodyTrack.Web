@@ -52,6 +52,18 @@ function formatAuditLabel(value: string, labels: Record<string, string>) {
   return labels[value] ?? value;
 }
 
+function formatActorLabel(displayName?: string | null, email?: string | null) {
+  if (displayName?.trim()) {
+    return displayName.trim().split(/\s+/).slice(0, 2).join(" ");
+  }
+
+  if (email?.trim()) {
+    return email.trim();
+  }
+
+  return "Система";
+}
+
 export function AuditPage() {
   const auth = useAuth();
   const [page, setPage] = useState(1);
@@ -99,11 +111,10 @@ export function AuditPage() {
           { title: "Когда", dataIndex: "createdAtUtc", width: 170, render: (value: string) => formatDateTime(value) },
           {
             title: "Кто",
-            width: 260,
+            width: 180,
             render: (_, row) => (
               <div className="activity-cell">
-                <Typography.Text strong>{row.actorDisplayName || row.actorEmail || "Система"}</Typography.Text>
-                {row.sourceIpAddress ? <Typography.Text type="secondary">{row.sourceIpAddress}</Typography.Text> : null}
+                <Typography.Text strong>{formatActorLabel(row.actorDisplayName, row.actorEmail)}</Typography.Text>
               </div>
             ),
           },
@@ -114,7 +125,13 @@ export function AuditPage() {
             width: 220,
             render: (_, row) => `${row.entityType}${row.entityId ? ` #${row.entityId}` : ""}`,
           },
-          { title: "Детали", dataIndex: "details" },
+          {
+            title: "Детали",
+            dataIndex: "details",
+            width: 260,
+            render: (value?: string | null) =>
+              value ? <div className="audit-details-cell">{value}</div> : <Typography.Text type="secondary">Нет данных</Typography.Text>,
+          },
         ]}
       />
     </>

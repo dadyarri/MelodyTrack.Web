@@ -1,6 +1,6 @@
 import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LeftOutlined, LinkOutlined, PhoneOutlined, PlusOutlined, RedoOutlined, RightOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button, Card, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
+import { App as AntdApp, Button, Checkbox, DatePicker, Empty, Form, FormInstance, Modal, Select, Space, Tag, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
@@ -340,6 +340,22 @@ export function SchedulePage() {
     clearCreateRouteState();
   }
 
+  function handleClearCreateDraft() {
+    clearDraft(APPOINTMENT_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => {
+      form.setFieldsValue({
+        clientId: createPrefillClientId,
+        serviceId: undefined,
+        providerId: isSpecialistFilterLocked ? auth.user?.id : undefined,
+        startDate: pendingCreateStartDate ?? dayjs(),
+        recurrenceTypeId: undefined,
+        patternEndDate: undefined,
+        weeklyDays: undefined,
+      });
+    });
+  }
+
   return (
     <>
       <section className="schedule-page">
@@ -459,6 +475,7 @@ export function SchedulePage() {
         onServiceLabelChange={setCreateServiceLabel}
         onProviderLabelChange={setCreateProviderLabel}
         open={isCreateModalOpen}
+        onClearDraft={handleClearCreateDraft}
         recurrenceTypes={recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
       />
@@ -580,6 +597,7 @@ function AppointmentCreateModal({
   onProviderLabelChange,
   onSubmit,
   open,
+  onClearDraft,
   recurrenceTypes,
   recurrenceTypesLoading,
 }: {
@@ -596,6 +614,7 @@ function AppointmentCreateModal({
   onProviderLabelChange: (label?: string) => void;
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
+  onClearDraft: () => void;
   recurrenceTypes: RecurrenceType[];
   recurrenceTypesLoading: boolean;
 }) {
@@ -633,6 +652,13 @@ function AppointmentCreateModal({
       onOk={() => form.submit()}
       confirmLoading={createPending}
       destroyOnHidden
+      footer={(_, { CancelBtn, OkBtn }) => (
+        <>
+          <Button onClick={onClearDraft}>Очистить черновик</Button>
+          <CancelBtn />
+          <OkBtn />
+        </>
+      )}
     >
       <Form<AppointmentFormValues>
         form={form}
@@ -1196,18 +1222,6 @@ function AppointmentDetailsModal({
             </div>
           ) : null}
         </div>
-        {appointment.lastActivity ? (
-          <Card size="small" title="Последнее изменение">
-            <Space direction="vertical" size={4} className="wide">
-              <Typography.Text strong>{appointment.lastActivity.actorDisplayName || appointment.lastActivity.actorEmail || "Система"}</Typography.Text>
-              <Typography.Text type="secondary">{formatDateTime(appointment.lastActivity.createdAtUtc)}</Typography.Text>
-              {appointment.lastActivity.sourceIpAddress ? (
-                <Typography.Text type="secondary">{appointment.lastActivity.sourceIpAddress}</Typography.Text>
-              ) : null}
-              {appointment.lastActivity.details ? <Typography.Paragraph className="activity-details">{appointment.lastActivity.details}</Typography.Paragraph> : null}
-            </Space>
-          </Card>
-        ) : null}
         <Space wrap>
           <Button icon={<EditOutlined />} onClick={() => onEdit(appointment)}>
             Изменить
@@ -1244,7 +1258,7 @@ function getDays(range: [Dayjs, Dayjs]) {
     days.push(cursor);
     cursor = cursor.add(1, "day");
   }
-  return days.filter((day) => day.day() !== 1 && day.day() !== 2);
+  return days;
 }
 
 function getHours() {

@@ -86,11 +86,6 @@ export function AppLayout() {
         toggleMode();
         return;
       }
-
-      if (matchesPlainKey(event, "l")) {
-        event.preventDefault();
-        void auth.logout();
-      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -126,7 +121,9 @@ export function AppLayout() {
                   label={mode === "dark" ? "Светлая тема" : "Темная тема"}
                   onClick={toggleMode}
                 />
-                <ShortcutButton shortcut="L" danger leadingIcon={<LogoutOutlined />} label="Выйти" onClick={() => void auth.logout()} />
+                <Button danger icon={<LogoutOutlined />} onClick={() => void auth.logout()}>
+                  Выйти
+                </Button>
               </Space>
             }
           >

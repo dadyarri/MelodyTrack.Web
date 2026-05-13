@@ -128,6 +128,12 @@ export function ExpensesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [exportMutation]);
 
+  function handleClearCreateDraft() {
+    clearDraft(EXPENSE_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+  }
+
   return (
     <>
       <PageHeader
@@ -206,6 +212,13 @@ export function ExpensesPage() {
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
+        footer={(_, { CancelBtn, OkBtn }) => (
+          <>
+            <Button onClick={handleClearCreateDraft}>Очистить черновик</Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        )}
       >
         <Form
           form={form}

@@ -158,6 +158,13 @@ export function ClientsPage() {
     setPage(1);
   }
 
+  function handleClearCreateDraft() {
+    clearDraft(CLIENT_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = createReplayKey();
+    setCreatePhoneInputKey((current) => current + 1);
+    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+  }
+
   useLayoutEffect(() => {
     if (isCreateOpen && !editing) {
       const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
@@ -251,6 +258,13 @@ export function ClientsPage() {
         onCancel={() => setCreateOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={saveMutation.isPending}
+        footer={editing ? undefined : (_, { CancelBtn, OkBtn }) => (
+          <>
+            <Button onClick={handleClearCreateDraft}>Очистить черновик</Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        )}
       >
         <Form
           form={form}

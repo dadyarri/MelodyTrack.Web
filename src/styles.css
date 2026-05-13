@@ -969,6 +969,12 @@ body {
   color: var(--text-main);
 }
 
+.audit-details-cell {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 .ant-layout {
   background: var(--bg-app);
 }

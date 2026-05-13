@@ -96,6 +96,12 @@ export function ServicesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  function handleClearCreateDraft() {
+    clearDraft(SERVICE_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = createReplayKey();
+    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+  }
+
   return (
     <>
       <PageHeader
@@ -120,6 +126,13 @@ export function ServicesPage() {
         onCancel={() => setCreateOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
+        footer={(_, { CancelBtn, OkBtn }) => (
+          <>
+            <Button onClick={handleClearCreateDraft}>Очистить черновик</Button>
+            <CancelBtn />
+            <OkBtn />
+          </>
+        )}
       >
         <Form
           form={form}

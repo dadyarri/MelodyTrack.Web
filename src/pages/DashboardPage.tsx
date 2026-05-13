@@ -9,7 +9,7 @@ import { Appointment, Client, ClientHistory } from "../api/types";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
-import { formatDateTime } from "../utils/date";
+import { TIME_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
 import { formatMoney } from "../utils/money";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
@@ -88,10 +88,11 @@ export function DashboardPage() {
           />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title="Записи на завтра" loading={miniQuery.isLoading}>
+        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на ${formatTomorrowTitle(dayjs().add(1, "day"))}`} loading={miniQuery.isLoading}>
           <ReminderList
             appointments={tomorrowAppointments}
             emptyDescription="На завтра записей нет"
+            showTimeOnly
           />
         </Card>
 
@@ -149,9 +150,11 @@ function formatClientName(client: Pick<ClientHistory["client"], "firstName" | "l
 function ReminderList({
   appointments,
   emptyDescription,
+  showTimeOnly = false,
 }: {
   appointments: Appointment[];
   emptyDescription: string;
+  showTimeOnly?: boolean;
 }) {
   if (appointments.length === 0) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription} />;
@@ -160,12 +163,12 @@ function ReminderList({
   return (
     <List
       dataSource={appointments}
-      renderItem={(appointment) => <ScheduleItem appointment={appointment} />}
+      renderItem={(appointment) => <ScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />}
     />
   );
 }
 
-function ScheduleItem({ appointment }: { appointment: Appointment }) {
+function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appointment; showTimeOnly?: boolean }) {
   const start = dayjs(appointment.startDate);
   const status = appointment.isCanceled ? (
     <Tag color="red">Отменена</Tag>
@@ -180,7 +183,7 @@ function ScheduleItem({ appointment }: { appointment: Appointment }) {
       <Space direction="vertical" size={2} className="wide">
         <Space wrap align="start" className="wide" style={{ justifyContent: "space-between" }}>
           <Space wrap>
-            <Typography.Text strong>{formatDateTime(start)}</Typography.Text>
+            <Typography.Text strong>{showTimeOnly ? start.format(TIME_FORMAT) : formatDateTime(start)}</Typography.Text>
             {status}
           </Space>
           <Space size={4}>
@@ -206,4 +209,8 @@ function ScheduleItem({ appointment }: { appointment: Appointment }) {
       </Space>
     </List.Item>
   );
+}
+
+function formatTomorrowTitle(value: dayjs.Dayjs) {
+  return `${value.format("DD.MM.YYYY")} (${value.format("dd").toUpperCase()})`;
 }
