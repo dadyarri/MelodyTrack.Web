@@ -24,11 +24,11 @@ export const clientsApi = {
       .post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey))
       .then((response) => response.data);
   },
-  update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }) {
-    return http.put(`/clients/${id}`, input).then((response) => response.data);
+  update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }, options?: { expectedActivityId?: Ulid }) {
+    return http.put(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete(`/clients/${id}`).then((response) => response.data);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http.delete(`/clients/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined }).then((response) => response.data);
   },
   debtors() {
     return http
@@ -82,8 +82,8 @@ export const paymentsApi = {
   create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete(`/payments/${id}`).then((response) => response.data);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http.delete(`/payments/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined }).then((response) => response.data);
   },
 };
 
@@ -125,11 +125,16 @@ export const scheduleApi = {
   }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: Partial<{ clientId: Ulid; serviceId: Ulid; providerId: Ulid; startDate: string; isCompleted: boolean; isCanceled: boolean }>) {
+  update(id: Ulid, input: Partial<{ clientId: Ulid; serviceId: Ulid; providerId: Ulid; startDate: string; isCompleted: boolean; isCanceled: boolean; expectedActivityId: Ulid }>) {
     return http.patch(`/appointments/${id}`, input).then((response) => response.data);
   },
-  remove(id: Ulid, scope?: "single" | "this-and-following" | "all") {
-    return http.delete(`/appointments/${id}`, { params: scope ? { scope } : undefined }).then((response) => response.data);
+  remove(id: Ulid, scope?: "single" | "this-and-following" | "all", options?: { expectedActivityId?: Ulid }) {
+    return http.delete(`/appointments/${id}`, {
+      params: {
+        ...(scope ? { scope } : {}),
+        ...(options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : {}),
+      },
+    }).then((response) => response.data);
   },
 };
 

@@ -43,6 +43,7 @@ export interface Client {
   patronymic?: string | null;
   contacts?: ClientContacts | null;
   balance: number;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface ClientWithBalance extends Client {
@@ -78,6 +79,7 @@ export interface ClientHistoryAppointment {
 }
 
 export interface RecordActivity {
+  id: Ulid;
   createdAtUtc: string;
   category: string;
   action: string;
@@ -212,4 +214,11 @@ export interface AuditLog {
   actorDisplayName?: string | null;
   sourceIpAddress?: string | null;
   details?: string | null;
+}
+
+export interface StaleEntityConflict {
+  entityType: string;
+  entityId: string;
+  message: string;
+  currentActivity?: RecordActivity | null;
 }

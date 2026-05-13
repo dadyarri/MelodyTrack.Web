@@ -6,13 +6,14 @@ import dayjs, { Dayjs } from "dayjs";
 import { CSSProperties, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { scheduleApi } from "../api/crm";
-import { getApiErrorMessages } from "../api/http";
+import { getApiErrorMessages, getStaleEntityConflict } from "../api/http";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
-import { Appointment, RecurrenceType } from "../api/types";
+import { Appointment, RecurrenceType, Ulid } from "../api/types";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientSelect, ServiceSelect, UserSelect } from "../components/RemoteSelect";
+import { StatusBanner } from "../components/StatusBanner";
 import { useAuth } from "../features/auth/useAuth";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
@@ -70,8 +71,11 @@ export function SchedulePage() {
   const hasCreateDraft = Boolean(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY));
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [selectedAppointmentBaselineActivityId, setSelectedAppointmentBaselineActivityId] = useState<Ulid | null | undefined>();
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
+  const [appointmentToEditBaselineActivityId, setAppointmentToEditBaselineActivityId] = useState<Ulid | null | undefined>();
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
+  const [appointmentToDeleteBaselineActivityId, setAppointmentToDeleteBaselineActivityId] = useState<Ulid | null | undefined>();
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
@@ -92,6 +96,7 @@ export function SchedulePage() {
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
   const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
   const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;
+  const lockedProviderId = isSpecialistFilterLocked ? auth.user?.id : undefined;
   const locationState = (location.state ?? null) as SchedulePageLocationState | null;
   const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
   const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
@@ -143,6 +148,7 @@ export function SchedulePage() {
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
+    refetchInterval: selectedAppointment || appointmentToEdit || appointmentToDelete ? 5000 : false,
   });
   const recurrenceTypesQuery = useQuery({
     queryKey: ["appointments", "recurrenceTypes"],
@@ -181,6 +187,18 @@ export function SchedulePage() {
     // return appointment.isCanceled;
     return true;
   });
+  const currentSelectedAppointment = selectedAppointment ? (query.data ?? []).find((item) => item.id === selectedAppointment.id) ?? selectedAppointment : null;
+  const currentEditingAppointment = appointmentToEdit ? (query.data ?? []).find((item) => item.id === appointmentToEdit.id) ?? appointmentToEdit : null;
+  const currentDeletingAppointment = appointmentToDelete ? (query.data ?? []).find((item) => item.id === appointmentToDelete.id) ?? appointmentToDelete : null;
+  const isSelectedAppointmentStale = selectedAppointmentBaselineActivityId !== undefined && currentSelectedAppointment
+    ? (currentSelectedAppointment.lastActivity?.id ?? null) !== selectedAppointmentBaselineActivityId
+    : false;
+  const isEditingAppointmentStale = appointmentToEditBaselineActivityId !== undefined && currentEditingAppointment
+    ? (currentEditingAppointment.lastActivity?.id ?? null) !== appointmentToEditBaselineActivityId
+    : false;
+  const isDeletingAppointmentStale = appointmentToDeleteBaselineActivityId !== undefined && currentDeletingAppointment
+    ? (currentDeletingAppointment.lastActivity?.id ?? null) !== appointmentToDeleteBaselineActivityId
+    : false;
 
   const createMutation = useMutation({
     mutationFn: async (values: AppointmentFormValues) => {
@@ -236,7 +254,8 @@ export function SchedulePage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: { isCompleted?: boolean; isCanceled?: boolean } }) => scheduleApi.update(id, input),
+    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: { isCompleted?: boolean; isCanceled?: boolean }; expectedActivityId?: Ulid }) =>
+      scheduleApi.update(id, { ...input, expectedActivityId }),
     onMutate: async ({ id, input }) => {
       const nextState = (appointment: Appointment) =>
         appointment.id === id
@@ -255,34 +274,137 @@ export function SchedulePage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      modal.confirm({
+        title: "Запись уже изменена",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatActivitySummary(conflict.currentActivity)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Повторить поверх новой версии",
+        cancelText: "Обновить данные",
+        onOk: () => updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onCancel: () => {
+          const freshAppointment = findAppointmentById(queryClient, variables.id);
+          if (!freshAppointment) {
+            return;
+          }
+
+          setSelectedAppointment(freshAppointment);
+          setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+        },
+      });
+    },
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: AppointmentEditFormValues }) =>
+    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: AppointmentEditFormValues; expectedActivityId?: Ulid }) =>
       scheduleApi.update(id, {
         clientId: input.clientId,
         serviceId: input.serviceId,
         providerId: input.providerId,
         startDate: input.startDate.toISOString(),
+        expectedActivityId,
       }),
     onSuccess: async () => {
       message.success("Запись обновлена");
       setAppointmentToEdit(null);
+      setAppointmentToEditBaselineActivityId(undefined);
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict || !appointmentToEdit) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      modal.confirm({
+        title: "Запись уже изменена",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatActivitySummary(conflict.currentActivity)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Перезаписать",
+        cancelText: "Обновить форму",
+        onOk: () => editMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onCancel: () => {
+          const freshAppointment = findAppointmentById(queryClient, appointmentToEdit.id) ?? currentEditingAppointment;
+          if (!freshAppointment) {
+            return;
+          }
+
+          setAppointmentToEdit(freshAppointment);
+          setAppointmentToEditBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          editForm.setFieldsValue({
+            clientId: freshAppointment.client.id,
+            serviceId: freshAppointment.service.id,
+            providerId: lockedProviderId ?? freshAppointment.provider?.id,
+            startDate: dayjs(freshAppointment.startDate),
+          });
+        },
+      });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, scope }: { id: string; scope?: AppointmentDeleteScope }) => scheduleApi.remove(id, scope),
+    mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentDeleteScope; expectedActivityId?: Ulid }) =>
+      scheduleApi.remove(id, scope, { expectedActivityId }),
     onSuccess: async () => {
       message.success("Запись удалена");
       setSelectedAppointment(null);
+      setSelectedAppointmentBaselineActivityId(undefined);
       setAppointmentToDelete(null);
+      setAppointmentToDeleteBaselineActivityId(undefined);
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      modal.confirm({
+        title: "Запись уже изменена",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatActivitySummary(conflict.currentActivity)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Удалить все равно",
+        cancelText: "Обновить данные",
+        onOk: () => deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onCancel: () => {
+          const freshAppointment = findAppointmentById(queryClient, variables.id);
+          if (!freshAppointment) {
+            return;
+          }
+
+          if (appointmentToDelete?.id === variables.id) {
+            setAppointmentToDelete(freshAppointment);
+            setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          }
+
+          setSelectedAppointment(freshAppointment);
+          setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+        },
+      });
+    },
   });
 
   const handleCreateDraftChange = (values: AppointmentFormValues) => {
@@ -428,38 +550,52 @@ export function SchedulePage() {
             loading={query.isLoading}
             range={range}
             onCreateAt={openCreateModalAt}
-            onSelect={setSelectedAppointment}
+            onSelect={(appointment) => {
+              setSelectedAppointment(appointment);
+              setSelectedAppointmentBaselineActivityId(appointment.lastActivity?.id ?? null);
+            }}
             selectedAppointmentId={selectedAppointment?.id ?? null}
           />
         </div>
       </section>
       <AppointmentDetailsModal
-        appointment={selectedAppointment}
-        onClose={() => setSelectedAppointment(null)}
+        appointment={currentSelectedAppointment}
+        isStale={isSelectedAppointmentStale}
+        onClose={() => {
+          setSelectedAppointment(null);
+          setSelectedAppointmentBaselineActivityId(undefined);
+        }}
         onEdit={(appointment) => {
           setSelectedAppointment(null);
+          setSelectedAppointmentBaselineActivityId(undefined);
           setAppointmentToEdit(appointment);
+          setAppointmentToEditBaselineActivityId(appointment.lastActivity?.id ?? null);
         }}
-        onComplete={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: true, isCanceled: false } })}
-        onCancel={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCanceled: true } })}
-        onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false } })}
+        onComplete={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: true, isCanceled: false }, expectedActivityId: selectedAppointmentBaselineActivityId ?? undefined })}
+        onCancel={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCanceled: true }, expectedActivityId: selectedAppointmentBaselineActivityId ?? undefined })}
+        onRestore={(appointment) => updateMutation.mutate({ id: appointment.id, input: { isCompleted: false, isCanceled: false }, expectedActivityId: selectedAppointmentBaselineActivityId ?? undefined })}
         onDelete={(appointment) => {
           if (appointment.recurringRule) {
             setAppointmentToDelete(appointment);
+            setAppointmentToDeleteBaselineActivityId(selectedAppointmentBaselineActivityId ?? appointment.lastActivity?.id ?? null);
             return;
           }
 
           modal.confirm({
             title: "Удалить запись?",
-            onOk: () => deleteMutation.mutate({ id: appointment.id }),
+            onOk: () => deleteMutation.mutate({ id: appointment.id, expectedActivityId: selectedAppointmentBaselineActivityId ?? undefined }),
           });
         }}
       />
       <RecurringDeleteModal
-        appointment={appointmentToDelete}
+        appointment={currentDeletingAppointment}
         deletePending={deleteMutation.isPending}
-        onCancel={() => setAppointmentToDelete(null)}
-        onDelete={(appointment, scope) => deleteMutation.mutate({ id: appointment.id, scope })}
+        isStale={isDeletingAppointmentStale}
+        onCancel={() => {
+          setAppointmentToDelete(null);
+          setAppointmentToDeleteBaselineActivityId(undefined);
+        }}
+        onDelete={(appointment, scope) => deleteMutation.mutate({ id: appointment.id, scope, expectedActivityId: appointmentToDeleteBaselineActivityId ?? undefined })}
       />
       <AppointmentCreateModal
         createPending={createMutation.isPending}
@@ -480,19 +616,23 @@ export function SchedulePage() {
         recurrenceTypesLoading={recurrenceTypesQuery.isLoading}
       />
       <AppointmentEditModal
-        appointment={appointmentToEdit}
+        appointment={currentEditingAppointment}
         createdClientOptions={createdClientOptions}
         editPending={editMutation.isPending}
         form={editForm}
-        lockedProviderId={isSpecialistFilterLocked ? auth.user?.id : undefined}
+        isStale={isEditingAppointmentStale}
+        lockedProviderId={lockedProviderId}
         onCreateClient={() => setQuickClientCreateOpen(true)}
-        onCancel={() => setAppointmentToEdit(null)}
+        onCancel={() => {
+          setAppointmentToEdit(null);
+          setAppointmentToEditBaselineActivityId(undefined);
+        }}
         onSubmit={(values) => {
           if (!appointmentToEdit) {
             return;
           }
 
-          editMutation.mutate({ id: appointmentToEdit.id, input: values });
+          editMutation.mutate({ id: appointmentToEdit.id, input: values, expectedActivityId: appointmentToEditBaselineActivityId ?? undefined });
         }}
       />
       <ClientQuickCreateModal
@@ -523,6 +663,7 @@ function AppointmentEditModal({
   createdClientOptions,
   editPending,
   form,
+  isStale,
   lockedProviderId,
   onCreateClient,
   onCancel,
@@ -532,6 +673,7 @@ function AppointmentEditModal({
   createdClientOptions: DefaultOptionType[];
   editPending: boolean;
   form: FormInstance<AppointmentEditFormValues>;
+  isStale: boolean;
   lockedProviderId?: string;
   onCreateClient: () => void;
   onCancel: () => void;
@@ -555,6 +697,13 @@ function AppointmentEditModal({
     <Modal open={appointment !== null} title="Редактировать запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={editPending} destroyOnHidden>
       {appointment ? (
         <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+          {isStale ? (
+            <StatusBanner
+              type="warning"
+              message="Запись изменилась в другом окне"
+              description={formatActivitySummary(appointment.lastActivity)}
+            />
+          ) : null}
           <Form.Item label="Клиент">
             <Space direction="vertical" size={8} className="wide">
               <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
@@ -1115,11 +1264,13 @@ function AppointmentContent({
 function RecurringDeleteModal({
   appointment,
   deletePending,
+  isStale,
   onCancel,
   onDelete,
 }: {
   appointment: Appointment | null;
   deletePending: boolean;
+  isStale: boolean;
   onCancel: () => void;
   onDelete: (appointment: Appointment, scope: AppointmentDeleteScope) => void;
 }) {
@@ -1133,6 +1284,13 @@ function RecurringDeleteModal({
     >
       {appointment ? (
         <Space direction="vertical" size={16} className="wide">
+          {isStale ? (
+            <StatusBanner
+              type="warning"
+              message="Запись изменилась в другом окне"
+              description={formatActivitySummary(appointment.lastActivity)}
+            />
+          ) : null}
           <Typography.Text>
             Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.
           </Typography.Text>
@@ -1158,6 +1316,7 @@ function RecurringDeleteModal({
 
 function AppointmentDetailsModal({
   appointment,
+  isStale,
   onClose,
   onEdit,
   onComplete,
@@ -1166,6 +1325,7 @@ function AppointmentDetailsModal({
   onDelete,
 }: {
   appointment: Appointment | null;
+  isStale: boolean;
   onClose: () => void;
   onEdit: (appointment: Appointment) => void;
   onComplete: (appointment: Appointment) => void;
@@ -1187,6 +1347,13 @@ function AppointmentDetailsModal({
   return (
     <Modal open title="Запись" onCancel={onClose} footer={null}>
       <Space direction="vertical" size={18} className="wide">
+        {isStale ? (
+          <StatusBanner
+            type="warning"
+            message="Запись изменилась в другом окне"
+            description={formatActivitySummary(appointment.lastActivity)}
+          />
+        ) : null}
         <div className="schedule-details-header">
           <div>
             <Typography.Title level={3}>{clientName}</Typography.Title>
@@ -1395,4 +1562,26 @@ function formatWeeklyPattern(pattern?: number | null) {
     .filter((item) => (pattern & item.value) === item.value)
     .map((item) => item.label)
     .join(", ");
+}
+
+function findAppointmentById(queryClient: ReturnType<typeof useQueryClient>, id: Ulid) {
+  const appointmentLists = queryClient.getQueriesData<Appointment[]>({ queryKey: ["appointments"] });
+  for (const [, appointments] of appointmentLists) {
+    const appointment = appointments?.find((item) => item.id === id);
+    if (appointment) {
+      return appointment;
+    }
+  }
+
+  return null;
+}
+
+function formatActivitySummary(activity?: Appointment["lastActivity"]) {
+  if (!activity) {
+    return "Последнее изменение недоступно.";
+  }
+
+  const actor = activity.actorDisplayName ?? activity.actorEmail ?? "Другой пользователь";
+  const details = activity.details ? ` ${activity.details}` : "";
+  return `${actor} изменил запись ${formatDateTime(activity.createdAtUtc)}.${details}`.trim();
 }

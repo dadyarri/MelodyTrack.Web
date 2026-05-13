@@ -6,14 +6,16 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import { useNavigate } from "react-router";
 import { clientsApi } from "../api/crm";
-import { Client } from "../api/types";
-import { getApiErrorMessages } from "../api/http";
+import { getApiErrorMessages, getStaleEntityConflict } from "../api/http";
+import { Client, Ulid } from "../api/types";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
+import { StatusBanner } from "../components/StatusBanner";
+import { formatDateTime } from "../utils/date";
 import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { formatMoney } from "../utils/money";
@@ -53,6 +55,7 @@ export function ClientsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
+  const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const hasCreateDraft = Boolean(loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY));
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
@@ -67,6 +70,7 @@ export function ClientsPage() {
   const query = useQuery({
     queryKey: ["clients", page, search],
     queryFn: () => clientsApi.list({ page, page_size: 10, search: search.trim() || undefined }),
+    refetchInterval: isCreateOpen && Boolean(editing) ? 5000 : false,
   });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
@@ -74,11 +78,16 @@ export function ClientsPage() {
     enabled: Boolean(historyClient),
   });
 
+  const currentEditingClient = editing ? query.data?.data.find((client) => client.id === editing.id) ?? editing : null;
+  const isEditingClientStale = editingBaselineActivityId !== undefined && currentEditingClient
+    ? (currentEditingClient.lastActivity?.id ?? null) !== editingBaselineActivityId
+    : false;
+
   const saveMutation = useMutation({
-    mutationFn: async (values: ClientFormValues) => {
+    mutationFn: async ({ values, expectedActivityId }: { values: ClientFormValues; expectedActivityId?: Ulid }) => {
       const input = prepareClientInput(values);
       if (editing) {
-        return { offline: false as const, response: await clientsApi.update(editing.id, input) };
+        return { offline: false as const, response: await clientsApi.update(editing.id, input, { expectedActivityId }) };
       }
 
       try {
@@ -104,6 +113,7 @@ export function ClientsPage() {
       message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
       setCreateOpen(false);
       setEditing(null);
+      setEditingBaselineActivityId(undefined);
       clearDraft(CLIENT_CREATE_DRAFT_KEY);
       draftReplayKeyRef.current = createReplayKey();
       pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
@@ -111,22 +121,83 @@ export function ClientsPage() {
         await queryClient.invalidateQueries({ queryKey: ["clients"] });
       }
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict || !editing) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      modal.confirm({
+        title: "Клиент уже изменен",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatActivitySummary(conflict.currentActivity)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Перезаписать",
+        cancelText: "Обновить форму",
+        onOk: () => {
+          saveMutation.mutate({ values: variables.values, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onCancel: () => {
+          const freshClient = findClientById(queryClient, editing.id) ?? currentEditingClient;
+          if (!freshClient) {
+            return;
+          }
+
+          setEditing(freshClient);
+          setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
+          pauseDraftHydration(isDraftHydratingRef, () => {
+            form.setFieldsValue({
+              ...freshClient,
+              telegram: getContactValue(freshClient, "telegram"),
+              vk: getContactValue(freshClient, "vk"),
+              phone: getRussianPhoneDigits(getContactValue(freshClient, "phone")),
+            });
+          });
+        },
+      });
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: clientsApi.remove,
+    mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => clientsApi.remove(id, { expectedActivityId }),
     onSuccess: async () => {
       message.success("Клиент удален");
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      modal.confirm({
+        title: "Клиент уже изменен",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatActivitySummary(conflict.currentActivity)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Удалить все равно",
+        cancelText: "Обновить список",
+        onOk: () => deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }),
+        onCancel: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+      });
+    },
   });
 
   const openEditor = useCallback(
     (client?: Client) => {
       if (client) {
         setEditing(client);
+        setEditingBaselineActivityId(client.lastActivity?.id ?? null);
         setCreateOpen(true);
         pauseDraftHydration(isDraftHydratingRef, () => {
           form.resetFields();
@@ -142,6 +213,7 @@ export function ClientsPage() {
 
       const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
       setEditing(null);
+      setEditingBaselineActivityId(undefined);
       setCreateOpen(true);
       draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
       setCreatePhoneInputKey((current) => current + 1);
@@ -163,6 +235,12 @@ export function ClientsPage() {
     draftReplayKeyRef.current = createReplayKey();
     setCreatePhoneInputKey((current) => current + 1);
     pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+  }
+
+  function closeEditor() {
+    setCreateOpen(false);
+    setEditing(null);
+    setEditingBaselineActivityId(undefined);
   }
 
   useLayoutEffect(() => {
@@ -245,7 +323,7 @@ export function ClientsPage() {
                 <Button
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => modal.confirm({ title: "Удалить клиента?", onOk: () => deleteMutation.mutate(row.id) })}
+                  onClick={() => modal.confirm({ title: "Удалить клиента?", onOk: () => deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id }) })}
                 />
               </Space>
             ),
@@ -255,7 +333,7 @@ export function ClientsPage() {
       <Modal
         open={isCreateOpen}
         title={editing ? "Редактировать клиента" : <DraftModalTitle title="Новый клиент" restored={hasCreateDraft && isCreateOpen} />}
-        onCancel={() => setCreateOpen(false)}
+        onCancel={closeEditor}
         onOk={() => form.submit()}
         confirmLoading={saveMutation.isPending}
         footer={editing ? undefined : (_, { CancelBtn, OkBtn }) => (
@@ -270,7 +348,7 @@ export function ClientsPage() {
           form={form}
           layout="vertical"
           requiredMark={false}
-          onFinish={(values) => saveMutation.mutate(values)}
+          onFinish={(values) => saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined })}
           onValuesChange={(_, values) => {
             if (editing || isDraftHydratingRef.current) {
               return;
@@ -283,6 +361,13 @@ export function ClientsPage() {
             });
           }}
         >
+          {editing && isEditingClientStale ? (
+            <StatusBanner
+              type="warning"
+              message="Карточка клиента изменилась в другом окне"
+              description={formatActivitySummary(currentEditingClient?.lastActivity)}
+            />
+          ) : null}
           <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -449,6 +534,28 @@ function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
   queueMicrotask(() => {
     ref.current = false;
   });
+}
+
+function findClientById(queryClient: ReturnType<typeof useQueryClient>, id: Ulid) {
+  const clientLists = queryClient.getQueriesData<{ data: Client[] }>({ queryKey: ["clients"] });
+  for (const [, response] of clientLists) {
+    const client = response?.data.find((item) => item.id === id);
+    if (client) {
+      return client;
+    }
+  }
+
+  return null;
+}
+
+function formatActivitySummary(activity?: Client["lastActivity"]) {
+  if (!activity) {
+    return "Последнее изменение недоступно.";
+  }
+
+  const actor = activity.actorDisplayName ?? activity.actorEmail ?? "Другой пользователь";
+  const details = activity.details ? ` ${activity.details}` : "";
+  return `${actor} изменил запись ${formatDateTime(activity.createdAtUtc)}.${details}`.trim();
 }
 
 function normalizeSocialLink(value: string | null | undefined, type: "telegram" | "vk") {

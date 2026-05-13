@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, type AxiosResponse } from "axios";
 import { authStore } from "../features/auth/authStore";
+import type { StaleEntityConflict } from "./types";
 
 
 const baseURL = import.meta.env.DEV
@@ -232,4 +233,17 @@ export function getApiErrorMessages(error: unknown) {
 
 export function getApiErrorMessage(error: unknown) {
   return getApiErrorMessages(error).join("\n");
+}
+
+export function getStaleEntityConflict(error: unknown) {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) {
+    return null;
+  }
+
+  const data = error.response.data as Partial<StaleEntityConflict> | undefined;
+  if (!data?.entityType || !data?.entityId || !data?.message) {
+    return null;
+  }
+
+  return data as StaleEntityConflict;
 }

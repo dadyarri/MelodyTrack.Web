@@ -6,7 +6,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../api/crm";
-import { getApiErrorMessages } from "../api/http";
+import { getApiErrorMessages, getStaleEntityConflict } from "../api/http";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
@@ -103,12 +103,33 @@ export function PaymentsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: paymentsApi.remove,
+    mutationFn: ({ id, expectedActivityId }: { id: string; expectedActivityId?: string }) => paymentsApi.remove(id, { expectedActivityId }),
     onSuccess: async () => {
       message.success("Платеж удален");
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      const conflict = getStaleEntityConflict(error);
+      if (!conflict) {
+        showErrors(error);
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      modal.confirm({
+        title: "Платеж уже изменен",
+        content: (
+          <Space direction="vertical" size={8}>
+            <Typography.Text>{conflict.message}</Typography.Text>
+            <Typography.Text type="secondary">{formatConflictActivity(conflict.currentActivity?.actorDisplayName, conflict.currentActivity?.actorEmail, conflict.currentActivity?.createdAtUtc, conflict.currentActivity?.details)}</Typography.Text>
+          </Space>
+        ),
+        okText: "Удалить все равно",
+        cancelText: "Обновить список",
+        onOk: () => deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }),
+        onCancel: () => queryClient.invalidateQueries({ queryKey: ["payments"] }),
+      });
+    },
   });
 
   const exportMutation = useMutation({
@@ -302,7 +323,11 @@ export function PaymentsPage() {
             { title: "Услуга", render: (_, row) => row.service?.name },
             { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
             { title: "Описание", dataIndex: "description" },
-            { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate(row.id) })} /> },
+            {
+              title: "",
+              width: 72,
+              render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить платеж?", onOk: () => deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id }) })} />,
+            },
           ]}
         />
       </Space>
@@ -419,4 +444,14 @@ const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
 
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";
+}
+
+function formatConflictActivity(actorDisplayName?: string | null, actorEmail?: string | null, createdAtUtc?: string, details?: string | null) {
+  if (!createdAtUtc) {
+    return "Последнее изменение недоступно.";
+  }
+
+  const actor = actorDisplayName ?? actorEmail ?? "Другой пользователь";
+  const suffix = details ? ` ${details}` : "";
+  return `${actor} изменил запись ${formatDateTime(createdAtUtc)}.${suffix}`.trim();
 }
