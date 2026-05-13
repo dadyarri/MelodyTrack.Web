@@ -113,6 +113,7 @@ export interface Service {
 export interface LookupService {
   id: Ulid;
   name: string;
+  price?: number;
 }
 
 export interface User {

@@ -39,9 +39,12 @@ export function PaymentsPage() {
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
+  const [selectedServicePrice, setSelectedServicePrice] = useState<number | undefined>();
   const draftReplayKeyRef = useRef(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
   const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
+  const selectedCreateServiceId = Form.useWatch("serviceId", form);
+  const selectedCreateQuantity = Form.useWatch("quantity", form) ?? 1;
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -64,8 +67,14 @@ export function PaymentsPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (values: { clientId: string; serviceId?: string; amount: number; date: dayjs.Dayjs; description?: string }) => {
-      const input = { ...values, date: values.date.toISOString() };
+    mutationFn: async (values: { clientId: string; serviceId?: string; quantity?: number; amount: number; date: dayjs.Dayjs; description?: string }) => {
+      const input = {
+        clientId: values.clientId,
+        serviceId: values.serviceId,
+        amount: values.amount,
+        date: values.date.toISOString(),
+        description: values.description,
+      };
       try {
         return { offline: false as const, response: await paymentsApi.create(input, { replayKey: draftReplayKeyRef.current }) };
       } catch (error) {
@@ -134,6 +143,7 @@ export function PaymentsPage() {
       form.setFieldsValue({
         clientId: draftValues.clientId ?? createPrefillClientId,
         serviceId: draftValues.serviceId,
+        quantity: draftValues.quantity ?? 1,
         amount: draftValues.amount,
         date: draftValues.date ? dayjs(draftValues.date) : dayjs(),
         description: draftValues.description,
@@ -163,6 +173,14 @@ export function PaymentsPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [exportMutation, openCreateModal]);
 
+  useEffect(() => {
+    if (!selectedCreateServiceId || selectedServicePrice === undefined || isDraftHydratingRef.current) {
+      return;
+    }
+
+    form.setFieldValue("amount", selectedServicePrice * selectedCreateQuantity);
+  }, [form, selectedCreateQuantity, selectedCreateServiceId, selectedServicePrice]);
+
   function clearCreateRouteState() {
     if (!location.state) {
       return;
@@ -177,11 +195,13 @@ export function PaymentsPage() {
       form.setFieldsValue({
         clientId: undefined,
         serviceId: undefined,
+        quantity: 1,
         amount: undefined,
         date: dayjs(),
         description: undefined,
       });
     });
+    setSelectedServicePrice(undefined);
     clearCreateRouteState();
   }
 
@@ -192,11 +212,13 @@ export function PaymentsPage() {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
+        quantity: 1,
         amount: undefined,
         date: dayjs(),
         description: undefined,
       });
     });
+    setSelectedServicePrice(undefined);
   }
 
   return (
@@ -303,11 +325,16 @@ export function PaymentsPage() {
           form={form}
           layout="vertical"
           requiredMark={false}
-          initialValues={{ date: dayjs() }}
+          initialValues={{ date: dayjs(), quantity: 1 }}
           onFinish={(values) => createMutation.mutate(values)}
-          onValuesChange={(_, values) => {
+          onValuesChange={(changedValues, values) => {
             if (isDraftHydratingRef.current) {
               return;
+            }
+
+            const quantity = typeof values.quantity === "number" ? values.quantity : 1;
+            if (values.serviceId && selectedServicePrice !== undefined && ("serviceId" in changedValues || "quantity" in changedValues)) {
+              form.setFieldValue("amount", selectedServicePrice * quantity);
             }
 
             saveDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, {
@@ -328,11 +355,26 @@ export function PaymentsPage() {
               <Button onClick={() => setQuickClientCreateOpen(true)}>Новый клиент</Button>
             </Space>
           </Form.Item>
-          <Form.Item name="serviceId" label="Услуга">
-            <ServiceSelect onResolvedLabelChange={setCreateServiceLabel} />
-          </Form.Item>
-          <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
-            <InputNumber min={0} className="wide" />
+          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", width: "100%" }}>
+            <Form.Item name="quantity" label="Кол-во" style={{ width: "20%", minWidth: 120, marginBottom: 0 }}>
+              <InputNumber min={1} precision={0} className="wide" disabled={!selectedCreateServiceId} />
+            </Form.Item>
+            <div style={{ display: "flex", alignItems: "center", paddingTop: 30 }}>x</div>
+            <Form.Item name="serviceId" label="Услуга" style={{ width: "80%", marginBottom: 0 }}>
+              <ServiceSelect
+                onResolvedLabelChange={setCreateServiceLabel}
+                onResolvedPriceChange={(price) => {
+                  setSelectedServicePrice(price);
+                  const serviceId = form.getFieldValue("serviceId");
+                  if (serviceId && price !== undefined) {
+                    form.setFieldValue("amount", price * (form.getFieldValue("quantity") ?? 1));
+                  }
+                }}
+              />
+            </Form.Item>
+          </div>
+          <Form.Item name="amount" label="Итого" rules={[{ required: true }]}>
+            <InputNumber min={0} className="wide" disabled={Boolean(selectedCreateServiceId)} />
           </Form.Item>
           <Form.Item name="date" label="Дата" rules={[{ required: true }]}>
             <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
@@ -367,6 +409,7 @@ function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
 type PaymentDraftValues = {
   clientId?: string;
   serviceId?: string;
+  quantity?: number;
   amount?: number;
   date?: string;
   description?: string;

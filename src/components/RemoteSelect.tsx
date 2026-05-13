@@ -92,18 +92,38 @@ export function ServiceSelect({
   onChange,
   allowClear = true,
   onResolvedLabelChange,
+  onResolvedPriceChange,
 }: {
   value?: string;
   onChange?: (value: string) => void;
   allowClear?: boolean;
   onResolvedLabelChange?: (label?: string) => void;
+  onResolvedPriceChange?: (price?: number) => void;
 }) {
   const [search, setSearch] = useState("");
   const query = useQuery({ queryKey: ["services", "lookup", search], queryFn: () => servicesApi.lookup(search), retry: false });
+  const selectedQuery = useQuery({
+    queryKey: ["services", "selected", value],
+    queryFn: () => servicesApi.get(value!),
+    enabled: Boolean(value),
+    retry: false,
+  });
   const cachedLabel = getCachedReferenceLabel("service", value);
   const options = useMemo<DefaultOptionType[]>(
-    () => query.data?.map((service) => ({ value: service.id, label: service.name })) ?? (cachedLabel && value ? [{ value, label: cachedLabel }] : []),
-    [cachedLabel, query.data, value],
+    () => {
+      const selectedOption = selectedQuery.data
+        ? [{ value: selectedQuery.data.id, label: selectedQuery.data.name }]
+        : cachedLabel && value
+          ? [{ value, label: cachedLabel }]
+          : [];
+      const lookupOptions = query.data?.map((service) => ({ value: service.id, label: service.name })) ?? [];
+      const mergedOptions = [...selectedOption, ...lookupOptions];
+
+      return mergedOptions.filter((option, index, items) =>
+        items.findIndex((item) => item.value === option.value) === index,
+      );
+    },
+    [cachedLabel, query.data, selectedQuery.data, value],
   );
 
   useEffect(() => {
@@ -112,12 +132,17 @@ export function ServiceSelect({
   }, [cachedLabel, onResolvedLabelChange, options, value]);
 
   useEffect(() => {
+    const service = selectedQuery.data ?? query.data?.find((item) => item.id === value);
+    onResolvedPriceChange?.(service?.price);
+  }, [onResolvedPriceChange, query.data, selectedQuery.data, value]);
+
+  useEffect(() => {
     if (query.data) {
       rememberReferenceLabels("service", query.data.map((service) => ({ id: service.id, label: service.name })));
     }
   }, [query.data]);
 
-  return <Select className="wide" showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return <Select className="wide" showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading || selectedQuery.isLoading} options={options} value={value} onChange={onChange} />;
 }
 
 export function UserSelect({

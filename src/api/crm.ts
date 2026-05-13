@@ -56,6 +56,9 @@ export const servicesApi = {
   list(params: PaginatedParams & { name?: string }) {
     return http.get<PaginatedResponse<Service>>("/services", { params }).then((response) => response.data);
   },
+  get(id: Ulid) {
+    return http.get<Service>(`/services/${id}`).then((response) => response.data);
+  },
   lookup(name?: string) {
     return http
       .get<{ services: LookupService[] }>("/services/lookup", { params: name ? { name } : undefined })
