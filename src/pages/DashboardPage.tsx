@@ -81,14 +81,15 @@ export function DashboardPage() {
           <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title="Записи на сегодня" loading={miniQuery.isLoading}>
+        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на сегодня, ${formatDateTitle(dayjs())}`} loading={miniQuery.isLoading}>
           <ReminderList
             appointments={todayAppointments}
             emptyDescription="На сегодня записей нет"
+            showTimeOnly
           />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на ${formatTomorrowTitle(dayjs().add(1, "day"))}`} loading={miniQuery.isLoading}>
+        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на завтра, ${formatDateTitle(dayjs().add(1, "day"))}`} loading={miniQuery.isLoading}>
           <ReminderList
             appointments={tomorrowAppointments}
             emptyDescription="На завтра записей нет"
@@ -211,6 +212,6 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
   );
 }
 
-function formatTomorrowTitle(value: dayjs.Dayjs) {
+function formatDateTitle(value: dayjs.Dayjs) {
   return `${value.format("DD.MM.YYYY")} (${value.format("dd").toUpperCase()})`;
 }
