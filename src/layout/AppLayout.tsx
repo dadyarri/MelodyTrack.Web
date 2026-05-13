@@ -5,7 +5,6 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
-import { ShortcutButton } from "../components/ShortcutButton";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 const navItems = [
@@ -46,20 +45,49 @@ export function AppLayout() {
     {
       key: "profile",
       icon: <SettingOutlined />,
-      label: "Профиль",
+      label: (
+        <span className="app-nav-label">
+          <span>Профиль</span>
+          <span className="app-nav-shortcut">P</span>
+        </span>
+      ),
     },
     {
       key: "theme",
       icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />,
-      label: mode === "dark" ? "Светлая тема" : "Темная тема",
+      label: (
+        <span className="app-nav-label">
+          <span>{mode === "dark" ? "Светлая тема" : "Темная тема"}</span>
+          <span className="app-nav-shortcut">T</span>
+        </span>
+      ),
     },
     {
       key: "logout",
       icon: <LogoutOutlined />,
-      label: "Выйти",
+      label: (
+        <span className="app-nav-label">
+          <span>Выйти</span>
+        </span>
+      ),
       danger: true,
     },
   ];
+  const handleUserAction = (key: string) => {
+    if (key === "profile") {
+      navigate("/profile");
+      return;
+    }
+
+    if (key === "theme") {
+      toggleMode();
+      return;
+    }
+
+    if (key === "logout") {
+      void auth.logout();
+    }
+  };
   const selectedKey = availableNavItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
 
   useEffect(() => {
@@ -112,19 +140,15 @@ export function AppLayout() {
           <Popover
             trigger={["hover", "click"]}
             placement="bottomRight"
+            overlayClassName="header-user-popover"
             content={
-              <Space direction="vertical" className="header-user-pane">
-                <ShortcutButton shortcut="P" leadingIcon={<SettingOutlined />} label="Профиль" onClick={() => navigate("/profile")} />
-                <ShortcutButton
-                  shortcut="T"
-                  leadingIcon={mode === "dark" ? <SunOutlined /> : <MoonOutlined />}
-                  label={mode === "dark" ? "Светлая тема" : "Темная тема"}
-                  onClick={toggleMode}
-                />
-                <Button danger icon={<LogoutOutlined />} onClick={() => void auth.logout()}>
-                  Выйти
-                </Button>
-              </Space>
+              <Menu
+                mode="inline"
+                className="header-user-menu"
+                selectable={false}
+                items={mobileActionItems}
+                onClick={({ key }) => handleUserAction(String(key))}
+              />
             }
           >
             <Button type="text" className="header-user-trigger" aria-label="Открыть меню пользователя">
@@ -176,20 +200,7 @@ export function AppLayout() {
             items={mobileActionItems}
             onClick={({ key }) => {
               setMobileNavOpen(false);
-
-              if (key === "profile") {
-                navigate("/profile");
-                return;
-              }
-
-              if (key === "theme") {
-                toggleMode();
-                return;
-              }
-
-              if (key === "logout") {
-                void auth.logout();
-              }
+              handleUserAction(String(key));
             }}
           />
         </Space>

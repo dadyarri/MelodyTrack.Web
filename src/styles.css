@@ -171,8 +171,27 @@ body {
   font-weight: 600;
 }
 
-.header-user-pane {
-  width: 190px;
+.header-user-menu {
+  width: 200px;
+  background: transparent;
+  border-inline-end: 0 !important;
+}
+
+.header-user-popover .ant-popover-inner {
+  padding: 6px !important;
+}
+
+.header-user-menu .ant-menu-item {
+  height: auto;
+  min-height: 36px;
+  margin-block: 2px;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  line-height: 1.2;
+}
+
+.header-user-menu .app-nav-label {
+  gap: 8px;
 }
 
 .app-sync-button {
