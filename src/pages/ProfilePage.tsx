@@ -2,7 +2,15 @@ import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOu
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Alert, App as AntdApp, Button, Card, Form, Input, List, Space, Tag, Typography } from "antd";
 import { useEffect, useState } from "react";
-import { authApi, MeResponse, RecoveryCodeItem, SessionDto, Setup2FaResponse } from "../api/auth";
+import {
+  authApi,
+  type ChangePasswordInput,
+  type MeResponse,
+  type RecoveryCodeItem,
+  type SessionDto,
+  type Setup2FaInput,
+  type Setup2FaResponse,
+} from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
 import { PageLayout } from "../components/PageLayout";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
@@ -19,7 +27,11 @@ export function ProfilePage() {
   const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
 
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -32,7 +44,7 @@ export function ProfilePage() {
   });
 
   const changePasswordMutation = useMutation({
-    mutationFn: authApi.changePassword,
+    mutationFn: (input: ChangePasswordInput) => authApi.changePassword(input),
     onSuccess: async () => {
       message.success("Пароль изменен. Войдите снова.");
       await auth.logout();
@@ -41,7 +53,7 @@ export function ProfilePage() {
   });
 
   const setup2FaMutation = useMutation({
-    mutationFn: authApi.setup2Fa,
+    mutationFn: (input: Setup2FaInput) => authApi.setup2Fa(input),
     onSuccess: (data, variables) => {
       setSetupState({ ...data, password: variables.password });
     },
@@ -70,13 +82,15 @@ export function ProfilePage() {
   });
 
   const getRecoveryCodesMutation = useMutation({
-    mutationFn: authApi.getRecoveryCodes,
-    onSuccess: (data) => openRecoveryCodes(data.allCodes),
+    mutationFn: () => authApi.getRecoveryCodes(),
+    onSuccess: (data) => {
+      openRecoveryCodes(data.allCodes);
+    },
     onError: showErrors,
   });
 
   const regenerateRecoveryCodesMutation = useMutation({
-    mutationFn: authApi.regenerateRecoveryCodes,
+    mutationFn: () => authApi.regenerateRecoveryCodes(),
     onSuccess: (data) => {
       message.success("Новые коды восстановления созданы.");
       openRecoveryCodes(data.allCodes);
@@ -85,7 +99,7 @@ export function ProfilePage() {
   });
 
   const remove2FaMutation = useMutation({
-    mutationFn: authApi.remove2Fa,
+    mutationFn: () => authApi.remove2Fa(),
     onSuccess: () => {
       message.success("2FA отключен.");
       void meQuery.refetch();
@@ -95,7 +109,7 @@ export function ProfilePage() {
   });
 
   const logoutAllMutation = useMutation({
-    mutationFn: authApi.logoutAll,
+    mutationFn: () => authApi.logoutAll(),
     onSuccess: async () => {
       message.success("Все сессии завершены. Войдите снова.");
       await auth.logout();
@@ -123,6 +137,8 @@ export function ProfilePage() {
   }
 
   const me = meQuery.data;
+  const isTwoFactorEnabled = me?.isTwoFactorEnabled ?? false;
+  const isTwoFactorRequired = me?.isTwoFactorRequired ?? false;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -149,25 +165,26 @@ export function ProfilePage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [getRecoveryCodesMutation, me?.isTwoFactorEnabled, me?.isTwoFactorRequired, regenerateRecoveryCodesMutation, remove2FaMutation]);
 
   return (
-    <PageLayout
-      title="Профиль"
-      description="Управление паролем, 2FA, кодами восстановления и активными сессиями."
-      size={20}
-    >
-
+    <PageLayout title="Профиль" description="Управление паролем, 2FA, кодами восстановления и активными сессиями." size={20}>
       <div className="profile-grid">
-        <Card title="Аккаунт">
-          {me ? <ProfileSummary me={me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}
-        </Card>
+        <Card title="Аккаунт">{me ? <ProfileSummary me={me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}</Card>
       </div>
 
       <div className="profile-grid">
         <Card title="Смена пароля">
-          <Form layout="vertical" onFinish={(values) => changePasswordMutation.mutate(values)} requiredMark={false}>
+          <Form<ChangePasswordInput>
+            layout="vertical"
+            onFinish={(values) => {
+              changePasswordMutation.mutate(values);
+            }}
+            requiredMark={false}
+          >
             <Form.Item name="currentPassword" label="Текущий пароль" rules={[{ required: true }]}>
               <Input.Password autoComplete="current-password" />
             </Form.Item>
@@ -181,20 +198,64 @@ export function ProfilePage() {
         </Card>
 
         <Card title="2FA и коды восстановления">
-          <Space direction="vertical" className="wide">
-            <Typography.Text>{me?.isTwoFactorEnabled ? "Вход через приложение-аутентификатор уже включен." : "Подключите приложение-аутентификатор и сохраните коды восстановления."}</Typography.Text>
-            {me?.isTwoFactorRequired ? <Alert type="info" showIcon message="Для этой роли двухфакторная защита обязательна, поэтому отключить ее нельзя." /> : null}
+          <Space orientation="vertical" className="wide">
+            <Typography.Text>
+              {isTwoFactorEnabled
+                ? "Вход через приложение-аутентификатор уже включен."
+                : "Подключите приложение-аутентификатор и сохраните коды восстановления."}
+            </Typography.Text>
+            {isTwoFactorRequired ? (
+              <Alert type="info" showIcon title="Для этой роли двухфакторная защита обязательна, поэтому отключить ее нельзя." />
+            ) : null}
             <Space wrap>
-              <ShortcutButton shortcut="R" disabled={!me?.isTwoFactorEnabled} loading={getRecoveryCodesMutation.isPending} label="Показать коды" onClick={() => getRecoveryCodesMutation.mutate()} />
-              <ShortcutButton shortcut="G" leadingIcon={<ReloadOutlined />} disabled={!me?.isTwoFactorEnabled} loading={regenerateRecoveryCodesMutation.isPending} label="Перегенерировать коды" onClick={() => regenerateRecoveryCodesMutation.mutate()} />
-              <ShortcutButton shortcut="O" danger disabled={!me?.isTwoFactorEnabled || me?.isTwoFactorRequired} label="Отключить 2FA" onClick={() => remove2FaMutation.mutate()} />
+              <ShortcutButton
+                shortcut="R"
+                disabled={!isTwoFactorEnabled}
+                loading={getRecoveryCodesMutation.isPending}
+                label="Показать коды"
+                onClick={() => {
+                  getRecoveryCodesMutation.mutate();
+                }}
+              />
+              <ShortcutButton
+                shortcut="G"
+                leadingIcon={<ReloadOutlined />}
+                disabled={!isTwoFactorEnabled}
+                loading={regenerateRecoveryCodesMutation.isPending}
+                label="Перегенерировать коды"
+                onClick={() => {
+                  regenerateRecoveryCodesMutation.mutate();
+                }}
+              />
+              <ShortcutButton
+                shortcut="O"
+                danger
+                disabled={!isTwoFactorEnabled || isTwoFactorRequired}
+                label="Отключить 2FA"
+                onClick={() => {
+                  remove2FaMutation.mutate();
+                }}
+              />
             </Space>
-            {!me?.isTwoFactorEnabled ? (
-              <Form layout="vertical" onFinish={(values) => setup2FaMutation.mutate(values)} requiredMark={false}>
+            {!isTwoFactorEnabled ? (
+              <Form<Setup2FaInput>
+                layout="vertical"
+                onFinish={(values) => {
+                  setup2FaMutation.mutate(values);
+                }}
+                requiredMark={false}
+              >
                 <Form.Item name="password" label="Подтвердите текущий пароль" rules={[{ required: true }]}>
                   <Input.Password autoComplete="current-password" />
                 </Form.Item>
-                <ShortcutButton shortcut="F" type="primary" leadingIcon={<SafetyCertificateOutlined />} htmlType="submit" loading={setup2FaMutation.isPending} label="Получить QR-код и секрет" />
+                <ShortcutButton
+                  shortcut="F"
+                  type="primary"
+                  leadingIcon={<SafetyCertificateOutlined />}
+                  htmlType="submit"
+                  loading={setup2FaMutation.isPending}
+                  label="Получить QR-код и секрет"
+                />
               </Form>
             ) : null}
             {setupState ? (
@@ -207,7 +268,13 @@ export function ProfilePage() {
                   secret={setupState.secret}
                   qrSize={180}
                 >
-                  <Form layout="vertical" onFinish={(values) => verify2FaMutation.mutate(values)} requiredMark={false}>
+                  <Form<{ otp: string }>
+                    layout="vertical"
+                    onFinish={(values) => {
+                      verify2FaMutation.mutate(values);
+                    }}
+                    requiredMark={false}
+                  >
                     <Form.Item name="otp" label="Код из приложения" rules={[{ required: true }]}>
                       <Input inputMode="numeric" autoComplete="one-time-code" />
                     </Form.Item>
@@ -219,10 +286,7 @@ export function ProfilePage() {
               </Card>
             ) : null}
             {recoveryCodes ? (
-              <RecoveryCodesCard
-                items={recoveryCodes}
-                downloadFileName={`MelodyTrackRecovery_${toRecoveryFileStem(me)}.txt`}
-              />
+              <RecoveryCodesCard items={recoveryCodes} downloadFileName={`MelodyTrackRecovery_${toRecoveryFileStem(me)}.txt`} />
             ) : null}
           </Space>
         </Card>
@@ -231,7 +295,16 @@ export function ProfilePage() {
       <Card
         title="Активные сессии"
         extra={
-          <ShortcutButton shortcut="W" danger leadingIcon={<LogoutOutlined />} loading={logoutAllMutation.isPending} label="Выйти везде" onClick={() => logoutAllMutation.mutate()} />
+          <ShortcutButton
+            shortcut="W"
+            danger
+            leadingIcon={<LogoutOutlined />}
+            loading={logoutAllMutation.isPending}
+            label="Выйти везде"
+            onClick={() => {
+              logoutAllMutation.mutate();
+            }}
+          />
         }
       >
         <List
@@ -245,34 +318,33 @@ export function ProfilePage() {
                   danger
                   type="text"
                   icon={<DisconnectOutlined />}
-                  loading={revokeSessionMutation.isPending && revokeSessionMutation.variables?.id === session.id}
-                  onClick={() => revokeSessionMutation.mutate(session)}
+                  loading={revokeSessionMutation.isPending && revokeSessionMutation.variables.id === session.id}
+                  onClick={() => {
+                    revokeSessionMutation.mutate(session);
+                  }}
                 >
                   {session.isCurrent ? "Выйти" : "Завершить"}
                 </Button>,
               ]}
             >
-              <Space direction="vertical" size={2}>
+              <Space orientation="vertical" size={2}>
                 <Space size={8} wrap>
                   <Typography.Text>{session.deviceInfo || "Неизвестное устройство"}</Typography.Text>
                   {session.isCurrent ? <Tag color="green">Текущая</Tag> : null}
                 </Space>
-                <Typography.Text type="secondary">
-                  Последняя активность: {formatSessionTime(session.lastSeenAtUtc)}
-                </Typography.Text>
+                <Typography.Text type="secondary">Последняя активность: {formatSessionTime(session.lastSeenAtUtc)}</Typography.Text>
               </Space>
             </List.Item>
           )}
         />
       </Card>
-
     </PageLayout>
   );
 }
 
 function ProfileSummary({ me }: { me: MeResponse }) {
   return (
-    <Space direction="vertical">
+    <Space orientation="vertical">
       <Typography.Text strong>
         {me.firstName} {me.lastName}
       </Typography.Text>
@@ -286,8 +358,11 @@ function ProfileSummary({ me }: { me: MeResponse }) {
 }
 
 function toRecoveryFileStem(me?: MeResponse) {
-  const source = me?.email?.split("@")[0] || [me?.firstName, me?.lastName].filter(Boolean).join("_");
-  const stem = source.trim().toLowerCase().replace(/[^a-z0-9._-]+/g, "_");
+  const source = me?.email ? me.email.split("@")[0] : [me?.firstName, me?.lastName].filter(Boolean).join("_");
+  const stem = source
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "_");
   return stem || "user";
 }
 

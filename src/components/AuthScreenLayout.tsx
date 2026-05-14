@@ -11,7 +11,7 @@ export function AuthScreenLayout({ title, description, children }: AuthScreenLay
   return (
     <main className="auth-screen">
       <Card className="auth-card">
-        <Space direction="vertical" size={20} className="wide">
+        <Space orientation="vertical" size={20} className="wide">
           <div>
             <Typography.Title level={1}>{title}</Typography.Title>
             <Typography.Text type="secondary">{description}</Typography.Text>

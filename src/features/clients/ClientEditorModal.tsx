@@ -41,21 +41,23 @@ export function ClientEditorModal({
       open={open}
       title={editing ? "Редактировать клиента" : <DraftModalTitle title="Новый клиент" restored={draftRestored} />}
       onCancel={onCancel}
-      onOk={() => form.submit()}
+      onOk={() => {
+        form.submit();
+      }}
       confirmLoading={savePending}
-      footer={editing ? undefined : (_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
+      footer={
+        editing
+          ? undefined
+          : (_, { CancelBtn, OkBtn }) => {
+              return <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
+            }
+      }
     >
-      <Form
-        form={form}
-        layout="vertical"
-        requiredMark={false}
-        onFinish={onSubmit}
-        onValuesChange={onValuesChange}
-      >
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit} onValuesChange={onValuesChange}>
         {editing && isStale ? (
           <StatusBanner
             type="warning"
-            message="Карточка клиента изменилась в другом окне"
+            title="Карточка клиента изменилась в другом окне"
             description={formatRecordActivitySummary(staleActivity)}
           />
         ) : null}

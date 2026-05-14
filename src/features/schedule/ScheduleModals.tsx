@@ -83,7 +83,7 @@ export function AppointmentEditModal({
           {isStale ? (
             <StatusBanner
               type="warning"
-              message="Запись изменилась в другом окне"
+              title="Запись изменилась в другом окне"
               description={formatRecordActivitySummary(appointment.lastActivity)}
             />
           ) : null}
@@ -293,7 +293,7 @@ export function RecurringDeleteModal({
           {isStale ? (
             <StatusBanner
               type="warning"
-              message="Запись изменилась в другом окне"
+              title="Запись изменилась в другом окне"
               description={formatRecordActivitySummary(appointment.lastActivity)}
             />
           ) : null}
@@ -356,7 +356,7 @@ export function AppointmentDetailsModal({
         {isStale ? (
           <StatusBanner
             type="warning"
-            message="Запись изменилась в другом окне"
+            title="Запись изменилась в другом окне"
             description={formatRecordActivitySummary(appointment.lastActivity)}
           />
         ) : null}

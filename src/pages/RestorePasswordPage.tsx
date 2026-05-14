@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, Segmented } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { authApi } from "../api/auth";
+import { authApi, type ResetPasswordInput } from "../api/auth";
 import { AuthScreenLayout } from "../components/AuthScreenLayout";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
 import { StatusBanner } from "../components/StatusBanner";
@@ -16,10 +16,14 @@ export function RestorePasswordPage() {
   const { message } = AntdApp.useApp();
   const [secondFactorMode, setSecondFactorMode] = useState<SecondFactorMode>("otp");
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
 
   const resetPasswordMutation = useMutation({
-    mutationFn: (values: { newPassword: string; otp?: string; recoveryCode?: string }) =>
+    mutationFn: (values: Omit<ResetPasswordInput, "token">) =>
       authApi.resetPassword({
         token,
         newPassword: values.newPassword,
@@ -37,19 +41,17 @@ export function RestorePasswordPage() {
   });
 
   return (
-    <AuthScreenLayout
-      title="Восстановление пароля"
-      description="Если 2FA включен, используйте одноразовый код или код восстановления."
-    >
-      {!token ? <StatusBanner type="error" message="В ссылке нет токена восстановления." /> : null}
-      {token ? (
-        <StatusBanner
-          type="info"
-          message="Если ссылка уже использована или просрочена, запросите новую ссылку."
-        />
-      ) : null}
-      {submitError ? <StatusBanner type="error" message={submitError} /> : null}
-      <Form layout="vertical" onFinish={(values) => resetPasswordMutation.mutate(values)} requiredMark={false}>
+    <AuthScreenLayout title="Восстановление пароля" description="Если 2FA включен, используйте одноразовый код или код восстановления.">
+      {!token ? <StatusBanner type="error" title="В ссылке нет токена восстановления." /> : null}
+      {token ? <StatusBanner type="info" title="Если ссылка уже использована или просрочена, запросите новую ссылку." /> : null}
+      {submitError ? <StatusBanner type="error" title={submitError} /> : null}
+      <Form<Omit<ResetPasswordInput, "token">>
+        layout="vertical"
+        onFinish={(values) => {
+          resetPasswordMutation.mutate(values);
+        }}
+        requiredMark={false}
+      >
         <Form.Item name="newPassword" label="Новый пароль" rules={[{ required: true }]}>
           <Input.Password prefix={<LockOutlined />} autoComplete="new-password" />
         </Form.Item>

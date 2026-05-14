@@ -1,8 +1,11 @@
+import type { ReactNode } from "react";
 import { Alert } from "antd";
 import type { AlertProps } from "antd";
 
-type StatusBannerProps = Pick<AlertProps, "type" | "message" | "description">;
+type StatusBannerProps = Pick<AlertProps, "type" | "description"> & {
+  title: ReactNode;
+};
 
-export function StatusBanner(props: StatusBannerProps) {
-  return <Alert showIcon style={{ marginBottom: 12 }} {...props} />;
+export function StatusBanner({ title, ...props }: StatusBannerProps) {
+  return <Alert showIcon style={{ marginBottom: 12 }} title={title} {...props} />;
 }

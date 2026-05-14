@@ -23,7 +23,7 @@ export function QueryStateBlock({
   }
 
   if (isError) {
-    return <StatusBanner type="error" message={errorMessage} />;
+    return <StatusBanner type="error" title={errorMessage} />;
   }
 
   if (isEmpty) {

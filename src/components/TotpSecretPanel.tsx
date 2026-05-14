@@ -31,8 +31,8 @@ export function TotpSecretPanel({
   }
 
   return (
-    <Space direction="vertical" size={16} className="wide">
-      <Alert type={alertType} showIcon message={alertMessage} description={alertDescription} />
+    <Space orientation="vertical" size={16} className="wide">
+      <Alert type={alertType} showIcon title={alertMessage} description={alertDescription} />
       <div className="totp-qr">
         <QRCode value={qrValue} size={qrSize} />
       </div>
