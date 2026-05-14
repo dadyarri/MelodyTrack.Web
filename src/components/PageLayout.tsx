@@ -8,13 +8,23 @@ type PageLayoutProps = {
   actions?: ReactNode;
   children: ReactNode;
   size?: number;
+  customClass?: string;
 };
 
-export function PageLayout({ title, description, actions, children, size = 20 }: PageLayoutProps) {
+export function PageLayout({ title, description, actions, children, size = 20, customClass = "" }: PageLayoutProps) {
   return (
-    <Space orientation="vertical" size={size} className="wide">
-      <PageHeader title={title} description={description} actions={actions} />
-      {children}
+    <Space orientation="vertical" size={size} className={`wide`}>
+      {customClass ? (
+        <div className={`${customClass}`}>
+          <PageHeader title={title} description={description} actions={actions} />
+          {children}
+        </div>
+      ) : (
+        <>
+          <PageHeader title={title} description={description} actions={actions} />
+          {children}
+        </>
+      )}
     </Space>
   );
 }

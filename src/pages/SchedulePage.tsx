@@ -20,6 +20,7 @@ export function SchedulePage() {
     <>
       <PageLayout
         title="Расписание"
+        customClass="schedule-page"
         actions={
           <Space wrap className="schedule-header-actions">
             <ShortcutButton
