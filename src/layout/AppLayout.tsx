@@ -1,22 +1,12 @@
-import { CalendarOutlined, CreditCardOutlined, DashboardOutlined, FileSearchOutlined, LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, TeamOutlined, ToolOutlined, UserOutlined, WalletOutlined } from "@ant-design/icons";
+import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
+import { getAvailableNavItems } from "./navigation";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
-
-const navItems = [
-  { key: "/", icon: <DashboardOutlined />, label: "Обзор", shortcut: "1" },
-  { key: "/schedule", icon: <CalendarOutlined />, label: "Расписание", shortcut: "2" },
-  { key: "/clients", icon: <TeamOutlined />, label: "Клиенты", shortcut: "3" },
-  { key: "/services", icon: <ToolOutlined />, label: "Услуги", shortcut: "4" },
-  { key: "/payments", icon: <CreditCardOutlined />, label: "Платежи", shortcut: "5" },
-  { key: "/expenses", icon: <WalletOutlined />, label: "Расходы", shortcut: "6" },
-  { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", shortcut: "7", superuserOnly: true },
-  { key: "/users", icon: <UserOutlined />, label: "Пользователи", shortcut: "8", adminOnly: true },
-];
 
 export function AppLayout() {
   const auth = useAuth();
@@ -24,13 +14,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const availableNavItems = navItems.filter((item) => {
-    if (item.superuserOnly) {
-      return auth.user?.isSuperuser;
-    }
-
-    return !item.adminOnly || auth.user?.isAdmin;
-  });
+  const availableNavItems = getAvailableNavItems(auth.user);
   const menuItems = availableNavItems.map((item) => ({
     key: item.key,
     icon: item.icon,
