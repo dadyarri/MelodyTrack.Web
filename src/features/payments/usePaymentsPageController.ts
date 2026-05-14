@@ -126,7 +126,7 @@ export function usePaymentsPageController() {
         title: "Платеж уже изменен",
         okText: "Удалить все равно",
         cancelText: "Обновить список",
-        onConfirm: (conflict) => deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }),
+        onConfirm: (conflict) => { deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }); },
         onReload: () => queryClient.invalidateQueries({ queryKey: ["payments"] }),
       });
     },
@@ -192,7 +192,7 @@ export function usePaymentsPageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [exportMutation, openCreateModal]);
 
   useEffect(() => {

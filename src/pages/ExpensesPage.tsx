@@ -69,7 +69,7 @@ export function ExpensesPage() {
       message.success(result.offline ? "Расход сохранен локально" : "Расход создан");
       setOpen(false);
       resetDraft(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["expenses"] });
       }
@@ -131,12 +131,12 @@ export function ExpensesPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [exportMutation]);
 
   function handleClearCreateDraft() {
     resetDraft(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
   }
 
   return (
@@ -149,9 +149,9 @@ export function ExpensesPage() {
             leadingIcon={<DownloadOutlined />}
             loading={exportMutation.isPending}
             label="Экспорт"
-            onClick={() => exportMutation.mutate()}
+            onClick={() => { exportMutation.mutate(); }}
           />
-          <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
+          <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => { setOpen(true); }} />
         </Space>
       }
     >
@@ -220,7 +220,7 @@ export function ExpensesPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })}
+                onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => { deleteMutation.mutate(row.id); } })}
               />
             ),
           },
@@ -229,8 +229,8 @@ export function ExpensesPage() {
       <Modal
         open={isOpen}
         title={<DraftModalTitle title="Новый расход" restored={hasCreateDraft && isOpen} />}
-        onCancel={() => setOpen(false)}
-        onOk={() => form.submit()}
+        onCancel={() => { setOpen(false); }}
+        onOk={() => { form.submit(); }}
         confirmLoading={createMutation.isPending}
         footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
       >
@@ -238,7 +238,7 @@ export function ExpensesPage() {
           form={form}
           layout="vertical"
           requiredMark={false}
-          onFinish={(values) => createMutation.mutate(values)}
+          onFinish={(values) => { createMutation.mutate(values); }}
           onValuesChange={(_, values) => {
             if (isDraftHydratingRef.current) {
               return;

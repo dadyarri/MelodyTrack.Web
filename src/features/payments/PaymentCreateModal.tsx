@@ -56,7 +56,7 @@ export function PaymentCreateModal({
       open={open}
       title={<DraftModalTitle title="Новый платеж" restored={draftRestored} />}
       onCancel={onCancel}
-      onOk={() => form.submit()}
+      onOk={() => { form.submit(); }}
       confirmLoading={createPending}
       destroyOnHidden
       footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}

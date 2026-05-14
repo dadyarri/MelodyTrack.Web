@@ -108,7 +108,7 @@ export function useClientsPageController() {
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["clients"] });
       }
@@ -170,7 +170,7 @@ export function useClientsPageController() {
         title: "Клиент уже изменен",
         okText: "Удалить все равно",
         cancelText: "Обновить список",
-        onConfirm: (conflict) => deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }),
+        onConfirm: (conflict) => { deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }); },
         onReload: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
       });
     },
@@ -216,7 +216,7 @@ export function useClientsPageController() {
   const handleClearCreateDraft = useCallback(() => {
     resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
     setCreatePhoneInputKey((current) => current + 1);
-    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
   }, [form]);
 
   const closeEditor = useCallback(() => {
@@ -249,7 +249,7 @@ export function useClientsPageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [openEditor]);
 
   return {
@@ -273,7 +273,7 @@ export function useClientsPageController() {
     closeEditor,
     handleSearch,
     handleClearCreateDraft,
-    onSubmit: (values: ClientFormValues) => saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined }),
+    onSubmit: (values: ClientFormValues) => { saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined }); },
     onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => {
       if (editing || isDraftHydratingRef.current) {
         return;
@@ -288,7 +288,7 @@ export function useClientsPageController() {
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",
-        onOk: () => deleteMutation.mutate({ id: client.id, expectedActivityId: client.lastActivity?.id }),
+        onOk: () => { deleteMutation.mutate({ id: client.id, expectedActivityId: client.lastActivity?.id }); },
       });
     },
   };

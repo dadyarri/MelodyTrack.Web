@@ -94,11 +94,11 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         form.resetFields();
         onCancel();
       }}
-      onOk={() => form.submit()}
+      onOk={() => { form.submit(); }}
       confirmLoading={createMutation.isPending}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => createMutation.mutate(values)}>
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => { createMutation.mutate(values); }}>
         <ClientFormFields />
       </Form>
     </Modal>

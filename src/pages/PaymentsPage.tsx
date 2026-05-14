@@ -25,7 +25,7 @@ export function PaymentsPage() {
             leadingIcon={<DownloadOutlined />}
             loading={controller.exportMutation.isPending}
             label="Экспорт"
-            onClick={() => controller.exportMutation.mutate()}
+            onClick={() => { controller.exportMutation.mutate(); }}
           />
           <ShortcutButton
             shortcut="A"
@@ -127,7 +127,7 @@ export function PaymentsPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id })}
+                onClick={() => { controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id }); }}
               />
             ),
           },
@@ -144,16 +144,16 @@ export function PaymentsPage() {
         selectedServicePrice={controller.selectedServicePrice}
         onCancel={controller.closeCreateModal}
         onClearDraft={controller.handleClearCreateDraft}
-        onSubmit={(values) => controller.createMutation.mutate(values)}
+        onSubmit={(values) => { controller.createMutation.mutate(values); }}
         onValuesChange={controller.onCreateValuesChange}
-        onCreateClient={() => controller.setQuickClientCreateOpen(true)}
+        onCreateClient={() => { controller.setQuickClientCreateOpen(true); }}
         onClientLabelChange={controller.setCreateClientLabel}
         onServiceLabelChange={controller.setCreateServiceLabel}
         onServicePriceChange={controller.setSelectedServicePrice}
       />
       <ClientQuickCreateModal
         open={controller.isQuickClientCreateOpen}
-        onCancel={() => controller.setQuickClientCreateOpen(false)}
+        onCancel={() => { controller.setQuickClientCreateOpen(false); }}
         onCreated={controller.onQuickClientCreated}
       />
     </PageLayout>

@@ -42,10 +42,10 @@ export const clientsApi = {
     return http.post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }, options?: { expectedActivityId?: Ulid }) {
-    return http.put(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then((response) => response.data);
+    http.put(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then((response) => response.data);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
-    return http
+    http
       .delete(`/clients/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined })
       .then((response) => response.data);
   },
@@ -85,7 +85,7 @@ export const servicesApi = {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   updatePrice(id: Ulid, price: number) {
-    return http.patch(`/services/${id}/price`, { price }).then((response) => response.data);
+    http.patch(`/services/${id}/price`, { price }).then((response) => response.data);
   },
 };
 
@@ -113,7 +113,7 @@ export const paymentsApi = {
     return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
-    return http
+    http
       .delete(`/payments/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined })
       .then((response) => response.data);
   },
@@ -130,7 +130,7 @@ export const expensesApi = {
     return http.post<CreateEntityResponse>("/expenses", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid) {
-    return http.delete(`/expenses/${id}`).then((response) => response.data);
+    http.delete(`/expenses/${id}`).then((response) => response.data);
   },
 };
 
@@ -174,10 +174,10 @@ export const scheduleApi = {
       expectedActivityId: Ulid;
     }>,
   ) {
-    return http.patch(`/appointments/${id}`, input).then((response) => response.data);
+    http.patch(`/appointments/${id}`, input).then((response) => response.data);
   },
   remove(id: Ulid, scope?: "single" | "this-and-following" | "all", options?: { expectedActivityId?: Ulid }) {
-    return http
+    http
       .delete(`/appointments/${id}`, {
         params: {
           ...(scope ? { scope } : {}),

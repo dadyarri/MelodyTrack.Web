@@ -14,10 +14,10 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
   return (
     <Space orientation="vertical" size={16} className="wide">
       <Space>
-        <Button icon={<CalendarOutlined />} onClick={() => onCreateAppointment(data.client)}>
+        <Button icon={<CalendarOutlined />} onClick={() => { onCreateAppointment(data.client); }}>
           Записать
         </Button>
-        <Button type="primary" icon={<CreditCardOutlined />} onClick={() => onCreatePayment(data.client)}>
+        <Button type="primary" icon={<CreditCardOutlined />} onClick={() => { onCreatePayment(data.client); }}>
           Добавить платеж
         </Button>
       </Space>

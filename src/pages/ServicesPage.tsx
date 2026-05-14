@@ -54,7 +54,7 @@ export function ServicesPage() {
       message.success(result.offline ? "Услуга сохранена локально" : "Услуга создана");
       setCreateOpen(false);
       resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["services"] });
       }
@@ -97,19 +97,19 @@ export function ServicesPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, []);
 
   function handleClearCreateDraft() {
     resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
   }
 
   return (
     <PageLayout
       title="Услуги"
       actions={
-        <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setCreateOpen(true)} />
+        <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => { setCreateOpen(true); }} />
       }
     >
       <ListTable
@@ -139,8 +139,8 @@ export function ServicesPage() {
       <Modal
         open={isCreateOpen}
         title={<DraftModalTitle title="Новая услуга" restored={hasCreateDraft && isCreateOpen} />}
-        onCancel={() => setCreateOpen(false)}
-        onOk={() => form.submit()}
+        onCancel={() => { setCreateOpen(false); }}
+        onOk={() => { form.submit(); }}
         confirmLoading={createMutation.isPending}
         footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
       >
@@ -148,7 +148,7 @@ export function ServicesPage() {
           form={form}
           layout="vertical"
           requiredMark={false}
-          onFinish={(values) => createMutation.mutate(values as ServiceCreateInput)}
+          onFinish={(values) => { createMutation.mutate(values as ServiceCreateInput); }}
           onValuesChange={(_, values) => {
             if (isDraftHydratingRef.current) {
               return;
@@ -171,8 +171,8 @@ export function ServicesPage() {
       <Modal
         open={Boolean(pricing)}
         title="Обновить цену"
-        onCancel={() => setPricing(null)}
-        onOk={() => priceForm.submit()}
+        onCancel={() => { setPricing(null); }}
+        onOk={() => { priceForm.submit(); }}
         confirmLoading={priceMutation.isPending}
       >
         <Form

@@ -90,7 +90,7 @@ export function AppointmentEditModal({
       open={appointment !== null}
       title="Редактировать запись"
       onCancel={onCancel}
-      onOk={() => form.submit()}
+      onOk={() => { form.submit(); }}
       confirmLoading={editPending}
       destroyOnHidden
     >
@@ -197,7 +197,7 @@ export function AppointmentCreateModal({
       open={open}
       title={<DraftModalTitle title="Новая запись" restored={draftRestored} />}
       onCancel={onCancel}
-      onOk={() => form.submit()}
+      onOk={() => { form.submit(); }}
       confirmLoading={createPending}
       destroyOnHidden
       footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
@@ -208,7 +208,7 @@ export function AppointmentCreateModal({
         requiredMark={false}
         initialValues={{ startDate: dayjs() }}
         onFinish={onSubmit}
-        onValuesChange={(_, values) => onDraftChange(values)}
+        onValuesChange={(_, values) => { onDraftChange(values); }}
       >
         <Form.Item label="Клиент">
           <Space direction="vertical" size={8} className="wide">
@@ -313,13 +313,13 @@ export function RecurringDeleteModal({
           ) : null}
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
           <Space direction="vertical" className="wide recurring-delete-actions">
-            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "single")}>
+            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "single"); }}>
               Только эту запись
             </Button>
-            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "this-and-following")}>
+            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "this-and-following"); }}>
               Эту и следующие
             </Button>
-            <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "all")}>
+            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "all"); }}>
               Все записи
             </Button>
             <Button block disabled={deletePending} onClick={onCancel}>
@@ -437,25 +437,25 @@ export function AppointmentDetailsModal({
           ) : null}
         </div>
         <Space wrap>
-          <Button icon={<EditOutlined />} onClick={() => onEdit(appointment)}>
+          <Button icon={<EditOutlined />} onClick={() => { onEdit(appointment); }}>
             Изменить
           </Button>
           {isPlanned ? (
-            <Button icon={<CheckOutlined />} onClick={() => onComplete(appointment)}>
+            <Button icon={<CheckOutlined />} onClick={() => { onComplete(appointment); }}>
               Завершить
             </Button>
           ) : null}
           {isPlanned || isCompleted ? (
-            <Button icon={<CloseOutlined />} onClick={() => onCancel(appointment)}>
+            <Button icon={<CloseOutlined />} onClick={() => { onCancel(appointment); }}>
               Отменить
             </Button>
           ) : null}
           {!isPlanned ? (
-            <Button icon={<RedoOutlined />} onClick={() => onRestore(appointment)}>
+            <Button icon={<RedoOutlined />} onClick={() => { onRestore(appointment); }}>
               Вернуть в запланированные
             </Button>
           ) : null}
-          <Button danger icon={<DeleteOutlined />} onClick={() => onDelete(appointment)}>
+          <Button danger icon={<DeleteOutlined />} onClick={() => { onDelete(appointment); }}>
             Удалить
           </Button>
         </Space>

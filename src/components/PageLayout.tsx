@@ -15,7 +15,7 @@ export function PageLayout({ title, description, actions, children, size = 20, c
   return (
     <Space orientation="vertical" size={size} className={`wide`}>
       {customClass ? (
-        <div className={`${customClass}`}>
+        <div className={customClass}>
           <PageHeader title={title} description={description} actions={actions} />
           {children}
         </div>

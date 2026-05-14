@@ -28,7 +28,7 @@ export function ClientsPage() {
           type="primary"
           leadingIcon={<PlusOutlined />}
           label="Добавить"
-          onClick={() => controller.openEditor()}
+          onClick={() => { controller.openEditor(); }}
         />
       }
     >
@@ -60,7 +60,7 @@ export function ClientsPage() {
           {
             title: "ФИО",
             render: (_, row) => (
-              <Button type="link" className="table-link-button" onClick={() => controller.setHistoryClient(row)}>
+              <Button type="link" className="table-link-button" onClick={() => { controller.setHistoryClient(row); }}>
                 {formatClientName(row)}
               </Button>
             ),
@@ -80,9 +80,9 @@ export function ClientsPage() {
             width: 112,
             render: (_, row) => (
               <Space>
-                <Button icon={<ProfileOutlined />} onClick={() => controller.setHistoryClient(row)} />
-                <Button icon={<EditOutlined />} onClick={() => controller.openEditor(row)} />
-                <Button danger icon={<DeleteOutlined />} onClick={() => controller.confirmDelete(row)} />
+                <Button icon={<ProfileOutlined />} onClick={() => { controller.setHistoryClient(row); }} />
+                <Button icon={<EditOutlined />} onClick={() => { controller.openEditor(row); }} />
+                <Button danger icon={<DeleteOutlined />} onClick={() => { controller.confirmDelete(row); }} />
               </Space>
             ),
           },
@@ -107,7 +107,7 @@ export function ClientsPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
-        onClose={() => controller.setHistoryClient(null)}
+        onClose={() => { controller.setHistoryClient(null); }}
         onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
         onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
       />

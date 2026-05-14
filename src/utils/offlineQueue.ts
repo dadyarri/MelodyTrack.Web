@@ -119,7 +119,7 @@ export function enqueueOfflineCreate(item: OfflineQueuedCreateInput) {
     ...item,
     id: createOfflineId(item.kind),
     createdAtUtc: new Date().toISOString(),
-  } as OfflineQueuedCreate;
+  };
 
   queue.push(queuedItem);
   saveOfflineQueue(queue);

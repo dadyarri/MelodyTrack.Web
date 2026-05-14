@@ -87,8 +87,8 @@ export async function handleStaleEntityConflict<TError>({
     okText,
     cancelText,
     conflict,
-    onConfirm: () => onConfirm(conflict),
-    onReload: () => onReload(conflict),
+    onConfirm: () => { onConfirm(conflict); },
+    onReload: () => { onReload(conflict); },
   });
   return true;
 }

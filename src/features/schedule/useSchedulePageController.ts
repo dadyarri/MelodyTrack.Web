@@ -114,7 +114,7 @@ export function useSchedulePageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [auth.user?.id, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
@@ -241,7 +241,7 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Повторить поверх новой версии",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onConfirm: (conflict) => { updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
@@ -290,7 +290,7 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Перезаписать",
         cancelText: "Обновить форму",
-        onConfirm: (nextConflict) => editMutation.mutate({ ...variables, expectedActivityId: nextConflict.currentActivity?.id }),
+        onConfirm: (nextConflict) => { editMutation.mutate({ ...variables, expectedActivityId: nextConflict.currentActivity?.id }); },
         onReload: () => {
           const freshAppointment =
             findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, appointmentToEdit.id) ??
@@ -356,7 +356,7 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Перенести поверх новой версии",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onConfirm: (conflict) => { rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
@@ -408,7 +408,7 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Удалить все равно",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onConfirm: (conflict) => { deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
@@ -479,7 +479,7 @@ export function useSchedulePageController() {
   function closeCreateModal() {
     setOpen(false);
     setPendingCreateStartDate(null);
-    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
     clearCreateRouteState();
   }
 

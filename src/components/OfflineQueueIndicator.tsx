@@ -9,8 +9,8 @@ export function OfflineQueueIndicator() {
   const [syncStatus, setSyncStatus] = useState(() => getOfflineSyncStatus());
 
   useEffect(() => {
-    const updateQueue = () => setQueue(loadOfflineQueue());
-    const updateStatus = () => setSyncStatus(getOfflineSyncStatus());
+    const updateQueue = () => { setQueue(loadOfflineQueue()); };
+    const updateStatus = () => { setSyncStatus(getOfflineSyncStatus()); };
     updateQueue();
     updateStatus();
     window.addEventListener(offlineQueueChangedEventName, updateQueue);

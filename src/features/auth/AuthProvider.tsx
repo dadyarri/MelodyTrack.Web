@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     window.addEventListener(authExpiredEventName, handleSessionExpired);
-    return () => window.removeEventListener(authExpiredEventName, handleSessionExpired);
+    return () => { window.removeEventListener(authExpiredEventName, handleSessionExpired); };
   }, [handleSessionExpired]);
 
   useEffect(() => {
@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (axios.isAxiosError(meQuery.error) && meQuery.error.response?.status === 401) {
-      const timeoutId = window.setTimeout(() => handleSessionExpired(), 0);
-      return () => window.clearTimeout(timeoutId);
+      const timeoutId = window.setTimeout(() => { handleSessionExpired(); }, 0);
+      return () => { window.clearTimeout(timeoutId); };
     }
   }, [hasSession, handleSessionExpired, meQuery.error, meQuery.isError]);
 

@@ -34,7 +34,7 @@ export function DashboardPage() {
   });
   const debtorsExportMutation = useMutation({
     mutationFn: clientsApi.exportDebtors,
-    onSuccess: (blob) => downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`),
+    onSuccess: (blob) => { downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`); },
   });
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function DashboardPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => { window.removeEventListener("keydown", handleKeyDown); };
   }, [debtorsExportMutation]);
 
   const todayKey = dayjs().format("YYYY-MM-DD");
@@ -110,7 +110,7 @@ export function DashboardPage() {
               leadingIcon={<DownloadOutlined />}
               loading={debtorsExportMutation.isPending}
               label="Экспорт"
-              onClick={() => debtorsExportMutation.mutate()}
+              onClick={() => { debtorsExportMutation.mutate(); }}
             />
           }
         >
@@ -124,7 +124,7 @@ export function DashboardPage() {
               {
                 title: "Клиент",
                 render: (_, row) => (
-                  <Button type="link" className="table-link-button" onClick={() => setHistoryClient(row)}>
+                  <Button type="link" className="table-link-button" onClick={() => { setHistoryClient(row); }}>
                     {`${row.lastName} ${row.firstName}`}
                   </Button>
                 ),
@@ -139,7 +139,7 @@ export function DashboardPage() {
         data={historyQuery.data}
         isLoading={historyQuery.isLoading}
         isError={historyQuery.isError}
-        onClose={() => setHistoryClient(null)}
+        onClose={() => { setHistoryClient(null); }}
         onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
         onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
       />

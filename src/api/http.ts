@@ -21,11 +21,12 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
-  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
     const method = (config.method ?? "get").toLowerCase();
     if (method === "get") {
       const cachedResponse = tryGetCachedResponse(config);
       if (cachedResponse) {
+        // eslint-disable-next-line @typescript-eslint/require-await -- Interface requires Promise-returning method.
         config.adapter = async () => cachedResponse;
         return config;
       }
@@ -250,7 +251,7 @@ export function getStaleEntityConflict(error: unknown) {
   }
 
   const data = error.response.data as Partial<StaleEntityConflict> | undefined;
-  if (!data?.entityType || !data?.entityId || !data?.message) {
+  if (!data || !data.entityType || !data.entityId || !data.message) {
     return null;
   }
 
