@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { servicesApi } from "../api/crm";
 import { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
+import { DraftModalFooter } from "../components/DraftModalFooter";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
@@ -124,13 +125,7 @@ export function ServicesPage() {
         onCancel={() => setCreateOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
-        footer={(_, { CancelBtn, OkBtn }) => (
-          <>
-            <Button onClick={handleClearCreateDraft}>Очистить черновик</Button>
-            <CancelBtn />
-            <OkBtn />
-          </>
-        )}
+        footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
       >
         <Form
           form={form}

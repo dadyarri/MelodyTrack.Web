@@ -2,6 +2,7 @@ import { Button, DatePicker, Form, Input, InputNumber, Modal, Space } from "antd
 import type { FormInstance } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import type dayjs from "dayjs";
+import { DraftModalFooter } from "../../components/DraftModalFooter";
 import { DraftModalTitle } from "../../components/DraftModalTitle";
 import { ClientSelect, ServiceSelect } from "../../components/RemoteSelect";
 import { DATE_TIME_FORMAT, TIME_FORMAT } from "../../utils/date";
@@ -58,13 +59,7 @@ export function PaymentCreateModal({
       onOk={() => form.submit()}
       confirmLoading={createPending}
       destroyOnHidden
-      footer={(_, { CancelBtn, OkBtn }) => (
-        <>
-          <Button onClick={onClearDraft}>Очистить черновик</Button>
-          <CancelBtn />
-          <OkBtn />
-        </>
-      )}
+      footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
     >
       <Form
         form={form}

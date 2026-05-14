@@ -5,6 +5,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
 import type { Appointment, RecurrenceType } from "../../api/types";
+import { DraftModalFooter } from "../../components/DraftModalFooter";
 import { ClientSelect, ServiceSelect, UserSelect } from "../../components/RemoteSelect";
 import { DraftModalTitle } from "../../components/DraftModalTitle";
 import { StatusBanner } from "../../components/StatusBanner";
@@ -183,13 +184,7 @@ export function AppointmentCreateModal({
       onOk={() => form.submit()}
       confirmLoading={createPending}
       destroyOnHidden
-      footer={(_, { CancelBtn, OkBtn }) => (
-        <>
-          <Button onClick={onClearDraft}>Очистить черновик</Button>
-          <CancelBtn />
-          <OkBtn />
-        </>
-      )}
+      footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
     >
       <Form<AppointmentFormValues>
         form={form}

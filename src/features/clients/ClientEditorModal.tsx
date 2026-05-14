@@ -1,7 +1,8 @@
-import { Button, Form, Input, Modal, type InputProps, type InputRef } from "antd";
+import { Form, Input, Modal, type InputProps, type InputRef } from "antd";
 import type { FormInstance } from "antd";
 import { IMaskMixin, type IMaskInputProps } from "react-imask";
 import type { Client } from "../../api/types";
+import { DraftModalFooter } from "../../components/DraftModalFooter";
 import { DraftModalTitle } from "../../components/DraftModalTitle";
 import { StatusBanner } from "../../components/StatusBanner";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
@@ -59,13 +60,7 @@ export function ClientEditorModal({
       onCancel={onCancel}
       onOk={() => form.submit()}
       confirmLoading={savePending}
-      footer={editing ? undefined : (_, { CancelBtn, OkBtn }) => (
-        <>
-          <Button onClick={onClearDraft}>Очистить черновик</Button>
-          <CancelBtn />
-          <OkBtn />
-        </>
-      )}
+      footer={editing ? undefined : (_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
     >
       <Form
         form={form}

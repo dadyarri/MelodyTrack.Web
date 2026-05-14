@@ -5,6 +5,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useRef, useState } from "react";
 import { expensesApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
+import { DraftModalFooter } from "../components/DraftModalFooter";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
@@ -210,13 +211,7 @@ export function ExpensesPage() {
         onCancel={() => setOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
-        footer={(_, { CancelBtn, OkBtn }) => (
-          <>
-            <Button onClick={handleClearCreateDraft}>Очистить черновик</Button>
-            <CancelBtn />
-            <OkBtn />
-          </>
-        )}
+        footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
       >
         <Form
           form={form}
