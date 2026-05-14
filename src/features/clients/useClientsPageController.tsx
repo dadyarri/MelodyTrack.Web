@@ -48,7 +48,11 @@ export function useClientsPageController() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
 
   const query = useQuery({
     queryKey: ["clients", page, search],
@@ -57,7 +61,13 @@ export function useClientsPageController() {
   });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
-    queryFn: () => clientsApi.history(historyClient!.id),
+    queryFn: () => {
+      const clientId = historyClient?.id;
+      if (!clientId) {
+        throw new Error("History client is not selected.");
+      }
+      return clientsApi.history(clientId);
+    },
     enabled: Boolean(historyClient),
   });
 

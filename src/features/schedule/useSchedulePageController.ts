@@ -59,7 +59,11 @@ export function useSchedulePageController() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
   const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
   const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;

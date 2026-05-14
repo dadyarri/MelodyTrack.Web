@@ -111,13 +111,13 @@ export function AppLayout() {
           </Typography.Text>
         </Layout.Header>
         <Layout.Content className="app-content">
-          <Space direction="vertical" size={20} className="content-stack">
+          <Space orientation="vertical" size={20} className="content-stack">
             <Outlet />
           </Space>
         </Layout.Content>
       </Layout>
       <Drawer open={mobileNavOpen} placement="left" width={280} onClose={() => setMobileNavOpen(false)} className="mobile-nav-drawer">
-        <Space direction="vertical" size={16} className="wide">
+        <Space orientation="vertical" size={16} className="wide">
           <Menu
             mode="inline"
             selectedKeys={[selectedKey]}

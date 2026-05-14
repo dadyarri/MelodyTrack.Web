@@ -1,5 +1,5 @@
 import { Select } from "antd";
-import { DefaultOptionType } from "antd/es/select";
+import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { clientsApi, rolesApi, servicesApi, usersApi } from "../api/crm";
@@ -26,7 +26,12 @@ export function ClientSelect({
   const pendingClientOption = getQueuedClientOption(value);
   const selectedQuery = useQuery({
     queryKey: ["clients", "selected", value],
-    queryFn: () => clientsApi.get(value!),
+    queryFn: () => {
+      if (!value) {
+        throw new Error("Client id is missing.");
+      }
+      return clientsApi.get(value);
+    },
     enabled: Boolean(value) && !pendingClientOption,
     retry: false,
   });
@@ -104,7 +109,12 @@ export function ServiceSelect({
   const query = useQuery({ queryKey: ["services", "lookup", search], queryFn: () => servicesApi.lookup(search), retry: false });
   const selectedQuery = useQuery({
     queryKey: ["services", "selected", value],
-    queryFn: () => servicesApi.get(value!),
+    queryFn: () => {
+      if (!value) {
+        throw new Error("Service id is missing.");
+      }
+      return servicesApi.get(value);
+    },
     enabled: Boolean(value),
     retry: false,
   });

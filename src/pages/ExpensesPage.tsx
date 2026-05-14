@@ -30,7 +30,11 @@ export function ExpensesPage() {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
   const query = useQuery({
     queryKey: ["expenses", page, search, dateRange?.[0]?.toISOString(), dateRange?.[1]?.toISOString()],
     queryFn: () =>

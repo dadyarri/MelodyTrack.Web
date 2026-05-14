@@ -62,7 +62,7 @@ export function RecoveryCodesCard({
         </Space>
       }
     >
-      <Space direction="vertical" className="wide" size={14}>
+      <Space orientation="vertical" className="wide" size={14}>
         <Typography.Text type="secondary">{description}</Typography.Text>
         <div className="recovery-codes-grid">
           {items.map((item) => (

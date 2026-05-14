@@ -27,7 +27,11 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
   const [form] = Form.useForm<ClientQuickCreateValues>();
   const replayKeyRef = useRef(createReplayKey());
   const { message } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
 
   useEffect(() => {
     if (open) {

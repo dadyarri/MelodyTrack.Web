@@ -52,7 +52,11 @@ export function usePaymentsPageController() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
   const locationState = (location.state ?? null) as PaymentPageLocationState | null;
   const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
   const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);

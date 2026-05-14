@@ -35,7 +35,7 @@ export function openStaleEntityConflictModal({
   modal.confirm({
     title,
     content: (
-      <Space direction="vertical" size={8}>
+      <Space orientation="vertical" size={8}>
         <Typography.Text>{conflict.message}</Typography.Text>
         <Typography.Text type="secondary">{formatRecordActivitySummary(conflict.currentActivity)}</Typography.Text>
       </Space>

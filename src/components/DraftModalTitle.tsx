@@ -23,7 +23,6 @@ export function DraftModalTitle({
       <Tooltip title={label}>
         <span
           className={["draft-modal-title-state", restored ? "draft-modal-title-state-restored" : null].filter(Boolean).join(" ")}
-          aria-label={label}
         >
           {restored ? <CloudDownloadOutlined /> : <CloudOutlined />}
         </span>

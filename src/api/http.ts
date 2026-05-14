@@ -1,4 +1,4 @@
-import axios, { AxiosError, InternalAxiosRequestConfig, type AxiosResponse } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from "axios";
 import { authStore } from "../features/auth/authStore";
 import type { StaleEntityConflict } from "./types";
 

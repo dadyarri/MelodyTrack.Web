@@ -1,6 +1,6 @@
 import { CalendarOutlined, CreditCardOutlined } from "@ant-design/icons";
 import { Button, Card, Descriptions, Empty, List, Space, Tag, Typography } from "antd";
-import { ClientHistory } from "../api/types";
+import type { ClientHistory } from "../api/types";
 import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
@@ -12,7 +12,7 @@ type ClientHistoryPanelProps = {
 
 export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment }: ClientHistoryPanelProps) {
   return (
-    <Space direction="vertical" size={16} className="wide">
+    <Space orientation="vertical" size={16} className="wide">
       <Space>
         <Button icon={<CalendarOutlined />} onClick={() => onCreateAppointment(data.client)}>
           Записать

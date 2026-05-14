@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { MeResponse } from "../../api/auth";
+import type { MeResponse } from "../../api/auth";
 
 interface LoginInput {
   email: string;

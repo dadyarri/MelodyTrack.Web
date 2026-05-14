@@ -23,7 +23,13 @@ export function DashboardPage() {
   const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
-    queryFn: () => clientsApi.history(historyClient!.id),
+    queryFn: () => {
+      const clientId = historyClient?.id;
+      if (!clientId) {
+        throw new Error("History client is not selected.");
+      }
+      return clientsApi.history(clientId);
+    },
     enabled: Boolean(historyClient),
   });
   const debtorsExportMutation = useMutation({
@@ -171,7 +177,7 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
 
   return (
     <List.Item>
-      <Space direction="vertical" size={2} className="wide">
+      <Space orientation="vertical" size={2} className="wide">
         <Space wrap align="start" className="wide" style={{ justifyContent: "space-between" }}>
           <Space wrap>
             <Typography.Text strong>{showTimeOnly ? start.format(TIME_FORMAT) : formatDateTime(start)}</Typography.Text>

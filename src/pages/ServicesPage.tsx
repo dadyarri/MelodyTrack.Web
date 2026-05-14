@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { servicesApi } from "../api/crm";
-import { Service } from "../api/types";
+import type { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
 import { DraftModalFooter } from "../components/DraftModalFooter";
 import { DraftModalTitle } from "../components/DraftModalTitle";
@@ -26,7 +26,11 @@ export function ServicesPage() {
   const [priceForm] = Form.useForm();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
   const query = useQuery({ queryKey: ["services", page], queryFn: () => servicesApi.list({ page, page_size: 10 }) });
 
   const createMutation = useMutation({

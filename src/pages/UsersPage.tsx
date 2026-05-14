@@ -19,7 +19,11 @@ export function UsersPage() {
   const [inviteUrl, setInviteUrl] = useState("");
   const [form] = Form.useForm();
   const { message } = AntdApp.useApp();
-  const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
   const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list });
   const createInviteMutation = useMutation({
     mutationFn: authApi.createInvite,

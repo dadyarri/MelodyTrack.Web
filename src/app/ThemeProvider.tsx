@@ -1,7 +1,7 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import { ConfigProvider, theme as antdTheme, ThemeConfig } from "antd";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { ConfigProvider, theme as antdTheme, type ThemeConfig } from "antd";
 import ruRU from "antd/locale/ru_RU";
-import { ThemeContext, ThemeContextValue, ThemeMode } from "./ThemeContext";
+import { ThemeContext, type ThemeContextValue, type ThemeMode } from "./ThemeContext";
 
 const storageKey = "melodytrack.theme";
 

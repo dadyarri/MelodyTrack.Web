@@ -1,10 +1,10 @@
 import axios from "axios";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import { authApi, MeResponse } from "../../api/auth";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { authApi, type MeResponse } from "../../api/auth";
 import { authExpiredEventName, http } from "../../api/http";
 import { authStore } from "./authStore";
-import { AuthContext, AuthContextValue } from "./AuthContext";
+import { AuthContext, type AuthContextValue } from "./AuthContext";
 
 const cachedMeStorageKey = "melodytrack:auth:me";
 

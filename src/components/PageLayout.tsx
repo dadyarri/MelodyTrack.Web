@@ -12,7 +12,7 @@ type PageLayoutProps = {
 
 export function PageLayout({ title, description, actions, children, size = 20 }: PageLayoutProps) {
   return (
-    <Space direction="vertical" size={size} className="wide">
+    <Space orientation="vertical" size={size} className="wide">
       <PageHeader title={title} description={description} actions={actions} />
       {children}
     </Space>
