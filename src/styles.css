@@ -388,6 +388,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: auto;
+  max-width: 100%;
+  position: relative;
 }
 
 .schedule-calendar-header {
@@ -395,12 +397,17 @@ body {
   min-width: max-content;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 4;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-main);
 }
 
+
 .schedule-calendar-corner {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--bg-card);
   border-right: 1px solid var(--border-soft);
 }
 
@@ -440,9 +447,13 @@ body {
   display: grid;
   min-width: max-content;
   flex: 0 0 auto;
+  position: relative;
 }
 
 .schedule-time-rail {
+  position: sticky;
+  left: 0;
+  z-index: 3;
   border-right: 1px solid var(--border-soft);
   background: var(--bg-elevated);
 }
@@ -454,6 +465,7 @@ body {
   color: var(--text-subtle);
   font-size: 12px;
   border-bottom: 1px solid var(--border-soft-alt);
+  background: var(--bg-elevated);
 }
 
 .schedule-day-column {
