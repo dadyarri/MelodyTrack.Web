@@ -1,9 +1,10 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
-import { Button, Drawer, Input, Space, Tag, Typography } from "antd";
+import { Button, Drawer, Input, Space, Tag } from "antd";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
+import { QueryStateBlock } from "../components/QueryStateBlock";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientEditorModal } from "../features/clients/ClientEditorModal";
 import { formatClientName, getContactValue, renderPhoneLink, renderSocialLink, useClientsPageController } from "../features/clients/useClientsPageController";
@@ -99,7 +100,14 @@ export function ClientsPage() {
             onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
           />
         ) : null}
-        {controller.historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
+        <QueryStateBlock
+          isLoading={controller.historyQuery.isLoading}
+          isError={controller.historyQuery.isError}
+          isEmpty={!controller.historyQuery.isLoading && !controller.historyQuery.isError && !controller.historyQuery.data}
+          loadingText="Загрузка истории..."
+          emptyText="История клиента пока недоступна"
+          errorMessage="Не удалось загрузить историю клиента."
+        />
       </Drawer>
     </>
   );

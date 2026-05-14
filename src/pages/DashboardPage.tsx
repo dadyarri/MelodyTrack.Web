@@ -8,6 +8,7 @@ import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment, Client, ClientHistory } from "../api/types";
 import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
 import { PageHeader } from "../components/PageHeader";
+import { QueryStateBlock } from "../components/QueryStateBlock";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { TIME_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
@@ -138,7 +139,14 @@ export function DashboardPage() {
             onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
           />
         ) : null}
-        {historyQuery.isLoading ? <Typography.Text type="secondary">Загрузка истории...</Typography.Text> : null}
+        <QueryStateBlock
+          isLoading={historyQuery.isLoading}
+          isError={historyQuery.isError}
+          isEmpty={!historyQuery.isLoading && !historyQuery.isError && !historyQuery.data}
+          loadingText="Загрузка истории..."
+          emptyText="История клиента пока недоступна"
+          errorMessage="Не удалось загрузить историю клиента."
+        />
       </Drawer>
     </>
   );
