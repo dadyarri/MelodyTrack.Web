@@ -1,10 +1,9 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
-import { Button, Drawer, Input, Space, Tag } from "antd";
-import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
+import { Button, Input, Space, Tag } from "antd";
+import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
-import { QueryStateBlock } from "../components/QueryStateBlock";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientEditorModal } from "../features/clients/ClientEditorModal";
 import { formatClientName, getContactValue, renderPhoneLink, renderSocialLink, useClientsPageController } from "../features/clients/useClientsPageController";
@@ -86,29 +85,15 @@ export function ClientsPage() {
         onSubmit={controller.onSubmit}
         onValuesChange={controller.onValuesChange}
       />
-      <Drawer
-        title={controller.historyClient ? `История клиента: ${formatClientName(controller.historyClient)}` : "История клиента"}
-        width={720}
-        open={Boolean(controller.historyClient)}
+      <ClientHistoryDrawer
+        client={controller.historyClient}
+        data={controller.historyQuery.data}
+        isLoading={controller.historyQuery.isLoading}
+        isError={controller.historyQuery.isError}
         onClose={() => controller.setHistoryClient(null)}
-        destroyOnHidden
-      >
-        {controller.historyQuery.data ? (
-          <ClientHistoryPanel
-            data={controller.historyQuery.data}
-            onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
-            onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
-          />
-        ) : null}
-        <QueryStateBlock
-          isLoading={controller.historyQuery.isLoading}
-          isError={controller.historyQuery.isError}
-          isEmpty={!controller.historyQuery.isLoading && !controller.historyQuery.isError && !controller.historyQuery.data}
-          loadingText="Загрузка истории..."
-          emptyText="История клиента пока недоступна"
-          errorMessage="Не удалось загрузить историю клиента."
-        />
-      </Drawer>
+        onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
+        onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
+      />
     </>
   );
 }

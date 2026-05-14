@@ -1,14 +1,13 @@
 import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Card, Drawer, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
-import { Appointment, Client, ClientHistory } from "../api/types";
-import { ClientHistoryPanel } from "../components/ClientHistoryPanel";
+import { Appointment, Client } from "../api/types";
+import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
 import { PageHeader } from "../components/PageHeader";
-import { QueryStateBlock } from "../components/QueryStateBlock";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { TIME_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
@@ -125,35 +124,17 @@ export function DashboardPage() {
           />
         </Card>
       </div>
-      <Drawer
-        title={historyClient ? `История клиента: ${formatClientName(historyClient)}` : "История клиента"}
-        width={720}
-        open={Boolean(historyClient)}
+      <ClientHistoryDrawer
+        client={historyClient}
+        data={historyQuery.data}
+        isLoading={historyQuery.isLoading}
+        isError={historyQuery.isError}
         onClose={() => setHistoryClient(null)}
-        destroyOnHidden
-      >
-        {historyQuery.data ? (
-          <ClientHistoryPanel
-            data={historyQuery.data}
-            onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
-            onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
-          />
-        ) : null}
-        <QueryStateBlock
-          isLoading={historyQuery.isLoading}
-          isError={historyQuery.isError}
-          isEmpty={!historyQuery.isLoading && !historyQuery.isError && !historyQuery.data}
-          loadingText="Загрузка истории..."
-          emptyText="История клиента пока недоступна"
-          errorMessage="Не удалось загрузить историю клиента."
-        />
-      </Drawer>
+        onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
+        onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
+      />
     </>
   );
-}
-
-function formatClientName(client: Pick<ClientHistory["client"], "firstName" | "lastName" | "patronymic">) {
-  return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
 }
 
 function ReminderList({
