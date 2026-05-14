@@ -685,7 +685,7 @@ body {
   gap: 3px;
 }
 
-[data-theme="dark"] .schedule-event {
+[data-theme="dark"] .schedule-entry {
   --schedule-entry-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
   --schedule-entry-icon-background: rgba(18, 14, 10, 0.72);
 }
