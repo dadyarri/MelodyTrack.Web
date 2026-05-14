@@ -1,5 +1,5 @@
-import { Alert } from "antd";
+import { StatusBanner } from "./StatusBanner";
 
 export function AccessDeniedNotice({ message }: { message: string }) {
-  return <Alert type="error" showIcon message={message} />;
+  return <StatusBanner type="error" message={message} />;
 }
