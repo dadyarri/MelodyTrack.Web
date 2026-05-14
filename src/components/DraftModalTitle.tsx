@@ -21,9 +21,7 @@ export function DraftModalTitle({
     <span className="draft-modal-title">
       <span className="draft-modal-title-text">{title}</span>
       <Tooltip title={label}>
-        <span
-          className={["draft-modal-title-state", restored ? "draft-modal-title-state-restored" : null].filter(Boolean).join(" ")}
-        >
+        <span className={["draft-modal-title-state", restored ? "draft-modal-title-state-restored" : null].filter(Boolean).join(" ")}>
           {restored ? <CloudDownloadOutlined /> : <CloudOutlined />}
         </span>
       </Tooltip>

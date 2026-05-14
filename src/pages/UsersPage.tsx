@@ -2,7 +2,7 @@ import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, Modal, Space } from "antd";
 import { useEffect, useState } from "react";
-import { authApi } from "../api/auth";
+import { authApi, type CreateInviteInput } from "../api/auth";
 import { usersApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
@@ -24,9 +24,9 @@ export function UsersPage() {
       void message.error(errorMessage);
     }
   };
-  const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list });
+  const query = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list() });
   const createInviteMutation = useMutation({
-    mutationFn: authApi.createInvite,
+    mutationFn: (input: CreateInviteInput) => authApi.createInvite(input),
     onSuccess: (data) => {
       setInviteUrl(data.url);
       message.success("Приглашение создано");
@@ -58,7 +58,9 @@ export function UsersPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   if (!auth.user?.isAdmin) {
@@ -74,7 +76,9 @@ export function UsersPage() {
           type="primary"
           leadingIcon={<PlusOutlined />}
           label="Создать приглашение"
-          onClick={() => setInviteOpen(true)}
+          onClick={() => {
+            setInviteOpen(true);
+          }}
         />
       }
     >
@@ -93,13 +97,22 @@ export function UsersPage() {
         open={isInviteOpen}
         title="Создать приглашение"
         onCancel={closeInviteModal}
-        onOk={() => form.submit()}
+        onOk={() => {
+          form.submit();
+        }}
         okText="Создать"
         cancelText="Закрыть"
         confirmLoading={createInviteMutation.isPending}
       >
-        <Space direction="vertical" size={16} className="wide">
-          <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => createInviteMutation.mutate(values)}>
+        <Space orientation="vertical" size={16} className="wide">
+          <Form<CreateInviteInput>
+            form={form}
+            layout="vertical"
+            requiredMark={false}
+            onFinish={(values) => {
+              createInviteMutation.mutate(values);
+            }}
+          >
             <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
               <Input />
             </Form.Item>

@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
 import { CopyOutlined } from "@ant-design/icons";
 import { Alert, App as AntdApp, Button, Form, Input, QRCode, Space } from "antd";
+import type { ReactNode } from "react";
 
 type TotpSecretPanelProps = {
   alertType: "info" | "warning";

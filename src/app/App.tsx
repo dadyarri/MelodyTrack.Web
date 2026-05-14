@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { RouterProvider } from "react-router";
 import { App as AntdApp, ConfigProvider } from "antd";
 import ruRu from "antd/locale/ru_RU";
+import { RouterProvider } from "react-router";
 import { ApiErrorNotifier } from "../components/ApiErrorNotifier";
 import { OfflineQueueSync } from "../components/OfflineQueueSync";
 import { AuthProvider } from "../features/auth/AuthProvider";

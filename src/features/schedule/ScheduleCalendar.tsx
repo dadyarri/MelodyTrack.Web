@@ -1,7 +1,7 @@
 import { CheckOutlined, CloseOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useState, type CSSProperties, type DragEvent } from "react";
+import { type CSSProperties, type DragEvent, useState } from "react";
 import type { Appointment } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 
@@ -334,7 +334,7 @@ function AppointmentContent({ appointment, density = "full" }: { appointment: Ap
       {showService ? (
         <div className="schedule-event-service">
           {appointment.service.name}
-          {showProvider ? ` · ${appointment.provider!.lastName} ${appointment.provider!.firstName}` : ""}
+          {showProvider ? ` · ${appointment.provider?.lastName} ${appointment.provider?.firstName}` : ""}
         </div>
       ) : null}
     </div>
@@ -402,10 +402,10 @@ function getStackDensity(stackSize: number): "compact" | "dense" {
 
 function getAppointmentClassName(appointment: Appointment) {
   if (appointment.isCanceled) {
-    return "schedule-event-canceled";
+  return "schedule-event-canceled";
   }
   if (appointment.isCompleted) {
-    return "schedule-event-completed";
+  return "schedule-event-completed";
   }
   return "schedule-event-planned";
 }

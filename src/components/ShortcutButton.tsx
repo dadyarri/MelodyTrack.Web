@@ -1,5 +1,5 @@
-import { Button } from "antd";
 import type { ButtonProps } from "antd";
+import { Button } from "antd";
 import type { ReactNode } from "react";
 
 type ShortcutButtonProps = Omit<ButtonProps, "children"> & {

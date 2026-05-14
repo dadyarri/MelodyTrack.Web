@@ -12,8 +12,8 @@ import {
   type RecoveryCodesResponse,
   type RegisterInput,
 } from "../api/auth";
-import { AuthScreenLayout } from "../components/AuthScreenLayout";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
+import { AuthScreenLayout } from "../components/AuthScreenLayout";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { StatusBanner } from "../components/StatusBanner";
 import { TotpSecretPanel } from "../components/TotpSecretPanel";

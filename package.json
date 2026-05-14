@@ -7,9 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "format": "biome format src eslint.config.js package.json tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts biome.json --write",
-    "format:check": "biome format src eslint.config.js package.json tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts biome.json",
-    "lint:biome": "biome lint src eslint.config.js vite.config.ts",
+    "format": "biome format . --write",
+    "format:check": "biome format .",
+    "lint:biome": "biome lint .",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

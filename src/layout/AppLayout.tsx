@@ -2,12 +2,12 @@ import { MenuOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
-import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useTheme } from "../app/useTheme";
+import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useAuth } from "../features/auth/useAuth";
+import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function AppLayout() {
   const auth = useAuth();
@@ -20,7 +20,7 @@ export function AppLayout() {
   const mobileActionItems = buildShellActionItems({ isDarkMode: mode === "dark" });
   const handleUserAction = (key: ShellActionKey) => {
     if (key === "profile") {
-      navigate("/profile");
+      void navigate("/profile");
       return;
     }
 
@@ -29,9 +29,7 @@ export function AppLayout() {
       return;
     }
 
-    if (key === "logout") {
-      void auth.logout();
-    }
+    void auth.logout();
   };
   const selectedKey = getSelectedNavKey(availableNavItems, location.pathname);
 
@@ -44,13 +42,13 @@ export function AppLayout() {
       const navItem = availableNavItems.find((item) => matchesPlainKey(event, item.shortcut));
       if (navItem) {
         event.preventDefault();
-        navigate(navItem.key);
+        void navigate(navItem.key);
         return;
       }
 
       if (matchesPlainKey(event, "p")) {
         event.preventDefault();
-        navigate("/profile");
+        void navigate("/profile");
         return;
       }
 
@@ -62,14 +60,23 @@ export function AppLayout() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [auth, availableNavItems, navigate, toggleMode]);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [availableNavItems, navigate, toggleMode]);
 
   return (
     <Layout className="app-shell">
       <Layout.Sider width={236} className="app-sider" breakpoint="lg" collapsedWidth={0}>
         <div className="brand">MelodyTrack</div>
-        <Menu mode="inline" selectedKeys={[selectedKey]} items={menuItems} onClick={({ key }) => navigate(key)} />
+        <Menu
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={menuItems}
+          onClick={({ key }) => {
+            void navigate(key);
+          }}
+        />
       </Layout.Sider>
       <Layout>
         <Layout.Header className="app-header">
@@ -78,21 +85,25 @@ export function AppLayout() {
             className="app-mobile-menu-button"
             icon={<MenuOutlined />}
             aria-label="Открыть навигацию"
-            onClick={() => setMobileNavOpen(true)}
+            onClick={() => {
+              setMobileNavOpen(true);
+            }}
           />
           <div className="app-header-spacer" />
           <OfflineQueueIndicator />
           <Popover
             trigger={["hover", "click"]}
             placement="bottomRight"
-            overlayClassName="header-user-popover"
+            classNames={{ root: "header-user-popover" }}
             content={
               <Menu
                 mode="inline"
                 className="header-user-menu"
                 selectable={false}
                 items={mobileActionItems}
-                onClick={({ key }) => handleUserAction(key as ShellActionKey)}
+                onClick={({ key }) => {
+                  handleUserAction(key as ShellActionKey);
+                }}
               />
             }
           >
@@ -116,14 +127,22 @@ export function AppLayout() {
           </Space>
         </Layout.Content>
       </Layout>
-      <Drawer open={mobileNavOpen} placement="left" width={280} onClose={() => setMobileNavOpen(false)} className="mobile-nav-drawer">
+      <Drawer
+        open={mobileNavOpen}
+        placement="left"
+        size="large"
+        onClose={() => {
+          setMobileNavOpen(false);
+        }}
+        className="mobile-nav-drawer"
+      >
         <Space orientation="vertical" size={16} className="wide">
           <Menu
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
             onClick={({ key }) => {
-              navigate(key);
+              void navigate(key);
               setMobileNavOpen(false);
             }}
           />

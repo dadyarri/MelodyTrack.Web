@@ -1,10 +1,10 @@
 import { createBrowserRouter, Navigate } from "react-router";
-import { AppLayout } from "../layout/AppLayout";
 import { AdminRoute } from "../layout/AdminRoute";
+import { AppLayout } from "../layout/AppLayout";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
 import { SuperuserRoute } from "../layout/SuperuserRoute";
-import { AuthPage } from "../pages/AuthPage";
 import { AuditPage } from "../pages/AuditPage";
+import { AuthPage } from "../pages/AuthPage";
 import { ClientsPage } from "../pages/ClientsPage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { ExpensesPage } from "../pages/ExpensesPage";

@@ -1,8 +1,8 @@
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Space, Typography } from "antd";
-import { UserSelect } from "../components/RemoteSelect";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
 import { PageLayout } from "../components/PageLayout";
+import { UserSelect } from "../components/RemoteSelect";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { AppointmentsCalendar } from "../features/schedule/ScheduleCalendar";
 import {

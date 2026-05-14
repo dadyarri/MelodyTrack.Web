@@ -1,7 +1,7 @@
 import { Drawer } from "antd";
 import type { Client, ClientHistory } from "../api/types";
-import { QueryStateBlock } from "./QueryStateBlock";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
+import { QueryStateBlock } from "./QueryStateBlock";
 
 type ClientHistoryDrawerProps = {
   client: Client | null;

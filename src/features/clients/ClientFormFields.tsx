@@ -1,6 +1,6 @@
 import { Form, Input, type InputProps, type InputRef } from "antd";
-import { IMaskMixin, type IMaskInputProps } from "react-imask";
-import { getRussianPhoneMask, getRussianPhoneDigits, hasRussianPhoneDigits, normalizeSocialLink } from "./clientContactUtils";
+import { type IMaskInputProps, IMaskMixin } from "react-imask";
+import { getRussianPhoneDigits, getRussianPhoneMask, hasRussianPhoneDigits, normalizeSocialLink } from "./clientContactUtils";
 
 const russianPhoneMask = getRussianPhoneMask();
 

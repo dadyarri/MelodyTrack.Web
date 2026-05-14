@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { Space, Typography } from "antd";
+import type { ReactNode } from "react";
 
 interface PageHeaderProps {
   title: string;

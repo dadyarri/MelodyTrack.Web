@@ -8,15 +8,15 @@ import {
   RedoOutlined,
   SendOutlined,
 } from "@ant-design/icons";
-import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Tag, Typography } from "antd";
 import type { FormInstance } from "antd";
+import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Tag, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
 import type { Appointment, RecurrenceType } from "../../api/types";
 import { DraftModalFooter } from "../../components/DraftModalFooter";
-import { ClientSelect, ServiceSelect, UserSelect } from "../../components/RemoteSelect";
 import { DraftModalTitle } from "../../components/DraftModalTitle";
+import { ClientSelect, ServiceSelect, UserSelect } from "../../components/RemoteSelect";
 import { StatusBanner } from "../../components/StatusBanner";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";

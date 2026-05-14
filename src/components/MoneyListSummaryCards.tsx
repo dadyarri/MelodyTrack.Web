@@ -1,5 +1,5 @@
-import { SummaryCard, SummaryGrid } from "./SummaryGrid";
 import { formatMoney } from "../utils/money";
+import { SummaryCard, SummaryGrid } from "./SummaryGrid";
 
 export function MoneyListSummaryCards({
   totalAmount,

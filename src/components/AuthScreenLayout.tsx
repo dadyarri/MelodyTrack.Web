@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { Card, Space, Typography } from "antd";
+import type { ReactNode } from "react";
 
 type AuthScreenLayoutProps = {
   title: string;

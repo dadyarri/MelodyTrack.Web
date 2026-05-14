@@ -3,16 +3,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { servicesApi } from "../api/crm";
-import type { Service } from "../api/types";
 import { getApiErrorMessages } from "../api/http";
+import type { Service } from "../api/types";
 import { DraftModalFooter } from "../components/DraftModalFooter";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListTable } from "../components/ListTable";
 import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
-import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { formatMoney } from "../utils/money";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ServicesPage() {

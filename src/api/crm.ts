@@ -1,3 +1,4 @@
+import { http } from "./http";
 import type {
   Appointment,
   AuditLog,
@@ -18,7 +19,6 @@ import type {
   Ulid,
   User,
 } from "./types";
-import { http } from "./http";
 
 export const clientsApi = {
   list(params: PaginatedParams & Partial<Client> & { search?: string }) {

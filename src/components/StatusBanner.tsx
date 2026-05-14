@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
-import { Alert } from "antd";
 import type { AlertProps } from "antd";
+import { Alert } from "antd";
+import type { ReactNode } from "react";
 
 type StatusBannerProps = Pick<AlertProps, "type" | "description"> & {
   title: ReactNode;

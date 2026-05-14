@@ -1,7 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { clientsApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";

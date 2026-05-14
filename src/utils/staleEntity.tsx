@@ -1,6 +1,6 @@
-import type { HookAPI } from "antd/es/modal/useModal";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { Space, Typography } from "antd";
+import type { HookAPI } from "antd/es/modal/useModal";
 import { getStaleEntityConflict } from "../api/http";
 import type { RecordActivity, StaleEntityConflict, Ulid } from "../api/types";
 import { formatDateTime } from "./date";

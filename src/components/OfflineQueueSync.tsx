@@ -3,6 +3,7 @@ import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 import { clientsApi, expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
 import { probeBackendReachable } from "../api/http";
+import { authStore } from "../features/auth/authStore";
 import {
   formatQueuedClientLabel,
   loadOfflineQueue,
@@ -10,7 +11,6 @@ import {
   removeOfflineQueueItem,
   shouldQueueOfflineError,
 } from "../utils/offlineQueue";
-import { authStore } from "../features/auth/authStore";
 import { getOfflineSyncStatus, setOfflineSyncStatus } from "../utils/offlineSyncState";
 
 export function OfflineQueueSync() {

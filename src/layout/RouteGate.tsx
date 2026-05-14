@@ -1,6 +1,6 @@
 import { Spin } from "antd";
-import { Navigate, useLocation } from "react-router";
 import type { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router";
 import { useAuth } from "../features/auth/useAuth";
 
 type RouteGateProps = {
