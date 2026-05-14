@@ -4,6 +4,7 @@ import { Alert, App as AntdApp, Button, Card, Form, Input, QRCode, Segmented, Sp
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
 import { authApi, Recover2FaResponse, RecoveryCodeItem, RecoveryCodesResponse, RegisterInput } from "../api/auth";
+import { AuthScreenLayout } from "../components/AuthScreenLayout";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { StatusBanner } from "../components/StatusBanner";
@@ -147,13 +148,10 @@ export function AuthPage() {
   }
 
   return (
-    <main className="auth-screen">
-      <Card className="auth-card">
-        <Space direction="vertical" size={20} className="wide">
-          <div>
-            <Typography.Title level={1}>MelodyTrack</Typography.Title>
-            <Typography.Text type="secondary">Войдите, чтобы открыть рабочее пространство.</Typography.Text>
-          </div>
+    <AuthScreenLayout
+      title="MelodyTrack"
+      description="Войдите, чтобы открыть рабочее пространство."
+    >
           {totpSetup || recoveryCodes || recover2FaState || hasInviteCode ? null : (
             <Segmented<AuthMode>
               block
@@ -363,9 +361,7 @@ export function AuthPage() {
               <Typography.Text type="secondary">Неверное состояние экрана входа.</Typography.Text>
             </Card>
           )}
-        </Space>
-      </Card>
-    </main>
+    </AuthScreenLayout>
   );
 }
 
