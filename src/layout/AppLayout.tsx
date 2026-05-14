@@ -1,4 +1,4 @@
-import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import { MenuOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
@@ -6,6 +6,7 @@ import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useTheme } from "../app/useTheme";
 import { useAuth } from "../features/auth/useAuth";
 import { getAvailableNavItems } from "./navigation";
+import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function AppLayout() {
@@ -15,49 +16,9 @@ export function AppLayout() {
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const availableNavItems = getAvailableNavItems(auth.user);
-  const menuItems = availableNavItems.map((item) => ({
-    key: item.key,
-    icon: item.icon,
-    label: (
-      <span className="app-nav-label">
-        <span>{item.label}</span>
-        <span className="app-nav-shortcut">{item.shortcut}</span>
-      </span>
-    ),
-  }));
-  const mobileActionItems = [
-    {
-      key: "profile",
-      icon: <SettingOutlined />,
-      label: (
-        <span className="app-nav-label">
-          <span>Профиль</span>
-          <span className="app-nav-shortcut">P</span>
-        </span>
-      ),
-    },
-    {
-      key: "theme",
-      icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />,
-      label: (
-        <span className="app-nav-label">
-          <span>{mode === "dark" ? "Светлая тема" : "Темная тема"}</span>
-          <span className="app-nav-shortcut">T</span>
-        </span>
-      ),
-    },
-    {
-      key: "logout",
-      icon: <LogoutOutlined />,
-      label: (
-        <span className="app-nav-label">
-          <span>Выйти</span>
-        </span>
-      ),
-      danger: true,
-    },
-  ];
-  const handleUserAction = (key: string) => {
+  const menuItems = buildNavMenuItems(availableNavItems);
+  const mobileActionItems = buildShellActionItems({ isDarkMode: mode === "dark" });
+  const handleUserAction = (key: ShellActionKey) => {
     if (key === "profile") {
       navigate("/profile");
       return;
@@ -72,7 +33,7 @@ export function AppLayout() {
       void auth.logout();
     }
   };
-  const selectedKey = availableNavItems.find((item) => item.key !== "/" && location.pathname.startsWith(item.key))?.key ?? "/";
+  const selectedKey = getSelectedNavKey(availableNavItems, location.pathname);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -131,25 +92,21 @@ export function AppLayout() {
                 className="header-user-menu"
                 selectable={false}
                 items={mobileActionItems}
-                onClick={({ key }) => handleUserAction(String(key))}
+                onClick={({ key }) => handleUserAction(key as ShellActionKey)}
               />
             }
           >
             <Button type="text" className="header-user-trigger" aria-label="Открыть меню пользователя">
               <Space size={8}>
                 <UserOutlined />
-                <Typography.Text>
-                  {auth.user?.firstName} {auth.user?.lastName}
-                </Typography.Text>
+                <Typography.Text>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</Typography.Text>
               </Space>
             </Button>
           </Popover>
           <Typography.Text className="header-user-mobile">
             <Space size={6}>
               <UserOutlined />
-              <span>
-                {auth.user?.firstName} {auth.user?.lastName}
-              </span>
+              <span>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</span>
             </Space>
           </Typography.Text>
         </Layout.Header>
@@ -184,7 +141,7 @@ export function AppLayout() {
             items={mobileActionItems}
             onClick={({ key }) => {
               setMobileNavOpen(false);
-              handleUserAction(String(key));
+              handleUserAction(key as ShellActionKey);
             }}
           />
         </Space>
