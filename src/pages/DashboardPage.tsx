@@ -7,7 +7,7 @@ import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
 import { Appointment, Client } from "../api/types";
 import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { TIME_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
@@ -52,9 +52,7 @@ export function DashboardPage() {
   const todayAppointments = miniQuery.data?.[todayKey] ?? [];
   const tomorrowAppointments = miniQuery.data?.[tomorrowKey] ?? [];
   return (
-    <>
-      <PageHeader title="Обзор" />
-
+    <PageLayout title="Обзор">
       <div className="dashboard-grid">
         <Card className="dashboard-widget dashboard-widget-small">
           <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
@@ -133,7 +131,7 @@ export function DashboardPage() {
         onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
         onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
       />
-    </>
+    </PageLayout>
   );
 }
 

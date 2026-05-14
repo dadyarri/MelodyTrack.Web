@@ -2,7 +2,7 @@ import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Space, Typography } from "antd";
 import { UserSelect } from "../components/RemoteSelect";
 import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { AppointmentsCalendar } from "../features/schedule/ScheduleCalendar";
 import { AppointmentCreateModal, AppointmentDetailsModal, AppointmentEditModal, RecurringDeleteModal } from "../features/schedule/ScheduleModals";
@@ -13,8 +13,7 @@ export function SchedulePage() {
 
   return (
     <>
-      <section className="schedule-page">
-        <PageHeader
+      <PageLayout
           title="Расписание"
           actions={
             <Space wrap className="schedule-header-actions">
@@ -24,8 +23,9 @@ export function SchedulePage() {
               <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={controller.openCreateModal} />
             </Space>
           }
-        />
-        <div className="schedule-page-toolbar">
+      >
+        <section className="schedule-page">
+          <div className="schedule-page-toolbar">
           <div className="schedule-quick-filters">
             <Typography.Text type="secondary">Специалист</Typography.Text>
             <Space.Compact className="schedule-quick-filters-controls">
@@ -44,27 +44,28 @@ export function SchedulePage() {
               </Button>
             </Space.Compact>
           </div>
-        </div>
-        <div className="schedule-page-calendar">
-          <AppointmentsCalendar
-            appointments={controller.filteredAppointments}
-            loading={controller.query.isLoading}
-            onReschedule={(appointment, startDate) => controller.rescheduleMutation.mutate({
-              appointment,
-              startDate,
-              expectedActivityId: appointment.lastActivity?.id ?? undefined,
-            })}
-            range={[controller.weekStart, controller.weekStart.endOf("week")]}
-            reschedulePendingAppointmentId={controller.rescheduleMutation.isPending ? controller.rescheduleMutation.variables?.appointment.id ?? null : null}
-            onCreateAt={controller.openCreateModalAt}
-            onSelect={(appointment) => {
-              controller.setSelectedAppointment(appointment);
-              controller.setSelectedAppointmentBaselineActivityId(appointment.lastActivity?.id ?? null);
-            }}
-            selectedAppointmentId={controller.selectedAppointment?.id ?? null}
-          />
-        </div>
-      </section>
+          </div>
+          <div className="schedule-page-calendar">
+            <AppointmentsCalendar
+              appointments={controller.filteredAppointments}
+              loading={controller.query.isLoading}
+              onReschedule={(appointment, startDate) => controller.rescheduleMutation.mutate({
+                appointment,
+                startDate,
+                expectedActivityId: appointment.lastActivity?.id ?? undefined,
+              })}
+              range={[controller.weekStart, controller.weekStart.endOf("week")]}
+              reschedulePendingAppointmentId={controller.rescheduleMutation.isPending ? controller.rescheduleMutation.variables?.appointment.id ?? null : null}
+              onCreateAt={controller.openCreateModalAt}
+              onSelect={(appointment) => {
+                controller.setSelectedAppointment(appointment);
+                controller.setSelectedAppointmentBaselineActivityId(appointment.lastActivity?.id ?? null);
+              }}
+              selectedAppointmentId={controller.selectedAppointment?.id ?? null}
+            />
+          </div>
+        </section>
+      </PageLayout>
       <AppointmentDetailsModal
         appointment={controller.currentSelectedAppointment}
         isStale={controller.isSelectedAppointmentStale}

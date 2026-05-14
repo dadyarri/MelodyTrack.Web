@@ -38,7 +38,7 @@ export function RestorePasswordPage() {
   return (
     <main className="auth-screen">
       <Card className="auth-card">
-        <Space direction="vertical" size={18} className="wide">
+        <Space direction="vertical" size={20} className="wide">
           <div>
             <Typography.Title level={1}>Восстановление пароля</Typography.Title>
             <Typography.Text type="secondary">Если 2FA включен, используйте одноразовый код или код восстановления.</Typography.Text>

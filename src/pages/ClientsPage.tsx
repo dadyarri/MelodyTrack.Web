@@ -3,7 +3,7 @@ import { Button, Input, Space, Tag } from "antd";
 import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientEditorModal } from "../features/clients/ClientEditorModal";
 import { formatClientName, getContactValue, renderPhoneLink, renderSocialLink, useClientsPageController } from "../features/clients/useClientsPageController";
@@ -14,11 +14,10 @@ export function ClientsPage() {
   const controller = useClientsPageController();
 
   return (
-    <>
-      <PageHeader
+    <PageLayout
         title="Клиенты"
         actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => controller.openEditor()} />}
-      />
+    >
       <ListFilters>
         <div className="filter-field filter-field-wide">
           <Input.Search
@@ -94,6 +93,6 @@ export function ClientsPage() {
         onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
         onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
       />
-    </>
+    </PageLayout>
   );
 }

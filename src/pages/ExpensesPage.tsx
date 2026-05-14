@@ -10,7 +10,7 @@ import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
@@ -134,8 +134,7 @@ export function ExpensesPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <PageLayout
         title="Расходы"
         actions={
           <Space>
@@ -143,9 +142,8 @@ export function ExpensesPage() {
             <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
           </Space>
         }
-      />
-      <Space direction="vertical" size={16} className="wide">
-        <ListFilters>
+    >
+      <ListFilters>
           <div className="filter-field filter-field-wide">
             <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
             <Input.Search
@@ -184,27 +182,26 @@ export function ExpensesPage() {
               Сбросить
             </Button>
           </div>
-        </ListFilters>
-        <MoneyListSummaryCards
-          totalAmount={query.data?.summary.totalAmount}
-          itemsCount={query.data?.summary.itemsCount}
-          lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
-          itemsTitle="Расходов найдено"
-          lastItemTitle="Последний расход"
-        />
-        <ListTable
-          rowKey="id"
-          loading={query.isLoading}
-          dataSource={query.data?.data}
-          pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-          columns={[
-            { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-            { title: "Описание", dataIndex: "description" },
-            { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-            { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
-          ]}
-        />
-      </Space>
+      </ListFilters>
+      <MoneyListSummaryCards
+        totalAmount={query.data?.summary.totalAmount}
+        itemsCount={query.data?.summary.itemsCount}
+        lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
+        itemsTitle="Расходов найдено"
+        lastItemTitle="Последний расход"
+      />
+      <ListTable
+        rowKey="id"
+        loading={query.isLoading}
+        dataSource={query.data?.data}
+        pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+        columns={[
+          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+          { title: "Описание", dataIndex: "description" },
+          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+          { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
+        ]}
+      />
       <Modal
         open={isOpen}
         title={<DraftModalTitle title="Новый расход" restored={hasCreateDraft && isOpen} />}
@@ -212,8 +209,8 @@ export function ExpensesPage() {
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
         footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
-      >
-        <Form
+        >
+          <Form
           form={form}
           layout="vertical"
           requiredMark={false}
@@ -232,9 +229,9 @@ export function ExpensesPage() {
           <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
           </Form.Item>
-        </Form>
-      </Modal>
-    </>
+          </Form>
+        </Modal>
+    </PageLayout>
   );
 }
 

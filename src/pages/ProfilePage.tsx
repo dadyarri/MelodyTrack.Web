@@ -4,8 +4,8 @@ import { Alert, App as AntdApp, Button, Card, Form, Input, List, QRCode, Space, 
 import { useEffect, useState } from "react";
 import { authApi, MeResponse, RecoveryCodeItem, SessionDto, Setup2FaResponse } from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
+import { PageLayout } from "../components/PageLayout";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
-import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { useAuth } from "../features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
@@ -152,11 +152,11 @@ export function ProfilePage() {
   }, [getRecoveryCodesMutation, me?.isTwoFactorEnabled, me?.isTwoFactorRequired, regenerateRecoveryCodesMutation, remove2FaMutation]);
 
   return (
-    <Space direction="vertical" size={20} className="wide">
-      <PageHeader
-        title="Профиль"
-        description="Управление паролем, 2FA, кодами восстановления и активными сессиями."
-      />
+    <PageLayout
+      title="Профиль"
+      description="Управление паролем, 2FA, кодами восстановления и активными сессиями."
+      size={20}
+    >
 
       <div className="profile-grid">
         <Card title="Аккаунт">
@@ -264,7 +264,7 @@ export function ProfilePage() {
         />
       </Card>
 
-    </Space>
+    </PageLayout>
   );
 }
 

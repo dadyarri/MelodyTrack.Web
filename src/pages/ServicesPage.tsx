@@ -8,7 +8,7 @@ import { getApiErrorMessages } from "../api/http";
 import { DraftModalFooter } from "../components/DraftModalFooter";
 import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListTable } from "../components/ListTable";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
@@ -102,11 +102,10 @@ export function ServicesPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <PageLayout
         title="Услуги"
         actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setCreateOpen(true)} />}
-      />
+    >
       <ListTable
         rowKey="id"
         loading={query.isLoading}
@@ -158,7 +157,7 @@ export function ServicesPage() {
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </PageLayout>
   );
 }
 

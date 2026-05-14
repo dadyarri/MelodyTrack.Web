@@ -5,7 +5,7 @@ import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
 import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { PaymentCreateModal } from "../features/payments/PaymentCreateModal";
 import { formatOptionalDateTime, usePaymentsPageController } from "../features/payments/usePaymentsPageController";
@@ -16,8 +16,7 @@ export function PaymentsPage() {
   const controller = usePaymentsPageController();
 
   return (
-    <>
-      <PageHeader
+    <PageLayout
         title="Платежи"
         actions={
           <Space>
@@ -25,9 +24,8 @@ export function PaymentsPage() {
             <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={controller.openCreateModal} />
           </Space>
         }
-      />
-      <Space vertical size={16} className="wide">
-        <ListFilters>
+    >
+      <ListFilters>
           <div className="filter-field filter-field-wide">
             <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
             <Input.Search
@@ -77,33 +75,32 @@ export function PaymentsPage() {
               Сбросить
             </Button>
           </div>
-        </ListFilters>
-        <MoneyListSummaryCards
-          totalAmount={controller.query.data?.summary.totalAmount}
-          itemsCount={controller.query.data?.summary.itemsCount}
-          lastItemAtLabel={formatOptionalDateTime(controller.query.data?.summary.lastItemAtUtc)}
-          itemsTitle="Платежей найдено"
-          lastItemTitle="Последний платеж"
-        />
-        <ListTable
-          rowKey="id"
-          loading={controller.query.isLoading}
-          dataSource={controller.query.data?.data}
-          pagination={{ current: controller.page, pageSize: 10, total: controller.query.data?.info.total, onChange: controller.setPage }}
-          columns={[
-            { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-            { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
-            { title: "Услуга", render: (_, row) => row.service?.name },
-            { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-            { title: "Описание", dataIndex: "description" },
-            {
-              title: "",
-              width: 72,
-              render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id })} />,
-            },
-          ]}
-        />
-      </Space>
+      </ListFilters>
+      <MoneyListSummaryCards
+        totalAmount={controller.query.data?.summary.totalAmount}
+        itemsCount={controller.query.data?.summary.itemsCount}
+        lastItemAtLabel={formatOptionalDateTime(controller.query.data?.summary.lastItemAtUtc)}
+        itemsTitle="Платежей найдено"
+        lastItemTitle="Последний платеж"
+      />
+      <ListTable
+        rowKey="id"
+        loading={controller.query.isLoading}
+        dataSource={controller.query.data?.data}
+        pagination={{ current: controller.page, pageSize: 10, total: controller.query.data?.info.total, onChange: controller.setPage }}
+        columns={[
+          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+          { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
+          { title: "Услуга", render: (_, row) => row.service?.name },
+          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+          { title: "Описание", dataIndex: "description" },
+          {
+            title: "",
+            width: 72,
+            render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id })} />,
+          },
+        ]}
+      />
       <PaymentCreateModal
         open={controller.isCreateModalOpen}
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
@@ -127,6 +124,6 @@ export function PaymentsPage() {
         onCancel={() => controller.setQuickClientCreateOpen(false)}
         onCreated={controller.onQuickClientCreated}
       />
-    </>
+    </PageLayout>
   );
 }

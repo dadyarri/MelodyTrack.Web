@@ -111,7 +111,7 @@ export function AppLayout() {
           </Typography.Text>
         </Layout.Header>
         <Layout.Content className="app-content">
-          <Space direction="vertical" size={18} className="content-stack">
+          <Space direction="vertical" size={20} className="content-stack">
             <Outlet />
           </Space>
         </Layout.Content>

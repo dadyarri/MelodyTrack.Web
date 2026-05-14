@@ -7,8 +7,8 @@ import { usersApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
 import { ListTable } from "../components/ListTable";
+import { PageLayout } from "../components/PageLayout";
 import { RoleSelect } from "../components/RemoteSelect";
-import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { useAuth } from "../features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
@@ -62,11 +62,10 @@ export function UsersPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Пользователи"
-        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Создать приглашение" onClick={() => setInviteOpen(true)} />}
-      />
+    <PageLayout
+      title="Пользователи"
+      actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Создать приглашение" onClick={() => setInviteOpen(true)} />}
+    >
       <ListTable
         rowKey="id"
         loading={query.isLoading}
@@ -104,6 +103,6 @@ export function UsersPage() {
           </Form.Item>
         </Space>
       </Modal>
-    </>
+    </PageLayout>
   );
 }

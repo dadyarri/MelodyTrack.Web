@@ -5,7 +5,7 @@ import { auditApi } from "../api/crm";
 import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
 import { ListFilters } from "../components/ListFilters";
 import { ListTable } from "../components/ListTable";
-import { PageHeader } from "../components/PageHeader";
+import { PageLayout } from "../components/PageLayout";
 import { useAuth } from "../features/auth/useAuth";
 import { formatDateTime } from "../utils/date";
 
@@ -78,11 +78,10 @@ export function AuditPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <PageLayout
         title="Аудит действий"
         description="Журналирует ключевые изменения в системе и действия пользователей."
-      />
+    >
       <ListFilters>
         <div className="filter-field filter-field-wide">
           <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
@@ -134,6 +133,6 @@ export function AuditPage() {
           },
         ]}
       />
-    </>
+    </PageLayout>
   );
 }

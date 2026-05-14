@@ -149,7 +149,7 @@ export function AuthPage() {
   return (
     <main className="auth-screen">
       <Card className="auth-card">
-        <Space direction="vertical" size={18} className="wide">
+        <Space direction="vertical" size={20} className="wide">
           <div>
             <Typography.Title level={1}>MelodyTrack</Typography.Title>
             <Typography.Text type="secondary">Войдите, чтобы открыть рабочее пространство.</Typography.Text>
