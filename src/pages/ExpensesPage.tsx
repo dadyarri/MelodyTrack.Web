@@ -33,13 +33,14 @@ export function ExpensesPage() {
   const showErrors = (error: unknown) => getApiErrorMessages(error).forEach((errorMessage) => message.error(errorMessage));
   const query = useQuery({
     queryKey: ["expenses", page, search, dateRange?.[0]?.toISOString(), dateRange?.[1]?.toISOString()],
-    queryFn: () => expensesApi.list({
-      page,
-      page_size: 10,
-      search: search.trim() || undefined,
-      start: dateRange?.[0]?.startOf("day").toISOString(),
-      end: dateRange?.[1]?.endOf("day").toISOString(),
-    }),
+    queryFn: () =>
+      expensesApi.list({
+        page,
+        page_size: 10,
+        search: search.trim() || undefined,
+        start: dateRange?.[0]?.startOf("day").toISOString(),
+        end: dateRange?.[1]?.endOf("day").toISOString(),
+      }),
   });
 
   const createMutation = useMutation({
@@ -82,11 +83,12 @@ export function ExpensesPage() {
   });
 
   const exportMutation = useMutation({
-    mutationFn: () => expensesApi.export({
-      search: search.trim() || undefined,
-      start: dateRange?.[0]?.startOf("day").toISOString(),
-      end: dateRange?.[1]?.endOf("day").toISOString(),
-    }),
+    mutationFn: () =>
+      expensesApi.export({
+        search: search.trim() || undefined,
+        start: dateRange?.[0]?.startOf("day").toISOString(),
+        end: dateRange?.[1]?.endOf("day").toISOString(),
+      }),
     onSuccess: (blob) => {
       downloadBlob(blob, `expenses_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
       message.success("Экспорт готов");
@@ -135,53 +137,61 @@ export function ExpensesPage() {
 
   return (
     <PageLayout
-        title="Расходы"
-        actions={
-          <Space>
-            <ShortcutButton shortcut="X" leadingIcon={<DownloadOutlined />} loading={exportMutation.isPending} label="Экспорт" onClick={() => exportMutation.mutate()} />
-            <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
-          </Space>
-        }
+      title="Расходы"
+      actions={
+        <Space>
+          <ShortcutButton
+            shortcut="X"
+            leadingIcon={<DownloadOutlined />}
+            loading={exportMutation.isPending}
+            label="Экспорт"
+            onClick={() => exportMutation.mutate()}
+          />
+          <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setOpen(true)} />
+        </Space>
+      }
     >
       <ListFilters>
-          <div className="filter-field filter-field-wide">
-            <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
-            <Input.Search
-              allowClear
-              placeholder="Введите часть описания или название статьи"
-              onSearch={(value) => {
-                setSearch(value);
+        <div className="filter-field filter-field-wide">
+          <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
+          <Input.Search
+            allowClear
+            placeholder="Введите часть описания или название статьи"
+            onSearch={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
+            onChange={(event) => {
+              if (!event.target.value) {
+                setSearch("");
                 setPage(1);
-              }}
-              onChange={(event) => {
-                if (!event.target.value) {
-                  setSearch("");
-                  setPage(1);
-                }
-              }}
-            />
-          </div>
-          <div className="filter-field">
-            <Typography.Text type="secondary">Период</Typography.Text>
-            <DatePicker.RangePicker
-              value={dateRange}
-              format={DATE_FORMAT}
-              onChange={(value) => {
-                setDateRange(value);
-                setPage(1);
-              }}
-            />
-          </div>
-          <div className="filter-field">
-            <Typography.Text type="secondary">Действия</Typography.Text>
-            <Button onClick={() => {
+              }
+            }}
+          />
+        </div>
+        <div className="filter-field">
+          <Typography.Text type="secondary">Период</Typography.Text>
+          <DatePicker.RangePicker
+            value={dateRange}
+            format={DATE_FORMAT}
+            onChange={(value) => {
+              setDateRange(value);
+              setPage(1);
+            }}
+          />
+        </div>
+        <div className="filter-field">
+          <Typography.Text type="secondary">Действия</Typography.Text>
+          <Button
+            onClick={() => {
               setSearch("");
               setDateRange(null);
               setPage(1);
-            }}>
-              Сбросить
-            </Button>
-          </div>
+            }}
+          >
+            Сбросить
+          </Button>
+        </div>
       </ListFilters>
       <MoneyListSummaryCards
         totalAmount={query.data?.summary.totalAmount}
@@ -199,7 +209,17 @@ export function ExpensesPage() {
           { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
           { title: "Описание", dataIndex: "description" },
           { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-          { title: "", width: 72, render: (_, row) => <Button danger icon={<DeleteOutlined />} onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })} /> },
+          {
+            title: "",
+            width: 72,
+            render: (_, row) => (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => modal.confirm({ title: "Удалить расход?", onOk: () => deleteMutation.mutate(row.id) })}
+              />
+            ),
+          },
         ]}
       />
       <Modal
@@ -209,8 +229,8 @@ export function ExpensesPage() {
         onOk={() => form.submit()}
         confirmLoading={createMutation.isPending}
         footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
-        >
-          <Form
+      >
+        <Form
           form={form}
           layout="vertical"
           requiredMark={false}
@@ -229,8 +249,8 @@ export function ExpensesPage() {
           <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
           </Form.Item>
-          </Form>
-        </Modal>
+        </Form>
+      </Modal>
     </PageLayout>
   );
 }

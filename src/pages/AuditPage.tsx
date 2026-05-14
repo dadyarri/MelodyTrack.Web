@@ -78,10 +78,7 @@ export function AuditPage() {
   }
 
   return (
-    <PageLayout
-        title="Аудит действий"
-        description="Журналирует ключевые изменения в системе и действия пользователей."
-    >
+    <PageLayout title="Аудит действий" description="Журналирует ключевые изменения в системе и действия пользователей.">
       <ListFilters>
         <div className="filter-field filter-field-wide">
           <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>

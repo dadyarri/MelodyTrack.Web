@@ -144,7 +144,9 @@ export function getQueuedClientOption(value?: string) {
     return null;
   }
 
-  const item = loadOfflineQueue().find((entry): entry is Extract<OfflineQueuedCreate, { kind: "clients:create" }> => entry.kind === "clients:create" && entry.tempId === value);
+  const item = loadOfflineQueue().find(
+    (entry): entry is Extract<OfflineQueuedCreate, { kind: "clients:create" }> => entry.kind === "clients:create" && entry.tempId === value,
+  );
   if (!item) {
     return null;
   }

@@ -4,7 +4,8 @@ import { getRussianPhoneMask, getRussianPhoneDigits, hasRussianPhoneDigits, norm
 
 const russianPhoneMask = getRussianPhoneMask();
 
-type MaskedAntdInputProps = IMaskInputProps<HTMLInputElement> & Pick<InputProps, "placeholder" | "inputMode" | "autoComplete" | "disabled" | "status" | "size">;
+type MaskedAntdInputProps = IMaskInputProps<HTMLInputElement> &
+  Pick<InputProps, "placeholder" | "inputMode" | "autoComplete" | "disabled" | "status" | "size">;
 const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ inputRef, ...props }) => (
   <Input
     {...props}

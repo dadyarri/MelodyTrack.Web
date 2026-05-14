@@ -15,7 +15,7 @@ export function ClientSelect({
   onChange,
   extraOptions,
   onResolvedLabelChange,
-  }: {
+}: {
   value?: string;
   onChange?: (value: string) => void;
   extraOptions?: DefaultOptionType[];
@@ -31,36 +31,36 @@ export function ClientSelect({
     retry: false,
   });
   const cachedLabel = getCachedReferenceLabel("client", value);
-  const options = useMemo<DefaultOptionType[]>(
-    () => {
-      const selectedOption = pendingClientOption ? [pendingClientOption] : (selectedQuery.data
-        ? [{
-            value: selectedQuery.data.id,
-            label: formatClientLabel(selectedQuery.data),
-          }]
+  const options = useMemo<DefaultOptionType[]>(() => {
+    const selectedOption = pendingClientOption
+      ? [pendingClientOption]
+      : selectedQuery.data
+        ? [
+            {
+              value: selectedQuery.data.id,
+              label: formatClientLabel(selectedQuery.data),
+            },
+          ]
         : cachedLabel
           ? [{ value, label: cachedLabel }]
-          : []);
-      const lookupOptions = query.data?.map((client) => ({ value: client.id, label: formatClientLabel(client) })) ?? [];
-      const mergedOptions = [...selectedOption, ...(extraOptions ?? []), ...lookupOptions];
+          : [];
+    const lookupOptions = query.data?.map((client) => ({ value: client.id, label: formatClientLabel(client) })) ?? [];
+    const mergedOptions = [...selectedOption, ...(extraOptions ?? []), ...lookupOptions];
 
-      return mergedOptions.filter((option, index, items) =>
-        items.findIndex((item) => item.value === option.value) === index,
-      );
-    },
-    [cachedLabel, extraOptions, pendingClientOption, query.data, selectedQuery.data, value],
-  );
+    return mergedOptions.filter((option, index, items) => items.findIndex((item) => item.value === option.value) === index);
+  }, [cachedLabel, extraOptions, pendingClientOption, query.data, selectedQuery.data, value]);
 
   useEffect(() => {
-    const selectedLabel = pendingClientOption?.label ?? (selectedQuery.data
-      ? formatClientLabel(selectedQuery.data)
-      : cachedLabel);
+    const selectedLabel = pendingClientOption?.label ?? (selectedQuery.data ? formatClientLabel(selectedQuery.data) : cachedLabel);
     onResolvedLabelChange?.(typeof selectedLabel === "string" ? selectedLabel : undefined);
   }, [cachedLabel, onResolvedLabelChange, pendingClientOption?.label, selectedQuery.data]);
 
   useEffect(() => {
     if (query.data) {
-      rememberReferenceLabels("client", query.data.map((client) => ({ id: client.id, label: formatClientLabel(client) })));
+      rememberReferenceLabels(
+        "client",
+        query.data.map((client) => ({ id: client.id, label: formatClientLabel(client) })),
+      );
     }
   }, [query.data]);
 
@@ -109,22 +109,17 @@ export function ServiceSelect({
     retry: false,
   });
   const cachedLabel = getCachedReferenceLabel("service", value);
-  const options = useMemo<DefaultOptionType[]>(
-    () => {
-      const selectedOption = selectedQuery.data
-        ? [{ value: selectedQuery.data.id, label: selectedQuery.data.name }]
-        : cachedLabel && value
-          ? [{ value, label: cachedLabel }]
-          : [];
-      const lookupOptions = query.data?.map((service) => ({ value: service.id, label: service.name })) ?? [];
-      const mergedOptions = [...selectedOption, ...lookupOptions];
+  const options = useMemo<DefaultOptionType[]>(() => {
+    const selectedOption = selectedQuery.data
+      ? [{ value: selectedQuery.data.id, label: selectedQuery.data.name }]
+      : cachedLabel && value
+        ? [{ value, label: cachedLabel }]
+        : [];
+    const lookupOptions = query.data?.map((service) => ({ value: service.id, label: service.name })) ?? [];
+    const mergedOptions = [...selectedOption, ...lookupOptions];
 
-      return mergedOptions.filter((option, index, items) =>
-        items.findIndex((item) => item.value === option.value) === index,
-      );
-    },
-    [cachedLabel, query.data, selectedQuery.data, value],
-  );
+    return mergedOptions.filter((option, index, items) => items.findIndex((item) => item.value === option.value) === index);
+  }, [cachedLabel, query.data, selectedQuery.data, value]);
 
   useEffect(() => {
     const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
@@ -138,11 +133,26 @@ export function ServiceSelect({
 
   useEffect(() => {
     if (query.data) {
-      rememberReferenceLabels("service", query.data.map((service) => ({ id: service.id, label: service.name })));
+      rememberReferenceLabels(
+        "service",
+        query.data.map((service) => ({ id: service.id, label: service.name })),
+      );
     }
   }, [query.data]);
 
-  return <Select className="wide" showSearch allowClear={allowClear} filterOption={false} onSearch={setSearch} loading={query.isLoading || selectedQuery.isLoading} options={options} value={value} onChange={onChange} />;
+  return (
+    <Select
+      className="wide"
+      showSearch
+      allowClear={allowClear}
+      filterOption={false}
+      onSearch={setSearch}
+      loading={query.isLoading || selectedQuery.isLoading}
+      options={options}
+      value={value}
+      onChange={onChange}
+    />
+  );
 }
 
 export function UserSelect({
@@ -159,7 +169,9 @@ export function UserSelect({
   const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list, retry: false });
   const cachedLabel = getCachedReferenceLabel("user", value);
   const options = useMemo<DefaultOptionType[]>(
-    () => query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ?? (cachedLabel && value ? [{ value, label: cachedLabel }] : []),
+    () =>
+      query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ??
+      (cachedLabel && value ? [{ value, label: cachedLabel }] : []),
     [cachedLabel, query.data, value],
   );
 
@@ -170,11 +182,16 @@ export function UserSelect({
 
   useEffect(() => {
     if (query.data) {
-      rememberReferenceLabels("user", query.data.map((user) => ({ id: user.id, label: `${user.lastName} ${user.firstName}` })));
+      rememberReferenceLabels(
+        "user",
+        query.data.map((user) => ({ id: user.id, label: `${user.lastName} ${user.firstName}` })),
+      );
     }
   }, [query.data]);
 
-  return <Select className="wide" allowClear disabled={disabled} loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+  return (
+    <Select className="wide" allowClear disabled={disabled} loading={query.isLoading} options={options} value={value} onChange={onChange} />
+  );
 }
 
 export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {

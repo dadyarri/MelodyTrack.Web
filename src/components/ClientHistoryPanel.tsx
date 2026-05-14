@@ -25,7 +25,9 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
             <Descriptions.Item label="Телефон">{renderPhoneLink(data.client.contacts?.phone) || "Не указан"}</Descriptions.Item>
-            <Descriptions.Item label="Telegram">{renderSocialLink(data.client.contacts?.telegram, "telegram") || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="Telegram">
+              {renderSocialLink(data.client.contacts?.telegram, "telegram") || "Не указан"}
+            </Descriptions.Item>
             <Descriptions.Item label="VK">{renderSocialLink(data.client.contacts?.vk, "vk") || "Не указан"}</Descriptions.Item>
           </Descriptions>
         </Card>
@@ -137,6 +139,7 @@ function formatOptionalDateTime(value?: string | null) {
 }
 
 function getSocialHandle(value: string, type: "telegram" | "vk") {
-  const host = type === "telegram" ? /^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\//i : /^(?:https?:\/\/)?(?:www\.)?(?:vk\.com|vk\.ru)\//i;
+  const host =
+    type === "telegram" ? /^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\//i : /^(?:https?:\/\/)?(?:www\.)?(?:vk\.com|vk\.ru)\//i;
   return value.replace(host, "").split(/[/?#]/)[0] ?? "";
 }

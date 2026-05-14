@@ -43,7 +43,7 @@ export function AppointmentsCalendar({
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
   const draggedAppointment = draggedAppointmentId
-    ? appointments.find((appointment) => appointment.id === draggedAppointmentId) ?? null
+    ? (appointments.find((appointment) => appointment.id === draggedAppointmentId) ?? null)
     : null;
 
   const handleAppointmentDragStart = (appointment: Appointment) => {
@@ -81,7 +81,11 @@ export function AppointmentsCalendar({
 
     event.preventDefault();
 
-    const nextStartDate = buildRescheduledStartDate(day, dayjs(draggedAppointment.startDate), getDropHour(event, hours[0], hours[hours.length - 1]));
+    const nextStartDate = buildRescheduledStartDate(
+      day,
+      dayjs(draggedAppointment.startDate),
+      getDropHour(event, hours[0], hours[hours.length - 1]),
+    );
     if (!nextStartDate.isSame(dayjs(draggedAppointment.startDate))) {
       onReschedule(draggedAppointment, nextStartDate);
     }
@@ -96,7 +100,7 @@ export function AppointmentsCalendar({
       return;
     }
 
-    setDropTarget((current) => current?.dayKey === day.format("YYYY-MM-DD") ? null : current);
+    setDropTarget((current) => (current?.dayKey === day.format("YYYY-MM-DD") ? null : current));
   };
 
   return (
@@ -105,7 +109,10 @@ export function AppointmentsCalendar({
         <div className="schedule-calendar-header" style={{ gridTemplateColumns: `72px repeat(${days.length}, minmax(144px, 1fr))` }}>
           <div className="schedule-calendar-corner" />
           {days.map((day) => (
-            <div className={day.isSame(dayjs(), "day") ? "schedule-day-heading schedule-day-heading-today" : "schedule-day-heading"} key={day.format("YYYY-MM-DD")}>
+            <div
+              className={day.isSame(dayjs(), "day") ? "schedule-day-heading schedule-day-heading-today" : "schedule-day-heading"}
+              key={day.format("YYYY-MM-DD")}
+            >
               <span>{formatWeekday(day)}</span>
               <strong>{day.format("D")}</strong>
             </div>
@@ -164,7 +171,9 @@ export function AppointmentsCalendar({
           const dayAppointments = appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? [];
           return (
             <section className="schedule-agenda-day" key={day.format("YYYY-MM-DD")}>
-              <div className={day.isSame(dayjs(), "day") ? "schedule-agenda-heading schedule-agenda-heading-today" : "schedule-agenda-heading"}>
+              <div
+                className={day.isSame(dayjs(), "day") ? "schedule-agenda-heading schedule-agenda-heading-today" : "schedule-agenda-heading"}
+              >
                 <Typography.Text strong>{formatDate(day)}</Typography.Text>
                 <Typography.Text type="secondary">{formatWeekday(day)}</Typography.Text>
               </div>
@@ -213,8 +222,8 @@ function AppointmentStack({
     const currentEnd = dayjs(current.endDate);
     return currentEnd.isAfter(latest) ? currentEnd : latest;
   }, dayjs(appointment.endDate));
-  const top = Math.max(0, start.diff(day.hour(startHour).minute(0).second(0), "minute") / 60 * hourHeight);
-  const height = Math.max(48, longestEnd.diff(start, "minute") / 60 * hourHeight);
+  const top = Math.max(0, (start.diff(day.hour(startHour).minute(0).second(0), "minute") / 60) * hourHeight);
+  const height = Math.max(48, (longestEnd.diff(start, "minute") / 60) * hourHeight);
   const totalOffset = appointments.length > 1 ? stackOffset * (appointments.length - 1) : 0;
   const cardHeight = Math.max(48, height - totalOffset);
   const expandedOffset = 56;
@@ -223,13 +232,15 @@ function AppointmentStack({
   return (
     <div
       className="schedule-stack"
-      style={{
-        "--event-top": `${top}px`,
-        "--event-height": `${height}px`,
-        "--stack-size": appointments.length,
-        "--stack-expanded-height": `${height + expandedOffset * (appointments.length - 1)}px`,
-        "--badge-top": `${slotTop - top + 4}px`,
-      } as CSSProperties}
+      style={
+        {
+          "--event-top": `${top}px`,
+          "--event-height": `${height}px`,
+          "--stack-size": appointments.length,
+          "--stack-expanded-height": `${height + expandedOffset * (appointments.length - 1)}px`,
+          "--badge-top": `${slotTop - top + 4}px`,
+        } as CSSProperties
+      }
     >
       {appointments.length > 1 ? <div className="schedule-stack-badge">{appointments.length}</div> : null}
       {appointments.map((item, index) => (
@@ -238,12 +249,14 @@ function AppointmentStack({
           tabIndex={0}
           className={`schedule-entry schedule-event schedule-event-stacked schedule-entry-draggable ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}${item.id === reschedulePendingAppointmentId ? " schedule-entry-drag-disabled" : ""}`}
           draggable={reschedulePendingAppointmentId === null}
-          style={{
-            "--stack-index": index,
-            "--stack-top": `${index * stackOffset}px`,
-            "--stack-card-height": `${cardHeight}px`,
-            ...getServiceColorVars(item),
-          } as CSSProperties}
+          style={
+            {
+              "--stack-index": index,
+              "--stack-top": `${index * stackOffset}px`,
+              "--stack-card-height": `${cardHeight}px`,
+              ...getServiceColorVars(item),
+            } as CSSProperties
+          }
           key={item.id}
           onDragEnd={onDragEnd}
           onDragStart={(event) => {
@@ -293,13 +306,7 @@ function AppointmentAgendaItem({
   );
 }
 
-function AppointmentContent({
-  appointment,
-  density = "full",
-}: {
-  appointment: Appointment;
-  density?: "full" | "compact" | "dense";
-}) {
+function AppointmentContent({ appointment, density = "full" }: { appointment: Appointment; density?: "full" | "compact" | "dense" }) {
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName].filter(Boolean).join(" ");
@@ -309,7 +316,9 @@ function AppointmentContent({
   return (
     <div className={`schedule-event-content schedule-event-content-${density}`}>
       <div className="schedule-event-topline">
-        <div className="schedule-event-time">{start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}</div>
+        <div className="schedule-event-time">
+          {start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}
+        </div>
         <div className="schedule-event-icons">
           <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
             {renderAppointmentStatusIcon(appointment)}
@@ -445,9 +454,5 @@ function getDropHour(event: DragEvent<HTMLDivElement>, startHour: number, endHou
 }
 
 function buildRescheduledStartDate(day: Dayjs, originalStart: Dayjs, nextHour: number) {
-  return day
-    .hour(nextHour)
-    .minute(originalStart.minute())
-    .second(originalStart.second())
-    .millisecond(originalStart.millisecond());
+  return day.hour(nextHour).minute(originalStart.minute()).second(originalStart.second()).millisecond(originalStart.millisecond());
 }

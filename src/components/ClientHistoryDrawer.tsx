@@ -30,9 +30,7 @@ export function ClientHistoryDrawer({
       onClose={onClose}
       destroyOnHidden
     >
-      {data ? (
-        <ClientHistoryPanel data={data} onCreateAppointment={onCreateAppointment} onCreatePayment={onCreatePayment} />
-      ) : null}
+      {data ? <ClientHistoryPanel data={data} onCreateAppointment={onCreateAppointment} onCreatePayment={onCreatePayment} /> : null}
       <QueryStateBlock
         isLoading={isLoading}
         isError={isError}

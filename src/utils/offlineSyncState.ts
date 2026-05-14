@@ -16,4 +16,3 @@ export function setOfflineSyncStatus(status: OfflineSyncStatus) {
   currentStatus = status;
   window.dispatchEvent(new Event(offlineSyncStateChangedEventName));
 }
-

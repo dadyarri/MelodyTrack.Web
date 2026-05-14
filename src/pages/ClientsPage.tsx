@@ -6,7 +6,13 @@ import { ListTable } from "../components/ListTable";
 import { PageLayout } from "../components/PageLayout";
 import { ShortcutButton } from "../components/ShortcutButton";
 import { ClientEditorModal } from "../features/clients/ClientEditorModal";
-import { formatClientName, getContactValue, renderPhoneLink, renderSocialLink, useClientsPageController } from "../features/clients/useClientsPageController";
+import {
+  formatClientName,
+  getContactValue,
+  renderPhoneLink,
+  renderSocialLink,
+  useClientsPageController,
+} from "../features/clients/useClientsPageController";
 import { formatDateTime } from "../utils/date";
 import { formatMoney } from "../utils/money";
 
@@ -15,8 +21,16 @@ export function ClientsPage() {
 
   return (
     <PageLayout
-        title="Клиенты"
-        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => controller.openEditor()} />}
+      title="Клиенты"
+      actions={
+        <ShortcutButton
+          shortcut="A"
+          type="primary"
+          leadingIcon={<PlusOutlined />}
+          label="Добавить"
+          onClick={() => controller.openEditor()}
+        />
+      }
     >
       <ListFilters>
         <div className="filter-field filter-field-wide">
@@ -51,9 +65,13 @@ export function ClientsPage() {
               </Button>
             ),
           },
-          { title: "Последняя запись", render: (_, row) => row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет" },
-          { title: "Следующая запись", render: (_, row) => row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет" },
-          { title: "Баланс", dataIndex: "balance", render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag> },
+          { title: "Последняя запись", render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет") },
+          { title: "Следующая запись", render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет") },
+          {
+            title: "Баланс",
+            dataIndex: "balance",
+            render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
+          },
           { title: "Телефон", render: (_, row) => renderPhoneLink(getContactValue(row, "phone")) },
           { title: "Telegram", render: (_, row) => renderSocialLink(getContactValue(row, "telegram"), "telegram") },
           { title: "VK", render: (_, row) => renderSocialLink(getContactValue(row, "vk"), "vk") },

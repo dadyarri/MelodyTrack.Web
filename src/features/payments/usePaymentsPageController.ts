@@ -59,15 +59,16 @@ export function usePaymentsPageController() {
 
   const query = useQuery({
     queryKey: ["payments", page, search, clientId, serviceId, dateRange?.[0]?.toISOString(), dateRange?.[1]?.toISOString()],
-    queryFn: () => paymentsApi.list({
-      page,
-      page_size: 10,
-      search: search.trim() || undefined,
-      clientId,
-      serviceId,
-      start: dateRange?.[0]?.startOf("day").toISOString(),
-      end: dateRange?.[1]?.endOf("day").toISOString(),
-    }),
+    queryFn: () =>
+      paymentsApi.list({
+        page,
+        page_size: 10,
+        search: search.trim() || undefined,
+        clientId,
+        serviceId,
+        start: dateRange?.[0]?.startOf("day").toISOString(),
+        end: dateRange?.[1]?.endOf("day").toISOString(),
+      }),
   });
 
   const createMutation = useMutation({
@@ -128,13 +129,14 @@ export function usePaymentsPageController() {
   });
 
   const exportMutation = useMutation({
-    mutationFn: () => paymentsApi.export({
-      search: search.trim() || undefined,
-      clientId,
-      serviceId,
-      start: dateRange?.[0]?.startOf("day").toISOString(),
-      end: dateRange?.[1]?.endOf("day").toISOString(),
-    }),
+    mutationFn: () =>
+      paymentsApi.export({
+        search: search.trim() || undefined,
+        clientId,
+        serviceId,
+        start: dateRange?.[0]?.startOf("day").toISOString(),
+        end: dateRange?.[1]?.endOf("day").toISOString(),
+      }),
     onSuccess: (blob) => {
       downloadBlob(blob, `payments_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
       message.success("Экспорт готов");
@@ -275,7 +277,10 @@ export function usePaymentsPageController() {
       });
     },
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
-      setCreatedClientOptions((current) => [{ value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName }, ...current]);
+      setCreatedClientOptions((current) => [
+        { value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName },
+        ...current,
+      ]);
       setCreateClientLabel(client.displayName);
       form.setFieldValue("clientId", client.id);
       setQuickClientCreateOpen(false);

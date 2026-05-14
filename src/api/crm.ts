@@ -1,4 +1,23 @@
-import { Appointment, AuditLog, Client, ClientHistory, ClientWithBalance, CreateEntityResponse, DashboardStats, ExpensesResponse, LookupClient, LookupService, PaginatedParams, PaginatedResponse, PaymentsResponse, RecurrenceType, Role, Service, Ulid, User } from "./types";
+import {
+  Appointment,
+  AuditLog,
+  Client,
+  ClientHistory,
+  ClientWithBalance,
+  CreateEntityResponse,
+  DashboardStats,
+  ExpensesResponse,
+  LookupClient,
+  LookupService,
+  PaginatedParams,
+  PaginatedResponse,
+  PaymentsResponse,
+  RecurrenceType,
+  Role,
+  Service,
+  Ulid,
+  User,
+} from "./types";
 import { http } from "./http";
 
 export const clientsApi = {
@@ -20,20 +39,18 @@ export const clientsApi = {
     input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string },
     options?: { replayKey?: string },
   ) {
-    return http
-      .post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey))
-      .then((response) => response.data);
+    return http.post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }, options?: { expectedActivityId?: Ulid }) {
     return http.put(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then((response) => response.data);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
-    return http.delete(`/clients/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined }).then((response) => response.data);
+    return http
+      .delete(`/clients/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined })
+      .then((response) => response.data);
   },
   debtors() {
-    return http
-      .get<{ debtors: ClientWithBalance[] }>("/clients/inDebt")
-      .then((response) => response.data.debtors);
+    return http.get<{ debtors: ClientWithBalance[] }>("/clients/inDebt").then((response) => response.data.debtors);
   },
   exportDebtors() {
     return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
@@ -73,17 +90,32 @@ export const servicesApi = {
 };
 
 export const paymentsApi = {
-  list(params: PaginatedParams & { firstName?: string; lastName?: string; search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
+  list(
+    params: PaginatedParams & {
+      firstName?: string;
+      lastName?: string;
+      search?: string;
+      clientId?: string;
+      serviceId?: string;
+      start?: string;
+      end?: string;
+    },
+  ) {
     return http.get<PaymentsResponse>("/payments", { params }).then((response) => response.data);
   },
   export(params: { search?: string; clientId?: string; serviceId?: string; start?: string; end?: string }) {
     return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string }, options?: { replayKey?: string }) {
+  create(
+    input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string },
+    options?: { replayKey?: string },
+  ) {
     return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
-    return http.delete(`/payments/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined }).then((response) => response.data);
+    return http
+      .delete(`/payments/${id}`, { params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined })
+      .then((response) => response.data);
   },
 };
 
@@ -107,34 +139,52 @@ export const scheduleApi = {
     return http.get<{ appointments: Appointment[] }>("/appointments", { params }).then((response) => response.data.appointments);
   },
   mini(timezone: string) {
-    return http.get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", { params: { timezone } }).then((response) => response.data.appointments);
+    return http
+      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", { params: { timezone } })
+      .then((response) => response.data.appointments);
   },
   recurrenceTypes() {
     return http
       .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
       .then((response) => response.data.recurrenceTypes);
   },
-  create(input: {
-    clientId: Ulid;
-    serviceId: Ulid;
-    providerId?: Ulid;
-    recurrenceTypeId?: Ulid;
-    startDate: string;
-    patternEndDate?: string;
-    recurrencePattern?: number;
-  }, options?: { replayKey?: string }) {
+  create(
+    input: {
+      clientId: Ulid;
+      serviceId: Ulid;
+      providerId?: Ulid;
+      recurrenceTypeId?: Ulid;
+      startDate: string;
+      patternEndDate?: string;
+      recurrencePattern?: number;
+    },
+    options?: { replayKey?: string },
+  ) {
     return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: Partial<{ clientId: Ulid; serviceId: Ulid; providerId: Ulid; startDate: string; isCompleted: boolean; isCanceled: boolean; expectedActivityId: Ulid }>) {
+  update(
+    id: Ulid,
+    input: Partial<{
+      clientId: Ulid;
+      serviceId: Ulid;
+      providerId: Ulid;
+      startDate: string;
+      isCompleted: boolean;
+      isCanceled: boolean;
+      expectedActivityId: Ulid;
+    }>,
+  ) {
     return http.patch(`/appointments/${id}`, input).then((response) => response.data);
   },
   remove(id: Ulid, scope?: "single" | "this-and-following" | "all", options?: { expectedActivityId?: Ulid }) {
-    return http.delete(`/appointments/${id}`, {
-      params: {
-        ...(scope ? { scope } : {}),
-        ...(options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : {}),
-      },
-    }).then((response) => response.data);
+    return http
+      .delete(`/appointments/${id}`, {
+        params: {
+          ...(scope ? { scope } : {}),
+          ...(options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : {}),
+        },
+      })
+      .then((response) => response.data);
   },
 };
 
@@ -147,7 +197,6 @@ function buildReplayConfig(replayKey?: string) {
       }
     : undefined;
 }
-
 
 export const usersApi = {
   list() {

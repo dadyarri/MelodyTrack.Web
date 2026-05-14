@@ -3,7 +3,13 @@ import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 import { clientsApi, expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
 import { probeBackendReachable } from "../api/http";
-import { formatQueuedClientLabel, loadOfflineQueue, offlineQueueChangedEventName, removeOfflineQueueItem, shouldQueueOfflineError } from "../utils/offlineQueue";
+import {
+  formatQueuedClientLabel,
+  loadOfflineQueue,
+  offlineQueueChangedEventName,
+  removeOfflineQueueItem,
+  shouldQueueOfflineError,
+} from "../utils/offlineQueue";
 import { authStore } from "../features/auth/authStore";
 import { getOfflineSyncStatus, setOfflineSyncStatus } from "../utils/offlineSyncState";
 
@@ -58,20 +64,26 @@ export function OfflineQueueSync() {
           }
 
           if (item.kind === "payments:create") {
-            await paymentsApi.create({
-              ...item.payload,
-              clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
-            }, { replayKey: item.replayKey });
+            await paymentsApi.create(
+              {
+                ...item.payload,
+                clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
+              },
+              { replayKey: item.replayKey },
+            );
             removeOfflineQueueItem(item.id);
             syncedCount += 1;
             continue;
           }
 
           if (item.kind === "appointments:create") {
-            await scheduleApi.create({
-              ...item.payload,
-              clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
-            }, { replayKey: item.replayKey });
+            await scheduleApi.create(
+              {
+                ...item.payload,
+                clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
+              },
+              { replayKey: item.replayKey },
+            );
             removeOfflineQueueItem(item.id);
             syncedCount += 1;
           }
@@ -82,7 +94,9 @@ export function OfflineQueueSync() {
           }
 
           setOfflineSyncStatus("error");
-          message.error(`Не удалось отправить отложенное действие: ${item.kind === "clients:create" ? formatQueuedClientLabel(item.payload) : item.kind}`);
+          message.error(
+            `Не удалось отправить отложенное действие: ${item.kind === "clients:create" ? formatQueuedClientLabel(item.payload) : item.kind}`,
+          );
           break;
         }
       }

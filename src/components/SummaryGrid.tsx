@@ -5,15 +5,7 @@ export function SummaryGrid({ children }: { children: ReactNode }) {
   return <div className="summary-grid">{children}</div>;
 }
 
-export function SummaryCard({
-  title,
-  value,
-  caption,
-}: {
-  title: string;
-  value: ReactNode;
-  caption?: ReactNode;
-}) {
+export function SummaryCard({ title, value, caption }: { title: string; value: ReactNode; caption?: ReactNode }) {
   return (
     <Card size="small">
       <Typography.Text type="secondary">{title}</Typography.Text>

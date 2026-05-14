@@ -20,10 +20,13 @@ export type AppNavItem = {
   visibility: NavVisibility;
 };
 
-export type NavigationUser = {
-  isAdmin?: boolean;
-  isSuperuser?: boolean;
-} | null | undefined;
+export type NavigationUser =
+  | {
+      isAdmin?: boolean;
+      isSuperuser?: boolean;
+    }
+  | null
+  | undefined;
 
 export const appNavItems: AppNavItem[] = [
   { key: "/", icon: <DashboardOutlined />, label: "Обзор", shortcut: "1", visibility: "all" },

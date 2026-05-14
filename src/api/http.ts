@@ -2,10 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig, type AxiosResponse } fro
 import { authStore } from "../features/auth/authStore";
 import type { StaleEntityConflict } from "./types";
 
-
-const baseURL = import.meta.env.DEV
-  ? "http://localhost:5000"
-  : "https://mt.dadyarri.ru/api";
+const baseURL = import.meta.env.DEV ? "http://localhost:5000" : "https://mt.dadyarri.ru/api";
 export const authExpiredEventName = "melodytrack:auth-expired";
 
 export const http = axios.create({
@@ -86,20 +83,32 @@ http.interceptors.response.use(
 );
 
 function cacheSuccessfulGet(response: AxiosResponse) {
-  if ((response.config.method ?? "get").toLowerCase() !== "get" || response.config.responseType === "blob" || response.config.responseType === "arraybuffer") {
+  if (
+    (response.config.method ?? "get").toLowerCase() !== "get" ||
+    response.config.responseType === "blob" ||
+    response.config.responseType === "arraybuffer"
+  ) {
     return;
   }
 
   try {
     const cacheKey = buildCacheKey(response.config);
-    window.localStorage.setItem(cacheKey, JSON.stringify({ data: response.data, status: response.status, statusText: response.statusText, headers: response.headers }));
+    window.localStorage.setItem(
+      cacheKey,
+      JSON.stringify({ data: response.data, status: response.status, statusText: response.statusText, headers: response.headers }),
+    );
   } catch {
     // Ignore cache failures.
   }
 }
 
 function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
-  if (!config || (config.method ?? "get").toLowerCase() !== "get" || config.responseType === "blob" || config.responseType === "arraybuffer") {
+  if (
+    !config ||
+    (config.method ?? "get").toLowerCase() !== "get" ||
+    config.responseType === "blob" ||
+    config.responseType === "arraybuffer"
+  ) {
     return null;
   }
 
@@ -202,7 +211,7 @@ export function getApiErrorMessages(error: unknown) {
   const messages = new Set<string>();
   if (Array.isArray(data?.errors)) {
     for (const item of data.errors) {
-      const message = typeof item === "string" ? item : item.reason ?? item.message;
+      const message = typeof item === "string" ? item : (item.reason ?? item.message);
       if (message) {
         messages.add(message);
       }

@@ -1,4 +1,13 @@
-import { CheckOutlined, CloseOutlined, DeleteOutlined, EditOutlined, LinkOutlined, PhoneOutlined, RedoOutlined, SendOutlined } from "@ant-design/icons";
+import {
+  CheckOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  LinkOutlined,
+  PhoneOutlined,
+  RedoOutlined,
+  SendOutlined,
+} from "@ant-design/icons";
 import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Tag, Typography } from "antd";
 import type { FormInstance } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
@@ -77,7 +86,14 @@ export function AppointmentEditModal({
   }, [appointment, form, lockedProviderId]);
 
   return (
-    <Modal open={appointment !== null} title="Редактировать запись" onCancel={onCancel} onOk={() => form.submit()} confirmLoading={editPending} destroyOnHidden>
+    <Modal
+      open={appointment !== null}
+      title="Редактировать запись"
+      onCancel={onCancel}
+      onOk={() => form.submit()}
+      confirmLoading={editPending}
+      destroyOnHidden
+    >
       {appointment ? (
         <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
           {isStale ? (
@@ -256,9 +272,7 @@ export function AppointmentCreateModal({
               </Form.Item>
             ) : null}
             <div className="schedule-recurrence-hint">
-              <Typography.Text type="secondary">
-                {getRecurrenceSummary(recurrenceKey, startDate, weeklyDays)}
-              </Typography.Text>
+              <Typography.Text type="secondary">{getRecurrenceSummary(recurrenceKey, startDate, weeklyDays)}</Typography.Text>
             </div>
           </>
         ) : null}
@@ -297,9 +311,7 @@ export function RecurringDeleteModal({
               description={formatRecordActivitySummary(appointment.lastActivity)}
             />
           ) : null}
-          <Typography.Text>
-            Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.
-          </Typography.Text>
+          <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
           <Space direction="vertical" className="wide recurring-delete-actions">
             <Button danger block loading={deletePending} onClick={() => onDelete(appointment, "single")}>
               Только эту запись
@@ -363,13 +375,40 @@ export function AppointmentDetailsModal({
         <div className="schedule-details-header">
           <div>
             <Typography.Title level={3}>{clientName}</Typography.Title>
-            <Typography.Text type="secondary">{formatDateTime(start)} - {end.format(TIME_FORMAT)}</Typography.Text>
+            <Typography.Text type="secondary">
+              {formatDateTime(start)} - {end.format(TIME_FORMAT)}
+            </Typography.Text>
           </div>
           {hasClientContacts(appointment.client.contacts) ? (
             <Space wrap className="schedule-contact-links">
-              {appointment.client.contacts?.phone ? <Button shape="circle" icon={<PhoneOutlined />} href={`tel:${appointment.client.contacts.phone}`} title={appointment.client.contacts.phone} /> : null}
-              {appointment.client.contacts?.telegram ? <Button shape="circle" icon={<SendOutlined />} href={appointment.client.contacts.telegram} target="_blank" rel="noreferrer" title="Telegram" /> : null}
-              {appointment.client.contacts?.vk ? <Button shape="circle" icon={<LinkOutlined />} href={appointment.client.contacts.vk} target="_blank" rel="noreferrer" title="VK" /> : null}
+              {appointment.client.contacts?.phone ? (
+                <Button
+                  shape="circle"
+                  icon={<PhoneOutlined />}
+                  href={`tel:${appointment.client.contacts.phone}`}
+                  title={appointment.client.contacts.phone}
+                />
+              ) : null}
+              {appointment.client.contacts?.telegram ? (
+                <Button
+                  shape="circle"
+                  icon={<SendOutlined />}
+                  href={appointment.client.contacts.telegram}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="Telegram"
+                />
+              ) : null}
+              {appointment.client.contacts?.vk ? (
+                <Button
+                  shape="circle"
+                  icon={<LinkOutlined />}
+                  href={appointment.client.contacts.vk}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="VK"
+                />
+              ) : null}
             </Space>
           ) : null}
         </div>
@@ -380,7 +419,9 @@ export function AppointmentDetailsModal({
           </div>
           {appointment.provider ? (
             <div>
-              <div className="schedule-detail-value">{appointment.provider.lastName} {appointment.provider.firstName}</div>
+              <div className="schedule-detail-value">
+                {appointment.provider.lastName} {appointment.provider.firstName}
+              </div>
               <Typography.Text type="secondary">Специалист</Typography.Text>
             </div>
           ) : null}

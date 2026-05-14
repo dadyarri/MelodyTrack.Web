@@ -22,7 +22,7 @@ const lightTheme: ThemeConfig = {
     colorBorderSecondary: "#e8dcc2",
     borderRadius: 6,
     boxShadow: "0 8px 24px rgba(72, 52, 27, 0.10)",
-    fontFamily: "\"IBM Plex Sans\", \"Segoe UI\", sans-serif",
+    fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
   },
   components: {
     Button: { primaryShadow: "none" },
@@ -64,7 +64,7 @@ const darkTheme: ThemeConfig = {
     colorBorderSecondary: "#463727",
     borderRadius: 6,
     boxShadow: "0 14px 30px rgba(0, 0, 0, 0.35)",
-    fontFamily: "\"IBM Plex Sans\", \"Segoe UI\", sans-serif",
+    fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
   },
   components: {
     Button: { primaryShadow: "none" },

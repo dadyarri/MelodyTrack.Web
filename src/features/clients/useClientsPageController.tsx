@@ -61,7 +61,7 @@ export function useClientsPageController() {
     enabled: Boolean(historyClient),
   });
 
-  const currentEditingClient = editing ? query.data?.data.find((client) => client.id === editing.id) ?? editing : null;
+  const currentEditingClient = editing ? (query.data?.data.find((client) => client.id === editing.id) ?? editing) : null;
   const isEditingClientStale = currentEditingClient
     ? isActivityStale(currentEditingClient.lastActivity?.id, editingBaselineActivityId)
     : false;
@@ -122,7 +122,9 @@ export function useClientsPageController() {
           saveMutation.mutate({ values: variables.values, expectedActivityId: conflict.currentActivity?.id });
         },
         onReload: () => {
-          const freshClient = findItemInQueryData(queryClient, ["clients"], (data: { data: Client[] } | undefined) => data?.data, editing.id) ?? currentEditingClient;
+          const freshClient =
+            findItemInQueryData(queryClient, ["clients"], (data: { data: Client[] } | undefined) => data?.data, editing.id) ??
+            currentEditingClient;
           if (!freshClient) {
             return;
           }
@@ -313,7 +315,12 @@ export function renderSocialLink(value: string | null | undefined, type: "telegr
 }
 
 function getSocialHandle(value: string) {
-  return value.replace(/^https?:\/\//i, "").replace(/^www\./i, "").split(/[/?#]/)[1] ?? "";
+  return (
+    value
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .split(/[/?#]/)[1] ?? ""
+  );
 }
 
 function prepareClientInput(values: ClientFormValues): ClientSubmitInput {

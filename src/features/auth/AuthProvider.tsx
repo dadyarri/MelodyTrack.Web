@@ -47,17 +47,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [hasSession, handleSessionExpired, meQuery.error, meQuery.isError]);
 
-  const loadMe = useCallback(async (accessToken: string, refreshToken: string) => {
-    authStore.setSession(accessToken, refreshToken);
-    setHasSession(true);
-    const me = await queryClient.fetchQuery<MeResponse>({
-      queryKey: ["auth", "me"],
-      queryFn: authApi.getMe,
-      staleTime: 0,
-    });
-    setCachedUser(me);
-    saveCachedUser(me);
-  }, [queryClient]);
+  const loadMe = useCallback(
+    async (accessToken: string, refreshToken: string) => {
+      authStore.setSession(accessToken, refreshToken);
+      setHasSession(true);
+      const me = await queryClient.fetchQuery<MeResponse>({
+        queryKey: ["auth", "me"],
+        queryFn: authApi.getMe,
+        staleTime: 0,
+      });
+      setCachedUser(me);
+      saveCachedUser(me);
+    },
+    [queryClient],
+  );
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -66,11 +66,7 @@ export function RecoveryCodesCard({
         <Typography.Text type="secondary">{description}</Typography.Text>
         <div className="recovery-codes-grid">
           {items.map((item) => (
-            <Typography.Text
-              key={item.code}
-              code
-              className={item.wasUsed ? "recovery-code recovery-code-used" : "recovery-code"}
-            >
+            <Typography.Text key={item.code} code className={item.wasUsed ? "recovery-code recovery-code-used" : "recovery-code"}>
               {item.code}
             </Typography.Text>
           ))}

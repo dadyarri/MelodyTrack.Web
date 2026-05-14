@@ -64,7 +64,15 @@ export function UsersPage() {
   return (
     <PageLayout
       title="Пользователи"
-      actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Создать приглашение" onClick={() => setInviteOpen(true)} />}
+      actions={
+        <ShortcutButton
+          shortcut="A"
+          type="primary"
+          leadingIcon={<PlusOutlined />}
+          label="Создать приглашение"
+          onClick={() => setInviteOpen(true)}
+        />
+      }
     >
       <ListTable
         rowKey="id"

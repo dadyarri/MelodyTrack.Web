@@ -79,27 +79,33 @@ export function DashboardPage() {
           <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на сегодня, ${formatDateTitle(dayjs())}`} loading={miniQuery.isLoading}>
-          <ReminderList
-            appointments={todayAppointments}
-            emptyDescription="На сегодня записей нет"
-            showTimeOnly
-          />
+        <Card
+          className="dashboard-widget dashboard-widget-large"
+          title={`Записи на сегодня, ${formatDateTitle(dayjs())}`}
+          loading={miniQuery.isLoading}
+        >
+          <ReminderList appointments={todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
         </Card>
 
-        <Card className="dashboard-widget dashboard-widget-large" title={`Записи на завтра, ${formatDateTitle(dayjs().add(1, "day"))}`} loading={miniQuery.isLoading}>
-          <ReminderList
-            appointments={tomorrowAppointments}
-            emptyDescription="На завтра записей нет"
-            showTimeOnly
-          />
+        <Card
+          className="dashboard-widget dashboard-widget-large"
+          title={`Записи на завтра, ${formatDateTitle(dayjs().add(1, "day"))}`}
+          loading={miniQuery.isLoading}
+        >
+          <ReminderList appointments={tomorrowAppointments} emptyDescription="На завтра записей нет" showTimeOnly />
         </Card>
 
         <Card
           className="dashboard-widget dashboard-widget-large"
           title="Клиенты с отрицательным балансом"
           extra={
-            <ShortcutButton shortcut="X" leadingIcon={<DownloadOutlined />} loading={debtorsExportMutation.isPending} label="Экспорт" onClick={() => debtorsExportMutation.mutate()} />
+            <ShortcutButton
+              shortcut="X"
+              leadingIcon={<DownloadOutlined />}
+              loading={debtorsExportMutation.isPending}
+              label="Экспорт"
+              onClick={() => debtorsExportMutation.mutate()}
+            />
           }
         >
           <Table
@@ -149,10 +155,7 @@ function ReminderList({
   }
 
   return (
-    <List
-      dataSource={appointments}
-      renderItem={(appointment) => <ScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />}
-    />
+    <List dataSource={appointments} renderItem={(appointment) => <ScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />} />
   );
 }
 
@@ -176,13 +179,35 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
           </Space>
           <Space size={4}>
             {appointment.client.contacts?.phone ? (
-              <Button shape="circle" size="small" icon={<PhoneOutlined />} href={`tel:${appointment.client.contacts.phone}`} title={appointment.client.contacts.phone} />
+              <Button
+                shape="circle"
+                size="small"
+                icon={<PhoneOutlined />}
+                href={`tel:${appointment.client.contacts.phone}`}
+                title={appointment.client.contacts.phone}
+              />
             ) : null}
             {appointment.client.contacts?.telegram ? (
-              <Button shape="circle" size="small" icon={<SendOutlined />} href={appointment.client.contacts.telegram} target="_blank" rel="noreferrer" title="Telegram" />
+              <Button
+                shape="circle"
+                size="small"
+                icon={<SendOutlined />}
+                href={appointment.client.contacts.telegram}
+                target="_blank"
+                rel="noreferrer"
+                title="Telegram"
+              />
             ) : null}
             {appointment.client.contacts?.vk ? (
-              <Button shape="circle" size="small" icon={<LinkOutlined />} href={appointment.client.contacts.vk} target="_blank" rel="noreferrer" title="VK" />
+              <Button
+                shape="circle"
+                size="small"
+                icon={<LinkOutlined />}
+                href={appointment.client.contacts.vk}
+                target="_blank"
+                rel="noreferrer"
+                title="VK"
+              />
             ) : null}
           </Space>
         </Space>

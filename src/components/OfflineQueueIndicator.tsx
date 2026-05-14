@@ -85,13 +85,7 @@ export function OfflineQueueIndicator() {
   return (
     <Popover trigger={["hover", "click"]} placement="bottomRight" content={content}>
       <Badge count={queue.length > 0 ? queue.length : undefined} size="small" offset={[-2, 2]}>
-        <Button
-          type="text"
-          shape="circle"
-          className="app-sync-button"
-          icon={icon}
-          aria-label={label}
-        />
+        <Button type="text" shape="circle" className="app-sync-button" icon={icon} aria-label={label} />
       </Badge>
     </Popover>
   );

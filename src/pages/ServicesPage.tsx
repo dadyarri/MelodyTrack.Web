@@ -103,8 +103,10 @@ export function ServicesPage() {
 
   return (
     <PageLayout
-        title="Услуги"
-        actions={<ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setCreateOpen(true)} />}
+      title="Услуги"
+      actions={
+        <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => setCreateOpen(true)} />
+      }
     >
       <ListTable
         rowKey="id"
@@ -115,7 +117,19 @@ export function ServicesPage() {
           { title: "Название", dataIndex: "name" },
           { title: "Описание", dataIndex: "description" },
           { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
-          { title: "", width: 72, render: (_, row) => <Button icon={<DollarOutlined />} onClick={() => { setPricing(row); priceForm.setFieldValue("price", row.price); }} /> },
+          {
+            title: "",
+            width: 72,
+            render: (_, row) => (
+              <Button
+                icon={<DollarOutlined />}
+                onClick={() => {
+                  setPricing(row);
+                  priceForm.setFieldValue("price", row.price);
+                }}
+              />
+            ),
+          },
         ]}
       />
       <Modal
@@ -150,8 +164,18 @@ export function ServicesPage() {
           </Form.Item>
         </Form>
       </Modal>
-      <Modal open={Boolean(pricing)} title="Обновить цену" onCancel={() => setPricing(null)} onOk={() => priceForm.submit()} confirmLoading={priceMutation.isPending}>
-        <Form form={priceForm} layout="vertical" onFinish={(values) => pricing && priceMutation.mutate({ id: pricing.id, price: values.price })}>
+      <Modal
+        open={Boolean(pricing)}
+        title="Обновить цену"
+        onCancel={() => setPricing(null)}
+        onOk={() => priceForm.submit()}
+        confirmLoading={priceMutation.isPending}
+      >
+        <Form
+          form={priceForm}
+          layout="vertical"
+          onFinish={(values) => pricing && priceMutation.mutate({ id: pricing.id, price: values.price })}
+        >
           <Form.Item name="price" label="Цена" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
           </Form.Item>

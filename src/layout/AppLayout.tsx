@@ -116,13 +116,7 @@ export function AppLayout() {
           </Space>
         </Layout.Content>
       </Layout>
-      <Drawer
-        open={mobileNavOpen}
-        placement="left"
-        width={280}
-        onClose={() => setMobileNavOpen(false)}
-        className="mobile-nav-drawer"
-      >
+      <Drawer open={mobileNavOpen} placement="left" width={280} onClose={() => setMobileNavOpen(false)} className="mobile-nav-drawer">
         <Space direction="vertical" size={16} className="wide">
           <Menu
             mode="inline"

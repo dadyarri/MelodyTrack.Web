@@ -130,9 +130,15 @@ export function useSchedulePageController() {
     return true;
   });
 
-  const currentSelectedAppointment = selectedAppointment ? (query.data ?? []).find((item) => item.id === selectedAppointment.id) ?? selectedAppointment : null;
-  const currentEditingAppointment = appointmentToEdit ? (query.data ?? []).find((item) => item.id === appointmentToEdit.id) ?? appointmentToEdit : null;
-  const currentDeletingAppointment = appointmentToDelete ? (query.data ?? []).find((item) => item.id === appointmentToDelete.id) ?? appointmentToDelete : null;
+  const currentSelectedAppointment = selectedAppointment
+    ? ((query.data ?? []).find((item) => item.id === selectedAppointment.id) ?? selectedAppointment)
+    : null;
+  const currentEditingAppointment = appointmentToEdit
+    ? ((query.data ?? []).find((item) => item.id === appointmentToEdit.id) ?? appointmentToEdit)
+    : null;
+  const currentDeletingAppointment = appointmentToDelete
+    ? ((query.data ?? []).find((item) => item.id === appointmentToDelete.id) ?? appointmentToDelete)
+    : null;
   const isSelectedAppointmentStale = currentSelectedAppointment
     ? isActivityStale(currentSelectedAppointment.lastActivity?.id, selectedAppointmentBaselineActivityId)
     : false;
@@ -196,8 +202,15 @@ export function useSchedulePageController() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: { isCompleted?: boolean; isCanceled?: boolean }; expectedActivityId?: Ulid }) =>
-      scheduleApi.update(id, { ...input, expectedActivityId }),
+    mutationFn: ({
+      id,
+      input,
+      expectedActivityId,
+    }: {
+      id: string;
+      input: { isCompleted?: boolean; isCanceled?: boolean };
+      expectedActivityId?: Ulid;
+    }) => scheduleApi.update(id, { ...input, expectedActivityId }),
     onMutate: async ({ id, input }) => {
       const nextState = (appointment: Appointment) =>
         appointment.id === id
@@ -209,9 +222,7 @@ export function useSchedulePageController() {
           : appointment;
 
       setSelectedAppointment((current) => (current ? nextState(current) : current));
-      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) =>
-        current ? current.map(nextState) : current,
-      );
+      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => (current ? current.map(nextState) : current));
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -228,7 +239,12 @@ export function useSchedulePageController() {
         cancelText: "Обновить данные",
         onConfirm: (conflict) => updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
         onReload: () => {
-          const freshAppointment = findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, variables.id);
+          const freshAppointment = findItemInQueryData(
+            queryClient,
+            ["appointments"],
+            (data: Appointment[] | undefined) => data,
+            variables.id,
+          );
           if (!freshAppointment) {
             return;
           }
@@ -272,7 +288,9 @@ export function useSchedulePageController() {
         cancelText: "Обновить форму",
         onConfirm: (nextConflict) => editMutation.mutate({ ...variables, expectedActivityId: nextConflict.currentActivity?.id }),
         onReload: () => {
-          const freshAppointment = findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, appointmentToEdit.id) ?? currentEditingAppointment;
+          const freshAppointment =
+            findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, appointmentToEdit.id) ??
+            currentEditingAppointment;
           if (!freshAppointment) {
             return;
           }
@@ -291,7 +309,15 @@ export function useSchedulePageController() {
   });
 
   const rescheduleMutation = useMutation({
-    mutationFn: ({ appointment, startDate, expectedActivityId }: { appointment: Appointment; startDate: Dayjs; expectedActivityId?: Ulid }) =>
+    mutationFn: ({
+      appointment,
+      startDate,
+      expectedActivityId,
+    }: {
+      appointment: Appointment;
+      startDate: Dayjs;
+      expectedActivityId?: Ulid;
+    }) =>
       scheduleApi.update(appointment.id, {
         startDate: startDate.toISOString(),
         expectedActivityId,
@@ -328,7 +354,12 @@ export function useSchedulePageController() {
         cancelText: "Обновить данные",
         onConfirm: (conflict) => rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
         onReload: () => {
-          const freshAppointment = findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, variables.appointment.id);
+          const freshAppointment = findItemInQueryData(
+            queryClient,
+            ["appointments"],
+            (data: Appointment[] | undefined) => data,
+            variables.appointment.id,
+          );
           if (!freshAppointment) {
             return;
           }
@@ -375,7 +406,12 @@ export function useSchedulePageController() {
         cancelText: "Обновить данные",
         onConfirm: (conflict) => deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
         onReload: () => {
-          const freshAppointment = findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, variables.id);
+          const freshAppointment = findItemInQueryData(
+            queryClient,
+            ["appointments"],
+            (data: Appointment[] | undefined) => data,
+            variables.id,
+          );
           if (!freshAppointment) {
             return;
           }
@@ -411,7 +447,7 @@ export function useSchedulePageController() {
     }
 
     const draft = loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
-    const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : pendingCreateStartDate ?? dayjs();
+    const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : (pendingCreateStartDate ?? dayjs());
     const providerId = isSpecialistFilterLocked ? auth.user?.id : draft?.values.providerId;
 
     draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
@@ -553,7 +589,6 @@ function getRecurrencePattern(key: RecurrenceType["key"], startDate: Dayjs, week
 
   return startDate.date();
 }
-
 
 function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDraftValues {
   return {
