@@ -290,6 +290,68 @@ export function useSchedulePageController() {
     },
   });
 
+  const rescheduleMutation = useMutation({
+    mutationFn: ({ appointment, startDate, expectedActivityId }: { appointment: Appointment; startDate: Dayjs; expectedActivityId?: Ulid }) =>
+      scheduleApi.update(appointment.id, {
+        startDate: startDate.toISOString(),
+        expectedActivityId,
+      }),
+    onSuccess: async (_, variables) => {
+      message.success("Запись перенесена");
+
+      if (selectedAppointment?.id === variables.appointment.id) {
+        setSelectedAppointment(null);
+        setSelectedAppointmentBaselineActivityId(undefined);
+      }
+
+      if (appointmentToEdit?.id === variables.appointment.id) {
+        setAppointmentToEdit(null);
+        setAppointmentToEditBaselineActivityId(undefined);
+      }
+
+      if (appointmentToDelete?.id === variables.appointment.id) {
+        setAppointmentToDelete(null);
+        setAppointmentToDeleteBaselineActivityId(undefined);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: ["appointments"],
+        showErrors,
+        title: "Запись уже изменена",
+        okText: "Перенести поверх новой версии",
+        cancelText: "Обновить данные",
+        onConfirm: (conflict) => rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }),
+        onReload: () => {
+          const freshAppointment = findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, variables.appointment.id);
+          if (!freshAppointment) {
+            return;
+          }
+
+          if (selectedAppointment?.id === variables.appointment.id) {
+            setSelectedAppointment(freshAppointment);
+            setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          }
+
+          if (appointmentToEdit?.id === variables.appointment.id) {
+            setAppointmentToEdit(freshAppointment);
+            setAppointmentToEditBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          }
+
+          if (appointmentToDelete?.id === variables.appointment.id) {
+            setAppointmentToDelete(freshAppointment);
+            setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          }
+        },
+      });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentDeleteScope; expectedActivityId?: Ulid }) =>
       scheduleApi.remove(id, scope, { expectedActivityId }),
@@ -435,6 +497,7 @@ export function useSchedulePageController() {
     createMutation,
     updateMutation,
     editMutation,
+    rescheduleMutation,
     deleteMutation,
     openCreateModal,
     openCreateModalAt,

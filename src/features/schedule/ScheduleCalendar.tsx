@@ -1,7 +1,7 @@
 import { CheckOutlined, CloseOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties, type DragEvent } from "react";
 import type { Appointment } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 
@@ -23,19 +23,81 @@ export function AppointmentsCalendar({
   loading,
   range,
   onCreateAt,
+  onReschedule,
   onSelect,
+  reschedulePendingAppointmentId,
   selectedAppointmentId,
 }: {
   appointments: Appointment[];
   loading: boolean;
   range: [Dayjs, Dayjs];
   onCreateAt: (startDate: Dayjs) => void;
+  onReschedule: (appointment: Appointment, startDate: Dayjs) => void;
   onSelect: (appointment: Appointment) => void;
+  reschedulePendingAppointmentId: string | null;
   selectedAppointmentId: string | null;
 }) {
   const days = getDays(range);
   const hours = getHours();
   const appointmentsByDay = groupAppointmentsByDay(appointments);
+  const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
+  const draggedAppointment = draggedAppointmentId
+    ? appointments.find((appointment) => appointment.id === draggedAppointmentId) ?? null
+    : null;
+
+  const handleAppointmentDragStart = (appointment: Appointment) => {
+    if (reschedulePendingAppointmentId) {
+      return;
+    }
+
+    setDraggedAppointmentId(appointment.id);
+  };
+
+  const handleAppointmentDragEnd = () => {
+    setDraggedAppointmentId(null);
+    setDropTarget(null);
+  };
+
+  const handleColumnDragOver = (event: DragEvent<HTMLDivElement>, day: Dayjs) => {
+    if (!draggedAppointment) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    const nextHour = getDropHour(event, hours[0], hours[hours.length - 1]);
+    setDropTarget((current) => {
+      const nextTarget = { dayKey: day.format("YYYY-MM-DD"), hour: nextHour };
+      return current?.dayKey === nextTarget.dayKey && current.hour === nextTarget.hour ? current : nextTarget;
+    });
+  };
+
+  const handleColumnDrop = (event: DragEvent<HTMLDivElement>, day: Dayjs) => {
+    if (!draggedAppointment) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextStartDate = buildRescheduledStartDate(day, dayjs(draggedAppointment.startDate), getDropHour(event, hours[0], hours[hours.length - 1]));
+    if (!nextStartDate.isSame(dayjs(draggedAppointment.startDate))) {
+      onReschedule(draggedAppointment, nextStartDate);
+    }
+
+    setDraggedAppointmentId(null);
+    setDropTarget(null);
+  };
+
+  const handleColumnDragLeave = (event: DragEvent<HTMLDivElement>, day: Dayjs) => {
+    const relatedTarget = event.relatedTarget;
+    if (relatedTarget instanceof Node && event.currentTarget.contains(relatedTarget)) {
+      return;
+    }
+
+    setDropTarget((current) => current?.dayKey === day.format("YYYY-MM-DD") ? null : current);
+  };
 
   return (
     <section className="schedule-calendar" aria-busy={loading}>
@@ -64,11 +126,17 @@ export function AppointmentsCalendar({
             ))}
           </div>
           {days.map((day) => (
-            <div className="schedule-day-column" key={day.format("YYYY-MM-DD")}>
+            <div
+              className="schedule-day-column"
+              key={day.format("YYYY-MM-DD")}
+              onDragLeave={(event) => handleColumnDragLeave(event, day)}
+              onDragOver={(event) => handleColumnDragOver(event, day)}
+              onDrop={(event) => handleColumnDrop(event, day)}
+            >
               {hours.map((hour) => (
                 <button
                   type="button"
-                  className="schedule-hour-line schedule-hour-slot-button"
+                  className={`schedule-hour-line schedule-hour-slot-button${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? " schedule-hour-slot-drop-target" : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
                   onClick={() => onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0))}
@@ -80,7 +148,10 @@ export function AppointmentsCalendar({
                   day={day}
                   startHour={hours[0]}
                   key={appointmentsInSlot.map((appointment) => appointment.id).join(":")}
+                  onDragEnd={handleAppointmentDragEnd}
+                  onDragStart={handleAppointmentDragStart}
                   onSelect={onSelect}
+                  reschedulePendingAppointmentId={reschedulePendingAppointmentId}
                   selectedAppointmentId={selectedAppointmentId}
                 />
               ))}
@@ -120,14 +191,20 @@ export function AppointmentsCalendar({
 function AppointmentStack({
   appointments,
   day,
+  onDragEnd,
+  onDragStart,
   startHour,
   onSelect,
+  reschedulePendingAppointmentId,
   selectedAppointmentId,
 }: {
   appointments: Appointment[];
   day: Dayjs;
+  onDragEnd: () => void;
+  onDragStart: (appointment: Appointment) => void;
   startHour: number;
   onSelect: (appointment: Appointment) => void;
+  reschedulePendingAppointmentId: string | null;
   selectedAppointmentId: string | null;
 }) {
   const appointment = appointments[0];
@@ -159,7 +236,8 @@ function AppointmentStack({
         <article
           role="button"
           tabIndex={0}
-          className={`schedule-entry schedule-event schedule-event-stacked ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}`}
+          className={`schedule-entry schedule-event schedule-event-stacked schedule-entry-draggable ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}${item.id === reschedulePendingAppointmentId ? " schedule-entry-drag-disabled" : ""}`}
+          draggable={reschedulePendingAppointmentId === null}
           style={{
             "--stack-index": index,
             "--stack-top": `${index * stackOffset}px`,
@@ -167,6 +245,11 @@ function AppointmentStack({
             ...getServiceColorVars(item),
           } as CSSProperties}
           key={item.id}
+          onDragEnd={onDragEnd}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            onDragStart(item);
+          }}
           onClick={() => onSelect(item)}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
@@ -352,4 +435,19 @@ function getStableColorIndex(value: string, modulo: number) {
     hash = (hash * 31 + value.charCodeAt(index)) % modulo;
   }
   return hash;
+}
+
+function getDropHour(event: DragEvent<HTMLDivElement>, startHour: number, endHour: number) {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const offset = Math.max(0, event.clientY - bounds.top);
+  const relativeHour = Math.floor(offset / hourHeight);
+  return Math.min(endHour, Math.max(startHour, startHour + relativeHour));
+}
+
+function buildRescheduledStartDate(day: Dayjs, originalStart: Dayjs, nextHour: number) {
+  return day
+    .hour(nextHour)
+    .minute(originalStart.minute())
+    .second(originalStart.second())
+    .millisecond(originalStart.millisecond());
 }

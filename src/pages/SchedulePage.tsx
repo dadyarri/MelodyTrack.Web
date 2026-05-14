@@ -49,7 +49,13 @@ export function SchedulePage() {
           <AppointmentsCalendar
             appointments={controller.filteredAppointments}
             loading={controller.query.isLoading}
+            onReschedule={(appointment, startDate) => controller.rescheduleMutation.mutate({
+              appointment,
+              startDate,
+              expectedActivityId: appointment.lastActivity?.id ?? undefined,
+            })}
             range={[controller.weekStart, controller.weekStart.endOf("week")]}
+            reschedulePendingAppointmentId={controller.rescheduleMutation.isPending ? controller.rescheduleMutation.variables?.appointment.id ?? null : null}
             onCreateAt={controller.openCreateModalAt}
             onSelect={(appointment) => {
               controller.setSelectedAppointment(appointment);

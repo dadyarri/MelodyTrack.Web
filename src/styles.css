@@ -486,6 +486,10 @@ body {
   outline: none;
 }
 
+.schedule-hour-slot-drop-target {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
 .schedule-event {
   min-height: 48px;
   overflow: hidden;
@@ -510,6 +514,19 @@ body {
   box-shadow: var(--schedule-entry-shadow);
   cursor: pointer;
   transition: box-shadow 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+
+.schedule-entry-draggable {
+  cursor: grab;
+}
+
+.schedule-entry-draggable:active {
+  cursor: grabbing;
+}
+
+.schedule-entry-drag-disabled {
+  cursor: progress;
+  opacity: 0.72;
 }
 
 .schedule-stack {
