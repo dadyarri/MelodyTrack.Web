@@ -1,22 +1,10 @@
-import { Navigate } from "react-router";
 import { ReactNode } from "react";
-import { Spin } from "antd";
-import { useAuth } from "../features/auth/useAuth";
+import { RouteGate } from "./RouteGate";
 
 export function AdminRoute({ children }: { children: ReactNode }) {
-  const auth = useAuth();
-
-  if (auth.isLoading) {
-    return <Spin fullscreen />;
-  }
-
-  if (!auth.user) {
-    return null;
-  }
-
-  if (!auth.user.isAdmin) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
+  return (
+    <RouteGate allow={(user) => Boolean(user?.isAdmin)} redirectTo="/">
+      {children}
+    </RouteGate>
+  );
 }

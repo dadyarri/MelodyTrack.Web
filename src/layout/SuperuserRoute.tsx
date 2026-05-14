@@ -1,22 +1,10 @@
-import { Navigate } from "react-router";
 import { ReactNode } from "react";
-import { Spin } from "antd";
-import { useAuth } from "../features/auth/useAuth";
+import { RouteGate } from "./RouteGate";
 
 export function SuperuserRoute({ children }: { children: ReactNode }) {
-  const auth = useAuth();
-
-  if (auth.isLoading) {
-    return <Spin fullscreen />;
-  }
-
-  if (!auth.user) {
-    return null;
-  }
-
-  if (!auth.user.isSuperuser) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
+  return (
+    <RouteGate allow={(user) => Boolean(user?.isSuperuser)} redirectTo="/">
+      {children}
+    </RouteGate>
+  );
 }
