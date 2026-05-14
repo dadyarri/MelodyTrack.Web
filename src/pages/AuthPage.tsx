@@ -1,6 +1,6 @@
-import { CopyOutlined, KeyOutlined, LockOutlined, MailOutlined, SafetyCertificateOutlined, UserOutlined } from "@ant-design/icons";
+import { KeyOutlined, LockOutlined, MailOutlined, SafetyCertificateOutlined, UserOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Alert, App as AntdApp, Button, Card, Form, Input, QRCode, Segmented, Space, Typography } from "antd";
+import { Alert, App as AntdApp, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router";
 import { authApi, Recover2FaResponse, RecoveryCodeItem, RecoveryCodesResponse, RegisterInput } from "../api/auth";
@@ -8,6 +8,7 @@ import { AuthScreenLayout } from "../components/AuthScreenLayout";
 import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { StatusBanner } from "../components/StatusBanner";
+import { TotpSecretPanel } from "../components/TotpSecretPanel";
 import { useAuth } from "../features/auth/useAuth";
 
 type AuthMode = "login" | "register" | "recover2fa";
@@ -134,11 +135,6 @@ export function AuthPage() {
     onError: showErrors,
   });
 
-  async function copySecret(secret: string) {
-    await navigator.clipboard.writeText(secret);
-    message.success("Секрет скопирован.");
-  }
-
   if (auth.isLoading && !recover2FaState) {
     return null;
   }
@@ -164,25 +160,14 @@ export function AuthPage() {
             />
           )}
           {totpSetup ? (
-            <Space direction="vertical" size={16} className="wide">
-              <Alert
-                type="info"
-                showIcon
-                message="Настройка 2FA"
-                description="Отсканируйте QR-код или введите секрет вручную в Bitwarden/Authy/Google Authenticator. Пока вы не подтвердите код и не сохраните коды восстановления, вход для этой учетной записи не будет завершен."
-              />
-              <div className="totp-qr">
-                <QRCode value={totpSetup.otpUrl} size={200} />
-              </div>
-              <Form.Item label="Секрет для ручного ввода" className="compact-form-item">
-                <Input
-                  readOnly
-                  value={totpSetup.secret}
-                  suffix={
-                    <Button type="text" icon={<CopyOutlined />} onClick={() => void copySecret(totpSetup.secret)} />
-                  }
-                />
-              </Form.Item>
+            <TotpSecretPanel
+              alertType="info"
+              alertMessage="Настройка 2FA"
+              alertDescription="Отсканируйте QR-код или введите секрет вручную в Bitwarden/Authy/Google Authenticator. Пока вы не подтвердите код и не сохраните коды восстановления, вход для этой учетной записи не будет завершен."
+              qrValue={totpSetup.otpUrl}
+              secret={totpSetup.secret}
+              copyable
+            >
               <Form layout="vertical" onFinish={(values) => verify2FaMutation.mutate(values)} requiredMark={false}>
                 <Form.Item name="otp" label="Код 2FA" rules={[{ required: true }]}>
                   <Input inputMode="numeric" autoComplete="one-time-code" autoFocus />
@@ -191,27 +176,16 @@ export function AuthPage() {
                   Подтвердить 2FA
                 </Button>
               </Form>
-            </Space>
+            </TotpSecretPanel>
           ) : recover2FaState ? (
-            <Space direction="vertical" size={16} className="wide">
-              <Alert
-                type="warning"
-                showIcon
-                message="Доступ к 2FA восстановлен"
-                description="Добавьте новый секрет в приложение-аутентификатор и сохраните новые коды восстановления. Старые коды больше не действуют."
-              />
-              <div className="totp-qr">
-                <QRCode value={recover2FaState.otpUrl} size={200} />
-              </div>
-              <Form.Item label="Секрет для ручного ввода" className="compact-form-item">
-                <Input
-                  readOnly
-                  value={recover2FaState.secret}
-                  suffix={
-                    <Button type="text" icon={<CopyOutlined />} onClick={() => void copySecret(recover2FaState.secret)} />
-                  }
-                />
-              </Form.Item>
+            <TotpSecretPanel
+              alertType="warning"
+              alertMessage="Доступ к 2FA восстановлен"
+              alertDescription="Добавьте новый секрет в приложение-аутентификатор и сохраните новые коды восстановления. Старые коды больше не действуют."
+              qrValue={recover2FaState.otpUrl}
+              secret={recover2FaState.secret}
+              copyable
+            >
               <RecoveryCodesCard
                 items={recover2FaState.allCodes}
                 downloadFileName={`MelodyTrackRecovery_${toRecoveryFileStem(recoveryCodeUsername)}.txt`}
@@ -227,7 +201,7 @@ export function AuthPage() {
               >
                 Продолжить
               </Button>
-            </Space>
+            </TotpSecretPanel>
           ) : recoveryCodes ? (
             <RecoveryCodesBlock
               codes={recoveryCodes}

@@ -1,12 +1,13 @@
 import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, App as AntdApp, Button, Card, Form, Input, List, QRCode, Space, Tag, Typography } from "antd";
+import { Alert, App as AntdApp, Button, Card, Form, Input, List, Space, Tag, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { authApi, MeResponse, RecoveryCodeItem, SessionDto, Setup2FaResponse } from "../api/auth";
 import { getApiErrorMessages } from "../api/http";
 import { PageLayout } from "../components/PageLayout";
 import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
 import { ShortcutButton } from "../components/ShortcutButton";
+import { TotpSecretPanel } from "../components/TotpSecretPanel";
 import { useAuth } from "../features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
@@ -198,13 +199,14 @@ export function ProfilePage() {
             ) : null}
             {setupState ? (
               <Card size="small" className="profile-setup-card">
-                <Space direction="vertical" className="wide">
-                  <div className="totp-qr">
-                    <QRCode value={setupState.otpUrl} size={180} />
-                  </div>
-                  <Form.Item label="Секрет для ручного ввода" className="compact-form-item">
-                    <Input readOnly value={setupState.secret} />
-                  </Form.Item>
+                <TotpSecretPanel
+                  alertType="info"
+                  alertMessage="Подтвердите подключение 2FA"
+                  alertDescription="Отсканируйте QR-код в приложении-аутентификаторе, затем подтвердите одноразовый код, чтобы получить коды восстановления."
+                  qrValue={setupState.otpUrl}
+                  secret={setupState.secret}
+                  qrSize={180}
+                >
                   <Form layout="vertical" onFinish={(values) => verify2FaMutation.mutate(values)} requiredMark={false}>
                     <Form.Item name="otp" label="Код из приложения" rules={[{ required: true }]}>
                       <Input inputMode="numeric" autoComplete="one-time-code" />
@@ -213,7 +215,7 @@ export function ProfilePage() {
                       Подтвердить и получить коды восстановления
                     </Button>
                   </Form>
-                </Space>
+                </TotpSecretPanel>
               </Card>
             ) : null}
             {recoveryCodes ? (
