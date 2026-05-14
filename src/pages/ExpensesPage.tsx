@@ -11,7 +11,7 @@ import { ListTable } from "../components/ListTable";
 import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
-import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { DATE_FORMAT, formatDateTime } from "../utils/date";
 import { downloadBlob } from "../utils/download";
@@ -20,11 +20,11 @@ import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ExpensesPage() {
   const [page, setPage] = useState(1);
-  const hasCreateDraft = Boolean(loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY));
+  const hasCreateDraft = hasDraft(EXPENSE_CREATE_DRAFT_KEY);
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
-  const draftReplayKeyRef = useRef(loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const draftReplayKeyRef = useRef(getDraftReplayKey<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
@@ -62,9 +62,8 @@ export function ExpensesPage() {
     onSuccess: async (result) => {
       message.success(result.offline ? "Расход сохранен локально" : "Расход создан");
       setOpen(false);
-      clearDraft(EXPENSE_CREATE_DRAFT_KEY);
-      draftReplayKeyRef.current = createReplayKey();
-      pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      resetDraft(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef);
+      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["expenses"] });
       }
@@ -100,8 +99,8 @@ export function ExpensesPage() {
     }
 
     const draft = loadDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue(draft?.values ?? {});
     });
   }, [form, isOpen]);
@@ -129,9 +128,8 @@ export function ExpensesPage() {
   }, [exportMutation]);
 
   function handleClearCreateDraft() {
-    clearDraft(EXPENSE_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    resetDraft(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef);
+    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
   }
 
   return (
@@ -230,11 +228,7 @@ export function ExpensesPage() {
               return;
             }
 
-            saveDraft<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, {
-              replayKey: draftReplayKeyRef.current,
-              updatedAtUtc: new Date().toISOString(),
-              values,
-            });
+            saveDraftValues<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
           }}
         >
           <Form.Item name="description" label="Описание" rules={[{ required: true }]}>
@@ -247,14 +241,6 @@ export function ExpensesPage() {
       </Modal>
     </>
   );
-}
-
-function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
-  ref.current = true;
-  action();
-  queueMicrotask(() => {
-    ref.current = false;
-  });
 }
 
 type ExpenseDraftValues = {

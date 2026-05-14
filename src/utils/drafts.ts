@@ -4,6 +4,10 @@ export type FormDraft<TValues> = {
   values: TValues;
 };
 
+export type DraftHydrationRef = {
+  current: boolean;
+};
+
 export function createReplayKey() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -29,6 +33,14 @@ export function loadDraft<TValues>(storageKey: string) {
   }
 }
 
+export function hasDraft(storageKey: string) {
+  return loadDraft(storageKey) !== null;
+}
+
+export function getDraftReplayKey<TValues>(storageKey: string) {
+  return loadDraft<TValues>(storageKey)?.replayKey ?? createReplayKey();
+}
+
 export function saveDraft<TValues>(storageKey: string, draft: FormDraft<TValues>) {
   if (typeof window === "undefined") {
     return;
@@ -37,10 +49,31 @@ export function saveDraft<TValues>(storageKey: string, draft: FormDraft<TValues>
   window.localStorage.setItem(storageKey, JSON.stringify(draft));
 }
 
+export function saveDraftValues<TValues>(storageKey: string, replayKey: string, values: TValues) {
+  saveDraft(storageKey, {
+    replayKey,
+    updatedAtUtc: new Date().toISOString(),
+    values,
+  });
+}
+
 export function clearDraft(storageKey: string) {
   if (typeof window === "undefined") {
     return;
   }
 
   window.localStorage.removeItem(storageKey);
+}
+
+export function resetDraft(storageKey: string, replayKeyRef: { current: string }) {
+  clearDraft(storageKey);
+  replayKeyRef.current = createReplayKey();
+}
+
+export function withDraftHydration(ref: DraftHydrationRef, action: () => void) {
+  ref.current = true;
+  action();
+  queueMicrotask(() => {
+    ref.current = false;
+  });
 }

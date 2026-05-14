@@ -8,7 +8,7 @@ import { scheduleApi } from "../../api/crm";
 import type { Appointment, RecurrenceType, Ulid } from "../../api/types";
 import { getApiErrorMessages } from "../../api/http";
 import { useAuth } from "../../features/auth/useAuth";
-import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../../utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
@@ -34,7 +34,7 @@ export type AppointmentDraftValues = {
 
 export function useSchedulePageController() {
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
-  const hasCreateDraft = Boolean(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY));
+  const hasCreateDraft = hasDraft(APPOINTMENT_CREATE_DRAFT_KEY);
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedAppointmentBaselineActivityId, setSelectedAppointmentBaselineActivityId] = useState<Ulid | null | undefined>();
@@ -46,7 +46,7 @@ export function useSchedulePageController() {
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
-  const draftReplayKeyRef = useRef(loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const draftReplayKeyRef = useRef(getDraftReplayKey<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
@@ -186,8 +186,7 @@ export function useSchedulePageController() {
         });
       }
       closeCreateModal();
-      clearDraft(APPOINTMENT_CREATE_DRAFT_KEY);
-      draftReplayKeyRef.current = createReplayKey();
+      resetDraft(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["appointments"] });
       }
@@ -397,11 +396,7 @@ export function useSchedulePageController() {
       return;
     }
 
-    saveDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, {
-      replayKey: draftReplayKeyRef.current,
-      updatedAtUtc: new Date().toISOString(),
-      values: serializeAppointmentDraft(values),
-    });
+    saveDraftValues<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, serializeAppointmentDraft(values));
   }, []);
 
   const openCreateModalAt = useCallback((startDate: Dayjs) => {
@@ -418,8 +413,8 @@ export function useSchedulePageController() {
     const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : pendingCreateStartDate ?? dayjs();
     const providerId = isSpecialistFilterLocked ? auth.user?.id : draft?.values.providerId;
 
-    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: draft?.values.clientId ?? createPrefillClientId,
         serviceId: draft?.values.serviceId,
@@ -443,14 +438,13 @@ export function useSchedulePageController() {
   function closeCreateModal() {
     setOpen(false);
     setPendingCreateStartDate(null);
-    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
     clearCreateRouteState();
   }
 
   function handleClearCreateDraft() {
-    clearDraft(APPOINTMENT_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    resetDraft(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
@@ -559,13 +553,6 @@ function getRecurrencePattern(key: RecurrenceType["key"], startDate: Dayjs, week
   return startDate.date();
 }
 
-function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
-  ref.current = true;
-  action();
-  queueMicrotask(() => {
-    ref.current = false;
-  });
-}
 
 function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDraftValues {
   return {

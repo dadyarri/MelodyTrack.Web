@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
-import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../../utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
@@ -37,10 +37,10 @@ export function useClientsPageController() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
-  const hasCreateDraft = Boolean(loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY));
+  const hasCreateDraft = hasDraft(CLIENT_CREATE_DRAFT_KEY);
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const draftReplayKeyRef = useRef(loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const draftReplayKeyRef = useRef(getDraftReplayKey<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createPhoneInputKey, setCreatePhoneInputKey] = useState(() => (hasCreateDraft ? 1 : 0));
   const [form] = Form.useForm<ClientFormValues>();
@@ -96,9 +96,8 @@ export function useClientsPageController() {
       setCreateOpen(false);
       setEditing(null);
       setEditingBaselineActivityId(undefined);
-      clearDraft(CLIENT_CREATE_DRAFT_KEY);
-      draftReplayKeyRef.current = createReplayKey();
-      pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
+      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["clients"] });
       }
@@ -129,7 +128,7 @@ export function useClientsPageController() {
 
           setEditing(freshClient);
           setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
-          pauseDraftHydration(isDraftHydratingRef, () => {
+          withDraftHydration(isDraftHydratingRef, () => {
             form.setFieldsValue({
               ...freshClient,
               telegram: getContactValue(freshClient, "telegram"),
@@ -170,7 +169,7 @@ export function useClientsPageController() {
         setEditing(client);
         setEditingBaselineActivityId(client.lastActivity?.id ?? null);
         setCreateOpen(true);
-        pauseDraftHydration(isDraftHydratingRef, () => {
+        withDraftHydration(isDraftHydratingRef, () => {
           form.resetFields();
           form.setFieldsValue({
             ...client,
@@ -186,9 +185,9 @@ export function useClientsPageController() {
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       setCreateOpen(true);
-      draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
+      draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
       setCreatePhoneInputKey((current) => current + 1);
-      pauseDraftHydration(isDraftHydratingRef, () => {
+      withDraftHydration(isDraftHydratingRef, () => {
         form.resetFields();
         form.setFieldsValue(draft?.values ?? {});
       });
@@ -202,10 +201,9 @@ export function useClientsPageController() {
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
-    clearDraft(CLIENT_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = createReplayKey();
+    resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
     setCreatePhoneInputKey((current) => current + 1);
-    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
   }, [form]);
 
   const closeEditor = useCallback(() => {
@@ -218,7 +216,7 @@ export function useClientsPageController() {
     if (isCreateOpen && !editing) {
       const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
       if (draft) {
-        pauseDraftHydration(isDraftHydratingRef, () => {
+        withDraftHydration(isDraftHydratingRef, () => {
           form.setFieldsValue(draft.values);
         });
       }
@@ -268,11 +266,7 @@ export function useClientsPageController() {
         return;
       }
 
-      saveDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, {
-        replayKey: draftReplayKeyRef.current,
-        updatedAtUtc: new Date().toISOString(),
-        values,
-      });
+      saveDraftValues<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
     },
     openClientHistoryFromDashboard: {
       onCreateAppointment: (client: Client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }),
@@ -347,12 +341,4 @@ function omitEmptyContacts(input: ClientSubmitInput) {
   }
 
   return result;
-}
-
-function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
-  ref.current = true;
-  action();
-  queueMicrotask(() => {
-    ref.current = false;
-  });
 }

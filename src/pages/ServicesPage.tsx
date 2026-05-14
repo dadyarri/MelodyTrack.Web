@@ -9,16 +9,16 @@ import { DraftModalTitle } from "../components/DraftModalTitle";
 import { ListTable } from "../components/ListTable";
 import { PageHeader } from "../components/PageHeader";
 import { ShortcutButton } from "../components/ShortcutButton";
-import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 import { formatMoney } from "../utils/money";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
-  const hasCreateDraft = Boolean(loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY));
+  const hasCreateDraft = hasDraft(SERVICE_CREATE_DRAFT_KEY);
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
-  const draftReplayKeyRef = useRef(loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const draftReplayKeyRef = useRef(getDraftReplayKey<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [pricing, setPricing] = useState<Service | null>(null);
   const [form] = Form.useForm<ServiceDraftValues>();
@@ -48,9 +48,8 @@ export function ServicesPage() {
     onSuccess: async (result) => {
       message.success(result.offline ? "Услуга сохранена локально" : "Услуга создана");
       setCreateOpen(false);
-      clearDraft(SERVICE_CREATE_DRAFT_KEY);
-      draftReplayKeyRef.current = createReplayKey();
-      pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+      resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
+      withDraftHydration(isDraftHydratingRef, () => form.resetFields());
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["services"] });
       }
@@ -74,8 +73,8 @@ export function ServicesPage() {
     }
 
     const draft = loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue(draft?.values ?? {});
     });
   }, [form, isCreateOpen]);
@@ -97,9 +96,8 @@ export function ServicesPage() {
   }, []);
 
   function handleClearCreateDraft() {
-    clearDraft(SERVICE_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => form.resetFields());
+    resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
+    withDraftHydration(isDraftHydratingRef, () => form.resetFields());
   }
 
   return (
@@ -144,11 +142,7 @@ export function ServicesPage() {
               return;
             }
 
-            saveDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, {
-              replayKey: draftReplayKeyRef.current,
-              updatedAtUtc: new Date().toISOString(),
-              values,
-            });
+            saveDraftValues<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
           }}
         >
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
@@ -186,11 +180,3 @@ type ServiceCreateInput = {
 };
 
 const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
-
-function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
-  ref.current = true;
-  action();
-  queueMicrotask(() => {
-    ref.current = false;
-  });
-}

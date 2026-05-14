@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { paymentsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
-import { clearDraft, createReplayKey, loadDraft, saveDraft } from "../../utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { downloadBlob } from "../../utils/download";
 import { formatDateTime } from "../../utils/date";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
@@ -32,7 +32,7 @@ const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
 
 export function usePaymentsPageController() {
   const [page, setPage] = useState(1);
-  const hasCreateDraft = Boolean(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY));
+  const hasCreateDraft = hasDraft(PAYMENT_CREATE_DRAFT_KEY);
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [clientId, setClientId] = useState<string | undefined>();
@@ -43,7 +43,7 @@ export function usePaymentsPageController() {
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
   const [selectedServicePrice, setSelectedServicePrice] = useState<number | undefined>();
-  const draftReplayKeyRef = useRef(loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY)?.replayKey ?? createReplayKey());
+  const draftReplayKeyRef = useRef(getDraftReplayKey<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm();
   const selectedCreateServiceId = Form.useWatch("serviceId", form);
@@ -97,8 +97,7 @@ export function usePaymentsPageController() {
     onSuccess: async (result) => {
       message.success(result.offline ? "Платеж сохранен локально" : "Платеж создан");
       closeCreateModal();
-      clearDraft(PAYMENT_CREATE_DRAFT_KEY);
-      draftReplayKeyRef.current = createReplayKey();
+      resetDraft(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["payments"] });
       }
@@ -155,8 +154,8 @@ export function usePaymentsPageController() {
     const draft = loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
     const draftValues = draft?.values ?? {};
 
-    draftReplayKeyRef.current = draft?.replayKey ?? createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: draftValues.clientId ?? createPrefillClientId,
         serviceId: draftValues.serviceId,
@@ -208,7 +207,7 @@ export function usePaymentsPageController() {
 
   function closeCreateModal() {
     setOpen(false);
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: undefined,
         serviceId: undefined,
@@ -223,9 +222,8 @@ export function usePaymentsPageController() {
   }
 
   function handleClearCreateDraft() {
-    clearDraft(PAYMENT_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = createReplayKey();
-    pauseDraftHydration(isDraftHydratingRef, () => {
+    resetDraft(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
+    withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
@@ -271,13 +269,9 @@ export function usePaymentsPageController() {
     closeCreateModal,
     handleClearCreateDraft,
     onCreateValuesChange: (_: Partial<PaymentCreateFormValues>, values: PaymentCreateFormValues) => {
-      saveDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, {
-        replayKey: draftReplayKeyRef.current,
-        updatedAtUtc: new Date().toISOString(),
-        values: {
-          ...values,
-          date: values.date ? values.date.toISOString() : undefined,
-        },
+      saveDraftValues<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, {
+        ...values,
+        date: values.date ? values.date.toISOString() : undefined,
       });
     },
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
@@ -291,12 +285,4 @@ export function usePaymentsPageController() {
 
 export function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";
-}
-
-function pauseDraftHydration(ref: { current: boolean }, action: () => void) {
-  ref.current = true;
-  action();
-  queueMicrotask(() => {
-    ref.current = false;
-  });
 }
