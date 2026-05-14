@@ -10,6 +10,7 @@ import { getApiErrorMessages } from "../../api/http";
 import { useAuth } from "../../features/auth/useAuth";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
+import { getBackgroundRefetchInterval } from "../../utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
 import type { AppointmentDeleteScope, AppointmentEditFormValues, AppointmentFormValues } from "./ScheduleModals";
@@ -115,7 +116,7 @@ export function useSchedulePageController() {
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
-    refetchInterval: selectedAppointment || appointmentToEdit || appointmentToDelete ? 5000 : false,
+    refetchInterval: getBackgroundRefetchInterval(Boolean(selectedAppointment || appointmentToEdit || appointmentToDelete)),
   });
   const recurrenceTypesQuery = useQuery({
     queryKey: ["appointments", "recurrenceTypes"],

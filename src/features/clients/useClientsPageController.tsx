@@ -7,6 +7,7 @@ import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
+import { getBackgroundRefetchInterval } from "../../utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
 import type { ClientFormValues } from "./ClientEditorModal";
@@ -52,7 +53,7 @@ export function useClientsPageController() {
   const query = useQuery({
     queryKey: ["clients", page, search],
     queryFn: () => clientsApi.list({ page, page_size: 10, search: search.trim() || undefined }),
-    refetchInterval: isCreateOpen && Boolean(editing) ? 5000 : false,
+    refetchInterval: getBackgroundRefetchInterval(isCreateOpen && Boolean(editing)),
   });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
