@@ -32,7 +32,6 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
-
 export function useClientsPageController() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");

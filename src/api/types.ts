@@ -43,6 +43,8 @@ export interface Client {
   patronymic?: string | null;
   contacts?: ClientContacts | null;
   balance: number;
+  lastAppointmentAtUtc?: string | null;
+  nextAppointmentAtUtc?: string | null;
   lastActivity?: RecordActivity | null;
 }
 
@@ -92,7 +94,6 @@ export interface RecordActivity {
 export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
-  recentActivity: RecordActivity[];
   recentPayments: ClientHistoryPayment[];
   recentAppointments: ClientHistoryAppointment[];
 }

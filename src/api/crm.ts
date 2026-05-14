@@ -148,6 +148,7 @@ function buildReplayConfig(replayKey?: string) {
     : undefined;
 }
 
+
 export const usersApi = {
   list() {
     return http.get<{ users: User[] }>("/users").then((response) => response.data.users);
