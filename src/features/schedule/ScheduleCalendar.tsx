@@ -402,10 +402,10 @@ function getStackDensity(stackSize: number): "compact" | "dense" {
 
 function getAppointmentClassName(appointment: Appointment) {
   if (appointment.isCanceled) {
-  return "schedule-event-canceled";
+    return "schedule-event-canceled";
   }
   if (appointment.isCompleted) {
-  return "schedule-event-completed";
+    return "schedule-event-completed";
   }
   return "schedule-event-planned";
 }
