@@ -252,7 +252,7 @@ export function getStaleEntityConflict(error: unknown) {
   }
 
   const data = error.response.data as Partial<StaleEntityConflict> | undefined;
-  if (!data || !data.entityType || !data.entityId || !data.message) {
+  if (!data?.entityType || !data.entityId || !data.message) {
     return null;
   }
 

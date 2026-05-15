@@ -76,18 +76,15 @@ export function OfflineQueueSync() {
             continue;
           }
 
-          {
-            await scheduleApi.create(
-              {
-                ...item.payload,
-                clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
-              },
-              { replayKey: item.replayKey },
-            );
-            removeOfflineQueueItem(item.id);
-            syncedCount += 1;
-            continue;
-          }
+          await scheduleApi.create(
+            {
+              ...item.payload,
+              clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
+            },
+            { replayKey: item.replayKey },
+          );
+          removeOfflineQueueItem(item.id);
+          syncedCount += 1;
         } catch (error) {
           if (shouldQueueOfflineError(error)) {
             setOfflineSyncStatus("pending");

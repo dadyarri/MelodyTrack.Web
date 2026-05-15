@@ -136,6 +136,7 @@ export function AppointmentsCalendar({
             ))}
           </div>
           {days.map((day) => (
+            /* biome-ignore lint/a11y/noStaticElementInteractions: this column is a pointer drag-and-drop drop zone; keyboard users interact with the hour buttons inside it. */
             <div
               className="schedule-day-column"
               key={day.format("YYYY-MM-DD")}
@@ -255,9 +256,8 @@ function AppointmentStack({
     >
       {appointments.length > 1 ? <div className="schedule-stack-badge">{appointments.length}</div> : null}
       {appointments.map((item, index) => (
-        <article
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           className={`schedule-entry schedule-event schedule-event-stacked schedule-entry-draggable ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}${item.id === reschedulePendingAppointmentId ? " schedule-entry-drag-disabled" : ""}`}
           draggable={reschedulePendingAppointmentId === null}
           style={
@@ -285,7 +285,7 @@ function AppointmentStack({
           }}
         >
           <AppointmentContent appointment={item} density={getStackDensity(appointments.length)} />
-        </article>
+        </button>
       ))}
     </div>
   );
@@ -301,9 +301,8 @@ function AppointmentAgendaItem({
   onSelect: (appointment: Appointment) => void;
 }) {
   return (
-    <article
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       className={`schedule-entry schedule-agenda-item ${getAppointmentClassName(appointment)}${isSelected ? " schedule-entry-selected" : ""}`}
       style={getServiceColorVars(appointment) as CSSProperties}
       onClick={() => {
@@ -317,7 +316,7 @@ function AppointmentAgendaItem({
       }}
     >
       <AppointmentContent appointment={appointment} />
-    </article>
+    </button>
   );
 }
 
