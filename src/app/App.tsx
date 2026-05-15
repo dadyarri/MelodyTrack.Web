@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { App as AntdApp, ConfigProvider } from "antd";
-import ruRu from "antd/locale/ru_RU";
+import { App as AntdApp } from "antd";
 import { RouterProvider } from "react-router";
 import { ApiErrorNotifier } from "../components/ApiErrorNotifier";
 import { OfflineQueueSync } from "../components/OfflineQueueSync";
@@ -21,15 +20,13 @@ const queryClient = new QueryClient({
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider locale={ruRu}>
-        <AntdApp>
-          <ApiErrorNotifier />
-          <OfflineQueueSync />
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
-        </AntdApp>
-      </ConfigProvider>
+      <AntdApp>
+        <ApiErrorNotifier />
+        <OfflineQueueSync />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </AntdApp>
     </QueryClientProvider>
   );
 }

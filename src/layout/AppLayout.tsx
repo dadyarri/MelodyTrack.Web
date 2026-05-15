@@ -107,12 +107,12 @@ export function AppLayout() {
               />
             }
           >
-            <Button type="text" className="header-user-trigger" aria-label="Открыть меню пользователя">
+            <button type="button" className="header-user-trigger" aria-label="Открыть меню пользователя">
               <Space size={8}>
                 <UserOutlined />
                 <Typography.Text>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</Typography.Text>
               </Space>
-            </Button>
+            </button>
           </Popover>
           <Typography.Text className="header-user-mobile">
             <Space size={6}>
@@ -122,7 +122,7 @@ export function AppLayout() {
           </Typography.Text>
         </Layout.Header>
         <Layout.Content className="app-content">
-          <Space orientation="vertical" size={20} className="content-stack">
+          <Space orientation="vertical" className="content-stack">
             <Outlet />
           </Space>
         </Layout.Content>

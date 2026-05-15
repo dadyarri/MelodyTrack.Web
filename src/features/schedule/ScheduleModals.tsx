@@ -318,7 +318,7 @@ export function RecurringDeleteModal({
             />
           ) : null}
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
-          <Space orientation="vertical" className="wide recurring-delete-actions">
+          <Space orientation="vertical" size={10} className="wide recurring-delete-actions">
             <Button
               danger
               block

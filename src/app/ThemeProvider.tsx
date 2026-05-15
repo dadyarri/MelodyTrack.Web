@@ -5,88 +5,202 @@ import { ThemeContext, type ThemeContextValue, type ThemeMode } from "./ThemeCon
 
 const storageKey = "melodytrack.theme";
 
-const lightTheme: ThemeConfig = {
-  token: {
-    colorPrimary: "#8b6226",
-    colorInfo: "#6f6942",
-    colorSuccess: "#5f7b4b",
-    colorWarning: "#a87322",
-    colorError: "#9b4a3c",
-    colorText: "#33271a",
-    colorTextSecondary: "#746550",
-    colorBgBase: "#f4e8c8",
-    colorBgContainer: "#f8edcf",
-    colorBgElevated: "#fbf3dc",
-    colorFillAlter: "#efe1be",
-    colorBorder: "#d4c19a",
-    colorBorderSecondary: "#e8dcc2",
-    borderRadius: 6,
-    boxShadow: "0 8px 24px rgba(72, 52, 27, 0.10)",
-    fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
-  },
-  components: {
-    Button: { primaryShadow: "none" },
-    Card: { colorBgContainer: "#f8edcf", headerBg: "#f8edcf" },
-    Layout: { bodyBg: "#f4e8c8", headerBg: "#f8edcf", siderBg: "#efe1be" },
-    Menu: {
-      itemBg: "transparent",
-      itemColor: "#5f503d",
-      itemHoverBg: "#e6d5ad",
-      itemHoverColor: "#33271a",
-      itemSelectedBg: "#d8bd7a",
-      itemSelectedColor: "#2f2418",
-    },
-    Table: {
-      borderColor: "#d8c8a7",
-      headerBg: "#efe1be",
-      headerColor: "#33271a",
-      rowHoverBg: "#fbf2dd",
-    },
-    Typography: { titleMarginBottom: 0 },
-  },
+type ThemePalette = {
+  accent: string;
+  info: string;
+  success: string;
+  warning: string;
+  error: string;
+  text: string;
+  textSecondary: string;
+  bgBase: string;
+  bgContainer: string;
+  bgElevated: string;
+  fillAlter: string;
+  border: string;
+  borderSecondary: string;
+  borderStrong: string;
+  cardShadow: string;
+  menuHoverBg: string;
+  menuHoverColor: string;
+  menuSelectedBg: string;
+  menuSelectedColor: string;
+  tableRowHoverBg: string;
+  inputBg: string;
+  infoAlertBg: string;
+  infoAlertBorder: string;
 };
 
-const darkTheme: ThemeConfig = {
-  algorithm: antdTheme.darkAlgorithm,
-  token: {
-    colorPrimary: "#d0a35b",
-    colorInfo: "#b78d4a",
-    colorSuccess: "#7ca46d",
-    colorWarning: "#d4a24f",
-    colorError: "#d27a70",
-    colorText: "#f1e7d1",
-    colorTextSecondary: "#bcae94",
-    colorBgBase: "#15120f",
-    colorBgContainer: "#1f1914",
-    colorBgElevated: "#261f18",
-    colorFillAlter: "#31271d",
-    colorBorder: "#5d4a35",
-    colorBorderSecondary: "#463727",
-    borderRadius: 6,
-    boxShadow: "0 14px 30px rgba(0, 0, 0, 0.35)",
-    fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
-  },
-  components: {
-    Button: { primaryShadow: "none" },
-    Card: { colorBgContainer: "#1f1914", headerBg: "#1f1914" },
-    Layout: { bodyBg: "#15120f", headerBg: "#1f1914", siderBg: "#1b1611" },
-    Menu: {
-      itemBg: "transparent",
-      itemColor: "#d2c0a4",
-      itemHoverBg: "#2f241a",
-      itemHoverColor: "#fff0d4",
-      itemSelectedBg: "#5c4122",
-      itemSelectedColor: "#fff0d4",
-    },
-    Table: {
-      borderColor: "#463727",
-      headerBg: "#2a2118",
-      headerColor: "#f1e7d1",
-      rowHoverBg: "#2b2219",
-    },
-    Typography: { titleMarginBottom: 0 },
-  },
+const lightPalette: ThemePalette = {
+  accent: "#8b6226",
+  info: "#6f6942",
+  success: "#5f7b4b",
+  warning: "#a87322",
+  error: "#9b4a3c",
+  text: "#33271a",
+  textSecondary: "#746550",
+  bgBase: "#f4e8c8",
+  bgContainer: "#f8edcf",
+  bgElevated: "#fbf3dc",
+  fillAlter: "#efe1be",
+  border: "#d4c19a",
+  borderSecondary: "#e8dcc2",
+  borderStrong: "#d2bd8f",
+  cardShadow: "0 8px 24px rgba(72, 52, 27, 0.10)",
+  menuHoverBg: "#e6d5ad",
+  menuHoverColor: "#33271a",
+  menuSelectedBg: "#d8bd7a",
+  menuSelectedColor: "#2f2418",
+  tableRowHoverBg: "#fbf2dd",
+  inputBg: "#fbf3dc",
+  infoAlertBg: "color-mix(in srgb, #8b6226 10%, #f8edcf)",
+  infoAlertBorder: "color-mix(in srgb, #8b6226 24%, #d4c19a)",
 };
+
+const darkPalette: ThemePalette = {
+  accent: "#d0a35b",
+  info: "#b78d4a",
+  success: "#7ca46d",
+  warning: "#d4a24f",
+  error: "#d27a70",
+  text: "#f1e7d1",
+  textSecondary: "#bcae94",
+  bgBase: "#15120f",
+  bgContainer: "#1f1914",
+  bgElevated: "#261f18",
+  fillAlter: "#31271d",
+  border: "#5d4a35",
+  borderSecondary: "#463727",
+  borderStrong: "#5d4a35",
+  cardShadow: "0 14px 30px rgba(0, 0, 0, 0.35)",
+  menuHoverBg: "#2f241a",
+  menuHoverColor: "#fff0d4",
+  menuSelectedBg: "#5c4122",
+  menuSelectedColor: "#fff0d4",
+  tableRowHoverBg: "#2b2219",
+  inputBg: "#261f18",
+  infoAlertBg: "color-mix(in srgb, #d0a35b 10%, #1f1914)",
+  infoAlertBorder: "color-mix(in srgb, #d0a35b 24%, #5d4a35)",
+};
+
+function createThemeConfig(palette: ThemePalette, algorithm?: ThemeConfig["algorithm"]): ThemeConfig {
+  return {
+    algorithm,
+    token: {
+      colorPrimary: palette.accent,
+      colorInfo: palette.info,
+      colorSuccess: palette.success,
+      colorWarning: palette.warning,
+      colorError: palette.error,
+      colorText: palette.text,
+      colorTextSecondary: palette.textSecondary,
+      colorBgBase: palette.bgBase,
+      colorBgContainer: palette.bgContainer,
+      colorBgElevated: palette.bgElevated,
+      colorFillAlter: palette.fillAlter,
+      colorBorder: palette.border,
+      colorBorderSecondary: palette.borderSecondary,
+      colorInfoBg: palette.infoAlertBg,
+      colorInfoBorder: palette.infoAlertBorder,
+      borderRadius: 6,
+      boxShadow: palette.cardShadow,
+      fontFamily: '"IBM Plex Sans", "Segoe UI", sans-serif',
+    },
+    components: {
+      Alert: {
+        defaultPadding: "10px 14px",
+        withDescriptionPadding: "12px 14px",
+      },
+      Button: {
+        primaryShadow: "none",
+        defaultShadow: "none",
+        dangerShadow: "none",
+        defaultBg: palette.bgElevated,
+        defaultColor: palette.text,
+        defaultBorderColor: palette.border,
+        defaultHoverBg: palette.bgContainer,
+        defaultHoverColor: palette.text,
+        defaultHoverBorderColor: palette.accent,
+        defaultActiveBg: palette.bgContainer,
+        defaultActiveColor: palette.text,
+        defaultActiveBorderColor: palette.accent,
+      },
+      Card: {
+        colorBgContainer: palette.bgContainer,
+        headerBg: palette.bgContainer,
+      },
+      DatePicker: {
+        activeBg: palette.inputBg,
+        hoverBg: palette.inputBg,
+        activeBorderColor: palette.accent,
+        hoverBorderColor: palette.accent,
+        cellHoverBg: palette.fillAlter,
+        cellActiveWithRangeBg: palette.menuSelectedBg,
+        cellHoverWithRangeBg: palette.fillAlter,
+      },
+      Input: {
+        addonBg: palette.inputBg,
+        activeBg: palette.inputBg,
+        hoverBg: palette.inputBg,
+        activeBorderColor: palette.accent,
+        hoverBorderColor: palette.accent,
+      },
+      Layout: {
+        bodyBg: palette.bgBase,
+        headerBg: palette.bgContainer,
+        siderBg: palette.fillAlter,
+      },
+      Menu: {
+        itemBg: "transparent",
+        itemColor: palette.textSecondary,
+        itemHoverBg: palette.menuHoverBg,
+        itemHoverColor: palette.menuHoverColor,
+        itemSelectedBg: palette.menuSelectedBg,
+        itemSelectedColor: palette.menuSelectedColor,
+        itemMarginInline: 0,
+        itemMarginBlock: 2,
+        itemBorderRadius: 8,
+        itemHeight: 36,
+        itemPaddingInline: 14,
+        popupBg: palette.bgElevated,
+      },
+      Modal: {
+        headerBg: palette.bgContainer,
+        contentBg: palette.bgContainer,
+        footerBg: palette.bgContainer,
+        titleColor: palette.text,
+      },
+      Popover: {
+        titleMinWidth: 160,
+      },
+      Select: {
+        selectorBg: palette.inputBg,
+        clearBg: palette.inputBg,
+        optionActiveBg: palette.fillAlter,
+        optionSelectedBg: palette.menuSelectedBg,
+        optionSelectedColor: palette.text,
+        activeBorderColor: palette.accent,
+        hoverBorderColor: palette.accent,
+        activeOutlineColor: "transparent",
+      },
+      Table: {
+        borderColor: palette.borderSecondary,
+        headerBg: palette.fillAlter,
+        headerColor: palette.text,
+        headerSplitColor: palette.borderStrong,
+        rowHoverBg: palette.tableRowHoverBg,
+        headerSortActiveBg: palette.fillAlter,
+        headerSortHoverBg: palette.fillAlter,
+      },
+      Typography: {
+        titleMarginBottom: 0,
+      },
+    },
+  };
+}
+
+const lightTheme = createThemeConfig(lightPalette);
+const darkTheme = createThemeConfig(darkPalette, antdTheme.darkAlgorithm);
 
 function getInitialMode(): ThemeMode {
   const stored = localStorage.getItem(storageKey);
