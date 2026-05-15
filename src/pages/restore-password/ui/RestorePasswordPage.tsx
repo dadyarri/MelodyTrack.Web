@@ -3,10 +3,10 @@ import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, Segmented } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { authApi, type ResetPasswordInput } from "../api/auth";
-import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
-import { AuthScreenLayout } from "../components/AuthScreenLayout";
-import { StatusBanner } from "../components/StatusBanner";
+import { authApi, type ResetPasswordInput } from "@/api/auth";
+import { getApiErrorMessage, getApiErrorMessages } from "@/api/http";
+import { AuthScreenLayout } from "@/components/AuthScreenLayout";
+import { StatusBanner } from "@/shared/ui";
 
 type SecondFactorMode = "otp" | "recoveryCode";
 

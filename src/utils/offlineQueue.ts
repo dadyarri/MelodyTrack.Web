@@ -193,5 +193,5 @@ function createOfflineId(kind: string) {
 }
 
 function formatPaymentLikeLabel(clientId: string, clientLabel: string | undefined, amount: number, date: string) {
-  return `${clientLabel ?? clientId} · ${amount} ₽ · ${formatDateTime(date)}`;
+  return `${clientLabel ?? clientId} · ${String(amount)} ₽ · ${formatDateTime(date)}`;
 }

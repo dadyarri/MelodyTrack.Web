@@ -153,10 +153,11 @@ export function ServiceSelect({
   return (
     <Select
       className="wide"
-      showSearch
+      showSearch={{
+        filterOption: false,
+        onSearch: setSearch,
+      }}
       allowClear={allowClear}
-      filterOption={false}
-      onSearch={setSearch}
       loading={query.isLoading || selectedQuery.isLoading}
       options={options}
       value={value}
@@ -176,7 +177,7 @@ export function UserSelect({
   disabled?: boolean;
   onResolvedLabelChange?: (label?: string) => void;
 }) {
-  const query = useQuery({ queryKey: ["users"], queryFn: usersApi.list, retry: false });
+  const query = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list(), retry: false });
   const cachedLabel = getCachedReferenceLabel("user", value);
   const options = useMemo<DefaultOptionType[]>(
     () =>
@@ -205,7 +206,7 @@ export function UserSelect({
 }
 
 export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
-  const query = useQuery({ queryKey: ["roles", "lookup"], queryFn: rolesApi.lookup, retry: false });
+  const query = useQuery({ queryKey: ["roles", "lookup"], queryFn: () => rolesApi.lookup(), retry: false });
   const options = useMemo<DefaultOptionType[]>(
     () => query.data?.map((role) => ({ value: role.id, label: role.displayName })) ?? [],
     [query.data],

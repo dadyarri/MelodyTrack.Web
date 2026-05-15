@@ -1,13 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Input, Typography } from "antd";
 import { useState } from "react";
-import { auditApi } from "../api/crm";
-import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
-import { ListFilters } from "../components/ListFilters";
-import { ListTable } from "../components/ListTable";
-import { PageLayout } from "../components/PageLayout";
-import { useAuth } from "../features/auth/useAuth";
-import { formatDateTime } from "../utils/date";
+import { auditApi } from "@/api/crm";
+import { useAuth } from "@/features/auth/useAuth";
+import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
+import { formatDateTime } from "@/utils/date";
 
 const categoryLabels: Record<string, string> = {
   auth: "Авторизация",

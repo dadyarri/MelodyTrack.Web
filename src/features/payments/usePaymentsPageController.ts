@@ -43,9 +43,9 @@ export function usePaymentsPageController() {
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
   const [selectedServicePrice, setSelectedServicePrice] = useState<number | undefined>();
-  const draftReplayKeyRef = useRef(getDraftReplayKey<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY));
+  const draftReplayKeyRef = useRef(getDraftReplayKey(PAYMENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<PaymentCreateFormValues>();
   const selectedCreateServiceId = Form.useWatch("serviceId", form);
   const selectedCreateQuantity = Form.useWatch("quantity", form) ?? 1;
   const location = useLocation();
@@ -111,7 +111,9 @@ export function usePaymentsPageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, expectedActivityId }: { id: string; expectedActivityId?: string }) => paymentsApi.remove(id, { expectedActivityId }),
+    mutationFn: ({ id, expectedActivityId }: { id: string; expectedActivityId?: string }) => {
+      return paymentsApi.remove(id, { expectedActivityId });
+    },
     onSuccess: async () => {
       message.success("Платеж удален");
       await queryClient.invalidateQueries({ queryKey: ["payments"] });
@@ -126,8 +128,12 @@ export function usePaymentsPageController() {
         title: "Платеж уже изменен",
         okText: "Удалить все равно",
         cancelText: "Обновить список",
-        onConfirm: (conflict) => { deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }); },
-        onReload: () => queryClient.invalidateQueries({ queryKey: ["payments"] }),
+        onConfirm: (conflict) => {
+          deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: ["payments"] });
+        },
       });
     },
   });
@@ -160,7 +166,7 @@ export function usePaymentsPageController() {
     const draft = loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
     const draftValues = draft?.values ?? {};
 
-    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(PAYMENT_CREATE_DRAFT_KEY);
     withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: draftValues.clientId ?? createPrefillClientId,
@@ -192,7 +198,9 @@ export function usePaymentsPageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [exportMutation, openCreateModal]);
 
   useEffect(() => {
@@ -208,7 +216,7 @@ export function usePaymentsPageController() {
       return;
     }
 
-    navigate(location.pathname, { replace: true, state: null });
+    void navigate(location.pathname, { replace: true, state: null });
   }
 
   function closeCreateModal() {
@@ -275,9 +283,9 @@ export function usePaymentsPageController() {
     closeCreateModal,
     handleClearCreateDraft,
     onCreateValuesChange: (_: Partial<PaymentCreateFormValues>, values: PaymentCreateFormValues) => {
-      saveDraftValues<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, {
+      saveDraftValues(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, {
         ...values,
-        date: values.date ? values.date.toISOString() : undefined,
+        date: values.date.toISOString(),
       });
     },
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {

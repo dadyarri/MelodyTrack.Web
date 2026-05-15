@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
+import { getClientContactValue, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
 import { clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
@@ -11,9 +12,7 @@ import { getBackgroundRefetchInterval } from "../../utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
 import type { ClientFormValues } from "./ClientEditorModal";
-import { formatRussianPhone, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "./clientContactUtils";
 
-type ClientRow = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
 type ClientSubmitInput = {
   firstName: string;
   lastName: string;
@@ -41,7 +40,7 @@ export function useClientsPageController() {
   const hasCreateDraft = hasDraft(CLIENT_CREATE_DRAFT_KEY);
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const draftReplayKeyRef = useRef(getDraftReplayKey<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY));
+  const draftReplayKeyRef = useRef(getDraftReplayKey(CLIENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createPhoneInputKey, setCreatePhoneInputKey] = useState(() => (hasCreateDraft ? 1 : 0));
   const [form] = Form.useForm<ClientFormValues>();
@@ -80,7 +79,8 @@ export function useClientsPageController() {
     mutationFn: async ({ values, expectedActivityId }: { values: ClientFormValues; expectedActivityId?: Ulid }) => {
       const input = prepareClientInput(values);
       if (editing) {
-        return { offline: false as const, response: await clientsApi.update(editing.id, input, { expectedActivityId }) };
+        await clientsApi.update(editing.id, input, { expectedActivityId });
+        return { offline: false as const, response: null };
       }
 
       try {
@@ -108,7 +108,9 @@ export function useClientsPageController() {
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
+      withDraftHydration(isDraftHydratingRef, () => {
+        form.resetFields();
+      });
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["clients"] });
       }
@@ -133,7 +135,7 @@ export function useClientsPageController() {
         },
         onReload: () => {
           const freshClient =
-            findItemInQueryData(queryClient, ["clients"], (data: { data: Client[] } | undefined) => data?.data, editing.id) ??
+            findItemInQueryData(queryClient, ["clients"], (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
             currentEditingClient;
           if (!freshClient) {
             return;
@@ -144,9 +146,9 @@ export function useClientsPageController() {
           withDraftHydration(isDraftHydratingRef, () => {
             form.setFieldsValue({
               ...freshClient,
-              telegram: getContactValue(freshClient, "telegram"),
-              vk: getContactValue(freshClient, "vk"),
-              phone: getRussianPhoneDigits(getContactValue(freshClient, "phone")),
+              telegram: getClientContactValue(freshClient, "telegram"),
+              vk: getClientContactValue(freshClient, "vk"),
+              phone: getRussianPhoneDigits(getClientContactValue(freshClient, "phone")),
             });
           });
         },
@@ -155,7 +157,9 @@ export function useClientsPageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => clientsApi.remove(id, { expectedActivityId }),
+    mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => {
+      return clientsApi.remove(id, { expectedActivityId });
+    },
     onSuccess: async () => {
       message.success("Клиент удален");
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
@@ -170,8 +174,12 @@ export function useClientsPageController() {
         title: "Клиент уже изменен",
         okText: "Удалить все равно",
         cancelText: "Обновить список",
-        onConfirm: (conflict) => { deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id }); },
-        onReload: () => queryClient.invalidateQueries({ queryKey: ["clients"] }),
+        onConfirm: (conflict) => {
+          deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: ["clients"] });
+        },
       });
     },
   });
@@ -186,9 +194,9 @@ export function useClientsPageController() {
           form.resetFields();
           form.setFieldsValue({
             ...client,
-            telegram: getContactValue(client, "telegram"),
-            vk: getContactValue(client, "vk"),
-            phone: getRussianPhoneDigits(getContactValue(client, "phone")),
+            telegram: getClientContactValue(client, "telegram"),
+            vk: getClientContactValue(client, "vk"),
+            phone: getRussianPhoneDigits(getClientContactValue(client, "phone")),
           });
         });
         return;
@@ -198,7 +206,7 @@ export function useClientsPageController() {
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       setCreateOpen(true);
-      draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
+      draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(CLIENT_CREATE_DRAFT_KEY);
       setCreatePhoneInputKey((current) => current + 1);
       withDraftHydration(isDraftHydratingRef, () => {
         form.resetFields();
@@ -216,7 +224,9 @@ export function useClientsPageController() {
   const handleClearCreateDraft = useCallback(() => {
     resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
     setCreatePhoneInputKey((current) => current + 1);
-    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
+    withDraftHydration(isDraftHydratingRef, () => {
+      form.resetFields();
+    });
   }, [form]);
 
   const closeEditor = useCallback(() => {
@@ -249,7 +259,9 @@ export function useClientsPageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [openEditor]);
 
   return {
@@ -273,13 +285,15 @@ export function useClientsPageController() {
     closeEditor,
     handleSearch,
     handleClearCreateDraft,
-    onSubmit: (values: ClientFormValues) => { saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined }); },
+    onSubmit: (values: ClientFormValues) => {
+      saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined });
+    },
     onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => {
       if (editing || isDraftHydratingRef.current) {
         return;
       }
 
-      saveDraftValues<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
+      saveDraftValues(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
     },
     openClientHistoryFromDashboard: {
       onCreateAppointment: (client: Client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }),
@@ -288,49 +302,12 @@ export function useClientsPageController() {
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",
-        onOk: () => { deleteMutation.mutate({ id: client.id, expectedActivityId: client.lastActivity?.id }); },
+        onOk: () => {
+          deleteMutation.mutate({ id: client.id, expectedActivityId: client.lastActivity?.id });
+        },
       });
     },
   };
-}
-
-export function formatClientName(client: Pick<Client, "firstName" | "lastName" | "patronymic">) {
-  return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
-}
-
-export function getContactValue(client: ClientRow, key: "telegram" | "vk" | "phone") {
-  return client.contacts?.[key] ?? client[key] ?? undefined;
-}
-
-export function renderPhoneLink(value?: string | null) {
-  const normalized = normalizeRussianPhone(value);
-  if (!normalized) {
-    return null;
-  }
-
-  return <a href={`tel:${normalized}`}>{formatRussianPhone(getRussianPhoneDigits(normalized))}</a>;
-}
-
-export function renderSocialLink(value: string | null | undefined, type: "telegram" | "vk") {
-  const normalized = normalizeSocialLink(value, type);
-  if (!normalized) {
-    return null;
-  }
-
-  return (
-    <a href={normalized} target="_blank" rel="noreferrer">
-      @{getSocialHandle(normalized)}
-    </a>
-  );
-}
-
-function getSocialHandle(value: string) {
-  return (
-    value
-      .replace(/^https?:\/\//i, "")
-      .replace(/^www\./i, "")
-      .split(/[/?#]/)[1] ?? ""
-  );
 }
 
 function prepareClientInput(values: ClientFormValues): ClientSubmitInput {

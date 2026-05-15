@@ -11,13 +11,13 @@ import {
   type RecoveryCodeItem,
   type RecoveryCodesResponse,
   type RegisterInput,
-} from "../api/auth";
-import { getApiErrorMessage, getApiErrorMessages } from "../api/http";
-import { AuthScreenLayout } from "../components/AuthScreenLayout";
-import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
-import { StatusBanner } from "../components/StatusBanner";
-import { TotpSecretPanel } from "../components/TotpSecretPanel";
-import { useAuth } from "../features/auth/useAuth";
+} from "@/api/auth";
+import { getApiErrorMessage, getApiErrorMessages } from "@/api/http";
+import { AuthScreenLayout } from "@/components/AuthScreenLayout";
+import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
+import { TotpSecretPanel } from "@/components/TotpSecretPanel";
+import { useAuth } from "@/features/auth/useAuth";
+import { StatusBanner } from "@/shared/ui";
 
 type AuthMode = "login" | "register" | "recover2fa";
 type TotpSetup = {

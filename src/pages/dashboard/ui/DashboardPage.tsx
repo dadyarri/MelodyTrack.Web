@@ -4,22 +4,21 @@ import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } f
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { clientsApi, dashboardApi, scheduleApi } from "../api/crm";
-import type { Appointment, Client } from "../api/types";
-import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
-import { PageLayout } from "../components/PageLayout";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { formatDateTime, TIME_FORMAT } from "../utils/date";
-import { downloadBlob } from "../utils/download";
-import { formatMoney } from "../utils/money";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
+import { clientsApi, dashboardApi, scheduleApi } from "@/api/crm";
+import type { Appointment, Client } from "@/api/types";
+import { ClientHistoryDrawer } from "@/entities/client";
+import { PageLayout, ShortcutButton } from "@/shared/ui";
+import { formatDateTime, TIME_FORMAT } from "@/utils/date";
+import { downloadBlob } from "@/utils/download";
+import { formatMoney } from "@/utils/money";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
 export function DashboardPage() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const navigate = useNavigate();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const statsQuery = useQuery({ queryKey: ["dashboard", "stats", timezone], queryFn: () => dashboardApi.stats(timezone) });
-  const debtorsQuery = useQuery({ queryKey: ["clients", "debtors"], queryFn: clientsApi.debtors });
+  const debtorsQuery = useQuery({ queryKey: ["clients", "debtors"], queryFn: () => clientsApi.debtors() });
   const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
@@ -33,8 +32,10 @@ export function DashboardPage() {
     enabled: Boolean(historyClient),
   });
   const debtorsExportMutation = useMutation({
-    mutationFn: clientsApi.exportDebtors,
-    onSuccess: (blob) => { downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`); },
+    mutationFn: () => clientsApi.exportDebtors(),
+    onSuccess: (blob) => {
+      downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
+    },
   });
 
   useEffect(() => {
@@ -50,13 +51,16 @@ export function DashboardPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [debtorsExportMutation]);
 
   const todayKey = dayjs().format("YYYY-MM-DD");
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
   const todayAppointments = miniQuery.data?.[todayKey] ?? [];
   const tomorrowAppointments = miniQuery.data?.[tomorrowKey] ?? [];
+
   return (
     <PageLayout title="Обзор">
       <div className="dashboard-grid">
@@ -110,7 +114,9 @@ export function DashboardPage() {
               leadingIcon={<DownloadOutlined />}
               loading={debtorsExportMutation.isPending}
               label="Экспорт"
-              onClick={() => { debtorsExportMutation.mutate(); }}
+              onClick={() => {
+                debtorsExportMutation.mutate();
+              }}
             />
           }
         >
@@ -124,7 +130,13 @@ export function DashboardPage() {
               {
                 title: "Клиент",
                 render: (_, row) => (
-                  <Button type="link" className="table-link-button" onClick={() => { setHistoryClient(row); }}>
+                  <Button
+                    type="link"
+                    className="table-link-button"
+                    onClick={() => {
+                      setHistoryClient(row);
+                    }}
+                  >
                     {`${row.lastName} ${row.firstName}`}
                   </Button>
                 ),
@@ -139,7 +151,9 @@ export function DashboardPage() {
         data={historyQuery.data}
         isLoading={historyQuery.isLoading}
         isError={historyQuery.isError}
-        onClose={() => { setHistoryClient(null); }}
+        onClose={() => {
+          setHistoryClient(null);
+        }}
         onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
         onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
       />

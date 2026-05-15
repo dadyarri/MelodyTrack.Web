@@ -26,14 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const meQuery = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: authApi.getMe,
+    queryFn: () => authApi.getMe(),
     enabled: hasSession,
     retry: false,
   });
 
   useEffect(() => {
     window.addEventListener(authExpiredEventName, handleSessionExpired);
-    return () => { window.removeEventListener(authExpiredEventName, handleSessionExpired); };
+    return () => {
+      window.removeEventListener(authExpiredEventName, handleSessionExpired);
+    };
   }, [handleSessionExpired]);
 
   useEffect(() => {
@@ -42,8 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (axios.isAxiosError(meQuery.error) && meQuery.error.response?.status === 401) {
-      const timeoutId = window.setTimeout(() => { handleSessionExpired(); }, 0);
-      return () => { window.clearTimeout(timeoutId); };
+      const timeoutId = window.setTimeout(() => {
+        handleSessionExpired();
+      }, 0);
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
     }
   }, [hasSession, handleSessionExpired, meQuery.error, meQuery.isError]);
 
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasSession(true);
       const me = await queryClient.fetchQuery<MeResponse>({
         queryKey: ["auth", "me"],
-        queryFn: authApi.getMe,
+        queryFn: () => authApi.getMe(),
         staleTime: 0,
       });
       setCachedUser(me);

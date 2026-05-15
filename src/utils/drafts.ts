@@ -13,7 +13,7 @@ export function createReplayKey() {
     return crypto.randomUUID();
   }
 
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${String(Date.now())}-${Math.random().toString(16).slice(2)}`;
 }
 
 export function loadDraft<TValues>(storageKey: string) {
@@ -37,8 +37,8 @@ export function hasDraft(storageKey: string) {
   return loadDraft(storageKey) !== null;
 }
 
-export function getDraftReplayKey<TValues>(storageKey: string) {
-  return loadDraft<TValues>(storageKey)?.replayKey ?? createReplayKey();
+export function getDraftReplayKey(storageKey: string) {
+  return loadDraft(storageKey)?.replayKey ?? createReplayKey();
 }
 
 export function saveDraft<TValues>(storageKey: string, draft: FormDraft<TValues>) {
@@ -49,7 +49,7 @@ export function saveDraft<TValues>(storageKey: string, draft: FormDraft<TValues>
   window.localStorage.setItem(storageKey, JSON.stringify(draft));
 }
 
-export function saveDraftValues<TValues>(storageKey: string, replayKey: string, values: TValues) {
+export function saveDraftValues(storageKey: string, replayKey: string, values: unknown) {
   saveDraft(storageKey, {
     replayKey,
     updatedAtUtc: new Date().toISOString(),

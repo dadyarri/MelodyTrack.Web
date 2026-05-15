@@ -1,7 +1,8 @@
 import { Drawer } from "antd";
-import type { Client, ClientHistory } from "../api/types";
+import type { Client, ClientHistory } from "@/api/types";
+import { QueryStateBlock } from "@/shared/ui";
+import { formatClientName } from "../lib/client";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
-import { QueryStateBlock } from "./QueryStateBlock";
 
 type ClientHistoryDrawerProps = {
   client: Client | null;
@@ -25,7 +26,7 @@ export function ClientHistoryDrawer({
   return (
     <Drawer
       title={client ? `История клиента: ${formatClientName(client)}` : "История клиента"}
-      width={720}
+      size="large"
       open={Boolean(client)}
       onClose={onClose}
       destroyOnHidden
@@ -41,8 +42,4 @@ export function ClientHistoryDrawer({
       />
     </Drawer>
   );
-}
-
-function formatClientName(client: Pick<Client, "firstName" | "lastName" | "patronymic">) {
-  return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
 }

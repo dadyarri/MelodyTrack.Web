@@ -87,21 +87,25 @@ export async function handleStaleEntityConflict<TError>({
     okText,
     cancelText,
     conflict,
-    onConfirm: () => { onConfirm(conflict); },
-    onReload: () => { onReload(conflict); },
+    onConfirm: () => {
+      onConfirm(conflict);
+    },
+    onReload: () => {
+      onReload(conflict);
+    },
   });
   return true;
 }
 
-export function findItemInQueryData<TItem extends { id: Ulid }, TData>(
+export function findItemInQueryData<TItem extends { id: Ulid }>(
   queryClient: QueryClient,
   queryKey: readonly unknown[],
-  getItems: (data: TData) => TItem[] | undefined,
+  getItems: (data: unknown) => TItem[] | undefined,
   id: Ulid,
 ) {
-  const queryData = queryClient.getQueriesData<TData>({ queryKey });
+  const queryData = queryClient.getQueriesData({ queryKey });
   for (const [, data] of queryData) {
-    const item = getItems(data as TData)?.find((entry) => entry.id === id);
+    const item = getItems(data)?.find((entry) => entry.id === id);
     if (item) {
       return item;
     }

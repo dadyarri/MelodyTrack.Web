@@ -10,14 +10,13 @@ import {
   type SessionDto,
   type Setup2FaInput,
   type Setup2FaResponse,
-} from "../api/auth";
-import { getApiErrorMessages } from "../api/http";
-import { PageLayout } from "../components/PageLayout";
-import { RecoveryCodesCard } from "../components/RecoveryCodesCard";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { TotpSecretPanel } from "../components/TotpSecretPanel";
-import { useAuth } from "../features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
+} from "@/api/auth";
+import { getApiErrorMessages } from "@/api/http";
+import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
+import { TotpSecretPanel } from "@/components/TotpSecretPanel";
+import { useAuth } from "@/features/auth/useAuth";
+import { PageLayout, ShortcutButton } from "@/shared/ui";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
 
@@ -118,8 +117,11 @@ export function ProfilePage() {
   });
 
   const revokeSessionMutation = useMutation({
-    mutationFn: (session: SessionDto) => authApi.revokeSession(session.id),
-    onSuccess: async (_, session) => {
+    mutationFn: async (session: SessionDto) => {
+      await authApi.revokeSession(session.id);
+      return session;
+    },
+    onSuccess: async (session) => {
       message.success(session.isCurrent ? "Текущая сессия завершена." : "Сессия завершена.");
 
       if (session.isCurrent) {

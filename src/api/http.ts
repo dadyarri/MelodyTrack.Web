@@ -94,9 +94,10 @@ function cacheSuccessfulGet(response: AxiosResponse) {
 
   try {
     const cacheKey = buildCacheKey(response.config);
+    const headers = response.headers as Record<string, unknown>;
     window.localStorage.setItem(
       cacheKey,
-      JSON.stringify({ data: response.data, status: response.status, statusText: response.statusText, headers: response.headers }),
+      JSON.stringify({ data: response.data as unknown, status: response.status, statusText: response.statusText, headers }),
     );
   } catch {
     // Ignore cache failures.
@@ -136,13 +137,13 @@ function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
 function buildCacheKey(config: InternalAxiosRequestConfig) {
   const url = new URL(config.url ?? "", baseURL);
   const params = new URLSearchParams();
-  const entries = Object.entries(config.params ?? {}).sort(([a], [b]) => a.localeCompare(b));
+  const entries = Object.entries((config.params ?? {}) as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
   for (const [key, value] of entries) {
     if (value === undefined || value === null || value === "") {
       continue;
     }
 
-    params.append(key, String(value));
+    params.append(key, serializeQueryParam(value));
   }
 
   const query = params.toString();
@@ -221,7 +222,7 @@ export function getApiErrorMessages(error: unknown) {
     for (const value of Object.values(data.errors)) {
       const fieldMessages = Array.isArray(value) ? value : [value];
       for (const message of fieldMessages) {
-        if (message) {
+        if (typeof message === "string" && message) {
           messages.add(message);
         }
       }
@@ -256,4 +257,16 @@ export function getStaleEntityConflict(error: unknown) {
   }
 
   return data as StaleEntityConflict;
+}
+
+function serializeQueryParam(value: unknown) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
 }

@@ -1,10 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
 import { useEffect, useRef } from "react";
+import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
 import { clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
-import { normalizeRussianPhone, normalizeSocialLink } from "../features/clients/clientContactUtils";
 import { createReplayKey } from "../utils/drafts";
 import { createOfflineTempId, enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 
@@ -94,11 +94,20 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         form.resetFields();
         onCancel();
       }}
-      onOk={() => { form.submit(); }}
+      onOk={() => {
+        form.submit();
+      }}
       confirmLoading={createMutation.isPending}
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={(values) => { createMutation.mutate(values); }}>
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        onFinish={(values) => {
+          createMutation.mutate(values);
+        }}
+      >
         <ClientFormFields />
       </Form>
     </Modal>

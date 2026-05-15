@@ -2,9 +2,8 @@ import type { FormInstance } from "antd";
 import { Button, DatePicker, Form, Input, InputNumber, Modal, Space } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import type dayjs from "dayjs";
-import { DraftModalFooter } from "../../components/DraftModalFooter";
-import { DraftModalTitle } from "../../components/DraftModalTitle";
-import { ClientSelect, ServiceSelect } from "../../components/RemoteSelect";
+import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
+import { DraftModalFooter, DraftModalTitle } from "@/shared/ui";
 import { DATE_TIME_FORMAT, TIME_FORMAT } from "../../utils/date";
 
 export type PaymentCreateFormValues = {
@@ -56,7 +55,9 @@ export function PaymentCreateModal({
       open={open}
       title={<DraftModalTitle title="Новый платеж" restored={draftRestored} />}
       onCancel={onCancel}
-      onOk={() => { form.submit(); }}
+      onOk={() => {
+        form.submit();
+      }}
       confirmLoading={createPending}
       destroyOnHidden
       footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
@@ -81,7 +82,7 @@ export function PaymentCreateModal({
         }}
       >
         <Form.Item label="Клиент">
-          <Space direction="vertical" size={8} className="wide">
+          <Space orientation="vertical" size={8} className="wide">
             <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
               <ClientSelect extraOptions={createdClientOptions} onResolvedLabelChange={onClientLabelChange} />
             </Form.Item>
@@ -98,9 +99,12 @@ export function PaymentCreateModal({
               onResolvedLabelChange={onServiceLabelChange}
               onResolvedPriceChange={(price) => {
                 onServicePriceChange(price);
-                const serviceId = form.getFieldValue("serviceId");
+                const { quantity, serviceId } = form.getFieldsValue(["quantity", "serviceId"]) as Pick<
+                  PaymentCreateFormValues,
+                  "quantity" | "serviceId"
+                >;
                 if (serviceId && price !== undefined) {
-                  form.setFieldValue("amount", price * (form.getFieldValue("quantity") ?? 1));
+                  form.setFieldValue("amount", price * (typeof quantity === "number" ? quantity : 1));
                 }
               }}
             />

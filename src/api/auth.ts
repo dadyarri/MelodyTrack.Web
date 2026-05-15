@@ -132,7 +132,7 @@ export const authApi = {
     return http.post<ForgotPasswordResponse>("/auth/forgotPassword", { email }).then((response) => response.data);
   },
   resetPassword(input: ResetPasswordInput) {
-    http.post("/auth/resetPassword", input).then((response) => response.data);
+    return http.post<unknown>("/auth/resetPassword", input).then(() => undefined);
   },
   setup2Fa(input: Setup2FaInput) {
     return http.post<Setup2FaResponse>("/auth/2fa/setup", input).then((response) => response.data);
@@ -144,21 +144,21 @@ export const authApi = {
     return http.post<RecoveryCodesResponse>("/auth/recoveryCodes").then((response) => response.data);
   },
   remove2Fa() {
-    http.delete("/auth/2fa/delete").then((response) => response.data);
+    return http.delete<unknown>("/auth/2fa/delete").then(() => undefined);
   },
   getMe() {
     return http.get<MeResponse>("/auth/me").then((response) => response.data);
   },
   changePassword(input: ChangePasswordInput) {
-    http.post("/auth/changePassword", input).then((response) => response.data);
+    return http.post<unknown>("/auth/changePassword", input).then(() => undefined);
   },
   getSessions() {
     return http.get<SessionsResponse>("/auth/sessions").then((response) => response.data);
   },
   revokeSession(id: string) {
-    http.delete(`/auth/sessions/${id}`).then((response) => response.data);
+    return http.delete<unknown>(`/auth/sessions/${id}`).then(() => undefined);
   },
   logoutAll() {
-    http.post("/auth/logoutAll").then((response) => response.data);
+    return http.post<unknown>("/auth/logoutAll").then(() => undefined);
   },
 };

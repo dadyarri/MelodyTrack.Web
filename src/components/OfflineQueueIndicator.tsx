@@ -9,8 +9,12 @@ export function OfflineQueueIndicator() {
   const [syncStatus, setSyncStatus] = useState(() => getOfflineSyncStatus());
 
   useEffect(() => {
-    const updateQueue = () => { setQueue(loadOfflineQueue()); };
-    const updateStatus = () => { setSyncStatus(getOfflineSyncStatus()); };
+    const updateQueue = () => {
+      setQueue(loadOfflineQueue());
+    };
+    const updateStatus = () => {
+      setSyncStatus(getOfflineSyncStatus());
+    };
     updateQueue();
     updateStatus();
     window.addEventListener(offlineQueueChangedEventName, updateQueue);
@@ -63,7 +67,7 @@ export function OfflineQueueIndicator() {
 
   const content = useMemo(
     () => (
-      <Space direction="vertical" size={8} className="offline-queue-popover">
+      <Space orientation="vertical" size={8} className="offline-queue-popover">
         <Space size={8}>
           {queue.length > 0 ? icon : <CheckCircleOutlined />}
           <Typography.Text strong>{label}</Typography.Text>

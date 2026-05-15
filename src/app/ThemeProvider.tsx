@@ -101,7 +101,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       startViewTransition?: (updateCallback: () => void) => ViewTransition;
     };
 
-    if (!transitionDocument.startViewTransition) {
+    if (typeof transitionDocument.startViewTransition !== "function") {
       setMode(nextMode);
       return;
     }

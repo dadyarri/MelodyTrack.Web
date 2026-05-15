@@ -1,20 +1,20 @@
 import { createBrowserRouter, Navigate } from "react-router";
+import { AuditPage } from "@/pages/audit";
+import { AuthPage } from "@/pages/auth";
+import { ClientsPage } from "@/pages/clients";
+import { DashboardPage } from "@/pages/dashboard";
+import { ExpensesPage } from "@/pages/expenses";
+import { InviteRedirect } from "@/pages/invite-redirect";
+import { PaymentsPage } from "@/pages/payments";
+import { ProfilePage } from "@/pages/profile";
+import { RestorePasswordPage } from "@/pages/restore-password";
+import { SchedulePage } from "@/pages/schedule";
+import { ServicesPage } from "@/pages/services";
+import { UsersPage } from "@/pages/users";
 import { AdminRoute } from "../layout/AdminRoute";
 import { AppLayout } from "../layout/AppLayout";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
 import { SuperuserRoute } from "../layout/SuperuserRoute";
-import { AuditPage } from "../pages/AuditPage";
-import { AuthPage } from "../pages/AuthPage";
-import { ClientsPage } from "../pages/ClientsPage";
-import { DashboardPage } from "../pages/DashboardPage";
-import { ExpensesPage } from "../pages/ExpensesPage";
-import { InviteRedirect } from "../pages/InviteRedirect";
-import { PaymentsPage } from "../pages/PaymentsPage";
-import { ProfilePage } from "../pages/ProfilePage";
-import { RestorePasswordPage } from "../pages/RestorePasswordPage";
-import { SchedulePage } from "../pages/SchedulePage";
-import { ServicesPage } from "../pages/ServicesPage";
-import { UsersPage } from "../pages/UsersPage";
 
 export const router = createBrowserRouter([
   { path: "/invite/:inviteCode", element: <InviteRedirect /> },

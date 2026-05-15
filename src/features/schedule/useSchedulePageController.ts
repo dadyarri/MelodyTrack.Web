@@ -47,7 +47,7 @@ export function useSchedulePageController() {
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
-  const draftReplayKeyRef = useRef(getDraftReplayKey<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY));
+  const draftReplayKeyRef = useRef(getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
@@ -114,7 +114,9 @@ export function useSchedulePageController() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [auth.user?.id, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
@@ -124,7 +126,7 @@ export function useSchedulePageController() {
   });
   const recurrenceTypesQuery = useQuery({
     queryKey: ["appointments", "recurrenceTypes"],
-    queryFn: scheduleApi.recurrenceTypes,
+    queryFn: () => scheduleApi.recurrenceTypes(),
   });
 
   const filteredAppointments = (query.data ?? []).filter((appointment) => {
@@ -215,7 +217,7 @@ export function useSchedulePageController() {
       input: { isCompleted?: boolean; isCanceled?: boolean };
       expectedActivityId?: Ulid;
     }) => scheduleApi.update(id, { ...input, expectedActivityId }),
-    onMutate: async ({ id, input }) => {
+    onMutate: ({ id, input }) => {
       const nextState = (appointment: Appointment) =>
         appointment.id === id
           ? {
@@ -226,7 +228,9 @@ export function useSchedulePageController() {
           : appointment;
 
       setSelectedAppointment((current) => (current ? nextState(current) : current));
-      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => (current ? current.map(nextState) : current));
+      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => {
+        return current ? current.map(nextState) : current;
+      });
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
@@ -241,12 +245,14 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Повторить поверх новой версии",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => { updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
+        onConfirm: (conflict) => {
+          updateMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id });
+        },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
             ["appointments"],
-            (data: Appointment[] | undefined) => data,
+            (data) => data as Appointment[] | undefined,
             variables.id,
           );
           if (!freshAppointment) {
@@ -261,14 +267,15 @@ export function useSchedulePageController() {
   });
 
   const editMutation = useMutation({
-    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: AppointmentEditFormValues; expectedActivityId?: Ulid }) =>
-      scheduleApi.update(id, {
+    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: AppointmentEditFormValues; expectedActivityId?: Ulid }) => {
+      return scheduleApi.update(id, {
         clientId: input.clientId,
         serviceId: input.serviceId,
         providerId: input.providerId,
         startDate: input.startDate.toISOString(),
         expectedActivityId,
-      }),
+      });
+    },
     onSuccess: async () => {
       message.success("Запись обновлена");
       setAppointmentToEdit(null);
@@ -290,10 +297,12 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Перезаписать",
         cancelText: "Обновить форму",
-        onConfirm: (nextConflict) => { editMutation.mutate({ ...variables, expectedActivityId: nextConflict.currentActivity?.id }); },
+        onConfirm: (nextConflict) => {
+          editMutation.mutate({ ...variables, expectedActivityId: nextConflict.currentActivity?.id });
+        },
         onReload: () => {
           const freshAppointment =
-            findItemInQueryData(queryClient, ["appointments"], (data: Appointment[] | undefined) => data, appointmentToEdit.id) ??
+            findItemInQueryData(queryClient, ["appointments"], (data) => data as Appointment[] | undefined, appointmentToEdit.id) ??
             currentEditingAppointment;
           if (!freshAppointment) {
             return;
@@ -321,11 +330,12 @@ export function useSchedulePageController() {
       appointment: Appointment;
       startDate: Dayjs;
       expectedActivityId?: Ulid;
-    }) =>
-      scheduleApi.update(appointment.id, {
+    }) => {
+      return scheduleApi.update(appointment.id, {
         startDate: startDate.toISOString(),
         expectedActivityId,
-      }),
+      });
+    },
     onSuccess: async (_, variables) => {
       message.success("Запись перенесена");
 
@@ -356,12 +366,14 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Перенести поверх новой версии",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => { rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
+        onConfirm: (conflict) => {
+          rescheduleMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id });
+        },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
             ["appointments"],
-            (data: Appointment[] | undefined) => data,
+            (data) => data as Appointment[] | undefined,
             variables.appointment.id,
           );
           if (!freshAppointment) {
@@ -388,8 +400,9 @@ export function useSchedulePageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentDeleteScope; expectedActivityId?: Ulid }) =>
-      scheduleApi.remove(id, scope, { expectedActivityId }),
+    mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentDeleteScope; expectedActivityId?: Ulid }) => {
+      return scheduleApi.remove(id, scope, { expectedActivityId });
+    },
     onSuccess: async () => {
       message.success("Запись удалена");
       setSelectedAppointment(null);
@@ -408,12 +421,14 @@ export function useSchedulePageController() {
         title: "Запись уже изменена",
         okText: "Удалить все равно",
         cancelText: "Обновить данные",
-        onConfirm: (conflict) => { deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id }); },
+        onConfirm: (conflict) => {
+          deleteMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id });
+        },
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
             ["appointments"],
-            (data: Appointment[] | undefined) => data,
+            (data) => data as Appointment[] | undefined,
             variables.id,
           );
           if (!freshAppointment) {
@@ -437,7 +452,7 @@ export function useSchedulePageController() {
       return;
     }
 
-    saveDraftValues<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, serializeAppointmentDraft(values));
+    saveDraftValues(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, serializeAppointmentDraft(values));
   }, []);
 
   const openCreateModalAt = useCallback((startDate: Dayjs) => {
@@ -454,7 +469,7 @@ export function useSchedulePageController() {
     const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : (pendingCreateStartDate ?? dayjs());
     const providerId = isSpecialistFilterLocked ? auth.user?.id : draft?.values.providerId;
 
-    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY);
     withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue({
         clientId: draft?.values.clientId ?? createPrefillClientId,
@@ -473,13 +488,15 @@ export function useSchedulePageController() {
       return;
     }
 
-    navigate(location.pathname, { replace: true, state: null });
+    void navigate(location.pathname, { replace: true, state: null });
   }
 
   function closeCreateModal() {
     setOpen(false);
     setPendingCreateStartDate(null);
-    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
+    withDraftHydration(isDraftHydratingRef, () => {
+      form.resetFields();
+    });
     clearCreateRouteState();
   }
 
@@ -624,7 +641,7 @@ function buildOptimisticOfflineAppointment(
     id: `offline:${replayKey}`,
     client: {
       id: input.clientId,
-      firstName: clientNameParts[1] ?? clientNameParts[0] ?? "Клиент",
+      firstName: clientNameParts[1] ?? clientNameParts[0],
       lastName: clientNameParts[0] ?? "Клиент",
       patronymic: clientNameParts.slice(2).join(" ") || undefined,
     },
@@ -635,7 +652,7 @@ function buildOptimisticOfflineAppointment(
     provider: providerNameParts.length
       ? {
           id: input.providerId ?? "offline-provider",
-          firstName: providerNameParts[1] ?? providerNameParts[0] ?? "Специалист",
+          firstName: providerNameParts[1] ?? providerNameParts[0],
           lastName: providerNameParts[0] ?? "Специалист",
           roleDisplayName: "",
         }

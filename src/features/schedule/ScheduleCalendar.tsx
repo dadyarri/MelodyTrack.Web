@@ -106,7 +106,10 @@ export function AppointmentsCalendar({
   return (
     <section className="schedule-calendar" aria-busy={loading}>
       <div className="schedule-calendar-desktop">
-        <div className="schedule-calendar-header" style={{ gridTemplateColumns: `72px repeat(${days.length}, minmax(144px, 1fr))` }}>
+        <div
+          className="schedule-calendar-header"
+          style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}
+        >
           <div className="schedule-calendar-corner" />
           {days.map((day) => (
             <div
@@ -121,7 +124,7 @@ export function AppointmentsCalendar({
         <div
           className="schedule-calendar-grid"
           style={{
-            gridTemplateColumns: `72px repeat(${days.length}, minmax(144px, 1fr))`,
+            gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))`,
             minHeight: hours.length * hourHeight,
           }}
         >
@@ -136,9 +139,15 @@ export function AppointmentsCalendar({
             <div
               className="schedule-day-column"
               key={day.format("YYYY-MM-DD")}
-              onDragLeave={(event) => { handleColumnDragLeave(event, day); }}
-              onDragOver={(event) => { handleColumnDragOver(event, day); }}
-              onDrop={(event) => { handleColumnDrop(event, day); }}
+              onDragLeave={(event) => {
+                handleColumnDragLeave(event, day);
+              }}
+              onDragOver={(event) => {
+                handleColumnDragOver(event, day);
+              }}
+              onDrop={(event) => {
+                handleColumnDrop(event, day);
+              }}
             >
               {hours.map((hour) => (
                 <button
@@ -146,7 +155,9 @@ export function AppointmentsCalendar({
                   className={`schedule-hour-line schedule-hour-slot-button${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? " schedule-hour-slot-drop-target" : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
-                  onClick={() => { onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0)); }}
+                  onClick={() => {
+                    onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
+                  }}
                 />
               ))}
               {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
@@ -234,11 +245,11 @@ function AppointmentStack({
       className="schedule-stack"
       style={
         {
-          "--event-top": `${top}px`,
-          "--event-height": `${height}px`,
-          "--stack-size": appointments.length,
-          "--stack-expanded-height": `${height + expandedOffset * (appointments.length - 1)}px`,
-          "--badge-top": `${slotTop - top + 4}px`,
+          "--event-top": `${String(top)}px`,
+          "--event-height": `${String(height)}px`,
+          "--stack-size": String(appointments.length),
+          "--stack-expanded-height": `${String(height + expandedOffset * (appointments.length - 1))}px`,
+          "--badge-top": `${String(slotTop - top + 4)}px`,
         } as CSSProperties
       }
     >
@@ -251,9 +262,9 @@ function AppointmentStack({
           draggable={reschedulePendingAppointmentId === null}
           style={
             {
-              "--stack-index": index,
-              "--stack-top": `${index * stackOffset}px`,
-              "--stack-card-height": `${cardHeight}px`,
+              "--stack-index": String(index),
+              "--stack-top": `${String(index * stackOffset)}px`,
+              "--stack-card-height": `${String(cardHeight)}px`,
               ...getServiceColorVars(item),
             } as CSSProperties
           }
@@ -263,7 +274,9 @@ function AppointmentStack({
             event.dataTransfer.effectAllowed = "move";
             onDragStart(item);
           }}
-          onClick={() => { onSelect(item); }}
+          onClick={() => {
+            onSelect(item);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
@@ -293,7 +306,9 @@ function AppointmentAgendaItem({
       tabIndex={0}
       className={`schedule-entry schedule-agenda-item ${getAppointmentClassName(appointment)}${isSelected ? " schedule-entry-selected" : ""}`}
       style={getServiceColorVars(appointment) as CSSProperties}
-      onClick={() => { onSelect(appointment); }}
+      onClick={() => {
+        onSelect(appointment);
+      }}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -334,7 +349,7 @@ function AppointmentContent({ appointment, density = "full" }: { appointment: Ap
       {showService ? (
         <div className="schedule-event-service">
           {appointment.service.name}
-          {showProvider ? ` · ${appointment.provider?.lastName} ${appointment.provider?.firstName}` : ""}
+          {showProvider && appointment.provider ? ` · ${appointment.provider.lastName} ${appointment.provider.firstName}` : ""}
         </div>
       ) : null}
     </div>

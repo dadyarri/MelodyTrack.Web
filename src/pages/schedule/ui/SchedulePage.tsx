@@ -1,17 +1,16 @@
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Space, Typography } from "antd";
-import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
-import { PageLayout } from "../components/PageLayout";
-import { UserSelect } from "../components/RemoteSelect";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { AppointmentsCalendar } from "../features/schedule/ScheduleCalendar";
+import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
+import { UserSelect } from "@/components/RemoteSelect";
 import {
   AppointmentCreateModal,
   AppointmentDetailsModal,
   AppointmentEditModal,
   RecurringDeleteModal,
-} from "../features/schedule/ScheduleModals";
-import { useSchedulePageController } from "../features/schedule/useSchedulePageController";
+} from "@/features/schedule/ScheduleModals";
+import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
+import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
+import { PageLayout, ShortcutButton } from "@/shared/ui";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
@@ -27,14 +26,24 @@ export function SchedulePage() {
               shortcut="←"
               leadingIcon={<LeftOutlined />}
               label="Пред."
-              onClick={() => { controller.setWeekStart((value) => value.subtract(1, "week")); }}
+              onClick={() => {
+                controller.setWeekStart((value) => value.subtract(1, "week"));
+              }}
             />
-            <ShortcutButton shortcut="Home" label="Сегодня" onClick={() => { controller.setWeekStart(controller.weekStart.startOf("week")); }} />
+            <ShortcutButton
+              shortcut="Home"
+              label="Сегодня"
+              onClick={() => {
+                controller.setWeekStart(controller.weekStart.startOf("week"));
+              }}
+            />
             <ShortcutButton
               shortcut="→"
               leadingIcon={<RightOutlined />}
               label="След."
-              onClick={() => { controller.setWeekStart((value) => value.add(1, "week")); }}
+              onClick={() => {
+                controller.setWeekStart((value) => value.add(1, "week"));
+              }}
             />
             <ShortcutButton
               shortcut="A"
@@ -56,22 +65,27 @@ export function SchedulePage() {
                   onChange={controller.setProviderFilterId}
                   disabled={controller.isSpecialistFilterLocked}
                 />
-                {!controller.isSpecialistFilterLocked && controller.auth.user?.id ? (
-                  <ShortcutButton
-                    shortcut="M"
-                    type={controller.effectiveProviderFilterId === controller.auth.user?.id ? "primary" : "default"}
-                    disabled={!controller.auth.user?.id}
-                    label="Моё"
-                    onClick={() =>
-                      { controller.setProviderFilterId((current) =>
-                        current === controller.auth.user?.id ? undefined : controller.auth.user?.id,
-                      ); }
-                    }
-                  />
-                ) : null}
+                {!controller.isSpecialistFilterLocked && controller.auth.user?.id
+                  ? (() => {
+                      const currentUserId = controller.auth.user.id;
+                      return (
+                        <ShortcutButton
+                          shortcut="M"
+                          type={controller.effectiveProviderFilterId === currentUserId ? "primary" : "default"}
+                          disabled={false}
+                          label="Моё"
+                          onClick={() => {
+                            controller.setProviderFilterId((current) => (current === currentUserId ? undefined : currentUserId));
+                          }}
+                        />
+                      );
+                    })()
+                  : null}
                 <Button
                   disabled={controller.isSpecialistFilterLocked || !controller.effectiveProviderFilterId}
-                  onClick={() => { controller.setProviderFilterId(undefined); }}
+                  onClick={() => {
+                    controller.setProviderFilterId(undefined);
+                  }}
                 >
                   Сбросить
                 </Button>
@@ -82,16 +96,16 @@ export function SchedulePage() {
             <AppointmentsCalendar
               appointments={controller.filteredAppointments}
               loading={controller.query.isLoading}
-              onReschedule={(appointment, startDate) =>
-                { controller.rescheduleMutation.mutate({
+              onReschedule={(appointment, startDate) => {
+                controller.rescheduleMutation.mutate({
                   appointment,
                   startDate,
-                  expectedActivityId: appointment.lastActivity?.id ?? undefined,
-                }); }
-              }
+                  expectedActivityId: appointment.lastActivity?.id,
+                });
+              }}
               range={[controller.weekStart, controller.weekStart.endOf("week")]}
               reschedulePendingAppointmentId={
-                controller.rescheduleMutation.isPending ? (controller.rescheduleMutation.variables?.appointment.id ?? null) : null
+                controller.rescheduleMutation.isPending ? controller.rescheduleMutation.variables.appointment.id : null
               }
               onCreateAt={controller.openCreateModalAt}
               onSelect={(appointment) => {
@@ -116,27 +130,27 @@ export function SchedulePage() {
           controller.setAppointmentToEdit(appointment);
           controller.setAppointmentToEditBaselineActivityId(appointment.lastActivity?.id ?? null);
         }}
-        onComplete={(appointment) =>
-          { controller.updateMutation.mutate({
+        onComplete={(appointment) => {
+          controller.updateMutation.mutate({
             id: appointment.id,
             input: { isCompleted: true, isCanceled: false },
             expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-          }); }
-        }
-        onCancel={(appointment) =>
-          { controller.updateMutation.mutate({
+          });
+        }}
+        onCancel={(appointment) => {
+          controller.updateMutation.mutate({
             id: appointment.id,
             input: { isCanceled: true },
             expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-          }); }
-        }
-        onRestore={(appointment) =>
-          { controller.updateMutation.mutate({
+          });
+        }}
+        onRestore={(appointment) => {
+          controller.updateMutation.mutate({
             id: appointment.id,
             input: { isCompleted: false, isCanceled: false },
             expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-          }); }
-        }
+          });
+        }}
         onDelete={(appointment) => {
           if (appointment.recurringRule) {
             controller.setAppointmentToDelete(appointment);
@@ -148,11 +162,12 @@ export function SchedulePage() {
 
           controller.modal.confirm({
             title: "Удалить запись?",
-            onOk: () =>
-              { controller.deleteMutation.mutate({
+            onOk: () => {
+              controller.deleteMutation.mutate({
                 id: appointment.id,
                 expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-              }); },
+              });
+            },
           });
         }}
       />
@@ -164,13 +179,13 @@ export function SchedulePage() {
           controller.setAppointmentToDelete(null);
           controller.setAppointmentToDeleteBaselineActivityId(undefined);
         }}
-        onDelete={(appointment, scope) =>
-          { controller.deleteMutation.mutate({
+        onDelete={(appointment, scope) => {
+          controller.deleteMutation.mutate({
             id: appointment.id,
             scope,
             expectedActivityId: controller.appointmentToDeleteBaselineActivityId ?? undefined,
-          }); }
-        }
+          });
+        }}
       />
       <AppointmentCreateModal
         createPending={controller.createMutation.isPending}
@@ -178,10 +193,14 @@ export function SchedulePage() {
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
         form={controller.form}
         lockedProviderId={controller.lockedProviderId}
-        onCreateClient={() => { controller.setQuickClientCreateOpen(true); }}
+        onCreateClient={() => {
+          controller.setQuickClientCreateOpen(true);
+        }}
         onCancel={controller.closeCreateModal}
         onDraftChange={controller.handleCreateDraftChange}
-        onSubmit={(values) => { controller.createMutation.mutate(values); }}
+        onSubmit={(values) => {
+          controller.createMutation.mutate(values);
+        }}
         onClientLabelChange={controller.setCreateClientLabel}
         onServiceLabelChange={controller.setCreateServiceLabel}
         onProviderLabelChange={controller.setCreateProviderLabel}
@@ -197,7 +216,9 @@ export function SchedulePage() {
         form={controller.editForm}
         isStale={controller.isEditingAppointmentStale}
         lockedProviderId={controller.lockedProviderId}
-        onCreateClient={() => { controller.setQuickClientCreateOpen(true); }}
+        onCreateClient={() => {
+          controller.setQuickClientCreateOpen(true);
+        }}
         onCancel={() => {
           controller.setAppointmentToEdit(null);
           controller.setAppointmentToEditBaselineActivityId(undefined);
@@ -216,7 +237,9 @@ export function SchedulePage() {
       />
       <ClientQuickCreateModal
         open={controller.isQuickClientCreateOpen}
-        onCancel={() => { controller.setQuickClientCreateOpen(false); }}
+        onCancel={() => {
+          controller.setQuickClientCreateOpen(false);
+        }}
         onCreated={controller.onQuickClientCreated}
       />
     </>

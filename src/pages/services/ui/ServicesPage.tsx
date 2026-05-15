@@ -2,28 +2,42 @@ import { DollarOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal } from "antd";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { servicesApi } from "../api/crm";
-import { getApiErrorMessages } from "../api/http";
-import type { Service } from "../api/types";
-import { DraftModalFooter } from "../components/DraftModalFooter";
-import { DraftModalTitle } from "../components/DraftModalTitle";
-import { ListTable } from "../components/ListTable";
-import { PageLayout } from "../components/PageLayout";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../utils/drafts";
-import { formatMoney } from "../utils/money";
-import { enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
+import { servicesApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
+import type { Service } from "@/api/types";
+import { DraftModalFooter, DraftModalTitle, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "@/utils/drafts";
+import { formatMoney } from "@/utils/money";
+import { enqueueOfflineCreate, shouldQueueOfflineError } from "@/utils/offlineQueue";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+
+type ServiceDraftValues = {
+  name?: string;
+  description?: string;
+  price?: number;
+};
+
+type ServiceCreateInput = {
+  name: string;
+  description?: string;
+  price: number;
+};
+
+type ServicePriceFormValues = {
+  price: number;
+};
+
+const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
 
 export function ServicesPage() {
   const [page, setPage] = useState(1);
   const hasCreateDraft = hasDraft(SERVICE_CREATE_DRAFT_KEY);
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
-  const draftReplayKeyRef = useRef(getDraftReplayKey<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY));
+  const draftReplayKeyRef = useRef(getDraftReplayKey(SERVICE_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [pricing, setPricing] = useState<Service | null>(null);
   const [form] = Form.useForm<ServiceDraftValues>();
-  const [priceForm] = Form.useForm();
+  const [priceForm] = Form.useForm<ServicePriceFormValues>();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -54,7 +68,9 @@ export function ServicesPage() {
       message.success(result.offline ? "Услуга сохранена локально" : "Услуга создана");
       setCreateOpen(false);
       resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
+      withDraftHydration(isDraftHydratingRef, () => {
+        form.resetFields();
+      });
       if (!result.offline) {
         await queryClient.invalidateQueries({ queryKey: ["services"] });
       }
@@ -63,7 +79,9 @@ export function ServicesPage() {
   });
 
   const priceMutation = useMutation({
-    mutationFn: ({ id, price }: { id: string; price: number }) => servicesApi.updatePrice(id, price),
+    mutationFn: ({ id, price }: { id: string; price: number }) => {
+      return servicesApi.updatePrice(id, price);
+    },
     onSuccess: async () => {
       message.success("Цена обновлена");
       setPricing(null);
@@ -78,7 +96,7 @@ export function ServicesPage() {
     }
 
     const draft = loadDraft<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
-    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
+    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(SERVICE_CREATE_DRAFT_KEY);
     withDraftHydration(isDraftHydratingRef, () => {
       form.setFieldsValue(draft?.values ?? {});
     });
@@ -97,19 +115,31 @@ export function ServicesPage() {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => { window.removeEventListener("keydown", handleKeyDown); };
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   function handleClearCreateDraft() {
     resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
-    withDraftHydration(isDraftHydratingRef, () => { form.resetFields(); });
+    withDraftHydration(isDraftHydratingRef, () => {
+      form.resetFields();
+    });
   }
 
   return (
     <PageLayout
       title="Услуги"
       actions={
-        <ShortcutButton shortcut="A" type="primary" leadingIcon={<PlusOutlined />} label="Добавить" onClick={() => { setCreateOpen(true); }} />
+        <ShortcutButton
+          shortcut="A"
+          type="primary"
+          leadingIcon={<PlusOutlined />}
+          label="Добавить"
+          onClick={() => {
+            setCreateOpen(true);
+          }}
+        />
       }
     >
       <ListTable
@@ -139,8 +169,12 @@ export function ServicesPage() {
       <Modal
         open={isCreateOpen}
         title={<DraftModalTitle title="Новая услуга" restored={hasCreateDraft && isCreateOpen} />}
-        onCancel={() => { setCreateOpen(false); }}
-        onOk={() => { form.submit(); }}
+        onCancel={() => {
+          setCreateOpen(false);
+        }}
+        onOk={() => {
+          form.submit();
+        }}
         confirmLoading={createMutation.isPending}
         footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={handleClearCreateDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
       >
@@ -148,13 +182,15 @@ export function ServicesPage() {
           form={form}
           layout="vertical"
           requiredMark={false}
-          onFinish={(values) => { createMutation.mutate(values as ServiceCreateInput); }}
+          onFinish={(values) => {
+            createMutation.mutate(values as ServiceCreateInput);
+          }}
           onValuesChange={(_, values) => {
             if (isDraftHydratingRef.current) {
               return;
             }
 
-            saveDraftValues<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
+            saveDraftValues(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
           }}
         >
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
@@ -171,14 +207,22 @@ export function ServicesPage() {
       <Modal
         open={Boolean(pricing)}
         title="Обновить цену"
-        onCancel={() => { setPricing(null); }}
-        onOk={() => { priceForm.submit(); }}
+        onCancel={() => {
+          setPricing(null);
+        }}
+        onOk={() => {
+          priceForm.submit();
+        }}
         confirmLoading={priceMutation.isPending}
       >
-        <Form
+        <Form<ServicePriceFormValues>
           form={priceForm}
           layout="vertical"
-          onFinish={(values) => pricing && priceMutation.mutate({ id: pricing.id, price: values.price })}
+          onFinish={(values) => {
+            if (pricing) {
+              priceMutation.mutate({ id: pricing.id, price: values.price });
+            }
+          }}
         >
           <Form.Item name="price" label="Цена" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
@@ -188,17 +232,3 @@ export function ServicesPage() {
     </PageLayout>
   );
 }
-
-type ServiceDraftValues = {
-  name?: string;
-  description?: string;
-  price?: number;
-};
-
-type ServiceCreateInput = {
-  name: string;
-  description?: string;
-  price: number;
-};
-
-const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";

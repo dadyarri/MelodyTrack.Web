@@ -1,20 +1,17 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { Button, Input, Space, Tag } from "antd";
-import { ClientHistoryDrawer } from "../components/ClientHistoryDrawer";
-import { ListFilters } from "../components/ListFilters";
-import { ListTable } from "../components/ListTable";
-import { PageLayout } from "../components/PageLayout";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { ClientEditorModal } from "../features/clients/ClientEditorModal";
 import {
+  ClientHistoryDrawer,
   formatClientName,
-  getContactValue,
-  renderPhoneLink,
-  renderSocialLink,
-  useClientsPageController,
-} from "../features/clients/useClientsPageController";
-import { formatDateTime } from "../utils/date";
-import { formatMoney } from "../utils/money";
+  getClientContactValue,
+  renderClientPhoneLink,
+  renderClientSocialLink,
+} from "@/entities/client";
+import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
+import { useClientsPageController } from "@/features/clients/useClientsPageController";
+import { ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { formatDateTime } from "@/utils/date";
+import { formatMoney } from "@/utils/money";
 
 export function ClientsPage() {
   const controller = useClientsPageController();
@@ -28,7 +25,9 @@ export function ClientsPage() {
           type="primary"
           leadingIcon={<PlusOutlined />}
           label="Добавить"
-          onClick={() => { controller.openEditor(); }}
+          onClick={() => {
+            controller.openEditor();
+          }}
         />
       }
     >
@@ -60,7 +59,13 @@ export function ClientsPage() {
           {
             title: "ФИО",
             render: (_, row) => (
-              <Button type="link" className="table-link-button" onClick={() => { controller.setHistoryClient(row); }}>
+              <Button
+                type="link"
+                className="table-link-button"
+                onClick={() => {
+                  controller.setHistoryClient(row);
+                }}
+              >
                 {formatClientName(row)}
               </Button>
             ),
@@ -72,17 +77,33 @@ export function ClientsPage() {
             dataIndex: "balance",
             render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
           },
-          { title: "Телефон", render: (_, row) => renderPhoneLink(getContactValue(row, "phone")) },
-          { title: "Telegram", render: (_, row) => renderSocialLink(getContactValue(row, "telegram"), "telegram") },
-          { title: "VK", render: (_, row) => renderSocialLink(getContactValue(row, "vk"), "vk") },
+          { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
+          { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
+          { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
           {
             title: "",
             width: 112,
             render: (_, row) => (
               <Space>
-                <Button icon={<ProfileOutlined />} onClick={() => { controller.setHistoryClient(row); }} />
-                <Button icon={<EditOutlined />} onClick={() => { controller.openEditor(row); }} />
-                <Button danger icon={<DeleteOutlined />} onClick={() => { controller.confirmDelete(row); }} />
+                <Button
+                  icon={<ProfileOutlined />}
+                  onClick={() => {
+                    controller.setHistoryClient(row);
+                  }}
+                />
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={() => {
+                    controller.openEditor(row);
+                  }}
+                />
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    controller.confirmDelete(row);
+                  }}
+                />
               </Space>
             ),
           },
@@ -107,7 +128,9 @@ export function ClientsPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
-        onClose={() => { controller.setHistoryClient(null); }}
+        onClose={() => {
+          controller.setHistoryClient(null);
+        }}
         onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
         onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
       />

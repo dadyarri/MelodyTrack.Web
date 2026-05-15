@@ -1,6 +1,6 @@
 import { Form, Input, type InputProps, type InputRef } from "antd";
 import { type IMaskInputProps, IMaskMixin } from "react-imask";
-import { getRussianPhoneDigits, getRussianPhoneMask, hasRussianPhoneDigits, normalizeSocialLink } from "./clientContactUtils";
+import { getRussianPhoneDigits, getRussianPhoneMask, hasRussianPhoneDigits, normalizeSocialLink } from "@/entities/client";
 
 const russianPhoneMask = getRussianPhoneMask();
 
@@ -44,7 +44,7 @@ export function ClientFormFields({ phoneInputKey }: { phoneInputKey?: number }) 
           },
         ]}
       >
-        <RussianPhoneInput key={phoneInputKey ? `phone-${phoneInputKey}` : undefined} />
+        <RussianPhoneInput key={phoneInputKey !== undefined ? ["phone", phoneInputKey].join("-") : undefined} />
       </Form.Item>
       <Form.Item
         name="telegram"
@@ -84,7 +84,25 @@ function RussianPhoneInput({ value, onChange }: { value?: string | null; onChang
       {...russianPhoneMask}
       value={getRussianPhoneDigits(value)}
       unmask
-      onAccept={(nextValue) => onChange?.(String(nextValue))}
+      onAccept={(nextValue) => {
+        if (typeof nextValue === "string") {
+          if (onChange) {
+            onChange(nextValue);
+          }
+          return;
+        }
+
+        if (typeof nextValue === "number") {
+          if (onChange) {
+            onChange(String(nextValue));
+          }
+          return;
+        }
+
+        if (onChange) {
+          onChange("");
+        }
+      }}
       inputMode="tel"
       autoComplete="tel"
       placeholder="+7 (999) 123-45-67"

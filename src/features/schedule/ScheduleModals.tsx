@@ -13,11 +13,9 @@ import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Tag, Typograp
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect } from "react";
+import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
+import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import type { Appointment, RecurrenceType } from "../../api/types";
-import { DraftModalFooter } from "../../components/DraftModalFooter";
-import { DraftModalTitle } from "../../components/DraftModalTitle";
-import { ClientSelect, ServiceSelect, UserSelect } from "../../components/RemoteSelect";
-import { StatusBanner } from "../../components/StatusBanner";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
 
@@ -90,7 +88,9 @@ export function AppointmentEditModal({
       open={appointment !== null}
       title="Редактировать запись"
       onCancel={onCancel}
-      onOk={() => { form.submit(); }}
+      onOk={() => {
+        form.submit();
+      }}
       confirmLoading={editPending}
       destroyOnHidden
     >
@@ -104,7 +104,7 @@ export function AppointmentEditModal({
             />
           ) : null}
           <Form.Item label="Клиент">
-            <Space direction="vertical" size={8} className="wide">
+            <Space orientation="vertical" size={8} className="wide">
               <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
                 <ClientSelect extraOptions={createdClientOptions} />
               </Form.Item>
@@ -182,9 +182,12 @@ export function AppointmentCreateModal({
 
     const nextType = recurrenceTypes.find((item) => item.id === value);
     if (nextType?.key === "weekly") {
-      const nextStartDate = form.getFieldValue("startDate") ?? dayjs();
-      const selectedDays = form.getFieldValue("weeklyDays");
-      if (!selectedDays?.length) {
+      const { startDate: currentStartDate, weeklyDays: currentWeeklyDays } = form.getFieldsValue(["startDate", "weeklyDays"]) as Pick<
+        AppointmentFormValues,
+        "startDate" | "weeklyDays"
+      >;
+      const nextStartDate = currentStartDate;
+      if (!currentWeeklyDays?.length) {
         form.setFieldValue("weeklyDays", [getWeeklyBitmaskValue(nextStartDate)]);
       }
     } else {
@@ -197,7 +200,9 @@ export function AppointmentCreateModal({
       open={open}
       title={<DraftModalTitle title="Новая запись" restored={draftRestored} />}
       onCancel={onCancel}
-      onOk={() => { form.submit(); }}
+      onOk={() => {
+        form.submit();
+      }}
       confirmLoading={createPending}
       destroyOnHidden
       footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
@@ -208,10 +213,12 @@ export function AppointmentCreateModal({
         requiredMark={false}
         initialValues={{ startDate: dayjs() }}
         onFinish={onSubmit}
-        onValuesChange={(_, values) => { onDraftChange(values); }}
+        onValuesChange={(_, values) => {
+          onDraftChange(values);
+        }}
       >
         <Form.Item label="Клиент">
-          <Space direction="vertical" size={8} className="wide">
+          <Space orientation="vertical" size={8} className="wide">
             <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
               <ClientSelect extraOptions={createdClientOptions} onResolvedLabelChange={onClientLabelChange} />
             </Form.Item>
@@ -248,8 +255,7 @@ export function AppointmentCreateModal({
                 format={DATE_FORMAT}
                 className="wide"
                 disabledDate={(current) => {
-                  const nextStartDate = startDate ?? dayjs();
-                  return current.isBefore(nextStartDate.startOf("day"));
+                  return current.isBefore(startDate.startOf("day"));
                 }}
               />
             </Form.Item>
@@ -259,11 +265,11 @@ export function AppointmentCreateModal({
                 label="Дни недели"
                 rules={[
                   {
-                    validator: async (_, value?: number[]) => {
+                    validator: (_, value?: number[]) => {
                       if (value?.length) {
-                        return;
+                        return Promise.resolve();
                       }
-                      throw new Error("Выберите хотя бы один день недели");
+                      return Promise.reject(new Error("Выберите хотя бы один день недели"));
                     },
                   },
                 ]}
@@ -303,7 +309,7 @@ export function RecurringDeleteModal({
       destroyOnHidden
     >
       {appointment ? (
-        <Space direction="vertical" size={16} className="wide">
+        <Space orientation="vertical" size={16} className="wide">
           {isStale ? (
             <StatusBanner
               type="warning"
@@ -312,14 +318,35 @@ export function RecurringDeleteModal({
             />
           ) : null}
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
-          <Space direction="vertical" className="wide recurring-delete-actions">
-            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "single"); }}>
+          <Space orientation="vertical" className="wide recurring-delete-actions">
+            <Button
+              danger
+              block
+              loading={deletePending}
+              onClick={() => {
+                onDelete(appointment, "single");
+              }}
+            >
               Только эту запись
             </Button>
-            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "this-and-following"); }}>
+            <Button
+              danger
+              block
+              loading={deletePending}
+              onClick={() => {
+                onDelete(appointment, "this-and-following");
+              }}
+            >
               Эту и следующие
             </Button>
-            <Button danger block loading={deletePending} onClick={() => { onDelete(appointment, "all"); }}>
+            <Button
+              danger
+              block
+              loading={deletePending}
+              onClick={() => {
+                onDelete(appointment, "all");
+              }}
+            >
               Все записи
             </Button>
             <Button block disabled={deletePending} onClick={onCancel}>
@@ -364,7 +391,7 @@ export function AppointmentDetailsModal({
 
   return (
     <Modal open title="Запись" onCancel={onClose} footer={null}>
-      <Space direction="vertical" size={18} className="wide">
+      <Space orientation="vertical" size={18} className="wide">
         {isStale ? (
           <StatusBanner
             type="warning"
@@ -437,25 +464,51 @@ export function AppointmentDetailsModal({
           ) : null}
         </div>
         <Space wrap>
-          <Button icon={<EditOutlined />} onClick={() => { onEdit(appointment); }}>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => {
+              onEdit(appointment);
+            }}
+          >
             Изменить
           </Button>
           {isPlanned ? (
-            <Button icon={<CheckOutlined />} onClick={() => { onComplete(appointment); }}>
+            <Button
+              icon={<CheckOutlined />}
+              onClick={() => {
+                onComplete(appointment);
+              }}
+            >
               Завершить
             </Button>
           ) : null}
           {isPlanned || isCompleted ? (
-            <Button icon={<CloseOutlined />} onClick={() => { onCancel(appointment); }}>
+            <Button
+              icon={<CloseOutlined />}
+              onClick={() => {
+                onCancel(appointment);
+              }}
+            >
               Отменить
             </Button>
           ) : null}
           {!isPlanned ? (
-            <Button icon={<RedoOutlined />} onClick={() => { onRestore(appointment); }}>
+            <Button
+              icon={<RedoOutlined />}
+              onClick={() => {
+                onRestore(appointment);
+              }}
+            >
               Вернуть в запланированные
             </Button>
           ) : null}
-          <Button danger icon={<DeleteOutlined />} onClick={() => { onDelete(appointment); }}>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => {
+              onDelete(appointment);
+            }}
+          >
             Удалить
           </Button>
         </Space>
@@ -482,7 +535,7 @@ function getRecurrenceSummary(key: RecurrenceType["key"], startDate?: Dayjs, wee
     return "Будет создаваться ежемесячно в выбранную дату.";
   }
 
-  return `Будет создаваться ${startDate.date()} числа каждого месяца в это же время.`;
+  return `Будет создаваться ${String(startDate.date())} числа каждого месяца в это же время.`;
 }
 
 function getWeeklyBitmaskValue(date: Dayjs) {
@@ -513,7 +566,7 @@ function formatRecurringRuleSummary(rule: NonNullable<Appointment["recurringRule
   }
 
   const dayOfMonth = rule.recurrencePattern ?? ruleStart.date();
-  return `Каждый месяц ${dayOfMonth} числа с ${ruleStart.format(DATE_FORMAT)}${until}`;
+  return `Каждый месяц ${String(dayOfMonth)} числа с ${ruleStart.format(DATE_FORMAT)}${until}`;
 }
 
 function formatWeeklyPattern(pattern?: number | null) {

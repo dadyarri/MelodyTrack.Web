@@ -2,16 +2,13 @@ import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntdApp, Button, Form, Input, Modal, Space } from "antd";
 import { useEffect, useState } from "react";
-import { authApi, type CreateInviteInput } from "../api/auth";
-import { usersApi } from "../api/crm";
-import { getApiErrorMessages } from "../api/http";
-import { AccessDeniedNotice } from "../components/AccessDeniedNotice";
-import { ListTable } from "../components/ListTable";
-import { PageLayout } from "../components/PageLayout";
-import { RoleSelect } from "../components/RemoteSelect";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { useAuth } from "../features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
+import { authApi, type CreateInviteInput } from "@/api/auth";
+import { usersApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
+import { RoleSelect } from "@/components/RemoteSelect";
+import { useAuth } from "@/features/auth/useAuth";
+import { AccessDeniedNotice, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
 export function UsersPage() {
   const auth = useAuth();

@@ -76,7 +76,7 @@ export function OfflineQueueSync() {
             continue;
           }
 
-          if (item.kind === "appointments:create") {
+          {
             await scheduleApi.create(
               {
                 ...item.payload,
@@ -86,6 +86,7 @@ export function OfflineQueueSync() {
             );
             removeOfflineQueueItem(item.id);
             syncedCount += 1;
+            continue;
           }
         } catch (error) {
           if (shouldQueueOfflineError(error)) {
@@ -94,15 +95,14 @@ export function OfflineQueueSync() {
           }
 
           setOfflineSyncStatus("error");
-          message.error(
-            `Не удалось отправить отложенное действие: ${item.kind === "clients:create" ? formatQueuedClientLabel(item.payload) : item.kind}`,
-          );
+          const actionLabel = item.kind === "clients:create" ? formatQueuedClientLabel(item.payload) : item.kind;
+          message.error(`Не удалось отправить отложенное действие: ${actionLabel}`);
           break;
         }
       }
 
       if (syncedCount > 0) {
-        message.success(`Синхронизировано ${syncedCount} отложенных изменений`);
+        message.success(`Синхронизировано ${String(syncedCount)} отложенных изменений`);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["clients"] }),
           queryClient.invalidateQueries({ queryKey: ["services"] }),
@@ -123,7 +123,7 @@ export function OfflineQueueSync() {
     }
   }, [message, queryClient]);
 
-  const scheduleSync = useCallback(async () => {
+  const scheduleSync = useCallback(() => {
     if (syncTimerRef.current !== null) {
       window.clearInterval(syncTimerRef.current);
       syncTimerRef.current = null;
@@ -151,24 +151,24 @@ export function OfflineQueueSync() {
       await syncQueue();
     };
 
-    void attemptSync();
+    attemptSync().catch(() => {});
     syncTimerRef.current = window.setInterval(() => {
-      void attemptSync();
+      attemptSync().catch(() => {});
     }, 7000);
   }, [syncQueue]);
 
   useEffect(() => {
-    void scheduleSync();
+    scheduleSync();
     const hasQueuedItems = loadOfflineQueue().length > 0;
     const handleOnline = () => {
-      void scheduleSync();
+      scheduleSync();
     };
     const handleQueueChange = () => {
-      void scheduleSync();
+      scheduleSync();
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        void scheduleSync();
+        scheduleSync();
       }
     };
     window.addEventListener("online", handleOnline);

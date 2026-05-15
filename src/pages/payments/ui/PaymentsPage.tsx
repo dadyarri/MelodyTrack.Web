@@ -1,16 +1,13 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, DatePicker, Input, Space, Typography } from "antd";
-import { ClientQuickCreateModal } from "../components/ClientQuickCreateModal";
-import { ListFilters } from "../components/ListFilters";
-import { ListTable } from "../components/ListTable";
-import { MoneyListSummaryCards } from "../components/MoneyListSummaryCards";
-import { PageLayout } from "../components/PageLayout";
-import { ClientSelect, ServiceSelect } from "../components/RemoteSelect";
-import { ShortcutButton } from "../components/ShortcutButton";
-import { PaymentCreateModal } from "../features/payments/PaymentCreateModal";
-import { formatOptionalDateTime, usePaymentsPageController } from "../features/payments/usePaymentsPageController";
-import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../utils/date";
-import { formatMoney } from "../utils/money";
+import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
+import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
+import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
+import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
+import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
+import { ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/utils/date";
+import { formatMoney } from "@/utils/money";
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();
@@ -25,7 +22,9 @@ export function PaymentsPage() {
             leadingIcon={<DownloadOutlined />}
             loading={controller.exportMutation.isPending}
             label="Экспорт"
-            onClick={() => { controller.exportMutation.mutate(); }}
+            onClick={() => {
+              controller.exportMutation.mutate();
+            }}
           />
           <ShortcutButton
             shortcut="A"
@@ -127,7 +126,9 @@ export function PaymentsPage() {
               <Button
                 danger
                 icon={<DeleteOutlined />}
-                onClick={() => { controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id }); }}
+                onClick={() => {
+                  controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
+                }}
               />
             ),
           },
@@ -144,16 +145,22 @@ export function PaymentsPage() {
         selectedServicePrice={controller.selectedServicePrice}
         onCancel={controller.closeCreateModal}
         onClearDraft={controller.handleClearCreateDraft}
-        onSubmit={(values) => { controller.createMutation.mutate(values); }}
+        onSubmit={(values) => {
+          controller.createMutation.mutate(values);
+        }}
         onValuesChange={controller.onCreateValuesChange}
-        onCreateClient={() => { controller.setQuickClientCreateOpen(true); }}
+        onCreateClient={() => {
+          controller.setQuickClientCreateOpen(true);
+        }}
         onClientLabelChange={controller.setCreateClientLabel}
         onServiceLabelChange={controller.setCreateServiceLabel}
         onServicePriceChange={controller.setSelectedServicePrice}
       />
       <ClientQuickCreateModal
         open={controller.isQuickClientCreateOpen}
-        onCancel={() => { controller.setQuickClientCreateOpen(false); }}
+        onCancel={() => {
+          controller.setQuickClientCreateOpen(false);
+        }}
         onCreated={controller.onQuickClientCreated}
       />
     </PageLayout>

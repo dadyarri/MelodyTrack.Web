@@ -1,8 +1,9 @@
 import { CalendarOutlined, CreditCardOutlined } from "@ant-design/icons";
 import { Button, Card, Descriptions, Empty, List, Space, Tag, Typography } from "antd";
-import type { ClientHistory } from "../api/types";
-import { formatDateTime } from "../utils/date";
-import { formatMoney } from "../utils/money";
+import type { ClientHistory } from "@/api/types";
+import { formatDateTime } from "@/utils/date";
+import { formatMoney } from "@/utils/money";
+import { renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
@@ -14,21 +15,32 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
   return (
     <Space orientation="vertical" size={16} className="wide">
       <Space>
-        <Button icon={<CalendarOutlined />} onClick={() => { onCreateAppointment(data.client); }}>
+        <Button
+          icon={<CalendarOutlined />}
+          onClick={() => {
+            onCreateAppointment(data.client);
+          }}
+        >
           Записать
         </Button>
-        <Button type="primary" icon={<CreditCardOutlined />} onClick={() => { onCreatePayment(data.client); }}>
+        <Button
+          type="primary"
+          icon={<CreditCardOutlined />}
+          onClick={() => {
+            onCreatePayment(data.client);
+          }}
+        >
           Добавить платеж
         </Button>
       </Space>
       <div className="detail-grid">
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
-            <Descriptions.Item label="Телефон">{renderPhoneLink(data.client.contacts?.phone) || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="Телефон">{renderClientPhoneLink(data.client.contacts?.phone) || "Не указан"}</Descriptions.Item>
             <Descriptions.Item label="Telegram">
-              {renderSocialLink(data.client.contacts?.telegram, "telegram") || "Не указан"}
+              {renderClientSocialLink(data.client.contacts?.telegram, "telegram") || "Не указан"}
             </Descriptions.Item>
-            <Descriptions.Item label="VK">{renderSocialLink(data.client.contacts?.vk, "vk") || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="VK">{renderClientSocialLink(data.client.contacts?.vk, "vk") || "Не указан"}</Descriptions.Item>
           </Descriptions>
         </Card>
         <Card size="small">
@@ -83,7 +95,9 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
                   <Space className="wide list-justify" wrap>
                     <Typography.Text strong>{appointment.serviceName}</Typography.Text>
                     <Space wrap size={8}>
-                      {renderAppointmentStatus(appointment)}
+                      <Tag color={appointment.isCanceled ? "default" : appointment.isCompleted ? "green" : "blue"}>
+                        {renderClientHistoryAppointmentStatus(appointment)}
+                      </Tag>
                       <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
                     </Space>
                   </Space>
@@ -102,44 +116,6 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
   );
 }
 
-function renderPhoneLink(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  return <a href={`tel:${value}`}>{value}</a>;
-}
-
-function renderSocialLink(value: string | null | undefined, type: "telegram" | "vk") {
-  if (!value) {
-    return null;
-  }
-
-  return (
-    <a href={value} target="_blank" rel="noreferrer">
-      @{getSocialHandle(value, type)}
-    </a>
-  );
-}
-
-function renderAppointmentStatus(appointment: ClientHistory["recentAppointments"][number]) {
-  if (appointment.isCanceled) {
-    return <Tag color="default">Отменена</Tag>;
-  }
-
-  if (appointment.isCompleted) {
-    return <Tag color="green">Завершена</Tag>;
-  }
-
-  return <Tag color="blue">Запланирована</Tag>;
-}
-
 function formatOptionalDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "Нет данных";
-}
-
-function getSocialHandle(value: string, type: "telegram" | "vk") {
-  const host =
-    type === "telegram" ? /^(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\//i : /^(?:https?:\/\/)?(?:www\.)?(?:vk\.com|vk\.ru)\//i;
-  return value.replace(host, "").split(/[/?#]/)[0] ?? "";
 }
