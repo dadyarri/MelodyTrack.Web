@@ -6,6 +6,7 @@ import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
 import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
 import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
 import { ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 
@@ -37,7 +38,7 @@ export function PaymentsPage() {
       }
     >
       <ListFilters>
-        <div className="filter-field filter-field-wide">
+        <div className={filterFieldWideClassName}>
           <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
           <Input.Search
             allowClear
@@ -54,7 +55,7 @@ export function PaymentsPage() {
             }}
           />
         </div>
-        <div className="filter-field">
+        <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Клиент</Typography.Text>
           <ClientSelect
             value={controller.clientId}
@@ -64,7 +65,7 @@ export function PaymentsPage() {
             }}
           />
         </div>
-        <div className="filter-field filter-field-service">
+        <div className={filterFieldServiceClassName}>
           <Typography.Text type="secondary">Услуга</Typography.Text>
           <ServiceSelect
             value={controller.serviceId}
@@ -74,7 +75,7 @@ export function PaymentsPage() {
             }}
           />
         </div>
-        <div className="filter-field">
+        <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Период</Typography.Text>
           <DatePicker.RangePicker
             value={controller.dateRange}
@@ -86,7 +87,7 @@ export function PaymentsPage() {
             }}
           />
         </div>
-        <div className="filter-field">
+        <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Действия</Typography.Text>
           <Button
             onClick={() => {

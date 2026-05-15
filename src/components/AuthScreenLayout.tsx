@@ -1,5 +1,6 @@
 import { Card, Space, Typography } from "antd";
 import type { ReactNode } from "react";
+import styles from "./AuthStyles.module.css";
 
 type AuthScreenLayoutProps = {
   title: string;
@@ -9,8 +10,8 @@ type AuthScreenLayoutProps = {
 
 export function AuthScreenLayout({ title, description, children }: AuthScreenLayoutProps) {
   return (
-    <main className="auth-screen">
-      <Card className="auth-card">
+    <main className={styles.authScreen}>
+      <Card className={styles.authCard}>
         <Space orientation="vertical" size={20} className="wide">
           <div>
             <Typography.Title level={1}>{title}</Typography.Title>

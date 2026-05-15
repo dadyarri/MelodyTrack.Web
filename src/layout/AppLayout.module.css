@@ -1,0 +1,173 @@
+.shell {
+  min-height: 100vh;
+  background: var(--bg-app);
+}
+
+.sider {
+  background: var(--bg-sider);
+  border-right: 1px solid var(--border-strong);
+}
+
+.brand {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: 0;
+  border-bottom: 1px solid var(--border-main);
+}
+
+.header {
+  height: 64px;
+  padding: 0 24px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-main);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.headerSpacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.header :global(.ant-btn).mobileMenuButton {
+  display: none;
+  padding-inline: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.headerUserTrigger {
+  min-width: 0;
+  padding: 0;
+  padding-inline: 0;
+  border: 0;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--text-main);
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.headerUserTrigger:hover,
+.headerUserTrigger:focus,
+.headerUserTrigger:focus-visible,
+.headerUserTrigger:active {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.headerUserMobile {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.headerUserPopover :global(.ant-menu).headerUserMenu {
+  width: 200px;
+  background: transparent;
+  border-inline-end: 0;
+}
+
+.headerUserPopover :global(.ant-popover-inner) {
+  padding: 6px;
+}
+
+.headerUserPopover :global(.ant-menu).headerUserMenu :global(.ant-menu-item) {
+  height: auto;
+  min-height: 36px;
+  margin-block: 2px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  line-height: 1.2;
+}
+
+.headerUserMenu :global(.app-nav-label) {
+  gap: 8px;
+}
+
+.content {
+  padding: 24px;
+  background: var(--bg-app);
+  min-height: 0;
+}
+
+.contentStack {
+  width: 100%;
+  gap: 28px;
+  min-height: 0;
+}
+
+@media (max-width: 720px) {
+  .shell {
+    position: relative;
+  }
+
+  .shell > .sider {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 1001;
+    box-shadow: 12px 0 24px rgba(72, 52, 27, 0.18);
+  }
+
+  .sider:global(.ant-layout-sider-collapsed) {
+    box-shadow: none;
+  }
+
+  .sider :global(.ant-layout-sider-children) {
+    background: var(--bg-sider);
+  }
+
+  .header :global(.ant-btn).mobileMenuButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .contentStack {
+    gap: 22px;
+  }
+
+  .header {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .headerUserTrigger {
+    display: none;
+  }
+
+  .headerUserMobile {
+    display: inline-flex;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header :global(.ant-typography) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

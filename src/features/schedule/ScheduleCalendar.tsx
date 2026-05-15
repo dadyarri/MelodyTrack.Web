@@ -1,9 +1,10 @@
 import { CheckOutlined, CloseOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { type CSSProperties, type DragEvent, useState } from "react";
+import { type CSSProperties, type DragEvent, useRef, useState } from "react";
 import type { Appointment } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
+import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;
 const defaultEndHour = 20;
@@ -104,16 +105,16 @@ export function AppointmentsCalendar({
   };
 
   return (
-    <section className="schedule-calendar" aria-busy={loading}>
-      <div className="schedule-calendar-desktop">
+    <section className={`${styles.calendar}${draggedAppointmentId ? ` ${styles.dragActive}` : ""}`} aria-busy={loading}>
+      <div className={styles.desktop}>
         <div
-          className="schedule-calendar-header"
+          className={styles.header}
           style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}
         >
-          <div className="schedule-calendar-corner" />
+          <div className={styles.corner} />
           {days.map((day) => (
             <div
-              className={day.isSame(dayjs(), "day") ? "schedule-day-heading schedule-day-heading-today" : "schedule-day-heading"}
+              className={day.isSame(dayjs(), "day") ? `${styles.dayHeading} ${styles.dayHeadingToday}` : styles.dayHeading}
               key={day.format("YYYY-MM-DD")}
             >
               <span>{formatWeekday(day)}</span>
@@ -122,15 +123,15 @@ export function AppointmentsCalendar({
           ))}
         </div>
         <div
-          className="schedule-calendar-grid"
+          className={styles.grid}
           style={{
             gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))`,
             minHeight: hours.length * hourHeight,
           }}
         >
-          <div className="schedule-time-rail">
+          <div className={styles.timeRail}>
             {hours.map((hour) => (
-              <div className="schedule-time-slot" key={hour}>
+              <div className={styles.timeSlot} key={hour}>
                 {`${hour.toString().padStart(2, "0")}:00`}
               </div>
             ))}
@@ -138,7 +139,7 @@ export function AppointmentsCalendar({
           {days.map((day) => (
             /* biome-ignore lint/a11y/noStaticElementInteractions: this column is a pointer drag-and-drop drop zone; keyboard users interact with the hour buttons inside it. */
             <div
-              className="schedule-day-column"
+              className={styles.dayColumn}
               key={day.format("YYYY-MM-DD")}
               onDragLeave={(event) => {
                 handleColumnDragLeave(event, day);
@@ -153,7 +154,7 @@ export function AppointmentsCalendar({
               {hours.map((hour) => (
                 <button
                   type="button"
-                  className={`schedule-hour-line schedule-hour-slot-button${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? " schedule-hour-slot-drop-target" : ""}`}
+                  className={`${styles.hourLine} ${styles.hourSlotButton}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
                   onClick={() => {
@@ -178,13 +179,13 @@ export function AppointmentsCalendar({
           ))}
         </div>
       </div>
-      <div className="schedule-calendar-mobile">
+      <div className={styles.mobile}>
         {days.map((day) => {
           const dayAppointments = appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? [];
           return (
-            <section className="schedule-agenda-day" key={day.format("YYYY-MM-DD")}>
+            <section className={styles.agendaDay} key={day.format("YYYY-MM-DD")}>
               <div
-                className={day.isSame(dayjs(), "day") ? "schedule-agenda-heading schedule-agenda-heading-today" : "schedule-agenda-heading"}
+                className={day.isSame(dayjs(), "day") ? `${styles.agendaHeading} ${styles.agendaHeadingToday}` : styles.agendaHeading}
               >
                 <Typography.Text strong>{formatDate(day)}</Typography.Text>
                 <Typography.Text type="secondary">{formatWeekday(day)}</Typography.Text>
@@ -243,7 +244,7 @@ function AppointmentStack({
 
   return (
     <div
-      className="schedule-stack"
+      className={styles.stack}
       style={
         {
           "--event-top": `${String(top)}px`,
@@ -254,11 +255,11 @@ function AppointmentStack({
         } as CSSProperties
       }
     >
-      {appointments.length > 1 ? <div className="schedule-stack-badge">{appointments.length}</div> : null}
+      {appointments.length > 1 ? <div className={styles.stackBadge}>{appointments.length}</div> : null}
       {appointments.map((item, index) => (
         <button
           type="button"
-          className={`schedule-entry schedule-event schedule-event-stacked schedule-entry-draggable ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? " schedule-entry-selected" : ""}${item.id === reschedulePendingAppointmentId ? " schedule-entry-drag-disabled" : ""}`}
+          className={`${styles.entry} ${styles.event} ${styles.eventStacked} ${styles.entryDraggable} ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? ` ${styles.entrySelected}` : ""}${item.id === reschedulePendingAppointmentId ? ` ${styles.entryDragDisabled}` : ""}`}
           draggable={reschedulePendingAppointmentId === null}
           style={
             {
@@ -303,7 +304,7 @@ function AppointmentAgendaItem({
   return (
     <button
       type="button"
-      className={`schedule-entry schedule-agenda-item ${getAppointmentClassName(appointment)}${isSelected ? " schedule-entry-selected" : ""}`}
+      className={`${styles.entry} ${styles.agendaItem} ${getAppointmentClassName(appointment)}${isSelected ? ` ${styles.entrySelected}` : ""}`}
       style={getServiceColorVars(appointment) as CSSProperties}
       onClick={() => {
         onSelect(appointment);
@@ -315,40 +316,51 @@ function AppointmentAgendaItem({
         }
       }}
     >
-      <AppointmentContent appointment={appointment} />
+      <AppointmentContent appointment={appointment} showTime />
     </button>
   );
 }
 
-function AppointmentContent({ appointment, density = "full" }: { appointment: Appointment; density?: "full" | "compact" | "dense" }) {
+function AppointmentContent({
+  appointment,
+  density = "full",
+  showTime = false,
+}: {
+  appointment: Appointment;
+  density?: "full" | "compact" | "dense";
+  showTime?: boolean;
+}) {
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName].filter(Boolean).join(" ");
-  const showProvider = density === "full" && appointment.provider;
-  const showService = density !== "dense";
+  const densityClassName = density === "dense" ? styles.eventContentDense : density === "compact" ? styles.eventContentCompact : "";
 
   return (
-    <div className={`schedule-event-content schedule-event-content-${density}`}>
-      <div className="schedule-event-topline">
-        <div className="schedule-event-time">
-          {start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}
-        </div>
-        <div className="schedule-event-icons">
-          <span className="schedule-event-status-icon" title={getAppointmentStatusLabel(appointment)}>
+    <div className={`${styles.eventContent} ${densityClassName}`.trim()}>
+      <div className={styles.eventTopline}>
+        {showTime ? (
+          <div className={styles.eventTime}>
+            {start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}
+          </div>
+        ) : (
+          <div className={styles.eventTitlePrimary}>{clientName}</div>
+        )}
+        <div className={styles.eventIcons}>
+          <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment)}>
             {renderAppointmentStatusIcon(appointment)}
           </span>
           {appointment.recurringRule ? (
-            <span className="schedule-event-status-icon schedule-event-recurring-icon" title="Повторяющаяся запись">
+            <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
               <SyncOutlined />
             </span>
           ) : null}
         </div>
       </div>
-      <div className="schedule-event-title">{clientName}</div>
-      {showService ? (
-        <div className="schedule-event-service">
-          {appointment.service.name}
-          {showProvider && appointment.provider ? ` · ${appointment.provider.lastName} ${appointment.provider.firstName}` : ""}
+      {showTime ? <div className={styles.eventTitle}>{clientName}</div> : null}
+      <div className={styles.eventService}>{appointment.service.name}</div>
+      {appointment.provider ? (
+        <div className={styles.eventProvider}>
+          {appointment.provider.lastName} {appointment.provider.firstName}
         </div>
       ) : null}
     </div>
@@ -416,12 +428,12 @@ function getStackDensity(stackSize: number): "compact" | "dense" {
 
 function getAppointmentClassName(appointment: Appointment) {
   if (appointment.isCanceled) {
-    return "schedule-event-canceled";
+    return styles.eventCanceled;
   }
   if (appointment.isCompleted) {
-    return "schedule-event-completed";
+    return styles.eventCompleted;
   }
-  return "schedule-event-planned";
+  return styles.eventPlanned;
 }
 
 function renderAppointmentStatusIcon(appointment: Appointment) {

@@ -1,0 +1,493 @@
+.calendar {
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+  max-width: 100%;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop {
+  min-height: 0;
+  flex: 1 1 auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  max-width: 100%;
+  position: relative;
+}
+
+.header {
+  display: grid;
+  min-width: max-content;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-main);
+}
+
+.corner {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-soft);
+}
+
+.dayHeading {
+  min-height: 72px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-right: 1px solid var(--border-soft);
+  color: var(--text-muted);
+}
+
+.dayHeading span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dayHeading strong {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--text-main);
+  font-size: 18px;
+}
+
+.dayHeadingToday strong {
+  background: var(--accent);
+  color: #fff7e8;
+}
+
+.grid {
+  display: grid;
+  min-width: max-content;
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.timeRail {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  border-right: 1px solid var(--border-soft);
+  background: var(--bg-elevated);
+}
+
+.timeSlot {
+  height: 72px;
+  padding: 6px 10px 0 0;
+  text-align: right;
+  color: var(--text-subtle);
+  font-size: 12px;
+  border-bottom: 1px solid var(--border-soft-alt);
+  background: var(--bg-elevated);
+}
+
+.dayColumn {
+  position: relative;
+  min-width: 144px;
+  border-right: 1px solid var(--border-soft);
+  background: var(--bg-card);
+}
+
+.hourLine {
+  height: 72px;
+  border-bottom: 1px solid var(--border-soft-alt);
+}
+
+.hourSlotButton {
+  width: 100%;
+  padding: 0;
+  display: block;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.16s ease;
+}
+
+.hourSlotButton:hover,
+.hourSlotButton:focus-visible {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  outline: none;
+}
+
+.hourSlotDropTarget {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.event {
+  min-height: 48px;
+  overflow: hidden;
+}
+
+.entry {
+  --schedule-entry-border: color-mix(in srgb, var(--service-border, #b89755) 74%, var(--border-main));
+  --schedule-entry-background: color-mix(in srgb, var(--service-background, #b89755) 28%, var(--bg-card));
+  --schedule-entry-shadow: 0 4px 10px rgba(72, 52, 27, 0.12);
+  --schedule-entry-icon-background: rgba(255, 255, 255, 0.68);
+  --schedule-entry-icon-color: var(--text-main);
+  --schedule-entry-selected-ring: color-mix(in srgb, var(--service-border, #b89755) 54%, var(--accent));
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid var(--schedule-entry-border);
+  background: var(--schedule-entry-background);
+  box-shadow: var(--schedule-entry-shadow);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition:
+    box-shadow 0.16s ease,
+    transform 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.entry:hover,
+.entry:focus-visible {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--schedule-entry-border) 56%, transparent),
+    0 12px 24px rgba(72, 52, 27, 0.14);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+:global([data-theme="dark"]) .entry {
+  --schedule-entry-shadow: 0 8px 16px rgba(0, 0, 0, 0.24);
+  --schedule-entry-icon-background: rgba(18, 14, 10, 0.72);
+}
+
+:global([data-theme="dark"]) .entry:hover,
+:global([data-theme="dark"]) .entry:focus-visible {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--schedule-entry-border) 56%, transparent),
+    0 12px 24px rgba(0, 0, 0, 0.28);
+}
+
+.entrySelected {
+  border-color: var(--schedule-entry-selected-ring);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--schedule-entry-selected-ring) 52%, transparent),
+    0 12px 26px rgba(72, 52, 27, 0.16);
+}
+
+:global([data-theme="dark"]) .entrySelected {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--schedule-entry-selected-ring) 54%, transparent),
+    0 14px 28px rgba(0, 0, 0, 0.3);
+}
+
+.entryDraggable {
+  cursor: grab;
+}
+
+.entryDraggable:active {
+  cursor: grabbing;
+}
+
+.entryDragDisabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.entryDragged {
+  opacity: 0.72;
+}
+
+.stack {
+  position: absolute;
+  inset-inline: 5px;
+  top: var(--event-top);
+  height: var(--event-height);
+  z-index: 1;
+  overflow: visible;
+}
+
+.stack:hover,
+.stack:focus-within {
+  z-index: 4;
+  height: var(--stack-expanded-height);
+}
+
+.eventStacked {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--stack-top);
+  height: var(--stack-card-height);
+  transition:
+    top 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.stack:hover .eventStacked,
+.stack:focus-within .eventStacked {
+  top: calc(var(--stack-index) * 56px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+
+.dragActive .stack:hover,
+.dragActive .stack:focus-within {
+  z-index: 1;
+  height: var(--event-height);
+}
+
+.dragActive .stack:hover .eventStacked,
+.dragActive .stack:focus-within .eventStacked {
+  top: var(--stack-top);
+  box-shadow: none;
+}
+
+.stackBadge {
+  position: absolute;
+  top: var(--badge-top);
+  right: -4px;
+  z-index: 5;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--text-main);
+  color: var(--bg-card);
+  font-size: 11px;
+  font-weight: 700;
+  box-shadow: var(--shadow-soft);
+}
+
+.eventPlanned {
+  --schedule-entry-border: color-mix(in srgb, var(--service-border, #b8860b) 78%, var(--border-main));
+  --schedule-entry-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--service-background, #b8860b) 30%, var(--bg-card)),
+    color-mix(in srgb, var(--service-background, #b8860b) 22%, var(--bg-card))
+  );
+}
+
+.eventCompleted {
+  --schedule-entry-border: color-mix(in srgb, var(--service-border, #5f8f4d) 70%, var(--border-main));
+  --schedule-entry-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--service-background, #5f8f4d) 24%, var(--bg-card)),
+    color-mix(in srgb, var(--service-background, #5f8f4d) 16%, var(--bg-card))
+  );
+  --schedule-entry-icon-color: #3e7a31;
+}
+
+.eventCanceled {
+  --schedule-entry-border: color-mix(in srgb, var(--service-border, #bd6b62) 74%, var(--border-main));
+  --schedule-entry-background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--service-background, #bd6b62) 24%, var(--bg-card)),
+    color-mix(in srgb, var(--service-background, #bd6b62) 24%, var(--bg-card)) 8px,
+    color-mix(in srgb, var(--service-background, #bd6b62) 34%, var(--bg-card)) 8px,
+    color-mix(in srgb, var(--service-background, #bd6b62) 34%, var(--bg-card)) 16px
+  );
+  --schedule-entry-icon-color: #a33f36;
+}
+
+.eventContent {
+  min-width: 0;
+  position: relative;
+  padding-right: 28px;
+  display: grid;
+  gap: 3px;
+}
+
+.eventContentCompact {
+  gap: 2px;
+}
+
+.eventContentDense {
+  gap: 1px;
+}
+
+.eventTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+  padding-right: 2px;
+}
+
+.eventIcons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.eventTime,
+.eventService,
+.eventProvider {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.eventTitlePrimary,
+.eventTitle {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventTitlePrimary {
+  min-width: 0;
+  padding-right: 20px;
+}
+
+.eventStatusIcon {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--schedule-entry-icon-background);
+  color: var(--schedule-entry-icon-color);
+  font-size: 12px;
+}
+
+.eventRecurringIcon {
+  color: color-mix(in srgb, var(--schedule-entry-icon-color) 74%, var(--accent));
+}
+
+.eventContentCompact .eventTitlePrimary,
+.eventContentCompact .eventTitle {
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.eventContentCompact .eventService,
+.eventContentCompact .eventProvider {
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.eventContentCompact .eventStatusIcon {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+
+.eventContentCompact .eventIcons {
+  gap: 3px;
+}
+
+.eventContentDense .eventTitlePrimary,
+.eventContentDense .eventTitle {
+  font-size: 10px;
+  line-height: 1.05;
+}
+
+.eventContentDense .eventService,
+.eventContentDense .eventProvider,
+.eventContentDense .eventTime {
+  font-size: 9px;
+  line-height: 1.05;
+}
+
+.eventContentDense .eventStatusIcon {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.eventContentDense .eventIcons {
+  gap: 2px;
+}
+
+.eventService,
+.eventProvider {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile {
+  display: none;
+}
+
+.agendaDay {
+  padding: 14px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.agendaDay:last-child {
+  border-bottom: 0;
+}
+
+.agendaHeading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.agendaHeadingToday {
+  color: var(--accent);
+}
+
+.agendaHeadingToday :global(.ant-typography),
+.agendaHeadingToday :global(.ant-typography.ant-typography-secondary) {
+  color: inherit;
+}
+
+.agendaItem {
+  min-height: 64px;
+  padding: 10px;
+  display: block;
+  align-items: start;
+}
+
+.agendaItem + .agendaItem {
+  margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  .desktop {
+    display: none;
+  }
+
+  .mobile {
+    display: block;
+  }
+
+  .agendaItem {
+    grid-template-columns: 1fr;
+  }
+}

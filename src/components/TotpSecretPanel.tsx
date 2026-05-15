@@ -1,6 +1,7 @@
 import { CopyOutlined } from "@ant-design/icons";
 import { Alert, App as AntdApp, Button, Form, Input, QRCode, Space } from "antd";
 import type { ReactNode } from "react";
+import styles from "./AuthStyles.module.css";
 
 type TotpSecretPanelProps = {
   alertType: "info" | "warning";
@@ -33,10 +34,10 @@ export function TotpSecretPanel({
   return (
     <Space orientation="vertical" size={16} className="wide">
       <Alert type={alertType} showIcon title={alertMessage} description={alertDescription} />
-      <div className="totp-qr">
+      <div className={styles.totpQr}>
         <QRCode value={qrValue} size={qrSize} />
       </div>
-      <Form.Item label="Секрет для ручного ввода" className="compact-form-item">
+      <Form.Item label="Секрет для ручного ввода" className={styles.compactFormItem}>
         <Input
           readOnly
           value={secret}

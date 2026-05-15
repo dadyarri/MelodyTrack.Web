@@ -4,7 +4,9 @@ import { useState } from "react";
 import { auditApi } from "@/api/crm";
 import { useAuth } from "@/features/auth/useAuth";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
+import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
+import styles from "./AuditPage.module.css";
 
 const categoryLabels: Record<string, string> = {
   auth: "Авторизация",
@@ -77,7 +79,7 @@ export function AuditPage() {
   return (
     <PageLayout title="Аудит действий" description="Журналирует ключевые изменения в системе и действия пользователей.">
       <ListFilters>
-        <div className="filter-field filter-field-wide">
+        <div className={filterFieldWideClassName}>
           <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
           <Input.Search
             allowClear
@@ -106,7 +108,7 @@ export function AuditPage() {
             title: "Кто",
             width: 180,
             render: (_, row) => (
-              <div className="activity-cell">
+              <div className={styles.activityCell}>
                 <Typography.Text strong>{formatActorLabel(row.actorDisplayName, row.actorEmail)}</Typography.Text>
               </div>
             ),
@@ -123,7 +125,7 @@ export function AuditPage() {
             dataIndex: "details",
             width: 260,
             render: (value?: string | null) =>
-              value ? <div className="audit-details-cell">{value}</div> : <Typography.Text type="secondary">Нет данных</Typography.Text>,
+              value ? <div className={styles.activityDetails}>{value}</div> : <Typography.Text type="secondary">Нет данных</Typography.Text>,
           },
         ]}
       />

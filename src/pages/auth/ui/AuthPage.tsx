@@ -14,6 +14,7 @@ import {
 } from "@/api/auth";
 import { getApiErrorMessage, getApiErrorMessages } from "@/api/http";
 import { AuthScreenLayout } from "@/components/AuthScreenLayout";
+import authStyles from "@/components/AuthStyles.module.css";
 import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
 import { TotpSecretPanel } from "@/components/TotpSecretPanel";
 import { useAuth } from "@/features/auth/useAuth";
@@ -318,7 +319,7 @@ export function AuthPage() {
           <Space orientation="vertical" size={10} className="wide">
             <Button
               type="link"
-              className="auth-secondary-action"
+              className={authStyles.authSecondaryAction}
               onClick={() => {
                 setForgotPasswordOpen((current) => !current);
               }}
@@ -336,7 +337,7 @@ export function AuthPage() {
                   requiredMark={false}
                 >
                   <Typography.Text strong>Восстановление пароля</Typography.Text>
-                  <Typography.Paragraph type="secondary" className="helper-text">
+                  <Typography.Paragraph type="secondary" className={authStyles.helperText}>
                     Укажите email, и система подготовит новую ссылку для восстановления.
                   </Typography.Paragraph>
                   <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
@@ -361,7 +362,7 @@ export function AuthPage() {
             requiredMark={false}
           >
             <Typography.Text strong>Потеряли доступ к приложению-аутентификатору?</Typography.Text>
-            <Typography.Paragraph type="secondary" className="helper-text">
+            <Typography.Paragraph type="secondary" className={authStyles.helperText}>
               Введите email и один из сохраненных кодов восстановления. После этого вы получите новый секрет и новый набор кодов.
             </Typography.Paragraph>
             <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>

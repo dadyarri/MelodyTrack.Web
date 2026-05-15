@@ -7,6 +7,7 @@ import { expensesApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import { DraftModalFooter, DraftModalTitle, ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
+import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { DATE_FORMAT, formatDateTime } from "@/utils/date";
 import { downloadBlob } from "@/utils/download";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "@/utils/drafts";
@@ -176,7 +177,7 @@ export function ExpensesPage() {
       }
     >
       <ListFilters>
-        <div className="filter-field filter-field-wide">
+        <div className={filterFieldWideClassName}>
           <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
           <Input.Search
             allowClear
@@ -193,7 +194,7 @@ export function ExpensesPage() {
             }}
           />
         </div>
-        <div className="filter-field">
+        <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Период</Typography.Text>
           <DatePicker.RangePicker
             value={dateRange}
@@ -204,7 +205,7 @@ export function ExpensesPage() {
             }}
           />
         </div>
-        <div className="filter-field">
+        <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Действия</Typography.Text>
           <Button
             onClick={() => {

@@ -1,0 +1,44 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.widget {
+  min-width: 0;
+}
+
+.widgetSmall {
+  grid-column: span 2;
+}
+
+.widgetSmall :global(.ant-card-body) {
+  padding: 16px;
+}
+
+.widgetLarge {
+  grid-column: span 4;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .widgetSmall,
+  .widgetLarge {
+    grid-column: 1;
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .widgetSmall,
+  .widgetLarge {
+    grid-column: span 1;
+  }
+}

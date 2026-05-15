@@ -1,0 +1,16 @@
+.activityCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activityDetails {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.entityDetails {
+  margin: 4px 0 0;
+  color: var(--text-main);
+}

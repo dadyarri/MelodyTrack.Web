@@ -8,6 +8,7 @@ import { useAuth } from "../features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
+import styles from "./AppLayout.module.css";
 
 export function AppLayout() {
   const auth = useAuth();
@@ -66,9 +67,9 @@ export function AppLayout() {
   }, [availableNavItems, navigate, toggleMode]);
 
   return (
-    <Layout className="app-shell">
-      <Layout.Sider width={236} className="app-sider" breakpoint="lg" collapsedWidth={0}>
-        <div className="brand">MelodyTrack</div>
+    <Layout className={styles.shell}>
+      <Layout.Sider width={236} className={styles.sider} breakpoint="lg" collapsedWidth={0}>
+        <div className={styles.brand}>MelodyTrack</div>
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
@@ -79,26 +80,26 @@ export function AppLayout() {
         />
       </Layout.Sider>
       <Layout>
-        <Layout.Header className="app-header">
+        <Layout.Header className={styles.header}>
           <Button
             type="text"
-            className="app-mobile-menu-button"
+            className={styles.mobileMenuButton}
             icon={<MenuOutlined />}
             aria-label="Открыть навигацию"
             onClick={() => {
               setMobileNavOpen(true);
             }}
           />
-          <div className="app-header-spacer" />
+          <div className={styles.headerSpacer} />
           <OfflineQueueIndicator />
           <Popover
             trigger={["hover", "click"]}
             placement="bottomRight"
-            classNames={{ root: "header-user-popover" }}
+            classNames={{ root: styles.headerUserPopover }}
             content={
               <Menu
                 mode="inline"
-                className="header-user-menu"
+                className={styles.headerUserMenu}
                 selectable={false}
                 items={mobileActionItems}
                 onClick={({ key }) => {
@@ -107,22 +108,22 @@ export function AppLayout() {
               />
             }
           >
-            <button type="button" className="header-user-trigger" aria-label="Открыть меню пользователя">
+            <button type="button" className={styles.headerUserTrigger} aria-label="Открыть меню пользователя">
               <Space size={8}>
                 <UserOutlined />
                 <Typography.Text>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</Typography.Text>
               </Space>
             </button>
           </Popover>
-          <Typography.Text className="header-user-mobile">
+          <Typography.Text className={styles.headerUserMobile}>
             <Space size={6}>
               <UserOutlined />
               <span>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</span>
             </Space>
           </Typography.Text>
         </Layout.Header>
-        <Layout.Content className="app-content">
-          <Space orientation="vertical" className="content-stack">
+        <Layout.Content className={styles.content}>
+          <Space orientation="vertical" className={styles.contentStack}>
             <Outlet />
           </Space>
         </Layout.Content>

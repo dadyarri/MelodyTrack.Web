@@ -10,8 +10,10 @@ import {
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
+import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 
 export function ClientsPage() {
   const controller = useClientsPageController();
@@ -32,7 +34,7 @@ export function ClientsPage() {
       }
     >
       <ListFilters>
-        <div className="filter-field filter-field-wide">
+        <div className={filterFieldWideClassName}>
           <Input.Search
             allowClear
             placeholder="Поиск по ФИО"
@@ -61,7 +63,7 @@ export function ClientsPage() {
             render: (_, row) => (
               <Button
                 type="link"
-                className="table-link-button"
+                className={tableLinkButtonStyles.button}
                 onClick={() => {
                   controller.setHistoryClient(row);
                 }}

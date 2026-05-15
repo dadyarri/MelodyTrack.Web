@@ -11,6 +11,7 @@ import {
 import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
 import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
+import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
@@ -19,9 +20,9 @@ export function SchedulePage() {
     <>
       <PageLayout
         title="Расписание"
-        customClass="schedule-page"
+        customClass={styles.pageShell}
         actions={
-          <Space wrap className="schedule-header-actions">
+          <Space wrap className={styles.headerActions}>
             <ShortcutButton
               shortcut="←"
               leadingIcon={<LeftOutlined />}
@@ -55,11 +56,11 @@ export function SchedulePage() {
           </Space>
         }
       >
-        <section className="schedule-page">
-          <div className="schedule-page-toolbar">
-            <div className="schedule-quick-filters">
+        <section className={styles.pageShell}>
+          <div className={styles.toolbar}>
+            <div className={styles.quickFilters}>
               <Typography.Text type="secondary">Специалист</Typography.Text>
-              <Space.Compact className="schedule-quick-filters-controls">
+              <Space.Compact className={styles.quickFiltersControls}>
                 <UserSelect
                   value={controller.effectiveProviderFilterId}
                   onChange={controller.setProviderFilterId}
@@ -92,7 +93,7 @@ export function SchedulePage() {
               </Space.Compact>
             </div>
           </div>
-          <div className="schedule-page-calendar">
+          <div className={styles.calendar}>
             <AppointmentsCalendar
               appointments={controller.filteredAppointments}
               loading={controller.query.isLoading}

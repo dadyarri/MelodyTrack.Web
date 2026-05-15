@@ -17,6 +17,7 @@ import { TotpSecretPanel } from "@/components/TotpSecretPanel";
 import { useAuth } from "@/features/auth/useAuth";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import styles from "./ProfilePage.module.css";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
 
@@ -261,7 +262,7 @@ export function ProfilePage() {
               </Form>
             ) : null}
             {setupState ? (
-              <Card size="small" className="profile-setup-card">
+              <Card size="small" className={styles.setupCard}>
                 <TotpSecretPanel
                   alertType="info"
                   alertMessage="Подтвердите подключение 2FA"

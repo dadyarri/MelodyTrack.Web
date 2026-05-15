@@ -18,6 +18,7 @@ import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import type { Appointment, RecurrenceType } from "../../api/types";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
+import styles from "./ScheduleModals.module.css";
 
 const weeklyDayOptions: { label: string; value: number }[] = [
   { label: "Пн", value: 1 },
@@ -274,10 +275,10 @@ export function AppointmentCreateModal({
                   },
                 ]}
               >
-                <Checkbox.Group className="schedule-weekly-days" options={weeklyDayOptions} />
+                <Checkbox.Group className={styles.weeklyDays} options={weeklyDayOptions} />
               </Form.Item>
             ) : null}
-            <div className="schedule-recurrence-hint">
+            <div className={styles.recurrenceHint}>
               <Typography.Text type="secondary">{getRecurrenceSummary(recurrenceKey, startDate, weeklyDays)}</Typography.Text>
             </div>
           </>
@@ -318,7 +319,7 @@ export function RecurringDeleteModal({
             />
           ) : null}
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
-          <Space orientation="vertical" size={10} className="wide recurring-delete-actions">
+          <Space orientation="vertical" size={10} className={`wide ${styles.recurringDeleteActions}`}>
             <Button
               danger
               block
@@ -399,7 +400,7 @@ export function AppointmentDetailsModal({
             description={formatRecordActivitySummary(appointment.lastActivity)}
           />
         ) : null}
-        <div className="schedule-details-header">
+        <div className={styles.detailsHeader}>
           <div>
             <Typography.Title level={3}>{clientName}</Typography.Title>
             <Typography.Text type="secondary">
@@ -407,7 +408,7 @@ export function AppointmentDetailsModal({
             </Typography.Text>
           </div>
           {hasClientContacts(appointment.client.contacts) ? (
-            <Space wrap className="schedule-contact-links">
+            <Space wrap className={styles.contactLinks}>
               {appointment.client.contacts?.phone ? (
                 <Button
                   shape="circle"
@@ -439,14 +440,14 @@ export function AppointmentDetailsModal({
             </Space>
           ) : null}
         </div>
-        <div className="schedule-details-grid">
+        <div className={styles.detailsGrid}>
           <div>
-            <div className="schedule-detail-value">{appointment.service.name}</div>
+            <div className={styles.detailValue}>{appointment.service.name}</div>
             <Typography.Text type="secondary">Услуга</Typography.Text>
           </div>
           {appointment.provider ? (
             <div>
-              <div className="schedule-detail-value">
+              <div className={styles.detailValue}>
                 {appointment.provider.lastName} {appointment.provider.firstName}
               </div>
               <Typography.Text type="secondary">Специалист</Typography.Text>
@@ -458,7 +459,7 @@ export function AppointmentDetailsModal({
           </div>
           {recurrenceSummary ? (
             <div>
-              <div className="schedule-detail-value">{recurrenceSummary}</div>
+              <div className={styles.detailValue}>{recurrenceSummary}</div>
               <Typography.Text type="secondary">Повторение</Typography.Text>
             </div>
           ) : null}

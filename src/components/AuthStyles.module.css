@@ -1,0 +1,55 @@
+.authScreen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-app);
+}
+
+.authCard {
+  width: min(440px, 100%);
+}
+
+.totpQr {
+  display: flex;
+  justify-content: center;
+}
+
+.compactFormItem {
+  margin-bottom: 12px;
+}
+
+.helperText {
+  margin-bottom: 12px;
+}
+
+:global(.ant-btn-link).authSecondaryAction {
+  padding-inline: 0;
+  align-self: flex-start;
+}
+
+.recoveryCodesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.recoveryCode {
+  display: block;
+  padding: 10px 12px;
+  text-align: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-main);
+  border-radius: 6px;
+}
+
+.recoveryCodeUsed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .recoveryCodesGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -12,6 +12,8 @@ import { formatDateTime, TIME_FORMAT } from "@/utils/date";
 import { downloadBlob } from "@/utils/download";
 import { formatMoney } from "@/utils/money";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import styles from "./DashboardPage.module.css";
+import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 
 export function DashboardPage() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
@@ -60,37 +62,39 @@ export function DashboardPage() {
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
   const todayAppointments = miniQuery.data?.[todayKey] ?? [];
   const tomorrowAppointments = miniQuery.data?.[tomorrowKey] ?? [];
+  const smallWidgetClassName = `${styles.widget} ${styles.widgetSmall}`;
+  const largeWidgetClassName = `${styles.widget} ${styles.widgetLarge}`;
 
   return (
     <PageLayout title="Обзор">
-      <div className="dashboard-grid">
-        <Card className="dashboard-widget dashboard-widget-small">
+      <div className={styles.grid}>
+        <Card className={smallWidgetClassName}>
           <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Общий долг" value={formatMoney(statsQuery.data?.totalDebt)} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Записи сегодня" value={statsQuery.data?.appointmentsToday ?? 0} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Записи завтра" value={statsQuery.data?.appointmentsTomorrow ?? 0} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Доход за месяц" value={formatMoney(statsQuery.data?.monthIncome)} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Расход за месяц" value={formatMoney(statsQuery.data?.monthExpenses)} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Итог за месяц" value={formatMoney(statsQuery.data?.monthNet)} loading={statsQuery.isLoading} />
         </Card>
-        <Card className="dashboard-widget dashboard-widget-small">
+        <Card className={smallWidgetClassName}>
           <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
         </Card>
 
         <Card
-          className="dashboard-widget dashboard-widget-large"
+          className={largeWidgetClassName}
           title={`Записи на сегодня, ${formatDateTitle(dayjs())}`}
           loading={miniQuery.isLoading}
         >
@@ -98,7 +102,7 @@ export function DashboardPage() {
         </Card>
 
         <Card
-          className="dashboard-widget dashboard-widget-large"
+          className={largeWidgetClassName}
           title={`Записи на завтра, ${formatDateTitle(dayjs().add(1, "day"))}`}
           loading={miniQuery.isLoading}
         >
@@ -106,7 +110,7 @@ export function DashboardPage() {
         </Card>
 
         <Card
-          className="dashboard-widget dashboard-widget-large"
+          className={largeWidgetClassName}
           title="Клиенты с отрицательным балансом"
           extra={
             <ShortcutButton
@@ -132,7 +136,7 @@ export function DashboardPage() {
                 render: (_, row) => (
                   <Button
                     type="link"
-                    className="table-link-button"
+                    className={tableLinkButtonStyles.button}
                     onClick={() => {
                       setHistoryClient(row);
                     }}

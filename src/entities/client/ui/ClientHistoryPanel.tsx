@@ -4,6 +4,7 @@ import type { ClientHistory } from "@/api/types";
 import { formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 import { renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
+import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
@@ -33,7 +34,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
           Добавить платеж
         </Button>
       </Space>
-      <div className="detail-grid">
+      <div className={styles.detailGrid}>
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
             <Descriptions.Item label="Телефон">{renderClientPhoneLink(data.client.contacts?.phone) || "Не указан"}</Descriptions.Item>
@@ -66,7 +67,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
             renderItem={(payment) => (
               <List.Item>
                 <div className="wide">
-                  <Space className="wide list-justify" wrap>
+                  <Space className={`wide ${styles.listJustify}`} wrap>
                     <Typography.Text strong>{formatMoney(payment.amount)}</Typography.Text>
                     <Typography.Text type="secondary">{formatDateTime(payment.date)}</Typography.Text>
                   </Space>
@@ -92,7 +93,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
             renderItem={(appointment) => (
               <List.Item>
                 <div className="wide">
-                  <Space className="wide list-justify" wrap>
+                  <Space className={`wide ${styles.listJustify}`} wrap>
                     <Typography.Text strong>{appointment.serviceName}</Typography.Text>
                     <Space wrap size={8}>
                       <Tag color={appointment.isCanceled ? "default" : appointment.isCompleted ? "green" : "blue"}>

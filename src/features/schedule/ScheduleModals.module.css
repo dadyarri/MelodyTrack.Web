@@ -1,0 +1,55 @@
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.detailsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detailsHeader h3 {
+  margin: 0 0 4px;
+}
+
+.detailValue {
+  margin-bottom: 2px;
+  color: var(--text-main);
+  font-weight: 650;
+}
+
+.contactLinks {
+  flex: 0 0 auto;
+}
+
+.weeklyDays {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  gap: 10px 14px;
+}
+
+.recurrenceHint {
+  margin-top: -10px;
+  margin-bottom: 4px;
+}
+
+.recurringDeleteActions {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .weeklyDays {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+  }
+
+  .detailsHeader {
+    flex-direction: column;
+  }
+}

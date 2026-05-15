@@ -1,5 +1,6 @@
 import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
 import { App as AntdApp, Button, Card, Space, Typography } from "antd";
+import styles from "./AuthStyles.module.css";
 
 export interface RecoveryCodeItem {
   code: string;
@@ -64,9 +65,13 @@ export function RecoveryCodesCard({
     >
       <Space orientation="vertical" className="wide" size={14}>
         <Typography.Text type="secondary">{description}</Typography.Text>
-        <div className="recovery-codes-grid">
+        <div className={styles.recoveryCodesGrid}>
           {items.map((item) => (
-            <Typography.Text key={item.code} code className={item.wasUsed ? "recovery-code recovery-code-used" : "recovery-code"}>
+            <Typography.Text
+              key={item.code}
+              code
+              className={item.wasUsed ? `${styles.recoveryCode} ${styles.recoveryCodeUsed}` : styles.recoveryCode}
+            >
               {item.code}
             </Typography.Text>
           ))}
