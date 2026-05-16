@@ -1,7 +1,7 @@
 import { CheckOutlined, CloseOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { type CSSProperties, type DragEvent, useRef, useState } from "react";
+import { type CSSProperties, type DragEvent, useState } from "react";
 import type { Appointment } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 import styles from "./ScheduleCalendar.module.css";
@@ -107,10 +107,7 @@ export function AppointmentsCalendar({
   return (
     <section className={`${styles.calendar}${draggedAppointmentId ? ` ${styles.dragActive}` : ""}`} aria-busy={loading}>
       <div className={styles.desktop}>
-        <div
-          className={styles.header}
-          style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}
-        >
+        <div className={styles.header} style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}>
           <div className={styles.corner} />
           {days.map((day) => (
             <div
@@ -184,9 +181,7 @@ export function AppointmentsCalendar({
           const dayAppointments = appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? [];
           return (
             <section className={styles.agendaDay} key={day.format("YYYY-MM-DD")}>
-              <div
-                className={day.isSame(dayjs(), "day") ? `${styles.agendaHeading} ${styles.agendaHeadingToday}` : styles.agendaHeading}
-              >
+              <div className={day.isSame(dayjs(), "day") ? `${styles.agendaHeading} ${styles.agendaHeadingToday}` : styles.agendaHeading}>
                 <Typography.Text strong>{formatDate(day)}</Typography.Text>
                 <Typography.Text type="secondary">{formatWeekday(day)}</Typography.Text>
               </div>

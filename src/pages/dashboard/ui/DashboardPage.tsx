@@ -93,11 +93,7 @@ export function DashboardPage() {
           <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
         </Card>
 
-        <Card
-          className={largeWidgetClassName}
-          title={`Записи на сегодня, ${formatDateTitle(dayjs())}`}
-          loading={miniQuery.isLoading}
-        >
+        <Card className={largeWidgetClassName} title={`Записи на сегодня, ${formatDateTitle(dayjs())}`} loading={miniQuery.isLoading}>
           <ReminderList appointments={todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
         </Card>
 

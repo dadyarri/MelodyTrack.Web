@@ -125,7 +125,11 @@ export function AuditPage() {
             dataIndex: "details",
             width: 260,
             render: (value?: string | null) =>
-              value ? <div className={styles.activityDetails}>{value}</div> : <Typography.Text type="secondary">Нет данных</Typography.Text>,
+              value ? (
+                <div className={styles.activityDetails}>{value}</div>
+              ) : (
+                <Typography.Text type="secondary">Нет данных</Typography.Text>
+              ),
           },
         ]}
       />
