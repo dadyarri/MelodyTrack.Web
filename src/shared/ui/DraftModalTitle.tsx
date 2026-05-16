@@ -1,8 +1,7 @@
 import { CloudDownloadOutlined, CloudOutlined } from "@ant-design/icons";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
-import styles from "./DraftModalTitle.module.css"
-import style from "antd/es/affix/style";
+import styles from "./DraftModalTitle.module.css";
 
 type DraftModalTitleProps = {
   title: ReactNode;

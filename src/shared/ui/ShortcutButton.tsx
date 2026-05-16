@@ -13,8 +13,8 @@ type ShortcutButtonProps = Omit<ButtonProps, "children"> & {
 export function ShortcutButton({ shortcut, label, leadingIcon, className, ...props }: ShortcutButtonProps) {
   return (
     <Button {...props} className={[styles.button, className].filter(Boolean).join(" ")} icon={leadingIcon}>
-        <span className={styles.buttonLabel}>{label}</span>
-        <Shortcut keyb={shortcut} />
+      <span className={styles.buttonLabel}>{label}</span>
+      <Shortcut keyb={shortcut} />
     </Button>
   );
 }
