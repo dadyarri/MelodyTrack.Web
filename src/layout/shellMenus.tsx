@@ -1,8 +1,8 @@
 import { LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@ant-design/icons";
 import type { ItemType } from "antd/es/menu/interface";
 import type { ReactNode } from "react";
-import { formatShortcutLabel } from "../utils/shortcuts";
 import type { AppNavItem } from "./navigation";
+import { Shortcut } from "@/shared/ui/Shortcut";
 
 export type ShellActionKey = "profile" | "theme" | "logout";
 
@@ -17,7 +17,7 @@ export function buildNavMenuItems(items: AppNavItem[]): ItemType[] {
     label: (
       <span className="app-nav-label">
         <span>{item.label}</span>
-        <span className="shortcut-keycap app-nav-shortcut">{formatShortcutLabel(item.shortcut)}</span>
+        <Shortcut keyb={item.shortcut} />
       </span>
     ),
   }));
@@ -31,7 +31,7 @@ export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): I
       label: (
         <span className="app-nav-label">
           <span>Профиль</span>
-          <span className="shortcut-keycap app-nav-shortcut">{formatShortcutLabel("P")}</span>
+          <Shortcut keyb={"P"} />
         </span>
       ),
     },
@@ -41,7 +41,7 @@ export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): I
       label: (
         <span className="app-nav-label">
           <span>{isDarkMode ? "Светлая тема" : "Темная тема"}</span>
-          <span className="shortcut-keycap app-nav-shortcut">{formatShortcutLabel("T")}</span>
+          <Shortcut keyb={"T"} />
         </span>
       ),
     },

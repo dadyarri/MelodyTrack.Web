@@ -1,6 +1,8 @@
 import { CloudDownloadOutlined, CloudOutlined } from "@ant-design/icons";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
+import styles from "./DraftModalTitle.module.css"
+import style from "antd/es/affix/style";
 
 type DraftModalTitleProps = {
   title: ReactNode;
@@ -18,10 +20,10 @@ export function DraftModalTitle({
   const label = restored ? restoredLabel : idleLabel;
 
   return (
-    <span className="draft-modal-title">
-      <span className="draft-modal-title-text">{title}</span>
+    <span className={styles.title}>
+      <span className={styles.titleText}>{title}</span>
       <Tooltip title={label}>
-        <span className={["draft-modal-title-state", restored ? "draft-modal-title-state-restored" : null].filter(Boolean).join(" ")}>
+        <span className={[styles.titleState, restored ? styles.titleStateRestored : null].filter(Boolean).join(" ")}>
           {restored ? <CloudDownloadOutlined /> : <CloudOutlined />}
         </span>
       </Tooltip>
