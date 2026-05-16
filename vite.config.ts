@@ -13,4 +13,22 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        advancedChunks: {
+          groups: [
+            {
+              name: "react",
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+            },
+            {
+              name: "antd-icons",
+              test: /[\\/]node_modules[\\/](@ant-design|rc-[^\\/]+)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
 });
