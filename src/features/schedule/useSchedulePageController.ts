@@ -653,7 +653,7 @@ function buildOptimisticOfflineAppointment(
       ? {
           id: input.providerId ?? "offline-provider",
           firstName: providerNameParts[1] ?? providerNameParts[0],
-          lastName: providerNameParts[0] ?? "Специалист",
+          lastName: providerNameParts[0] ?? "Преподаватель",
           roleDisplayName: "",
         }
       : undefined,

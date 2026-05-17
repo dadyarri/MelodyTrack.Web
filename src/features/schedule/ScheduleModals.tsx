@@ -115,7 +115,7 @@ export function AppointmentEditModal({
           <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
             <ServiceSelect allowClear={false} />
           </Form.Item>
-          <Form.Item name="providerId" label="Специалист">
+          <Form.Item name="providerId" label="Преподаватель">
             <UserSelect disabled={Boolean(lockedProviderId)} />
           </Form.Item>
           <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
@@ -123,7 +123,7 @@ export function AppointmentEditModal({
           </Form.Item>
           {appointment.recurringRule ? (
             <Typography.Text type="secondary">
-              Изменяются только клиент, услуга, специалист и время. Повторяющаяся серия останется без изменений.
+              Изменяются только клиент, услуга, Преподаватель и время. Повторяющаяся серия останется без изменений.
             </Typography.Text>
           ) : null}
         </Form>
@@ -229,7 +229,7 @@ export function AppointmentCreateModal({
         <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
           <ServiceSelect allowClear={false} onResolvedLabelChange={onServiceLabelChange} />
         </Form.Item>
-        <Form.Item name="providerId" label="Специалист">
+        <Form.Item name="providerId" label="Преподаватель">
           <UserSelect disabled={Boolean(lockedProviderId)} onResolvedLabelChange={onProviderLabelChange} />
         </Form.Item>
         <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
@@ -450,7 +450,7 @@ export function AppointmentDetailsModal({
               <div className={styles.detailValue}>
                 {appointment.provider.lastName} {appointment.provider.firstName}
               </div>
-              <Typography.Text type="secondary">Специалист</Typography.Text>
+              <Typography.Text type="secondary">Преподаватель</Typography.Text>
             </div>
           ) : null}
           <div>

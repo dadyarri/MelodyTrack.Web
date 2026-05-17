@@ -59,7 +59,7 @@ export function SchedulePage() {
         <section className={styles.pageShell}>
           <div className={styles.toolbar}>
             <div className={styles.quickFilters}>
-              <Typography.Text type="secondary">Специалист</Typography.Text>
+              <Typography.Text type="secondary">Преподаватель</Typography.Text>
               <Space.Compact className={styles.quickFiltersControls}>
                 <UserSelect
                   value={controller.effectiveProviderFilterId}
