@@ -3,6 +3,7 @@ import {
   CreditCardOutlined,
   DashboardOutlined,
   FileSearchOutlined,
+  FolderOpenOutlined,
   TeamOutlined,
   ToolOutlined,
   UserOutlined,
@@ -37,6 +38,8 @@ export const appNavItems: AppNavItem[] = [
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы", shortcut: "6", visibility: "all" },
   { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", shortcut: "7", visibility: "superuser" },
   { key: "/users", icon: <UserOutlined />, label: "Пользователи", shortcut: "8", visibility: "admin" },
+  { key: "/expense-categories", icon: <FolderOpenOutlined />, label: "Статьи расходов", shortcut: "9", visibility: "all" },
+  { key: "/client-sources", icon: <FolderOpenOutlined />, label: "Источники клиентов", shortcut: "0", visibility: "all" },
 ];
 
 export function getAvailableNavItems(user: NavigationUser) {

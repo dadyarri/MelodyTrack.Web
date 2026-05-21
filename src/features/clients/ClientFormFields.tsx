@@ -1,4 +1,6 @@
-import { Form, Input, type InputProps, type InputRef } from "antd";
+import { Button, Form, Input, Space, type InputProps, type InputRef } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
+import { ClientSourceSelect } from "@/components/RemoteSelect";
 import { type IMaskInputProps, IMaskMixin } from "react-imask";
 import { getRussianPhoneDigits, getRussianPhoneMask, hasRussianPhoneDigits, normalizeSocialLink } from "@/entities/client";
 
@@ -20,7 +22,17 @@ const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ in
   />
 ));
 
-export function ClientFormFields({ phoneInputKey }: { phoneInputKey?: number }) {
+export function ClientFormFields({
+  phoneInputKey,
+  sourceOptions,
+  onCreateSource,
+  onSourceLabelChange,
+}: {
+  phoneInputKey?: number;
+  sourceOptions?: DefaultOptionType[];
+  onCreateSource?: () => void;
+  onSourceLabelChange?: (label?: string) => void;
+}) {
   return (
     <>
       <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
@@ -73,6 +85,14 @@ export function ClientFormFields({ phoneInputKey }: { phoneInputKey?: number }) 
         ]}
       >
         <Input placeholder="nickname или https://vk.com/nickname" />
+      </Form.Item>
+      <Form.Item label="Источник">
+        <Space.Compact className="wide">
+          <Form.Item name="sourceId" noStyle>
+            <ClientSourceSelect extraOptions={sourceOptions} onResolvedLabelChange={onSourceLabelChange} />
+          </Form.Item>
+          <Button onClick={onCreateSource}>Новый источник</Button>
+        </Space.Compact>
       </Form.Item>
     </>
   );

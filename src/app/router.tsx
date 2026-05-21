@@ -109,6 +109,26 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "expense-categories",
+        lazy: async () => {
+          const { ExpenseCategoriesPage } = await import("@/pages/expense-categories");
+
+          return {
+            Component: ExpenseCategoriesPage,
+          };
+        },
+      },
+      {
+        path: "client-sources",
+        lazy: async () => {
+          const { ClientSourcesPage } = await import("@/pages/client-sources");
+
+          return {
+            Component: ClientSourcesPage,
+          };
+        },
+      },
+      {
         path: "schedule",
         lazy: async () => {
           const { SchedulePage } = await import("@/pages/schedule");

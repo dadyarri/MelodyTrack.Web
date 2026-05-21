@@ -1,5 +1,6 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
 import { Button, Input, Space, Tag } from "antd";
+import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import {
   ClientHistoryDrawer,
   formatClientName,
@@ -82,6 +83,7 @@ export function ClientsPage() {
           { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
           { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
           { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
+          { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
           {
             title: "",
             width: 112,
@@ -120,10 +122,20 @@ export function ClientsPage() {
         isStale={controller.isEditingClientStale}
         staleActivity={controller.currentEditingClient?.lastActivity}
         phoneInputKey={controller.createPhoneInputKey}
+        sourceOptions={controller.createdSourceOptions}
         onCancel={controller.closeEditor}
         onClearDraft={controller.handleClearCreateDraft}
         onSubmit={controller.onSubmit}
         onValuesChange={controller.onValuesChange}
+        onCreateSource={controller.openSourceCreate}
+        onSourceLabelChange={controller.onSourceLabelChange}
+      />
+      <ReferenceBookCreateModal
+        open={controller.isSourceCreateOpen}
+        title="Новый источник клиента"
+        confirmLoading={controller.createSourceMutation.isPending}
+        onCancel={controller.closeSourceCreate}
+        onSubmit={controller.onCreateSource}
       />
       <ClientHistoryDrawer
         client={controller.historyClient}

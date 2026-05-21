@@ -1,9 +1,12 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useRef, useState } from "react";
-import { expensesApi } from "@/api/crm";
+import { expenseCategoriesApi, expensesApi } from "@/api/crm";
+import { ExpenseCategorySelect } from "@/components/RemoteSelect";
+import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { getApiErrorMessages } from "@/api/http";
 import { DraftModalFooter, DraftModalTitle, ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
@@ -18,6 +21,7 @@ import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 type ExpenseDraftValues = {
   description?: string;
   amount?: number;
+  categoryId?: string;
 };
 
 const EXPENSE_CREATE_DRAFT_KEY = "draft:expenses:create";
@@ -31,6 +35,8 @@ export function ExpensesPage() {
   const draftReplayKeyRef = useRef(getDraftReplayKey(EXPENSE_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm<ExpenseDraftValues>();
+  const [isCategoryCreateOpen, setCategoryCreateOpen] = useState(false);
+  const [createdCategoryOptions, setCreatedCategoryOptions] = useState<DefaultOptionType[]>([]);
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -52,7 +58,7 @@ export function ExpensesPage() {
 
   const createMutation = useMutation({
     mutationFn: async (values: ExpenseDraftValues) => {
-      const input = values as { description: string; amount: number };
+      const input = values as { description: string; amount: number; categoryId?: string };
       try {
         return { offline: false as const, response: await expensesApi.create(input, { replayKey: draftReplayKeyRef.current }) };
       } catch (error) {
@@ -103,6 +109,19 @@ export function ExpensesPage() {
     onSuccess: (blob) => {
       downloadBlob(blob, `expenses_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
       message.success("Экспорт готов");
+    },
+    onError: showErrors,
+  });
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (values: { name: string }) => expenseCategoriesApi.create(values),
+    onSuccess: async (result, values) => {
+      message.success("Категория создана");
+      const option = { value: result.id, label: values.name.trim() } satisfies DefaultOptionType;
+      setCreatedCategoryOptions((current) => [option, ...current.filter((item) => item.value !== option.value)]);
+      form.setFieldValue("categoryId", result.id);
+      setCategoryCreateOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
     },
     onError: showErrors,
   });
@@ -233,6 +252,7 @@ export function ExpensesPage() {
         columns={[
           { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
           { title: "Описание", dataIndex: "description" },
+          { title: "Категория", dataIndex: "categoryName", render: (value?: string | null) => value || "Без категории" },
           { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
           {
             title: "",
@@ -281,6 +301,20 @@ export function ExpensesPage() {
             saveDraftValues(EXPENSE_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
           }}
         >
+          <Form.Item label="Категория">
+            <Space.Compact className="wide">
+              <Form.Item name="categoryId" noStyle>
+                <ExpenseCategorySelect extraOptions={createdCategoryOptions} />
+              </Form.Item>
+              <Button
+                onClick={() => {
+                  setCategoryCreateOpen(true);
+                }}
+              >
+                Новая категория
+              </Button>
+            </Space.Compact>
+          </Form.Item>
           <Form.Item name="description" label="Описание" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -289,6 +323,17 @@ export function ExpensesPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <ReferenceBookCreateModal
+        open={isCategoryCreateOpen}
+        title="Новая категория расхода"
+        confirmLoading={createCategoryMutation.isPending}
+        onCancel={() => {
+          setCategoryCreateOpen(false);
+        }}
+        onSubmit={(values) => {
+          createCategoryMutation.mutate(values);
+        }}
+      />
     </PageLayout>
   );
 }

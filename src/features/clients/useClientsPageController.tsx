@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { getClientContactValue, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
-import { clientsApi } from "../../api/crm";
+import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
@@ -20,6 +21,7 @@ type ClientSubmitInput = {
   telegram?: string;
   vk?: string;
   phone?: string;
+  sourceId?: string;
 };
 
 type ClientDraftValues = {
@@ -43,6 +45,8 @@ export function useClientsPageController() {
   const draftReplayKeyRef = useRef(getDraftReplayKey(CLIENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createPhoneInputKey, setCreatePhoneInputKey] = useState(() => (hasCreateDraft ? 1 : 0));
+  const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
+  const [createdSourceOptions, setCreatedSourceOptions] = useState<DefaultOptionType[]>([]);
   const [form] = Form.useForm<ClientFormValues>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -216,6 +220,19 @@ export function useClientsPageController() {
     [form],
   );
 
+  const createSourceMutation = useMutation({
+    mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
+    onSuccess: async (result, values) => {
+      message.success("Источник создан");
+      const option = { value: result.id, label: values.name.trim() } satisfies DefaultOptionType;
+      setCreatedSourceOptions((current) => [option, ...current.filter((item) => item.value !== option.value)]);
+      form.setFieldValue("sourceId", result.id);
+      setSourceCreateOpen(false);
+      await queryClient.invalidateQueries({ queryKey: ["client-sources"] });
+    },
+    onError: showErrors,
+  });
+
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
@@ -279,7 +296,10 @@ export function useClientsPageController() {
     currentEditingClient,
     isEditingClientStale,
     editingBaselineActivityId,
+    isSourceCreateOpen,
+    createdSourceOptions,
     saveMutation,
+    createSourceMutation,
     deleteMutation,
     openEditor,
     closeEditor,
@@ -307,6 +327,16 @@ export function useClientsPageController() {
         },
       });
     },
+    openSourceCreate: () => {
+      setSourceCreateOpen(true);
+    },
+    closeSourceCreate: () => {
+      setSourceCreateOpen(false);
+    },
+    onCreateSource: (values: { name: string }) => {
+      createSourceMutation.mutate(values);
+    },
+    onSourceLabelChange: (_label?: string) => {},
   };
 }
 
@@ -318,6 +348,7 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
     phone: normalizeRussianPhone(values.phone),
     telegram: normalizeSocialLink(values.telegram, "telegram"),
     vk: normalizeSocialLink(values.vk, "vk"),
+    sourceId: values.sourceId ?? undefined,
   };
 
   return omitEmptyContacts(input);

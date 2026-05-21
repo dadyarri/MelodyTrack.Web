@@ -1,10 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
-import { useEffect, useRef } from "react";
+import type { DefaultOptionType } from "antd/es/select";
+import { useEffect, useRef, useState } from "react";
 import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
-import { clientsApi } from "../api/crm";
+import { clientSourcesApi, clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
+import { ReferenceBookCreateModal } from "./ReferenceBookCreateModal";
 import { createReplayKey } from "../utils/drafts";
 import { createOfflineTempId, enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
 
@@ -15,6 +17,7 @@ type ClientQuickCreateValues = {
   phone?: string;
   telegram?: string;
   vk?: string;
+  sourceId?: string;
 };
 
 type ClientQuickCreateModalProps = {
@@ -25,6 +28,8 @@ type ClientQuickCreateModalProps = {
 
 export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuickCreateModalProps) {
   const [form] = Form.useForm<ClientQuickCreateValues>();
+  const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
+  const [createdSourceOptions, setCreatedSourceOptions] = useState<DefaultOptionType[]>([]);
   const replayKeyRef = useRef(createReplayKey());
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -48,6 +53,7 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         phone: normalizeRussianPhone(values.phone),
         telegram: normalizeSocialLink(values.telegram, "telegram"),
         vk: normalizeSocialLink(values.vk, "vk"),
+        sourceId: values.sourceId,
       };
 
       try {
@@ -86,6 +92,18 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
     onError: showErrors,
   });
 
+  const createSourceMutation = useMutation({
+    mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
+    onSuccess: (result, values) => {
+      message.success("Источник создан");
+      const option = { value: result.id, label: values.name.trim() } satisfies DefaultOptionType;
+      setCreatedSourceOptions((current) => [option, ...current.filter((item) => item.value !== option.value)]);
+      form.setFieldValue("sourceId", result.id);
+      setSourceCreateOpen(false);
+    },
+    onError: showErrors,
+  });
+
   return (
     <Modal
       open={open}
@@ -108,8 +126,19 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
           createMutation.mutate(values);
         }}
       >
-        <ClientFormFields />
+        <ClientFormFields sourceOptions={createdSourceOptions} onCreateSource={() => setSourceCreateOpen(true)} />
       </Form>
+      <ReferenceBookCreateModal
+        open={isSourceCreateOpen}
+        title="Новый источник клиента"
+        confirmLoading={createSourceMutation.isPending}
+        onCancel={() => {
+          setSourceCreateOpen(false);
+        }}
+        onSubmit={(values) => {
+          createSourceMutation.mutate(values);
+        }}
+      />
     </Modal>
   );
 }

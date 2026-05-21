@@ -20,6 +20,7 @@ export type OfflineQueuedCreate =
         telegram?: string;
         vk?: string;
         phone?: string;
+        sourceId?: string;
       };
     }
   | {
@@ -56,6 +57,7 @@ export type OfflineQueuedCreate =
       payload: {
         description: string;
         amount: number;
+        categoryId?: string;
       };
     }
   | {

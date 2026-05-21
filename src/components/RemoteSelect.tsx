@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
-import { clientsApi, rolesApi, servicesApi, usersApi } from "../api/crm";
+import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";
 
@@ -213,4 +213,78 @@ export function RoleSelect({ value, onChange }: { value?: string; onChange?: (va
   );
 
   return <Select className="wide" loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+}
+
+export function ExpenseCategorySelect({
+  value,
+  onChange,
+  extraOptions,
+  onResolvedLabelChange,
+}: {
+  value?: string;
+  onChange?: (value: string) => void;
+  extraOptions?: DefaultOptionType[];
+  onResolvedLabelChange?: (label?: string) => void;
+}) {
+  const query = useQuery({ queryKey: ["expense-categories"], queryFn: () => expenseCategoriesApi.list(), retry: false });
+  const cachedLabel = getCachedReferenceLabel("expense-category", value);
+  const options = useMemo<DefaultOptionType[]>(() => {
+    const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];
+    const lookupOptions = query.data?.map((item) => ({ value: item.id, label: item.name })) ?? [];
+    const mergedOptions = [...selectedOption, ...(extraOptions ?? []), ...lookupOptions];
+    return mergedOptions.filter((option, index, items) => items.findIndex((item) => item.value === option.value) === index);
+  }, [cachedLabel, extraOptions, query.data, value]);
+
+  useEffect(() => {
+    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
+    onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
+  }, [cachedLabel, onResolvedLabelChange, options, value]);
+
+  useEffect(() => {
+    if (query.data) {
+      rememberReferenceLabels(
+        "expense-category",
+        query.data.map((item) => ({ id: item.id, label: item.name })),
+      );
+    }
+  }, [query.data]);
+
+  return <Select className="wide" allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
+}
+
+export function ClientSourceSelect({
+  value,
+  onChange,
+  extraOptions,
+  onResolvedLabelChange,
+}: {
+  value?: string;
+  onChange?: (value: string) => void;
+  extraOptions?: DefaultOptionType[];
+  onResolvedLabelChange?: (label?: string) => void;
+}) {
+  const query = useQuery({ queryKey: ["client-sources"], queryFn: () => clientSourcesApi.list(), retry: false });
+  const cachedLabel = getCachedReferenceLabel("client-source", value);
+  const options = useMemo<DefaultOptionType[]>(() => {
+    const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];
+    const lookupOptions = query.data?.map((item) => ({ value: item.id, label: item.name })) ?? [];
+    const mergedOptions = [...selectedOption, ...(extraOptions ?? []), ...lookupOptions];
+    return mergedOptions.filter((option, index, items) => items.findIndex((item) => item.value === option.value) === index);
+  }, [cachedLabel, extraOptions, query.data, value]);
+
+  useEffect(() => {
+    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
+    onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
+  }, [cachedLabel, onResolvedLabelChange, options, value]);
+
+  useEffect(() => {
+    if (query.data) {
+      rememberReferenceLabels(
+        "client-source",
+        query.data.map((item) => ({ id: item.id, label: item.name })),
+      );
+    }
+  }, [query.data]);
+
+  return <Select className="wide" allowClear loading={query.isLoading} options={options} value={value} onChange={onChange} />;
 }

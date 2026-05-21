@@ -8,6 +8,7 @@ import type {
   CreateEntityResponse,
   DashboardStats,
   ExpensesResponse,
+  ReferenceBookItem,
   LookupClient,
   LookupService,
   PaginatedParams,
@@ -36,12 +37,16 @@ export const clientsApi = {
       .then((response) => response.data.clients);
   },
   create(
-    input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string },
+    input: { firstName: string; lastName: string; patronymic?: string | null; telegram?: string; vk?: string; phone?: string; sourceId?: Ulid },
     options?: { replayKey?: string },
   ) {
     return http.post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: Partial<Client> & { telegram?: string; vk?: string; phone?: string }, options?: { expectedActivityId?: Ulid }) {
+  update(
+    id: Ulid,
+    input: Partial<Client> & { telegram?: string; vk?: string; phone?: string; sourceId?: Ulid | null },
+    options?: { expectedActivityId?: Ulid },
+  ) {
     return http.put<unknown>(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
@@ -123,6 +128,30 @@ export const paymentsApi = {
   },
 };
 
+export const expenseCategoriesApi = {
+  list() {
+    return http.get<{ categories: ReferenceBookItem[] }>("/expense-categories").then((response) => response.data.categories);
+  },
+  create(input: { name: string }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/expense-categories", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  },
+  remove(id: Ulid) {
+    return http.delete<unknown>(`/expense-categories/${id}`).then(() => undefined);
+  },
+};
+
+export const clientSourcesApi = {
+  list() {
+    return http.get<{ sources: ReferenceBookItem[] }>("/client-sources").then((response) => response.data.sources);
+  },
+  create(input: { name: string }, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/client-sources", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  },
+  remove(id: Ulid) {
+    return http.delete<unknown>(`/client-sources/${id}`).then(() => undefined);
+  },
+};
+
 export const expensesApi = {
   list(params: PaginatedParams & { start?: string; end?: string; search?: string }) {
     return http.get<ExpensesResponse>("/expenses", { params }).then((response) => response.data);
@@ -130,7 +159,7 @@ export const expensesApi = {
   export(params: { start?: string; end?: string; search?: string }) {
     return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: { description: string; amount: number }, options?: { replayKey?: string }) {
+  create(input: { description: string; amount: number; categoryId?: Ulid }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/expenses", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   remove(id: Ulid) {

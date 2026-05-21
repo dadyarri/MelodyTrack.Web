@@ -1,5 +1,6 @@
 import type { FormInstance } from "antd";
 import { Form, Modal } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import type { Client } from "@/api/types";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import { formatRecordActivitySummary } from "@/utils/staleEntity";
@@ -16,10 +17,13 @@ export function ClientEditorModal({
   isStale,
   staleActivity,
   phoneInputKey,
+  sourceOptions,
   onCancel,
   onClearDraft,
   onSubmit,
   onValuesChange,
+  onCreateSource,
+  onSourceLabelChange,
 }: {
   open: boolean;
   editing: boolean;
@@ -29,10 +33,13 @@ export function ClientEditorModal({
   isStale: boolean;
   staleActivity?: Client["lastActivity"];
   phoneInputKey: number;
+  sourceOptions: DefaultOptionType[];
   onCancel: () => void;
   onClearDraft: () => void;
   onSubmit: (values: ClientFormValues) => void;
   onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => void;
+  onCreateSource: () => void;
+  onSourceLabelChange: (label?: string) => void;
 }) {
   return (
     <Modal
@@ -59,7 +66,12 @@ export function ClientEditorModal({
             description={formatRecordActivitySummary(staleActivity)}
           />
         ) : null}
-        <ClientFormFields phoneInputKey={phoneInputKey} />
+        <ClientFormFields
+          phoneInputKey={phoneInputKey}
+          sourceOptions={sourceOptions}
+          onCreateSource={onCreateSource}
+          onSourceLabelChange={onSourceLabelChange}
+        />
       </Form>
     </Modal>
   );

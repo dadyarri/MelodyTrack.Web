@@ -1,6 +1,6 @@
 const referenceLabelStorageKeyPrefix = "melodytrack:reference-labels:";
 
-export type ReferenceLabelKind = "client" | "service" | "user" | "role";
+export type ReferenceLabelKind = "client" | "service" | "user" | "role" | "expense-category" | "client-source";
 
 export function getCachedReferenceLabel(kind: ReferenceLabelKind, id?: string) {
   if (!id || typeof window === "undefined") {

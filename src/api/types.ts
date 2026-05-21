@@ -29,6 +29,11 @@ export interface CreateEntityResponse {
   id: Ulid;
 }
 
+export interface ReferenceBookItem {
+  id: Ulid;
+  name: string;
+}
+
 export interface ClientContacts {
   id?: Ulid;
   telegram?: string | null;
@@ -42,6 +47,8 @@ export interface Client {
   lastName: string;
   patronymic?: string | null;
   contacts?: ClientContacts | null;
+  sourceId?: Ulid | null;
+  sourceName?: string | null;
   balance: number;
   lastAppointmentAtUtc?: string | null;
   nextAppointmentAtUtc?: string | null;
@@ -104,6 +111,8 @@ export interface LookupClient {
   lastName: string;
   patronymic?: string | null;
   contacts?: ClientContacts | null;
+  sourceId?: Ulid | null;
+  sourceName?: string | null;
 }
 
 export interface Service {
@@ -187,6 +196,8 @@ export interface Expense {
   description: string;
   amount: number;
   date: string;
+  categoryId?: Ulid | null;
+  categoryName?: string | null;
 }
 
 export interface ExpensesResponse extends PaginatedResponse<Expense> {
