@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useRef, useState } from "react";
-import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
+import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client/lib/contact";
 import { clientSourcesApi, clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
