@@ -261,6 +261,68 @@ export interface RevenueAnalytics {
   teachers: TeacherRevenueAnalytics[];
 }
 
+export interface PriceChangeTeacherImpact {
+  teacherId?: Ulid | null;
+  teacherDisplayName: string;
+  revenueBefore: number;
+  revenueAfter: number;
+  appointmentsBefore: number;
+  appointmentsAfter: number;
+  averageReceiptBefore?: number | null;
+  averageReceiptAfter?: number | null;
+  cancellationShareBefore?: number | null;
+  cancellationShareAfter?: number | null;
+  burnedShareBefore?: number | null;
+  burnedShareAfter?: number | null;
+}
+
+export interface PriceChangeAnalyticsItem {
+  serviceId: Ulid;
+  serviceName: string;
+  effectiveDate: string;
+  oldPrice: number;
+  newPrice: number;
+  priceChange: number;
+  priceChangePercent?: number | null;
+  affectedAppointmentsCount: number;
+  revenueBefore: number;
+  revenueAfter: number;
+  revenueChange: number;
+  revenueChangePercent?: number | null;
+  appointmentsBefore: number;
+  appointmentsAfter: number;
+  appointmentChange: number;
+  appointmentChangePercent?: number | null;
+  completedAppointmentsBefore: number;
+  completedAppointmentsAfter: number;
+  cancellationShareBefore?: number | null;
+  cancellationShareAfter?: number | null;
+  burnedShareBefore?: number | null;
+  burnedShareAfter?: number | null;
+  averageReceiptBefore?: number | null;
+  averageReceiptAfter?: number | null;
+  expensesBefore: number;
+  expensesAfter: number;
+  netProfitBefore: number;
+  netProfitAfter: number;
+  profitImpact: number;
+  priceElasticity?: number | null;
+  additionalRevenue?: number | null;
+  teachers: PriceChangeTeacherImpact[];
+}
+
+export interface PriceChangeAnalytics {
+  startDate: string;
+  endDate: string;
+  windowDays: number;
+  totalChanges: number;
+  priceIncreasesCount: number;
+  priceDecreasesCount: number;
+  positiveRevenueImpactCount: number;
+  negativeDemandImpactCount: number;
+  changes: PriceChangeAnalyticsItem[];
+}
+
 export interface AuditLog {
   id: Ulid;
   createdAtUtc: string;
