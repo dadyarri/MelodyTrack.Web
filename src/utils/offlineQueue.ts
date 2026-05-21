@@ -73,6 +73,7 @@ export type OfflineQueuedCreate =
         providerId?: string;
         providerLabel?: string;
         startDate: string;
+        timezone: string;
         patternEndDate?: string;
         recurrencePattern?: number;
       };

@@ -104,6 +104,22 @@
   background: var(--bg-card);
 }
 
+.blockedRange {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(153, 164, 178, 0.18), rgba(153, 164, 178, 0.1)),
+    repeating-linear-gradient(135deg, rgba(153, 164, 178, 0.14), rgba(153, 164, 178, 0.14) 8px, rgba(153, 164, 178, 0.06) 8px, rgba(153, 164, 178, 0.06) 16px);
+}
+
+.blockedRangeVacation {
+  background:
+    linear-gradient(180deg, rgba(197, 94, 61, 0.18), rgba(197, 94, 61, 0.1)),
+    repeating-linear-gradient(135deg, rgba(197, 94, 61, 0.16), rgba(197, 94, 61, 0.16) 8px, rgba(197, 94, 61, 0.06) 8px, rgba(197, 94, 61, 0.06) 16px);
+}
+
 .hourLine {
   height: 72px;
   border-bottom: 1px solid var(--border-soft-alt);
@@ -119,6 +135,8 @@
   background: transparent;
   cursor: pointer;
   transition: background-color 0.16s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .hourSlotButton:hover,
@@ -129,6 +147,16 @@
 
 .hourSlotDropTarget {
   background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.hourSlotBlocked {
+  cursor: not-allowed;
+  background: transparent;
+}
+
+.hourSlotBlocked:hover,
+.hourSlotBlocked:focus-visible {
+  background: transparent;
 }
 
 .event {

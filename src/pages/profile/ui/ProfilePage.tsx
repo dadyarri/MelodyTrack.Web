@@ -1,6 +1,7 @@
 import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, App as AntdApp, Button, Card, Form, Input, List, Space, Tag, Typography } from "antd";
+import { Alert, App as AntdApp, Button, Card, DatePicker, Divider, Form, Input, List, Space, Switch, Tag, TimePicker, Typography } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
 import {
   authApi,
@@ -11,15 +12,28 @@ import {
   type Setup2FaInput,
   type Setup2FaResponse,
 } from "@/api/auth";
+import { usersApi } from "@/api/crm";
+import type { UserAvailability, WeekdayKey } from "@/api/types";
 import { getApiErrorMessages } from "@/api/http";
 import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
 import { TotpSecretPanel } from "@/components/TotpSecretPanel";
 import { useAuth } from "@/features/auth/useAuth";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { weekdayLabels, weekdayOrder } from "@/utils/userAvailability";
 import styles from "./ProfilePage.module.css";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
+type AvailabilityFormValues = {
+  workingHours: Array<{
+    dayOfWeek: WeekdayKey;
+    isWorkingDay: boolean;
+    timeRange?: [Dayjs, Dayjs];
+  }>;
+  vacations: Array<{
+    period?: [Dayjs, Dayjs];
+  }>;
+};
 
 export function ProfilePage() {
   const auth = useAuth();
@@ -27,6 +41,7 @@ export function ProfilePage() {
   const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
+  const [availabilityForm] = Form.useForm<AvailabilityFormValues>();
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
       void message.error(errorMessage);
@@ -41,6 +56,18 @@ export function ProfilePage() {
   const sessionsQuery = useQuery({
     queryKey: ["sessions"],
     queryFn: () => authApi.getSessions(),
+  });
+  const availabilityQuery = useQuery({
+    queryKey: ["users", "availability", meQuery.data?.id],
+    queryFn: () => {
+      const userId = meQuery.data?.id;
+      if (!userId) {
+        throw new Error("User id is missing.");
+      }
+
+      return usersApi.getAvailability(userId);
+    },
+    enabled: Boolean(meQuery.data?.id),
   });
 
   const changePasswordMutation = useMutation({
@@ -134,6 +161,34 @@ export function ProfilePage() {
     },
     onError: showErrors,
   });
+  const saveAvailabilityMutation = useMutation({
+    mutationFn: (values: AvailabilityFormValues) => {
+      const userId = meQuery.data?.id;
+      if (!userId) {
+        throw new Error("User id is missing.");
+      }
+
+      return usersApi.updateAvailability(userId, {
+        workingHours: values.workingHours.map((item) => ({
+          dayOfWeek: item.dayOfWeek,
+          isWorkingDay: item.isWorkingDay,
+          startTime: item.isWorkingDay && item.timeRange?.[0] ? item.timeRange[0].format("HH:mm") : null,
+          endTime: item.isWorkingDay && item.timeRange?.[1] ? item.timeRange[1].format("HH:mm") : null,
+        })),
+        vacations: values.vacations
+          .filter((item) => item.period?.[0] && item.period?.[1])
+          .map((item) => ({
+            startDate: item.period?.[0].format("YYYY-MM-DD") ?? "",
+            endDate: item.period?.[1].format("YYYY-MM-DD") ?? "",
+          })),
+      });
+    },
+    onSuccess: async () => {
+      message.success("График работы сохранен");
+      await queryClient.invalidateQueries({ queryKey: ["users", "availability", meQuery.data?.id] });
+    },
+    onError: showErrors,
+  });
 
   function openRecoveryCodes(codes: RecoveryCodeItem[]) {
     setRecoveryCodes(codes);
@@ -142,6 +197,14 @@ export function ProfilePage() {
   const me = meQuery.data;
   const isTwoFactorEnabled = me?.isTwoFactorEnabled ?? false;
   const isTwoFactorRequired = me?.isTwoFactorRequired ?? false;
+
+  useEffect(() => {
+    if (!availabilityQuery.data) {
+      return;
+    }
+
+    availabilityForm.setFieldsValue(mapAvailabilityToForm(availabilityQuery.data));
+  }, [availabilityForm, availabilityQuery.data]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -178,6 +241,113 @@ export function ProfilePage() {
       <div className="profile-grid">
         <Card title="Аккаунт">{me ? <ProfileSummary me={me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}</Card>
       </div>
+
+      <Card title="График работы и отпуск" loading={availabilityQuery.isLoading}>
+        <Form<AvailabilityFormValues>
+          form={availabilityForm}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={(values) => {
+            saveAvailabilityMutation.mutate(values);
+          }}
+        >
+          <Space orientation="vertical" size={18} className="wide">
+            <div>
+              <Typography.Title level={5}>Рабочие часы</Typography.Title>
+              <Typography.Text type="secondary">Выходные и нерабочие дни выключаются переключателем.</Typography.Text>
+            </div>
+            <Form.List name="workingHours">
+              {(fields) => (
+                <Space orientation="vertical" size={12} className="wide">
+                  {fields.map((field, index) => (
+                    <div className={styles.availabilityRow} key={field.key}>
+                      <Form.Item name={[field.name, "dayOfWeek"]} hidden>
+                        <Input />
+                      </Form.Item>
+                      <Typography.Text className={styles.availabilityDayLabel}>{weekdayLabels[weekdayOrder[index]]}</Typography.Text>
+                      <Form.Item name={[field.name, "isWorkingDay"]} valuePropName="checked" className={styles.availabilityToggle}>
+                        <Switch checkedChildren="Рабочий" unCheckedChildren="Выходной" />
+                      </Form.Item>
+                      <Form.Item
+                        shouldUpdate={(prevValues, nextValues) =>
+                          prevValues.workingHours?.[index]?.isWorkingDay !== nextValues.workingHours?.[index]?.isWorkingDay
+                        }
+                        noStyle
+                      >
+                        {() => {
+                          const isWorkingDay = availabilityForm.getFieldValue(["workingHours", index, "isWorkingDay"]);
+                          return (
+                            <Form.Item
+                              name={[field.name, "timeRange"]}
+                              className={styles.availabilityTimeRange}
+                              rules={
+                                isWorkingDay
+                                  ? [{ required: true, message: "Укажите рабочее время." }]
+                                  : []
+                              }
+                            >
+                              <TimePicker.RangePicker
+                                className="wide"
+                                format="HH:mm"
+                                minuteStep={15}
+                                disabled={!isWorkingDay}
+                              />
+                            </Form.Item>
+                          );
+                        }}
+                      </Form.Item>
+                    </div>
+                  ))}
+                </Space>
+              )}
+            </Form.List>
+
+            <Divider className={styles.divider} />
+
+            <div className={styles.vacationsHeader}>
+              <div>
+                <Typography.Title level={5}>Отпуска</Typography.Title>
+                <Typography.Text type="secondary">Периоды отпуска блокируют создание и перенос записей.</Typography.Text>
+              </div>
+              <Button
+                onClick={() => {
+                  const vacations = availabilityForm.getFieldValue("vacations") ?? [];
+                  availabilityForm.setFieldValue("vacations", [...vacations, { period: undefined }]);
+                }}
+              >
+                Добавить отпуск
+              </Button>
+            </div>
+            <Form.List name="vacations">
+              {(fields, { remove }) => (
+                <Space orientation="vertical" size={12} className="wide">
+                  {fields.length === 0 ? <Typography.Text type="secondary">Отпуска пока не добавлены.</Typography.Text> : null}
+                  {fields.map((field) => (
+                    <div className={styles.vacationRow} key={field.key}>
+                      <Form.Item
+                        name={[field.name, "period"]}
+                        className={styles.vacationRange}
+                        rules={[{ required: true, message: "Укажите период отпуска." }]}
+                      >
+                        <DatePicker.RangePicker className="wide" format="DD.MM.YYYY" />
+                      </Form.Item>
+                      <Button danger onClick={() => remove(field.name)}>
+                        Удалить
+                      </Button>
+                    </div>
+                  ))}
+                </Space>
+              )}
+            </Form.List>
+
+            <div>
+              <Button type="primary" htmlType="submit" loading={saveAvailabilityMutation.isPending}>
+                Сохранить график
+              </Button>
+            </div>
+          </Space>
+        </Form>
+      </Card>
 
       <div className="profile-grid">
         <Card title="Смена пароля">
@@ -374,4 +544,28 @@ function formatSessionTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
+}
+
+function mapAvailabilityToForm(availability: UserAvailability): AvailabilityFormValues {
+  return {
+    workingHours: weekdayOrder.map((dayOfWeek) => {
+      const item = availability.workingHours.find((entry) => entry.dayOfWeek === dayOfWeek);
+      return {
+        dayOfWeek,
+        isWorkingDay: item?.isWorkingDay ?? false,
+        timeRange:
+          item?.isWorkingDay && item.startTime && item.endTime
+            ? [timeToDayjs(item.startTime), timeToDayjs(item.endTime)]
+            : undefined,
+      };
+    }),
+    vacations: availability.vacations.map((vacation) => ({
+      period: [dayjs(vacation.startDate), dayjs(vacation.endDate)],
+    })),
+  };
+}
+
+function timeToDayjs(value: string) {
+  const [hours = "0", minutes = "0"] = value.split(":");
+  return dayjs().hour(Number(hours)).minute(Number(minutes)).second(0).millisecond(0);
 }

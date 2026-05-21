@@ -96,6 +96,7 @@ export function SchedulePage() {
           <div className={styles.calendar}>
             <AppointmentsCalendar
               appointments={controller.filteredAppointments}
+              availability={controller.providerAvailabilityQuery.data}
               loading={controller.query.isLoading}
               onReschedule={(appointment, startDate) => {
                 controller.rescheduleMutation.mutate({

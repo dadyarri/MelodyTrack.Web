@@ -18,6 +18,8 @@ import type {
   Role,
   Service,
   Ulid,
+  UserAvailability,
+  UserWorkingHoursDay,
   User,
 } from "./types";
 
@@ -188,6 +190,7 @@ export const scheduleApi = {
       providerId?: Ulid;
       recurrenceTypeId?: Ulid;
       startDate: string;
+      timezone: string;
       patternEndDate?: string;
       recurrencePattern?: number;
     },
@@ -202,6 +205,7 @@ export const scheduleApi = {
       serviceId: Ulid;
       providerId: Ulid;
       startDate: string;
+      timezone: string;
       status: "planned" | "completed" | "cancelled" | "burned";
       expectedActivityId: Ulid;
     }>,
@@ -233,6 +237,18 @@ function buildReplayConfig(replayKey?: string) {
 export const usersApi = {
   list() {
     return http.get<{ users: User[] }>("/users").then((response) => response.data.users);
+  },
+  getAvailability(id: Ulid) {
+    return http.get<UserAvailability>(`/users/${id}/availability`).then((response) => response.data);
+  },
+  updateAvailability(
+    id: Ulid,
+    input: {
+      workingHours: UserWorkingHoursDay[];
+      vacations: Array<{ startDate: string; endDate: string }>;
+    },
+  ) {
+    return http.put<unknown>(`/users/${id}/availability`, input).then(() => undefined);
   },
 };
 

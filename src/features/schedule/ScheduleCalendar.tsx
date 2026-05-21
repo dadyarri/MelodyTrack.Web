@@ -2,8 +2,9 @@ import { SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { type CSSProperties, type DragEvent, useState } from "react";
-import type { Appointment } from "../../api/types";
+import type { Appointment, UserAvailability } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
+import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
 import { getAppointmentStatusLabel, renderAppointmentStatusIcon } from "./appointmentStatus";
 import styles from "./ScheduleCalendar.module.css";
 
@@ -22,6 +23,7 @@ const serviceColors = [
 
 export function AppointmentsCalendar({
   appointments,
+  availability,
   loading,
   range,
   onCreateAt,
@@ -31,6 +33,7 @@ export function AppointmentsCalendar({
   selectedAppointmentId,
 }: {
   appointments: Appointment[];
+  availability?: UserAvailability;
   loading: boolean;
   range: [Dayjs, Dayjs];
   onCreateAt: (startDate: Dayjs) => void;
@@ -66,10 +69,15 @@ export function AppointmentsCalendar({
       return;
     }
 
+    const nextHour = getDropHour(event, hours[0], hours[hours.length - 1]);
+    const nextStartDate = buildRescheduledStartDate(day, dayjs(draggedAppointment.startDate), nextHour);
+    if (!isSlotAvailable(availability, nextStartDate)) {
+      setDropTarget(null);
+      return;
+    }
+
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
-
-    const nextHour = getDropHour(event, hours[0], hours[hours.length - 1]);
     setDropTarget((current) => {
       const nextTarget = { dayKey: day.format("YYYY-MM-DD"), hour: nextHour };
       return current?.dayKey === nextTarget.dayKey && current.hour === nextTarget.hour ? current : nextTarget;
@@ -88,6 +96,13 @@ export function AppointmentsCalendar({
       dayjs(draggedAppointment.startDate),
       getDropHour(event, hours[0], hours[hours.length - 1]),
     );
+
+    if (!isSlotAvailable(availability, nextStartDate)) {
+      setDraggedAppointmentId(null);
+      setDropTarget(null);
+      return;
+    }
+
     if (!nextStartDate.isSame(dayjs(draggedAppointment.startDate))) {
       onReschedule(draggedAppointment, nextStartDate);
     }
@@ -149,12 +164,20 @@ export function AppointmentsCalendar({
                 handleColumnDrop(event, day);
               }}
             >
+              {getBlockedRanges(availability, day, hours[0], hours[hours.length - 1] + 1).map((range) => (
+                <div
+                  className={`${styles.blockedRange}${range.isVacation ? ` ${styles.blockedRangeVacation}` : ""}`}
+                  key={`${day.format("YYYY-MM-DD")}:${range.startMinute}:${range.endMinute}`}
+                  style={getBlockedRangeStyle(range.startMinute, range.endMinute, hours[0])}
+                />
+              ))}
               {hours.map((hour) => (
                 <button
                   type="button"
-                  className={`${styles.hourLine} ${styles.hourSlotButton}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}`}
+                  className={`${styles.hourLine} ${styles.hourSlotButton}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
+                  disabled={!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0))}
                   onClick={() => {
                     onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
                   }}
@@ -473,4 +496,13 @@ function getDropHour(event: DragEvent<HTMLDivElement>, startHour: number, endHou
 
 function buildRescheduledStartDate(day: Dayjs, originalStart: Dayjs, nextHour: number) {
   return day.hour(nextHour).minute(originalStart.minute()).second(originalStart.second()).millisecond(originalStart.millisecond());
+}
+
+function getBlockedRangeStyle(startMinute: number, endMinute: number, startHour: number): CSSProperties {
+  const top = ((startMinute - startHour * 60) / 60) * hourHeight;
+  const height = ((endMinute - startMinute) / 60) * hourHeight;
+  return {
+    top: `${top}px`,
+    height: `${height}px`,
+  };
 }

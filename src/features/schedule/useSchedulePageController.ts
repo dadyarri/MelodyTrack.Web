@@ -4,7 +4,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { scheduleApi } from "../../api/crm";
+import { scheduleApi, usersApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Appointment, AppointmentStatus, RecurrenceType, Ulid } from "../../api/types";
 import { useAuth } from "../../features/auth/useAuth";
@@ -130,6 +130,18 @@ export function useSchedulePageController() {
     queryKey: ["appointments", "recurrenceTypes"],
     queryFn: () => scheduleApi.recurrenceTypes(),
   });
+  const providerAvailabilityQuery = useQuery({
+    queryKey: ["users", "availability", effectiveProviderFilterId],
+    queryFn: () => {
+      if (!effectiveProviderFilterId) {
+        throw new Error("Provider is not selected.");
+      }
+
+      return usersApi.getAvailability(effectiveProviderFilterId);
+    },
+    enabled: Boolean(effectiveProviderFilterId),
+    retry: false,
+  });
 
   const filteredAppointments = (query.data ?? []).filter((appointment) => {
     if (effectiveProviderFilterId && appointment.provider?.id !== effectiveProviderFilterId) {
@@ -189,7 +201,7 @@ export function useSchedulePageController() {
 
   const createMutation = useMutation({
     mutationFn: async (values: AppointmentFormValues) => {
-      const input = buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? []);
+      const input = buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone);
       try {
         return { input, offline: false as const, response: await scheduleApi.create(input, { replayKey: draftReplayKeyRef.current }) };
       } catch (error) {
@@ -305,6 +317,7 @@ export function useSchedulePageController() {
         serviceId: input.serviceId,
         providerId: input.providerId,
         startDate: input.startDate.toISOString(),
+        timezone,
         expectedActivityId,
       });
     },
@@ -365,6 +378,7 @@ export function useSchedulePageController() {
     }) => {
       return scheduleApi.update(appointment.id, {
         startDate: startDate.toISOString(),
+        timezone,
         expectedActivityId,
       });
     },
@@ -556,6 +570,7 @@ export function useSchedulePageController() {
     setWeekStart,
     query,
     recurrenceTypesQuery,
+    providerAvailabilityQuery,
     filteredAppointments,
     currentSelectedAppointment,
     currentEditingAppointment,
@@ -620,7 +635,7 @@ export function useSchedulePageController() {
   };
 }
 
-function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrenceTypes: RecurrenceType[]) {
+function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrenceTypes: RecurrenceType[], timezone: string) {
   const recurrenceType = recurrenceTypes.find((item) => item.id === values.recurrenceTypeId);
 
   return {
@@ -628,6 +643,7 @@ function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrence
     serviceId: values.serviceId,
     providerId: values.providerId,
     startDate: values.startDate.toISOString(),
+    timezone,
     recurrenceTypeId: recurrenceType?.id,
     patternEndDate: recurrenceType ? values.patternEndDate?.endOf("day").toISOString() : undefined,
     recurrencePattern: recurrenceType ? getRecurrencePattern(recurrenceType.key, values.startDate, values.weeklyDays) : undefined,

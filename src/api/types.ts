@@ -136,6 +136,27 @@ export interface User {
   roleDisplayName: string;
 }
 
+export type WeekdayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+
+export interface UserWorkingHoursDay {
+  dayOfWeek: WeekdayKey;
+  isWorkingDay: boolean;
+  startTime?: string | null;
+  endTime?: string | null;
+}
+
+export interface UserVacation {
+  id: Ulid;
+  startDate: string;
+  endDate: string;
+}
+
+export interface UserAvailability {
+  userId: Ulid;
+  workingHours: UserWorkingHoursDay[];
+  vacations: UserVacation[];
+}
+
 export interface Role {
   id: Ulid;
   displayName: string;
