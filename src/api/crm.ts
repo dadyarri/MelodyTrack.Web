@@ -14,6 +14,7 @@ import type {
   PaginatedParams,
   PaginatedResponse,
   PaymentsResponse,
+  PaymentsAnalytics,
   PriceChangeAnalytics,
   RecurrenceType,
   RevenueAnalytics,
@@ -77,6 +78,9 @@ export const dashboardApi = {
   },
   priceChanges(params: { timezone: string; start: string; end: string; windowDays: number }) {
     return http.get<PriceChangeAnalytics>("/dashboard/price-changes", { params }).then((response) => response.data);
+  },
+  payments(params: { timezone: string; start: string; end: string }) {
+    return http.get<PaymentsAnalytics>("/dashboard/payments", { params }).then((response) => response.data);
   },
 };
 

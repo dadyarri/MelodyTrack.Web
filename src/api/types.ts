@@ -402,6 +402,55 @@ export interface PriceChangeRanking {
   burnedShareAfter?: number | null;
 }
 
+export interface PaymentsAnalytics {
+  startDate: string;
+  endDate: string;
+  unpaidAppointmentsCount: number;
+  debtorsCount: number;
+  totalDebt: number;
+  averagePaymentDelayDays?: number | null;
+  medianPaymentDelayDays?: number | null;
+  maxPaymentDelayDays?: number | null;
+  clients: ClientPaymentsAnalytics[];
+  teachers: TeacherPaymentsAnalytics[];
+  services: ServicePaymentsAnalytics[];
+}
+
+export interface ClientPaymentsAnalytics {
+  clientId: Ulid;
+  clientDisplayName: string;
+  totalRevenue: number;
+  totalPayments: number;
+  balance: number;
+  debt: number;
+  unpaidAppointmentsCount: number;
+  averagePaymentDelayDays?: number | null;
+  medianPaymentDelayDays?: number | null;
+  maxPaymentDelayDays?: number | null;
+}
+
+export interface TeacherPaymentsAnalytics {
+  teacherId?: Ulid | null;
+  teacherDisplayName: string;
+  totalRevenue: number;
+  outstandingDebt: number;
+  unpaidAppointmentsCount: number;
+  averagePaymentDelayDays?: number | null;
+  medianPaymentDelayDays?: number | null;
+  maxPaymentDelayDays?: number | null;
+}
+
+export interface ServicePaymentsAnalytics {
+  serviceId: Ulid;
+  serviceName: string;
+  totalRevenue: number;
+  outstandingDebt: number;
+  unpaidAppointmentsCount: number;
+  averagePaymentDelayDays?: number | null;
+  medianPaymentDelayDays?: number | null;
+  maxPaymentDelayDays?: number | null;
+}
+
 export interface AuditLog {
   id: Ulid;
   createdAtUtc: string;
