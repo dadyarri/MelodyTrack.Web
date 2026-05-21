@@ -29,6 +29,8 @@ export interface CreateEntityResponse {
   id: Ulid;
 }
 
+export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
+
 export interface ReferenceBookItem {
   id: Ulid;
   name: string;
@@ -83,8 +85,7 @@ export interface ClientHistoryAppointment {
   endDate: string;
   serviceName: string;
   providerDisplayName?: string | null;
-  isCompleted: boolean;
-  isCanceled: boolean;
+  status: AppointmentStatus;
 }
 
 export interface RecordActivity {
@@ -161,8 +162,7 @@ export interface Appointment {
   provider?: User | null;
   startDate: string;
   endDate: string;
-  isCompleted: boolean;
-  isCanceled: boolean;
+  status: AppointmentStatus;
   recurringRule?: AppointmentRecurrenceRule | null;
   lastActivity?: RecordActivity | null;
 }

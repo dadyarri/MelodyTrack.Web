@@ -1,9 +1,10 @@
-import { CheckOutlined, CloseOutlined, PlusOutlined, SyncOutlined } from "@ant-design/icons";
+import { SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { type CSSProperties, type DragEvent, useState } from "react";
 import type { Appointment } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
+import { getAppointmentStatusLabel, renderAppointmentStatusIcon } from "./appointmentStatus";
 import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;
@@ -341,8 +342,8 @@ function AppointmentContent({
           <div className={styles.eventTitlePrimary}>{clientName}</div>
         )}
         <div className={styles.eventIcons}>
-          <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment)}>
-            {renderAppointmentStatusIcon(appointment)}
+          <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment.status)}>
+            {renderAppointmentStatusIcon(appointment.status)}
           </span>
           {appointment.recurringRule ? (
             <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
@@ -400,12 +401,10 @@ function groupAppointmentsBySlot(appointments: Appointment[]) {
 
   return [...groups.values()].map((items) =>
     items.sort((left, right) => {
-      if (left.isCanceled !== right.isCanceled) {
-        return Number(left.isCanceled) - Number(right.isCanceled);
-      }
-
-      if (left.isCompleted !== right.isCompleted) {
-        return Number(left.isCompleted) - Number(right.isCompleted);
+      const leftRank = getAppointmentStatusRank(left);
+      const rightRank = getAppointmentStatusRank(right);
+      if (leftRank !== rightRank) {
+        return leftRank - rightRank;
       }
 
       return dayjs(left.endDate).valueOf() - dayjs(right.endDate).valueOf();
@@ -422,33 +421,31 @@ function getStackDensity(stackSize: number): "compact" | "dense" {
 }
 
 function getAppointmentClassName(appointment: Appointment) {
-  if (appointment.isCanceled) {
-    return styles.eventCanceled;
+  switch (appointment.status) {
+    case "completed":
+      return styles.eventCompleted;
+    case "cancelled":
+      return styles.eventCanceled;
+    case "burned":
+      return styles.eventBurned;
+    default:
+      return styles.eventPlanned;
   }
-  if (appointment.isCompleted) {
-    return styles.eventCompleted;
-  }
-  return styles.eventPlanned;
 }
 
-function renderAppointmentStatusIcon(appointment: Appointment) {
-  if (appointment.isCanceled) {
-    return <CloseOutlined />;
+function getAppointmentStatusRank(appointment: Appointment) {
+  switch (appointment.status) {
+    case "planned":
+      return 0;
+    case "completed":
+      return 1;
+    case "burned":
+      return 2;
+    case "cancelled":
+      return 3;
+    default:
+      return 4;
   }
-  if (appointment.isCompleted) {
-    return <CheckOutlined />;
-  }
-  return <PlusOutlined />;
-}
-
-function getAppointmentStatusLabel(appointment: Appointment) {
-  if (appointment.isCanceled) {
-    return "Отменена";
-  }
-  if (appointment.isCompleted) {
-    return "Завершена";
-  }
-  return "Запланирована";
 }
 
 function getServiceColorVars(appointment: Appointment) {

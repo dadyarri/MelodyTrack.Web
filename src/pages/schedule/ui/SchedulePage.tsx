@@ -131,24 +131,10 @@ export function SchedulePage() {
           controller.setAppointmentToEdit(appointment);
           controller.setAppointmentToEditBaselineActivityId(appointment.lastActivity?.id ?? null);
         }}
-        onComplete={(appointment) => {
+        onStatusChange={(appointment, status) => {
           controller.updateMutation.mutate({
             id: appointment.id,
-            input: { isCompleted: true, isCanceled: false },
-            expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-          });
-        }}
-        onCancel={(appointment) => {
-          controller.updateMutation.mutate({
-            id: appointment.id,
-            input: { isCanceled: true },
-            expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
-          });
-        }}
-        onRestore={(appointment) => {
-          controller.updateMutation.mutate({
-            id: appointment.id,
-            input: { isCompleted: false, isCanceled: false },
+            input: { status },
             expectedActivityId: controller.selectedAppointmentBaselineActivityId ?? undefined,
           });
         }}

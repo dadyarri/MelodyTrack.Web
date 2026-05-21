@@ -202,8 +202,7 @@ export const scheduleApi = {
       serviceId: Ulid;
       providerId: Ulid;
       startDate: string;
-      isCompleted: boolean;
-      isCanceled: boolean;
+      status: "planned" | "completed" | "cancelled" | "burned";
       expectedActivityId: Ulid;
     }>,
   ) {

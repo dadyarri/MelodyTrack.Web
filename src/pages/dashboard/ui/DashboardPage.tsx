@@ -7,6 +7,7 @@ import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "@/api/crm";
 import type { Appointment, Client } from "@/api/types";
 import { ClientHistoryDrawer } from "@/entities/client";
+import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatDateTime, TIME_FORMAT } from "@/utils/date";
 import { downloadBlob } from "@/utils/download";
@@ -181,13 +182,7 @@ function ReminderList({
 
 function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appointment; showTimeOnly?: boolean }) {
   const start = dayjs(appointment.startDate);
-  const status = appointment.isCanceled ? (
-    <Tag color="red">Отменена</Tag>
-  ) : appointment.isCompleted ? (
-    <Tag color="green">Завершена</Tag>
-  ) : (
-    <Tag color="gold">Запланирована</Tag>
-  );
+  const status = renderAppointmentStatusTag(appointment.status);
 
   return (
     <List.Item>

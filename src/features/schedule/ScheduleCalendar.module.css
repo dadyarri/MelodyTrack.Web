@@ -311,6 +311,16 @@
   --schedule-entry-icon-color: #a33f36;
 }
 
+.eventBurned {
+  --schedule-entry-border: color-mix(in srgb, var(--service-border, #d97706) 76%, var(--border-main));
+  --schedule-entry-background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--service-background, #d97706) 28%, var(--bg-card)),
+    color-mix(in srgb, var(--service-background, #d97706) 20%, var(--bg-card))
+  );
+  --schedule-entry-icon-color: #b45309;
+}
+
 .eventContent {
   min-width: 0;
   position: relative;

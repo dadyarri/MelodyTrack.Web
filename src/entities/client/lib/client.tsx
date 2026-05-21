@@ -1,4 +1,5 @@
 import type { Client, ClientHistory } from "@/api/types";
+import { getAppointmentStatusLabel } from "@/features/schedule/appointmentStatus";
 import { formatRussianPhone, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "./contact";
 
 export type ClientWithOptionalContacts = Client & {
@@ -38,15 +39,7 @@ export function renderClientSocialLink(value: string | null | undefined, type: "
 }
 
 export function renderClientHistoryAppointmentStatus(appointment: ClientHistory["recentAppointments"][number]) {
-  if (appointment.isCanceled) {
-    return "Отменена";
-  }
-
-  if (appointment.isCompleted) {
-    return "Завершена";
-  }
-
-  return "Запланирована";
+  return getAppointmentStatusLabel(appointment.status);
 }
 
 function getSocialHandle(value: string) {

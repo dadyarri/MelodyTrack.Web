@@ -1,6 +1,7 @@
 import { CalendarOutlined, CreditCardOutlined } from "@ant-design/icons";
 import { Button, Card, Descriptions, Empty, List, Space, Tag, Typography } from "antd";
 import type { ClientHistory } from "@/api/types";
+import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 import { renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
@@ -96,7 +97,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
                   <Space className={`wide ${styles.listJustify}`} wrap>
                     <Typography.Text strong>{appointment.serviceName}</Typography.Text>
                     <Space wrap size={8}>
-                      <Tag color={appointment.isCanceled ? "default" : appointment.isCompleted ? "green" : "blue"}>
+                      <Tag color={getAppointmentStatusTagColor(appointment.status)}>
                         {renderClientHistoryAppointmentStatus(appointment)}
                       </Tag>
                       <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>

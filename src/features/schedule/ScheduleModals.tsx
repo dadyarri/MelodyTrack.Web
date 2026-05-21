@@ -1,23 +1,25 @@
 import {
   CheckOutlined,
+  ClockCircleOutlined,
   CloseOutlined,
   DeleteOutlined,
   EditOutlined,
+  FireOutlined,
   LinkOutlined,
   PhoneOutlined,
-  RedoOutlined,
   SendOutlined,
 } from "@ant-design/icons";
 import type { FormInstance } from "antd";
-import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Tag, Typography } from "antd";
+import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
-import { useEffect } from "react";
+import { type ReactNode, useEffect } from "react";
 import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
-import type { Appointment, RecurrenceType } from "../../api/types";
+import type { Appointment, AppointmentStatus, RecurrenceType } from "../../api/types";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
+import { getAppointmentStatusLabel } from "./appointmentStatus";
 import styles from "./ScheduleModals.module.css";
 
 const weeklyDayOptions: { label: string; value: number }[] = [
@@ -365,18 +367,14 @@ export function AppointmentDetailsModal({
   isStale,
   onClose,
   onEdit,
-  onComplete,
-  onCancel,
-  onRestore,
+  onStatusChange,
   onDelete,
 }: {
   appointment: Appointment | null;
   isStale: boolean;
   onClose: () => void;
   onEdit: (appointment: Appointment) => void;
-  onComplete: (appointment: Appointment) => void;
-  onCancel: (appointment: Appointment) => void;
-  onRestore: (appointment: Appointment) => void;
+  onStatusChange: (appointment: Appointment, status: AppointmentStatus) => void;
   onDelete: (appointment: Appointment) => void;
 }) {
   if (!appointment) {
@@ -386,8 +384,6 @@ export function AppointmentDetailsModal({
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName, appointment.client.patronymic].filter(Boolean).join(" ");
-  const isPlanned = !appointment.isCanceled && !appointment.isCompleted;
-  const isCompleted = appointment.isCompleted;
   const recurrenceSummary = appointment.recurringRule ? formatRecurringRuleSummary(appointment.recurringRule) : null;
 
   return (
@@ -454,7 +450,18 @@ export function AppointmentDetailsModal({
             </div>
           ) : null}
           <div>
-            <div>{renderAppointmentStatus(appointment)}</div>
+            <div className={styles.detailValue}>
+              <Select
+                value={appointment.status}
+                options={appointmentStatusOptions}
+                popupMatchSelectWidth={false}
+                onChange={(status) => {
+                  if (status !== appointment.status) {
+                    onStatusChange(appointment, status);
+                  }
+                }}
+              />
+            </div>
             <Typography.Text type="secondary">Статус</Typography.Text>
           </div>
           {recurrenceSummary ? (
@@ -473,36 +480,6 @@ export function AppointmentDetailsModal({
           >
             Изменить
           </Button>
-          {isPlanned ? (
-            <Button
-              icon={<CheckOutlined />}
-              onClick={() => {
-                onComplete(appointment);
-              }}
-            >
-              Завершить
-            </Button>
-          ) : null}
-          {isPlanned || isCompleted ? (
-            <Button
-              icon={<CloseOutlined />}
-              onClick={() => {
-                onCancel(appointment);
-              }}
-            >
-              Отменить
-            </Button>
-          ) : null}
-          {!isPlanned ? (
-            <Button
-              icon={<RedoOutlined />}
-              onClick={() => {
-                onRestore(appointment);
-              }}
-            >
-              Вернуть в запланированные
-            </Button>
-          ) : null}
           <Button
             danger
             icon={<DeleteOutlined />}
@@ -581,12 +558,41 @@ function formatWeeklyPattern(pattern?: number | null) {
     .join(", ");
 }
 
-function renderAppointmentStatus(appointment: Appointment) {
-  if (appointment.isCanceled) {
-    return <Tag color="red">Отменена</Tag>;
-  }
-  if (appointment.isCompleted) {
-    return <Tag color="green">Завершена</Tag>;
-  }
-  return <Tag color="gold">Запланирована</Tag>;
-}
+const appointmentStatusOptions: { value: AppointmentStatus; label: ReactNode }[] = [
+  {
+    value: "planned",
+    label: (
+      <Space size={8}>
+        <ClockCircleOutlined />
+        {getAppointmentStatusLabel("planned")}
+      </Space>
+    ),
+  },
+  {
+    value: "completed",
+    label: (
+      <Space size={8}>
+        <CheckOutlined />
+        {getAppointmentStatusLabel("completed")}
+      </Space>
+    ),
+  },
+  {
+    value: "cancelled",
+    label: (
+      <Space size={8}>
+        <CloseOutlined />
+        {getAppointmentStatusLabel("cancelled")}
+      </Space>
+    ),
+  },
+  {
+    value: "burned",
+    label: (
+      <Space size={8}>
+        <FireOutlined />
+        {getAppointmentStatusLabel("burned")}
+      </Space>
+    ),
+  },
+];

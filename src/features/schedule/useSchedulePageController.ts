@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { scheduleApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
-import type { Appointment, RecurrenceType, Ulid } from "../../api/types";
+import type { Appointment, AppointmentStatus, RecurrenceType, Ulid } from "../../api/types";
 import { useAuth } from "../../features/auth/useAuth";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
 import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
@@ -216,7 +216,7 @@ export function useSchedulePageController() {
       expectedActivityId,
     }: {
       id: string;
-      input: { isCompleted?: boolean; isCanceled?: boolean };
+      input: { status?: AppointmentStatus };
       expectedActivityId?: Ulid;
     }) => scheduleApi.update(id, { ...input, expectedActivityId }),
     onMutate: ({ id, input }) => {
@@ -224,8 +224,7 @@ export function useSchedulePageController() {
         appointment.id === id
           ? {
               ...appointment,
-              ...(input.isCompleted !== undefined ? { isCompleted: input.isCompleted } : {}),
-              ...(input.isCanceled !== undefined ? { isCanceled: input.isCanceled } : {}),
+              ...(input.status !== undefined ? { status: input.status } : {}),
             }
           : appointment;
 
@@ -663,8 +662,7 @@ function buildOptimisticOfflineAppointment(
       : undefined,
     startDate: input.startDate,
     endDate: endDate.toISOString(),
-    isCompleted: false,
-    isCanceled: false,
+    status: "planned",
     recurringRule: input.recurrenceTypeId
       ? {
           id: `offline-rule:${replayKey}`,
