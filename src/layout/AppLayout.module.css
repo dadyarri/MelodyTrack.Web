@@ -1,6 +1,13 @@
 .shell {
+  height: 100dvh;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-app);
+  overflow: hidden;
+}
+
+.shell :global(.ant-layout) {
+  min-height: 0;
 }
 
 .sider {
@@ -121,12 +128,14 @@
   padding: 24px;
   background: var(--bg-app);
   min-height: 0;
+  overflow: auto;
 }
 
 .contentStack {
   width: 100%;
   gap: 28px;
   min-height: 0;
+  min-width: 0;
 }
 
 @media (max-width: 720px) {
