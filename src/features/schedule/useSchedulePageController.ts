@@ -47,6 +47,7 @@ export function useSchedulePageController() {
   const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
+  const [pendingCreateProviderId, setPendingCreateProviderId] = useState<string | undefined>();
   const draftReplayKeyRef = useRef(getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY));
   const isDraftHydratingRef = useRef(false);
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
@@ -74,8 +75,9 @@ export function useSchedulePageController() {
 
   const openCreateModal = useCallback(() => {
     setPendingCreateStartDate(null);
+    setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
-  }, []);
+  }, [effectiveProviderFilterId, lockedProviderId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -457,8 +459,9 @@ export function useSchedulePageController() {
 
   const openCreateModalAt = useCallback((startDate: Dayjs) => {
     setPendingCreateStartDate(startDate.second(0).millisecond(0));
+    setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
-  }, []);
+  }, [effectiveProviderFilterId, lockedProviderId]);
 
   useEffect(() => {
     if (!isCreateModalOpen) {
@@ -467,7 +470,7 @@ export function useSchedulePageController() {
 
     const draft = loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
     const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : (pendingCreateStartDate ?? dayjs());
-    const providerId = isSpecialistFilterLocked ? auth.user?.id : draft?.values.providerId;
+    const providerId = pendingCreateProviderId ?? lockedProviderId ?? draft?.values.providerId;
 
     draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY);
     withDraftHydration(isDraftHydratingRef, () => {
@@ -481,7 +484,7 @@ export function useSchedulePageController() {
         weeklyDays: draft?.values.weeklyDays,
       });
     });
-  }, [auth.user?.id, createPrefillClientId, form, isCreateModalOpen, isSpecialistFilterLocked, pendingCreateStartDate]);
+  }, [createPrefillClientId, form, isCreateModalOpen, lockedProviderId, pendingCreateProviderId, pendingCreateStartDate]);
 
   function clearCreateRouteState() {
     if (!location.state) {
@@ -494,6 +497,7 @@ export function useSchedulePageController() {
   function closeCreateModal() {
     setOpen(false);
     setPendingCreateStartDate(null);
+    setPendingCreateProviderId(undefined);
     withDraftHydration(isDraftHydratingRef, () => {
       form.resetFields();
     });
@@ -506,7 +510,7 @@ export function useSchedulePageController() {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
-        providerId: isSpecialistFilterLocked ? auth.user?.id : undefined,
+        providerId: pendingCreateProviderId ?? lockedProviderId,
         startDate: pendingCreateStartDate ?? dayjs(),
         recurrenceTypeId: undefined,
         patternEndDate: undefined,
