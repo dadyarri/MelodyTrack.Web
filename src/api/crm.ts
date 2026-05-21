@@ -72,7 +72,7 @@ export const dashboardApi = {
   stats(timezone: string) {
     return http.get<DashboardStats>("/dashboard/stats", { params: { timezone } }).then((response) => response.data);
   },
-  revenue(params: { timezone: string; start: string; end: string }) {
+  revenue(params: { timezone: string; start: string; end: string; groupBy?: "day" | "week" | "month" | "year" }) {
     return http.get<RevenueAnalytics>("/dashboard/revenue", { params }).then((response) => response.data);
   },
   priceChanges(params: { timezone: string; start: string; end: string; windowDays: number }) {

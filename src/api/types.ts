@@ -251,6 +251,7 @@ export interface TeacherRevenueAnalytics {
 export interface RevenueAnalytics {
   startDate: string;
   endDate: string;
+  groupBy: "day" | "week" | "month" | "year";
   totalRevenue: number;
   plannedRevenue: number;
   totalExpenses: number;
@@ -259,6 +260,42 @@ export interface RevenueAnalytics {
   revenueCountedAppointmentsCount: number;
   plannedAppointmentsCount: number;
   teachers: TeacherRevenueAnalytics[];
+  clients: ClientRevenueAnalytics[];
+  services: ServiceRevenueAnalytics[];
+  netProfitDynamics: NetProfitBucket[];
+  mostProfitablePeriods: NetProfitBucket[];
+  unprofitablePeriods: NetProfitBucket[];
+}
+
+export interface ClientRevenueAnalytics {
+  clientId: Ulid;
+  clientDisplayName: string;
+  revenue: number;
+  revenueShare?: number | null;
+  averageReceipt?: number | null;
+  revenueCountedAppointmentsCount: number;
+}
+
+export interface ServiceRevenueAnalytics {
+  serviceId: Ulid;
+  serviceName: string;
+  revenue: number;
+  revenueShare?: number | null;
+  averageReceipt?: number | null;
+  revenueCountedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+}
+
+export interface NetProfitBucket {
+  startDate: string;
+  endDate: string;
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+  changeFromPrevious?: number | null;
+  changePercentFromPrevious?: number | null;
+  lossPercentageRelativeToRevenue?: number | null;
 }
 
 export interface PriceChangeTeacherImpact {
@@ -308,7 +345,14 @@ export interface PriceChangeAnalyticsItem {
   profitImpact: number;
   priceElasticity?: number | null;
   additionalRevenue?: number | null;
+  activeClientsBeforeCount: number;
+  continuedClientsCount: number;
+  stoppedClientsCount: number;
+  reducedFrequencyClientsCount: number;
+  increasedFrequencyClientsCount: number;
+  churnShare?: number | null;
   teachers: PriceChangeTeacherImpact[];
+  clients: PriceChangeClientImpact[];
 }
 
 export interface PriceChangeAnalytics {
@@ -321,6 +365,41 @@ export interface PriceChangeAnalytics {
   positiveRevenueImpactCount: number;
   negativeDemandImpactCount: number;
   changes: PriceChangeAnalyticsItem[];
+  strongestPositiveImpacts: PriceChangeRanking[];
+  negativeImpacts: PriceChangeRanking[];
+}
+
+export interface PriceChangeClientImpact {
+  clientId: Ulid;
+  clientDisplayName: string;
+  sourceName?: string | null;
+  appointmentsBefore: number;
+  appointmentsAfter: number;
+  revenueBefore: number;
+  revenueAfter: number;
+  averageIntervalBeforeDays?: number | null;
+  averageIntervalAfterDays?: number | null;
+  continuedAfterPriceIncrease: boolean;
+  stoppedAfterPriceIncrease: boolean;
+  reducedAppointmentFrequency: boolean;
+  increasedAppointmentFrequency: boolean;
+}
+
+export interface PriceChangeRanking {
+  serviceId: Ulid;
+  serviceName: string;
+  effectiveDate: string;
+  revenueChange: number;
+  revenueChangePercent?: number | null;
+  profitImpact: number;
+  appointmentChange: number;
+  appointmentChangePercent?: number | null;
+  additionalRevenue?: number | null;
+  churnShare?: number | null;
+  cancellationShareBefore?: number | null;
+  cancellationShareAfter?: number | null;
+  burnedShareBefore?: number | null;
+  burnedShareAfter?: number | null;
 }
 
 export interface AuditLog {
