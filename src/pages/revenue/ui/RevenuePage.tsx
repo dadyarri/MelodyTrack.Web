@@ -4,6 +4,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { NetProfitBucket, RevenueAnalytics } from "@/api/types";
+import { STATS_CHART_COLORS, StatsDonutChart, StatsTrendChart } from "@/components/charts/StatsCharts";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -69,6 +70,51 @@ export function RevenuePage() {
         <MoneyMetricCard title="Чистая прибыль" value={formatMoney(query.data?.netProfit)} />
         <MoneyMetricCard title="Средний чек" value={formatMoney(query.data?.averageReceipt)} />
         <MoneyMetricCard title="Запланированных записей" value={String(query.data?.plannedAppointmentsCount ?? 0)} />
+      </div>
+
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+        <SectionCard title="Тренд выручки и прибыли">
+          <StatsTrendChart
+            data={query.data?.netProfitDynamics.map((item) => ({
+              key: `${item.startDate}-${item.endDate}`,
+              label: formatCompactBucket(item, query.data?.groupBy),
+              tooltip: (
+                <div>
+                  <div>{formatBucket(item, query.data)}</div>
+                  <div>Выручка: {formatMoney(item.revenue)}</div>
+                  <div>Расходы: {formatMoney(item.expenses)}</div>
+                  <div>Чистая прибыль: {formatMoney(item.netProfit)}</div>
+                </div>
+              ),
+              values: {
+                revenue: item.revenue,
+                expenses: item.expenses,
+                netProfit: item.netProfit,
+              },
+            }))}
+            series={[
+              { key: "revenue", label: "Выручка", color: STATS_CHART_COLORS[0] },
+              { key: "expenses", label: "Расходы", color: STATS_CHART_COLORS[1] },
+              { key: "netProfit", label: "Чистая прибыль", color: STATS_CHART_COLORS[2] },
+            ]}
+          />
+        </SectionCard>
+
+        <SectionCard title="Структура выручки по услугам">
+          <StatsDonutChart
+            items={query.data?.services.map((service, index) => ({
+              key: service.serviceId,
+              label: service.serviceName,
+              value: service.revenue,
+              valueLabel: formatMoney(service.revenue),
+              shareLabel: formatPercent(service.revenueShare),
+              tooltip: `${service.serviceName}: ${formatMoney(service.revenue)}${service.revenueShare == null ? "" : ` (${formatPercent(service.revenueShare)})`}`,
+              color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+            }))}
+            totalLabel="Выручка"
+            totalValueLabel={formatMoney(query.data?.totalRevenue)}
+          />
+        </SectionCard>
       </div>
 
       <SectionCard title="По преподавателям">
@@ -268,5 +314,19 @@ function formatBucket(row: NetProfitBucket, revenue?: Pick<RevenueAnalytics, "gr
       return start.format("YYYY");
     default:
       return start.format("MMMM YYYY");
+  }
+}
+
+function formatCompactBucket(row: NetProfitBucket, groupBy?: RevenueAnalytics["groupBy"]) {
+  const start = dayjs(row.startDate);
+  switch (groupBy) {
+    case "day":
+      return start.format("DD.MM");
+    case "week":
+      return start.format("DD.MM");
+    case "year":
+      return start.format("YYYY");
+    default:
+      return start.format("MMM");
   }
 }

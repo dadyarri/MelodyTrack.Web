@@ -4,6 +4,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useState } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { PaymentsAnalytics } from "@/api/types";
+import { STATS_CHART_COLORS, StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -50,6 +51,41 @@ export function PaymentsStatsPage() {
         <DelayMetricCard title="Средняя задержка" value={formatDelay(query.data?.averagePaymentDelayDays)} />
         <DelayMetricCard title="Медианная задержка" value={formatDelay(query.data?.medianPaymentDelayDays)} />
         <DelayMetricCard title="Максимальная задержка" value={formatDelay(query.data?.maxPaymentDelayDays)} />
+      </div>
+
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+        <SectionCard title="Структура долга по услугам">
+          <StatsDonutChart
+            items={query.data?.services
+              .filter((service) => service.outstandingDebt > 0)
+              .map((service, index) => ({
+                key: service.serviceId,
+                label: service.serviceName,
+                value: service.outstandingDebt,
+                valueLabel: formatMoney(service.outstandingDebt),
+                tooltip: `${service.serviceName}: ${formatMoney(service.outstandingDebt)}`,
+                color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+              }))}
+            totalLabel="Долг"
+            totalValueLabel={formatMoney(query.data?.totalDebt)}
+          />
+        </SectionCard>
+
+        <SectionCard title="Крупнейшие должники">
+          <StatsHorizontalBarChart
+            items={query.data?.clients
+              .filter((client) => client.debt > 0)
+              .slice(0, 8)
+              .map((client, index) => ({
+                key: client.clientId,
+                label: client.clientDisplayName,
+                value: client.debt,
+                valueLabel: formatMoney(client.debt),
+                tooltip: `${client.clientDisplayName}: ${formatMoney(client.debt)}`,
+                color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+              }))}
+          />
+        </SectionCard>
       </div>
 
       <SectionCard title="Баланс по клиентам">

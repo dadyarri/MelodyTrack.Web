@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from "react-router";
 import { AdminRoute } from "../layout/AdminRoute";
 import { AppLayout } from "../layout/AppLayout";
 import { ProtectedRoute } from "../layout/ProtectedRoute";
+import { StatsRoute } from "../layout/StatsRoute";
 import { SuperuserRoute } from "../layout/SuperuserRoute";
 
 export const router = createBrowserRouter([
@@ -60,7 +61,11 @@ export const router = createBrowserRouter([
           const { RevenuePage } = await import("@/pages/revenue");
 
           return {
-            Component: RevenuePage,
+            Component: () => (
+              <StatsRoute>
+                <RevenuePage />
+              </StatsRoute>
+            ),
           };
         },
       },
@@ -70,7 +75,11 @@ export const router = createBrowserRouter([
           const { PriceChangesPage } = await import("@/pages/price-changes");
 
           return {
-            Component: PriceChangesPage,
+            Component: () => (
+              <StatsRoute>
+                <PriceChangesPage />
+              </StatsRoute>
+            ),
           };
         },
       },
@@ -80,9 +89,31 @@ export const router = createBrowserRouter([
           const { PaymentsStatsPage } = await import("@/pages/payments-stats");
 
           return {
-            Component: PaymentsStatsPage,
+            Component: () => (
+              <StatsRoute>
+                <PaymentsStatsPage />
+              </StatsRoute>
+            ),
           };
         },
+      },
+      {
+        path: "expenses-dashboard",
+        lazy: async () => {
+          const { ExpensesStatsPage } = await import("@/pages/expenses-stats");
+
+          return {
+            Component: () => (
+              <StatsRoute>
+                <ExpensesStatsPage />
+              </StatsRoute>
+            ),
+          };
+        },
+      },
+      {
+        path: "expenses-stats",
+        element: <Navigate to="/expenses-dashboard" replace />,
       },
       {
         path: "clients",

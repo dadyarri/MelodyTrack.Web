@@ -15,6 +15,7 @@ import type {
   PaginatedResponse,
   PaymentsResponse,
   PaymentsAnalytics,
+  ExpensesAnalytics,
   PriceChangeAnalytics,
   RecurrenceType,
   RevenueAnalytics,
@@ -81,6 +82,9 @@ export const dashboardApi = {
   },
   payments(params: { timezone: string; start: string; end: string }) {
     return http.get<PaymentsAnalytics>("/dashboard/payments", { params }).then((response) => response.data);
+  },
+  expenses(params: { timezone: string; start: string; end: string; groupBy?: "day" | "week" | "month" | "year" }) {
+    return http.get<ExpensesAnalytics>("/dashboard/expenses", { params }).then((response) => response.data);
   },
 };
 

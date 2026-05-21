@@ -4,6 +4,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { PriceChangeAnalytics, PriceChangeAnalyticsItem, PriceChangeRanking } from "@/api/types";
+import { STATS_CHART_COLORS, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -56,6 +57,34 @@ export function PriceChangesPage() {
         <SummaryCard title="С ростом выручки" value={query.data?.positiveRevenueImpactCount ?? 0} />
         <SummaryCard title="С потерей спроса" value={query.data?.negativeDemandImpactCount ?? 0} />
       </SummaryGrid>
+
+      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+        <Card size="small" title="Выручка по изменениям цены">
+          <StatsHorizontalBarChart
+            items={query.data?.changes.map((change, index) => ({
+              key: `${change.serviceId}-${change.effectiveDate}-revenue`,
+              label: `${change.serviceName} · ${dayjs(change.effectiveDate).format("DD.MM")}`,
+              value: change.revenueChange,
+              valueLabel: formatSignedMoney(change.revenueChange),
+              tooltip: `${change.serviceName}: ${formatSignedMoney(change.revenueChange)}`,
+              color: change.revenueChange >= 0 ? STATS_CHART_COLORS[index % STATS_CHART_COLORS.length] : "#9f4f4f",
+            }))}
+          />
+        </Card>
+
+        <Card size="small" title="Изменение спроса по услугам">
+          <StatsHorizontalBarChart
+            items={query.data?.changes.map((change, index) => ({
+              key: `${change.serviceId}-${change.effectiveDate}-demand`,
+              label: `${change.serviceName} · ${dayjs(change.effectiveDate).format("DD.MM")}`,
+              value: change.appointmentChange,
+              valueLabel: `${formatSignedNumber(change.appointmentChange)}${change.appointmentChangePercent == null ? "" : ` ${formatPercent(change.appointmentChangePercent, { wrapped: true, empty: "" })}`}`,
+              tooltip: `${change.serviceName}: ${formatSignedNumber(change.appointmentChange)}${change.appointmentChangePercent == null ? "" : ` ${formatPercent(change.appointmentChangePercent, { wrapped: true })}`}`,
+              color: change.appointmentChange >= 0 ? STATS_CHART_COLORS[index % STATS_CHART_COLORS.length] : "#9f4f4f",
+            }))}
+          />
+        </Card>
+      </div>
 
       <Table<PriceChangeAnalyticsItem>
         rowKey={(row) => `${row.serviceId}-${row.effectiveDate}`}

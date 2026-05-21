@@ -416,6 +416,33 @@ export interface PaymentsAnalytics {
   services: ServicePaymentsAnalytics[];
 }
 
+export interface ExpensesAnalytics {
+  startDate: string;
+  endDate: string;
+  groupBy: "day" | "week" | "month" | "year";
+  totalExpenses: number;
+  totalRevenue: number;
+  expenseToRevenueRatio?: number | null;
+  expensesCount: number;
+  categories: ExpenseCategoryAnalytics[];
+  dynamics: ExpenseDynamicsBucket[];
+}
+
+export interface ExpenseCategoryAnalytics {
+  categoryId?: Ulid | null;
+  categoryName: string;
+  amount: number;
+  share?: number | null;
+}
+
+export interface ExpenseDynamicsBucket {
+  startDate: string;
+  endDate: string;
+  expenses: number;
+  changeFromPrevious?: number | null;
+  changePercentFromPrevious?: number | null;
+}
+
 export interface ClientPaymentsAnalytics {
   clientId: Ulid;
   clientDisplayName: string;
