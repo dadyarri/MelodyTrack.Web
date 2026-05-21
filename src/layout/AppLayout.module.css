@@ -20,6 +20,14 @@
   border-bottom: 1px solid var(--border-main);
 }
 
+.sider :global(.ant-menu) {
+  padding-inline: 12px;
+}
+
+.sider :global(.ant-menu-item) {
+  width: auto;
+}
+
 .header {
   height: 64px;
   padding: 0 24px;

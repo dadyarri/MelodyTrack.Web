@@ -68,7 +68,7 @@ export function AppLayout() {
 
   return (
     <Layout className={styles.shell}>
-      <Layout.Sider width={236} className={styles.sider} breakpoint="lg" collapsedWidth={0}>
+      <Layout.Sider width={296} className={styles.sider} breakpoint="lg" collapsedWidth={0}>
         <div className={styles.brand}>MelodyTrack</div>
         <Menu
           mode="inline"
