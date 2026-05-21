@@ -157,6 +157,36 @@ export function useSchedulePageController() {
     ? isActivityStale(currentDeletingAppointment.lastActivity?.id, appointmentToDeleteBaselineActivityId)
     : false;
 
+  const syncAppointmentBaseline = useCallback(
+    (appointmentId: Ulid) => {
+      const freshAppointment = findItemInQueryData(
+        queryClient,
+        ["appointments"],
+        (data) => data as Appointment[] | undefined,
+        appointmentId,
+      );
+      if (!freshAppointment) {
+        return;
+      }
+
+      if (selectedAppointment?.id === appointmentId) {
+        setSelectedAppointment(freshAppointment);
+        setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+      }
+
+      if (appointmentToEdit?.id === appointmentId) {
+        setAppointmentToEdit(freshAppointment);
+        setAppointmentToEditBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+      }
+
+      if (appointmentToDelete?.id === appointmentId) {
+        setAppointmentToDelete(freshAppointment);
+        setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+      }
+    },
+    [appointmentToDelete?.id, appointmentToEdit?.id, queryClient, selectedAppointment?.id],
+  );
+
   const createMutation = useMutation({
     mutationFn: async (values: AppointmentFormValues) => {
       const input = buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? []);
@@ -233,8 +263,9 @@ export function useSchedulePageController() {
         return current ? current.map(nextState) : current;
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      syncAppointmentBaseline(variables.id);
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
@@ -356,6 +387,7 @@ export function useSchedulePageController() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      syncAppointmentBaseline(variables.appointment.id);
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
