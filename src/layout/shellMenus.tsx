@@ -10,17 +10,43 @@ type ShellActionItemOptions = {
   isDarkMode: boolean;
 };
 
-export function buildNavMenuItems(items: AppNavItem[]): ItemType[] {
-  return items.map((item) => ({
+type BuildNavMenuItemsOptions = {
+  showShortcuts?: boolean;
+};
+
+const navGroupLabels = {
+  stats: "Статистика",
+  "reference-books": "Справочники",
+} as const;
+
+export function buildNavMenuItems(items: AppNavItem[], options: BuildNavMenuItemsOptions = {}): ItemType[] {
+  const { showShortcuts = true } = options;
+  const ungroupedItems = items.filter((item) => !item.group).map((item) => buildNavItem(item, showShortcuts));
+  const statsItems = items.filter((item) => item.group === "stats").map((item) => buildNavItem(item, showShortcuts));
+  const referenceBookItems = items.filter((item) => item.group === "reference-books").map((item) => buildNavItem(item, showShortcuts));
+
+  return [
+    ...ungroupedItems,
+    ...(statsItems.length > 0
+      ? [{ key: "group:stats", label: navGroupLabels.stats, children: statsItems }]
+      : []),
+    ...(referenceBookItems.length > 0
+      ? [{ key: "group:reference-books", label: navGroupLabels["reference-books"], children: referenceBookItems }]
+      : []),
+  ];
+}
+
+function buildNavItem(item: AppNavItem, showShortcuts: boolean): ItemType {
+  return {
     key: item.key,
     icon: item.icon,
     label: (
       <span className="app-nav-label">
         <span>{item.label}</span>
-        <Shortcut keyb={item.shortcut} />
+        {showShortcuts ? <Shortcut keyb={item.shortcut} /> : null}
       </span>
     ),
-  }));
+  };
 }
 
 export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): ItemType[] {
