@@ -1,4 +1,4 @@
-import { MenuOutlined, UserOutlined } from "@ant-design/icons";
+import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router";
@@ -19,6 +19,11 @@ export function AppLayout() {
   const availableNavItems = getAvailableNavItems(auth.user);
   const menuItems = buildNavMenuItems(availableNavItems);
   const mobileActionItems = buildShellActionItems({ isDarkMode: mode === "dark" });
+  const mobileDrawerActionItems = [
+    { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
+    { key: "theme", icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />, label: mode === "dark" ? "Светлая тема" : "Темная тема" },
+    { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
+  ];
   const handleUserAction = (key: ShellActionKey) => {
     if (key === "profile") {
       void navigate("/profile");
@@ -135,13 +140,18 @@ export function AppLayout() {
         onClose={() => {
           setMobileNavOpen(false);
         }}
-        className="mobile-nav-drawer"
+        className={styles.mobileNavDrawer}
       >
         <Space orientation="vertical" size={16} className="wide">
           <Menu
             mode="inline"
+            className={styles.mobileNavMenu}
             selectedKeys={[selectedKey]}
-            items={menuItems}
+            items={availableNavItems.map((item) => ({
+              key: item.key,
+              icon: item.icon,
+              label: item.label,
+            }))}
             onClick={({ key }) => {
               void navigate(key);
               setMobileNavOpen(false);
@@ -150,9 +160,9 @@ export function AppLayout() {
           <Divider className="mobile-nav-divider" />
           <Menu
             mode="inline"
-            className="mobile-nav-actions-menu"
+            className={styles.mobileNavActionsMenu}
             selectable={false}
-            items={mobileActionItems}
+            items={mobileDrawerActionItems}
             onClick={({ key }) => {
               setMobileNavOpen(false);
               handleUserAction(key as ShellActionKey);

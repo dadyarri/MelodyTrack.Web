@@ -22,10 +22,7 @@
 
 .sider :global(.ant-menu) {
   padding-inline: 12px;
-}
-
-.sider :global(.ant-menu-item) {
-  width: auto;
+  border-inline-end: 0;
 }
 
 .header {
@@ -109,6 +106,17 @@
   gap: 8px;
 }
 
+.mobileNavDrawer :global(.ant-menu),
+.mobileNavMenu,
+.mobileNavActionsMenu {
+  border-inline-end: 0 !important;
+}
+
+.mobileNavMenu :global(.ant-menu-item),
+.mobileNavActionsMenu :global(.ant-menu-item) {
+  width: 100%;
+}
+
 .content {
   padding: 24px;
   background: var(--bg-app);
@@ -127,15 +135,7 @@
   }
 
   .shell > .sider {
-    position: fixed;
-    inset-block: 0;
-    inset-inline-start: 0;
-    z-index: 1001;
-    box-shadow: 12px 0 24px rgba(72, 52, 27, 0.18);
-  }
-
-  .sider:global(.ant-layout-sider-collapsed) {
-    box-shadow: none;
+    display: none;
   }
 
   .sider :global(.ant-layout-sider-children) {
