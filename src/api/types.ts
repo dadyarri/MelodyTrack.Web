@@ -236,6 +236,31 @@ export interface DashboardStats {
   monthNet: number;
 }
 
+export interface TeacherRevenueAnalytics {
+  teacherId?: Ulid | null;
+  teacherDisplayName: string;
+  revenue: number;
+  revenueShare?: number | null;
+  averageReceipt?: number | null;
+  revenueCountedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  servicesProvidedCount: number;
+}
+
+export interface RevenueAnalytics {
+  startDate: string;
+  endDate: string;
+  totalRevenue: number;
+  plannedRevenue: number;
+  totalExpenses: number;
+  netProfit: number;
+  averageReceipt?: number | null;
+  revenueCountedAppointmentsCount: number;
+  plannedAppointmentsCount: number;
+  teachers: TeacherRevenueAnalytics[];
+}
+
 export interface AuditLog {
   id: Ulid;
   createdAtUtc: string;
