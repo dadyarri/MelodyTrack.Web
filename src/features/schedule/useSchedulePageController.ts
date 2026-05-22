@@ -66,18 +66,23 @@ export function useSchedulePageController() {
     }
   };
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
+  const canCreateAppointments = Boolean(auth.user?.isAdmin);
   const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
   const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;
   const lockedProviderId = isSpecialistFilterLocked ? auth.user?.id : undefined;
   const locationState = (location.state ?? null) as SchedulePageLocationState | null;
   const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
-  const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
+  const isCreateModalOpen = canCreateAppointments && (isOpen || Boolean(locationState?.openCreate));
 
   const openCreateModal = useCallback(() => {
+    if (!canCreateAppointments) {
+      return;
+    }
+
     setPendingCreateStartDate(null);
     setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
-  }, [effectiveProviderFilterId, lockedProviderId]);
+  }, [canCreateAppointments, effectiveProviderFilterId, lockedProviderId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -104,6 +109,10 @@ export function useSchedulePageController() {
       }
 
       if (matchesPlainKey(event, "a")) {
+        if (!canCreateAppointments) {
+          return;
+        }
+
         event.preventDefault();
         openCreateModal();
         return;
@@ -119,7 +128,7 @@ export function useSchedulePageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [auth.user?.id, isSpecialistFilterLocked, openCreateModal]);
+  }, [auth.user?.id, canCreateAppointments, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
     queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
@@ -503,10 +512,14 @@ export function useSchedulePageController() {
   }, []);
 
   const openCreateModalAt = useCallback((startDate: Dayjs) => {
+    if (!canCreateAppointments) {
+      return;
+    }
+
     setPendingCreateStartDate(startDate.second(0).millisecond(0));
     setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
-  }, [effectiveProviderFilterId, lockedProviderId]);
+  }, [canCreateAppointments, effectiveProviderFilterId, lockedProviderId]);
 
   useEffect(() => {
     if (!isCreateModalOpen) {
@@ -566,6 +579,7 @@ export function useSchedulePageController() {
 
   return {
     auth,
+    canCreateAppointments,
     weekStart,
     setWeekStart,
     query,

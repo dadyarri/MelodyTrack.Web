@@ -46,57 +46,58 @@ export function SchedulePage() {
                 controller.setWeekStart((value) => value.add(1, "week"));
               }}
             />
-            <ShortcutButton
-              shortcut="A"
-              type="primary"
-              leadingIcon={<PlusOutlined />}
-              label="Добавить"
-              onClick={controller.openCreateModal}
-            />
+            {controller.canCreateAppointments ? (
+              <ShortcutButton
+                shortcut="A"
+                type="primary"
+                leadingIcon={<PlusOutlined />}
+                label="Добавить"
+                onClick={controller.openCreateModal}
+              />
+            ) : null}
           </Space>
         }
       >
         <section className={styles.pageShell}>
-          <div className={styles.toolbar} data-onboarding-id="schedule-toolbar">
-            <div className={styles.quickFilters}>
-              <Typography.Text type="secondary">Преподаватель</Typography.Text>
-              <Space.Compact className={styles.quickFiltersControls}>
-                <UserSelect
-                  value={controller.effectiveProviderFilterId}
-                  onChange={controller.setProviderFilterId}
-                  disabled={controller.isSpecialistFilterLocked}
-                />
-                {!controller.isSpecialistFilterLocked && controller.auth.user?.id
-                  ? (() => {
-                      const currentUserId = controller.auth.user.id;
-                      return (
-                        <ShortcutButton
-                          shortcut="M"
-                          type={controller.effectiveProviderFilterId === currentUserId ? "primary" : "default"}
-                          disabled={false}
-                          label="Моё"
-                          onClick={() => {
-                            controller.setProviderFilterId((current) => (current === currentUserId ? undefined : currentUserId));
-                          }}
-                        />
-                      );
-                    })()
-                  : null}
-                <Button
-                  disabled={controller.isSpecialistFilterLocked || !controller.effectiveProviderFilterId}
-                  onClick={() => {
-                    controller.setProviderFilterId(undefined);
-                  }}
-                >
-                  Сбросить
-                </Button>
-              </Space.Compact>
+          {!controller.isSpecialistFilterLocked ? (
+            <div className={styles.toolbar} data-onboarding-id="schedule-toolbar">
+              <div className={styles.quickFilters}>
+                <Typography.Text type="secondary">Преподаватель</Typography.Text>
+                <Space.Compact className={styles.quickFiltersControls}>
+                  <UserSelect value={controller.effectiveProviderFilterId} onChange={controller.setProviderFilterId} />
+                  {controller.auth.user?.id
+                    ? (() => {
+                        const currentUserId = controller.auth.user.id;
+                        return (
+                          <ShortcutButton
+                            shortcut="M"
+                            type={controller.effectiveProviderFilterId === currentUserId ? "primary" : "default"}
+                            disabled={false}
+                            label="Моё"
+                            onClick={() => {
+                              controller.setProviderFilterId((current) => (current === currentUserId ? undefined : currentUserId));
+                            }}
+                          />
+                        );
+                      })()
+                    : null}
+                  <Button
+                    disabled={!controller.effectiveProviderFilterId}
+                    onClick={() => {
+                      controller.setProviderFilterId(undefined);
+                    }}
+                  >
+                    Сбросить
+                  </Button>
+                </Space.Compact>
+              </div>
             </div>
-          </div>
+          ) : null}
           <div className={styles.calendar} data-onboarding-id="schedule-calendar">
             <AppointmentsCalendar
               appointments={controller.filteredAppointments}
               availability={controller.providerAvailabilityQuery.data}
+              canCreateAppointments={controller.canCreateAppointments}
               loading={controller.query.isLoading}
               onReschedule={(appointment, startDate) => {
                 controller.rescheduleMutation.mutate({
@@ -176,6 +177,7 @@ export function SchedulePage() {
         }}
       />
       <AppointmentCreateModal
+        canCreateClient={controller.canCreateAppointments}
         createPending={controller.createMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
@@ -199,6 +201,7 @@ export function SchedulePage() {
       />
       <AppointmentEditModal
         appointment={controller.currentEditingAppointment}
+        canCreateClient={controller.canCreateAppointments}
         createdClientOptions={controller.createdClientOptions}
         editPending={controller.editMutation.isPending}
         form={controller.editForm}

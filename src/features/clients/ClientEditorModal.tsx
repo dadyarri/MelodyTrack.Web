@@ -38,7 +38,7 @@ export function ClientEditorModal({
   onClearDraft: () => void;
   onSubmit: (values: ClientFormValues) => void;
   onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => void;
-  onCreateSource: () => void;
+  onCreateSource?: () => void;
   onSourceLabelChange: (label?: string) => void;
 }) {
   return (

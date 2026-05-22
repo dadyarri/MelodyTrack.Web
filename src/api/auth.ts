@@ -113,7 +113,7 @@ export interface SessionsResponse {
 }
 
 export interface CreateInviteInput {
-  email: string;
+  email?: string;
   role: string;
 }
 

@@ -4,6 +4,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { getClientContactValue, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
+import { useAuth } from "@/features/auth/useAuth";
 import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
@@ -49,6 +50,7 @@ export function useClientsPageController() {
   const [createdSourceOptions, setCreatedSourceOptions] = useState<DefaultOptionType[]>([]);
   const [form] = Form.useForm<ClientFormValues>();
   const navigate = useNavigate();
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -56,6 +58,7 @@ export function useClientsPageController() {
       void message.error(errorMessage);
     }
   };
+  const canCreateClients = Boolean(auth.user?.isAdmin);
 
   const query = useQuery({
     queryKey: ["clients", page, search],
@@ -206,6 +209,10 @@ export function useClientsPageController() {
         return;
       }
 
+      if (!canCreateClients) {
+        return;
+      }
+
       const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
       setEditing(null);
       setEditingBaselineActivityId(undefined);
@@ -217,7 +224,7 @@ export function useClientsPageController() {
         form.setFieldsValue(draft?.values ?? {});
       });
     },
-    [form],
+    [canCreateClients, form],
   );
 
   const createSourceMutation = useMutation({
@@ -270,6 +277,10 @@ export function useClientsPageController() {
       }
 
       if (matchesPlainKey(event, "a")) {
+        if (!canCreateClients) {
+          return;
+        }
+
         event.preventDefault();
         openEditor();
       }
@@ -279,9 +290,10 @@ export function useClientsPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [openEditor]);
+  }, [canCreateClients, openEditor]);
 
   return {
+    auth,
     page,
     setPage,
     query,
@@ -316,8 +328,8 @@ export function useClientsPageController() {
       saveDraftValues(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
     },
     openClientHistoryFromDashboard: {
-      onCreateAppointment: (client: Client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }),
-      onCreatePayment: (client: Client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } }),
+      onCreateAppointment: canCreateClients ? (client: Client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }) : undefined,
+      onCreatePayment: canCreateClients ? (client: Client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } }) : undefined,
     },
     confirmDelete: (client: Client) => {
       modal.confirm({
@@ -328,6 +340,10 @@ export function useClientsPageController() {
       });
     },
     openSourceCreate: () => {
+      if (!canCreateClients) {
+        return;
+      }
+
       setSourceCreateOpen(true);
     },
     closeSourceCreate: () => {

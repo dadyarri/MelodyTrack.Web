@@ -7,6 +7,7 @@ import { useNavigate } from "react-router";
 import { clientsApi, dashboardApi, scheduleApi } from "@/api/crm";
 import type { Appointment, Client } from "@/api/types";
 import { ClientHistoryDrawer } from "@/entities/client";
+import { useAuth } from "@/features/auth/useAuth";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatDateTime, TIME_FORMAT } from "@/utils/date";
@@ -17,11 +18,17 @@ import styles from "./DashboardPage.module.css";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 
 export function DashboardPage() {
+  const auth = useAuth();
+  const canSeeFinancialOverview = Boolean(auth.user?.isAdmin);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const navigate = useNavigate();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const statsQuery = useQuery({ queryKey: ["dashboard", "stats", timezone], queryFn: () => dashboardApi.stats(timezone) });
-  const debtorsQuery = useQuery({ queryKey: ["clients", "debtors"], queryFn: () => clientsApi.debtors() });
+  const debtorsQuery = useQuery({
+    queryKey: ["clients", "debtors"],
+    queryFn: () => clientsApi.debtors(),
+    enabled: canSeeFinancialOverview,
+  });
   const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
   const historyQuery = useQuery({
     queryKey: ["clients", "history", historyClient?.id],
@@ -48,6 +55,10 @@ export function DashboardPage() {
       }
 
       if (matchesPlainKey(event, "x")) {
+        if (!canSeeFinancialOverview) {
+          return;
+        }
+
         event.preventDefault();
         debtorsExportMutation.mutate();
       }
@@ -57,7 +68,7 @@ export function DashboardPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [debtorsExportMutation]);
+  }, [canSeeFinancialOverview, debtorsExportMutation]);
 
   const todayKey = dayjs().format("YYYY-MM-DD");
   const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
@@ -69,30 +80,34 @@ export function DashboardPage() {
   return (
     <PageLayout title="Обзор">
       <div className={styles.grid} data-onboarding-id="dashboard-content">
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Общий долг" value={formatMoney(statsQuery.data?.totalDebt)} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Записи сегодня" value={statsQuery.data?.appointmentsToday ?? 0} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Записи завтра" value={statsQuery.data?.appointmentsTomorrow ?? 0} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Доход за месяц" value={formatMoney(statsQuery.data?.monthIncome)} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Расход за месяц" value={formatMoney(statsQuery.data?.monthExpenses)} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Итог за месяц" value={formatMoney(statsQuery.data?.monthNet)} loading={statsQuery.isLoading} />
-        </Card>
-        <Card className={smallWidgetClassName}>
-          <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
-        </Card>
+        {canSeeFinancialOverview ? (
+          <>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Записи сегодня" value={statsQuery.data?.appointmentsToday ?? 0} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Записи завтра" value={statsQuery.data?.appointmentsTomorrow ?? 0} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Общий долг" value={formatMoney(statsQuery.data?.totalDebt)} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Доход за месяц" value={formatMoney(statsQuery.data?.monthIncome)} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Расход за месяц" value={formatMoney(statsQuery.data?.monthExpenses)} loading={statsQuery.isLoading} />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic title="Итог за месяц" value={formatMoney(statsQuery.data?.monthNet)} loading={statsQuery.isLoading} />
+            </Card>
+          </>
+        ) : null}
 
         <Card className={largeWidgetClassName} title={`Записи на сегодня, ${formatDateTitle(dayjs())}`} loading={miniQuery.isLoading}>
           <ReminderList appointments={todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
@@ -106,47 +121,49 @@ export function DashboardPage() {
           <ReminderList appointments={tomorrowAppointments} emptyDescription="На завтра записей нет" showTimeOnly />
         </Card>
 
-        <Card
-          data-onboarding-id="dashboard-debtors"
-          className={largeWidgetClassName}
-          title="Клиенты с отрицательным балансом"
-          extra={
-            <ShortcutButton
-              shortcut="X"
-              leadingIcon={<DownloadOutlined />}
-              loading={debtorsExportMutation.isPending}
-              label="Экспорт"
-              onClick={() => {
-                debtorsExportMutation.mutate();
-              }}
+        {canSeeFinancialOverview ? (
+          <Card
+            data-onboarding-id="dashboard-debtors"
+            className={largeWidgetClassName}
+            title="Клиенты с отрицательным балансом"
+            extra={
+              <ShortcutButton
+                shortcut="X"
+                leadingIcon={<DownloadOutlined />}
+                loading={debtorsExportMutation.isPending}
+                label="Экспорт"
+                onClick={() => {
+                  debtorsExportMutation.mutate();
+                }}
+              />
+            }
+          >
+            <Table
+              rowKey="id"
+              loading={debtorsQuery.isLoading}
+              dataSource={debtorsQuery.data}
+              pagination={false}
+              scroll={{ x: "max-content" }}
+              columns={[
+                {
+                  title: "Клиент",
+                  render: (_, row) => (
+                    <Button
+                      type="link"
+                      className={tableLinkButtonStyles.button}
+                      onClick={() => {
+                        setHistoryClient(row);
+                      }}
+                    >
+                      {`${row.lastName} ${row.firstName}`}
+                    </Button>
+                  ),
+                },
+                { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag> },
+              ]}
             />
-          }
-        >
-          <Table
-            rowKey="id"
-            loading={debtorsQuery.isLoading}
-            dataSource={debtorsQuery.data}
-            pagination={false}
-            scroll={{ x: "max-content" }}
-            columns={[
-              {
-                title: "Клиент",
-                render: (_, row) => (
-                  <Button
-                    type="link"
-                    className={tableLinkButtonStyles.button}
-                    onClick={() => {
-                      setHistoryClient(row);
-                    }}
-                  >
-                    {`${row.lastName} ${row.firstName}`}
-                  </Button>
-                ),
-              },
-              { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag> },
-            ]}
-          />
-        </Card>
+          </Card>
+        ) : null}
       </div>
       <ClientHistoryDrawer
         client={historyClient}
@@ -156,8 +173,12 @@ export function DashboardPage() {
         onClose={() => {
           setHistoryClient(null);
         }}
-        onCreateAppointment={(client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } })}
-        onCreatePayment={(client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } })}
+        onCreateAppointment={
+          auth.user?.isAdmin ? (client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }) : undefined
+        }
+        onCreatePayment={
+          auth.user?.isAdmin ? (client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } }) : undefined
+        }
       />
     </PageLayout>
   );

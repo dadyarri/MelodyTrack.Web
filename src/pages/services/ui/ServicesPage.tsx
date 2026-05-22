@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { servicesApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import type { Service } from "@/api/types";
+import { useAuth } from "@/features/auth/useAuth";
 import { DraftModalFooter, DraftModalTitle, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "@/utils/drafts";
 import { formatMoney } from "@/utils/money";
@@ -30,6 +31,7 @@ type ServicePriceFormValues = {
 const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
 
 export function ServicesPage() {
+  const auth = useAuth();
   const [page, setPage] = useState(1);
   const hasCreateDraft = hasDraft(SERVICE_CREATE_DRAFT_KEY);
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
@@ -40,6 +42,7 @@ export function ServicesPage() {
   const [priceForm] = Form.useForm<ServicePriceFormValues>();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
+  const canManageServices = Boolean(auth.user?.isAdmin);
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
       void message.error(errorMessage);
@@ -109,6 +112,10 @@ export function ServicesPage() {
       }
 
       if (matchesPlainKey(event, "a")) {
+        if (!canManageServices) {
+          return;
+        }
+
         event.preventDefault();
         setCreateOpen(true);
       }
@@ -118,7 +125,7 @@ export function ServicesPage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [canManageServices]);
 
   function handleClearCreateDraft() {
     resetDraft(SERVICE_CREATE_DRAFT_KEY, draftReplayKeyRef);
@@ -131,16 +138,18 @@ export function ServicesPage() {
     <PageLayout
       title="Услуги"
       actions={
-        <ShortcutButton
-          data-onboarding-id="services-actions"
-          shortcut="A"
-          type="primary"
-          leadingIcon={<PlusOutlined />}
-          label="Добавить"
-          onClick={() => {
-            setCreateOpen(true);
-          }}
-        />
+        canManageServices ? (
+          <ShortcutButton
+            data-onboarding-id="services-actions"
+            shortcut="A"
+            type="primary"
+            leadingIcon={<PlusOutlined />}
+            label="Добавить"
+            onClick={() => {
+              setCreateOpen(true);
+            }}
+          />
+        ) : undefined
       }
     >
       <div data-onboarding-id="services-page-content">
@@ -159,7 +168,12 @@ export function ServicesPage() {
               render: (_, row) => (
                 <Button
                   icon={<DollarOutlined />}
+                  disabled={!canManageServices}
                   onClick={() => {
+                    if (!canManageServices) {
+                      return;
+                    }
+
                     setPricing(row);
                     priceForm.setFieldValue("price", row.price);
                   }}
@@ -170,7 +184,7 @@ export function ServicesPage() {
         />
       </div>
       <Modal
-        open={isCreateOpen}
+        open={canManageServices && isCreateOpen}
         title={<DraftModalTitle title="Новая услуга" restored={hasCreateDraft && isCreateOpen} />}
         onCancel={() => {
           setCreateOpen(false);
@@ -208,7 +222,7 @@ export function ServicesPage() {
         </Form>
       </Modal>
       <Modal
-        open={Boolean(pricing)}
+        open={canManageServices && Boolean(pricing)}
         title="Обновить цену"
         onCancel={() => {
           setPricing(null);

@@ -110,11 +110,14 @@ export function UsersPage() {
             layout="vertical"
             requiredMark={false}
             onFinish={(values) => {
-              createInviteMutation.mutate(values);
+              createInviteMutation.mutate({
+                ...values,
+                email: values.email?.trim() || undefined,
+              });
             }}
           >
-            <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-              <Input />
+            <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
+              <Input placeholder="Необязательно" />
             </Form.Item>
             <Form.Item name="role" label="Роль" rules={[{ required: true }]}>
               <RoleSelect />

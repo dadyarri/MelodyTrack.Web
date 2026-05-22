@@ -24,6 +24,7 @@ const serviceColors = [
 export function AppointmentsCalendar({
   appointments,
   availability,
+  canCreateAppointments = true,
   loading,
   range,
   onCreateAt,
@@ -34,6 +35,7 @@ export function AppointmentsCalendar({
 }: {
   appointments: Appointment[];
   availability?: UserAvailability;
+  canCreateAppointments?: boolean;
   loading: boolean;
   range: [Dayjs, Dayjs];
   onCreateAt: (startDate: Dayjs) => void;
@@ -177,7 +179,7 @@ export function AppointmentsCalendar({
                   className={`${styles.hourLine} ${styles.hourSlotButton}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
-                  disabled={!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0))}
+                  disabled={!(canCreateAppointments && isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)))}
                   onClick={() => {
                     onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
                   }}

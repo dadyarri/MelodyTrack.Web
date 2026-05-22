@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@/features/auth/useAuth";
 import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";
@@ -177,19 +178,27 @@ export function UserSelect({
   disabled?: boolean;
   onResolvedLabelChange?: (label?: string) => void;
 }) {
-  const query = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list(), retry: false });
+  const auth = useAuth();
+  const query = useQuery({
+    queryKey: ["users"],
+    queryFn: () => usersApi.list(),
+    enabled: !disabled,
+    retry: false,
+  });
   const cachedLabel = getCachedReferenceLabel("user", value);
+  const currentUserLabel =
+    auth.user && auth.user.id === value ? `${auth.user.lastName} ${auth.user.firstName}`.trim() : undefined;
   const options = useMemo<DefaultOptionType[]>(
     () =>
       query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ??
-      (cachedLabel && value ? [{ value, label: cachedLabel }] : []),
-    [cachedLabel, query.data, value],
+      ((currentUserLabel || cachedLabel) && value ? [{ value, label: currentUserLabel || cachedLabel }] : []),
+    [cachedLabel, currentUserLabel, query.data, value],
   );
 
   useEffect(() => {
-    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
+    const label = options.find((option) => option.value === value)?.label ?? currentUserLabel ?? cachedLabel;
     onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
-  }, [cachedLabel, onResolvedLabelChange, options, value]);
+  }, [cachedLabel, currentUserLabel, onResolvedLabelChange, options, value]);
 
   useEffect(() => {
     if (query.data) {
@@ -199,6 +208,12 @@ export function UserSelect({
       );
     }
   }, [query.data]);
+
+  useEffect(() => {
+    if (auth.user && currentUserLabel) {
+      rememberReferenceLabel("user", auth.user.id, currentUserLabel);
+    }
+  }, [auth.user, currentUserLabel]);
 
   return (
     <Select className="wide" allowClear disabled={disabled} loading={query.isLoading} options={options} value={value} onChange={onChange} />

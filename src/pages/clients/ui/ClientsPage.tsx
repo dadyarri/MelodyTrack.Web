@@ -23,16 +23,18 @@ export function ClientsPage() {
     <PageLayout
       title="Клиенты"
       actions={
-        <ShortcutButton
-          data-onboarding-id="clients-actions"
-          shortcut="A"
-          type="primary"
-          leadingIcon={<PlusOutlined />}
-          label="Добавить"
-          onClick={() => {
-            controller.openEditor();
-          }}
-        />
+        controller.auth.user?.isAdmin ? (
+          <ShortcutButton
+            data-onboarding-id="clients-actions"
+            shortcut="A"
+            type="primary"
+            leadingIcon={<PlusOutlined />}
+            label="Добавить"
+            onClick={() => {
+              controller.openEditor();
+            }}
+          />
+        ) : undefined
       }
     >
       <div data-onboarding-id="clients-page-content">
@@ -130,7 +132,7 @@ export function ClientsPage() {
         onClearDraft={controller.handleClearCreateDraft}
         onSubmit={controller.onSubmit}
         onValuesChange={controller.onValuesChange}
-        onCreateSource={controller.openSourceCreate}
+        onCreateSource={controller.auth.user?.isAdmin ? controller.openSourceCreate : undefined}
         onSourceLabelChange={controller.onSourceLabelChange}
       />
       <ReferenceBookCreateModal

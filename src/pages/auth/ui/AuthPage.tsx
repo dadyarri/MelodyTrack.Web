@@ -106,6 +106,7 @@ export function AuthPage() {
 
       message.success("Пользователь создан. Теперь можно войти.");
       setMode("login");
+      void navigate("/login", { replace: true });
     },
     onError: showErrors,
   });

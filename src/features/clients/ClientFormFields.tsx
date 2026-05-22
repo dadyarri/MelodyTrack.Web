@@ -91,7 +91,7 @@ export function ClientFormFields({
           <Form.Item name="sourceId" noStyle>
             <ClientSourceSelect extraOptions={sourceOptions} onResolvedLabelChange={onSourceLabelChange} />
           </Form.Item>
-          <Button onClick={onCreateSource}>Новый источник</Button>
+          {onCreateSource ? <Button onClick={onCreateSource}>Новый источник</Button> : null}
         </Space.Compact>
       </Form.Item>
     </>

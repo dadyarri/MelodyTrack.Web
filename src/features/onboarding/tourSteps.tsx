@@ -32,7 +32,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "dashboard-content",
     placement: "top",
     title: "Страница обзора",
-    description: "Страница обзора показывает ключевые показатели: клиентов, долг, записи на ближайшие дни, доходы и расходы за месяц.",
+    description: "Страница обзора показывает ключевые показатели по работе CRM. Состав карточек зависит от роли пользователя.",
   },
   {
     id: "dashboard-debtors",
@@ -41,14 +41,24 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Блок должников",
     description: "Этот блок показывает клиентов с отрицательным балансом. Из него можно открыть историю клиента и выгрузить список должников.",
+    audience: "admin",
   },
   {
-    id: "schedule-actions",
+    id: "schedule-navigation",
     path: "/schedule",
     targetId: "schedule-header-actions",
     placement: "bottom",
     title: "Страница расписания",
-    description: "В шапке страницы находятся переход между неделями, возврат к текущей неделе и создание новой записи.",
+    description: "В шапке страницы находятся переход между неделями и возврат к текущей неделе.",
+  },
+  {
+    id: "schedule-create",
+    path: "/schedule",
+    targetId: "schedule-header-actions",
+    placement: "bottom",
+    title: "Создание записи",
+    description: "Для администраторов в шапке страницы доступно создание новой записи.",
+    audience: "admin",
   },
   {
     id: "schedule-toolbar",
@@ -56,7 +66,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "schedule-toolbar",
     placement: "bottom",
     title: "Фильтры расписания",
-    description: "В этой панели выбирается преподаватель для просмотра расписания. Здесь также можно быстро перейти к собственному расписанию и сбросить фильтр.",
+    description: "В этой панели администратор может выбрать преподавателя, быстро перейти к собственному расписанию и сбросить фильтр.",
+    audience: "admin",
   },
   {
     id: "schedule-calendar",
@@ -64,7 +75,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "schedule-calendar",
     placement: "top",
     title: "Календарь записей",
-    description: "Календарь показывает рабочую неделю, занятые интервалы, статусы записей и нерабочее время преподавателей. Из календаря можно открыть детали записи и выполнить перенос.",
+    description: "Календарь показывает рабочую неделю, занятые интервалы, статусы записей и нерабочее время преподавателей. Из календаря можно открыть детали записи.",
   },
   {
     id: "clients",
@@ -73,6 +84,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Страница клиентов",
     description: "Страница клиентов содержит поиск, список клиентов, баланс, контакты, историю посещений и источник клиента.",
+    audience: "admin",
   },
   {
     id: "clients-actions",
@@ -81,6 +93,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "bottom",
     title: "Создание и изменение клиента",
     description: "Кнопка в шапке открывает создание клиента. В строке клиента доступны просмотр истории, изменение и удаление.",
+    audience: "admin",
   },
   {
     id: "services-list",
@@ -89,6 +102,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Страница услуг",
     description: "Здесь хранится список услуг, их описание и текущая цена. Эти данные используются в расписании, платежах и аналитике.",
+    audience: "admin",
   },
   {
     id: "services-actions",
@@ -97,6 +111,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "bottom",
     title: "Создание услуги и изменение цены",
     description: "Кнопка в шапке создает новую услугу. Кнопка со значком валюты в строке открывает изменение цены существующей услуги.",
+    audience: "admin",
   },
   {
     id: "payments-filters",
@@ -105,6 +120,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "bottom",
     title: "Фильтры платежей",
     description: "На странице платежей доступны поиск по клиенту, услуге и описанию, а также фильтр по периоду.",
+    audience: "admin",
   },
   {
     id: "payments-summary",
@@ -113,6 +129,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Список платежей",
     description: "Сводные карточки показывают сумму, количество и дату последнего платежа. Ниже находится таблица всех платежных операций.",
+    audience: "admin",
   },
   {
     id: "payments-create",
@@ -121,6 +138,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "left",
     title: "Создание платежа",
     description: "Создание платежа выполняется из кнопки в шапке. Платеж можно связать с клиентом и услугой, а при необходимости быстро создать нового клиента.",
+    audience: "admin",
   },
   {
     id: "expenses-filters",
@@ -129,6 +147,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "bottom",
     title: "Фильтры расходов",
     description: "На странице расходов доступны поиск по описанию и фильтр по периоду.",
+    audience: "admin",
   },
   {
     id: "expenses-summary",
@@ -137,6 +156,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Список расходов",
     description: "Сводные карточки показывают сумму, количество и дату последнего расхода. Ниже находится таблица расходных операций.",
+    audience: "admin",
   },
   {
     id: "expenses-create",
@@ -145,6 +165,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "left",
     title: "Создание расхода",
     description: "Создание расхода выполняется из кнопки в шапке. В форме можно выбрать статью расходов или создать новую категорию.",
+    audience: "admin",
   },
   {
     id: "expense-categories",
@@ -153,6 +174,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Справочник статей расходов",
     description: "Этот справочник используется для ведения категорий расходов. Категории из него доступны при создании и анализе расходов.",
+    audience: "admin",
   },
   {
     id: "client-sources",
@@ -161,6 +183,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     placement: "top",
     title: "Справочник источников клиентов",
     description: "Этот справочник используется для учета каналов привлечения клиентов. Источники применяются в карточке клиента и в клиентской аналитике.",
+    audience: "admin",
   },
   {
     id: "revenue-filters",
@@ -285,7 +308,7 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "users-actions",
     placement: "bottom",
     title: "Приглашение пользователя",
-    description: "Кнопка в шапке создает приглашение по email и роли. После создания ссылку можно скопировать и отправить сотруднику.",
+    description: "Кнопка в шапке создает приглашение с ролью и, при необходимости, с привязкой к email. После создания ссылку можно скопировать и отправить сотруднику.",
     audience: "admin",
   },
   {

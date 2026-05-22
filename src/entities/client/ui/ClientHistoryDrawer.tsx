@@ -10,8 +10,8 @@ type ClientHistoryDrawerProps = {
   isLoading: boolean;
   isError: boolean;
   onClose: () => void;
-  onCreateAppointment: (client: ClientHistory["client"]) => void;
-  onCreatePayment: (client: ClientHistory["client"]) => void;
+  onCreateAppointment?: (client: ClientHistory["client"]) => void;
+  onCreatePayment?: (client: ClientHistory["client"]) => void;
 };
 
 export function ClientHistoryDrawer({

@@ -9,32 +9,38 @@ import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
-  onCreateAppointment: (client: ClientHistory["client"]) => void;
-  onCreatePayment: (client: ClientHistory["client"]) => void;
+  onCreateAppointment?: (client: ClientHistory["client"]) => void;
+  onCreatePayment?: (client: ClientHistory["client"]) => void;
 };
 
 export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment }: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      <Space>
-        <Button
-          icon={<CalendarOutlined />}
-          onClick={() => {
-            onCreateAppointment(data.client);
-          }}
-        >
-          Записать
-        </Button>
-        <Button
-          type="primary"
-          icon={<CreditCardOutlined />}
-          onClick={() => {
-            onCreatePayment(data.client);
-          }}
-        >
-          Добавить платеж
-        </Button>
-      </Space>
+      {onCreateAppointment || onCreatePayment ? (
+        <Space>
+          {onCreateAppointment ? (
+            <Button
+              icon={<CalendarOutlined />}
+              onClick={() => {
+                onCreateAppointment(data.client);
+              }}
+            >
+              Записать
+            </Button>
+          ) : null}
+          {onCreatePayment ? (
+            <Button
+              type="primary"
+              icon={<CreditCardOutlined />}
+              onClick={() => {
+                onCreatePayment(data.client);
+              }}
+            >
+              Добавить платеж
+            </Button>
+          ) : null}
+        </Space>
+      ) : null}
       <div className={styles.detailGrid}>
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
@@ -104,7 +110,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
                     </Space>
                   </Space>
                   <Typography.Text type="secondary">
-                    {appointment.providerDisplayName ? `Мастер: ${appointment.providerDisplayName}` : "Мастер не назначен"}
+                    {appointment.providerDisplayName ? `Преподаватель: ${appointment.providerDisplayName}` : "Преподаватель не назначен"}
                   </Typography.Text>
                 </div>
               </List.Item>

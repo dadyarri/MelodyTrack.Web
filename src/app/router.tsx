@@ -149,7 +149,11 @@ export const router = createBrowserRouter([
           const { ClientsPage } = await import("@/pages/clients");
 
           return {
-            Component: ClientsPage,
+            Component: () => (
+              <AdminRoute>
+                <ClientsPage />
+              </AdminRoute>
+            ),
           };
         },
       },
@@ -173,7 +177,11 @@ export const router = createBrowserRouter([
           const { ServicesPage } = await import("@/pages/services");
 
           return {
-            Component: ServicesPage,
+            Component: () => (
+              <AdminRoute>
+                <ServicesPage />
+              </AdminRoute>
+            ),
           };
         },
       },
@@ -183,7 +191,11 @@ export const router = createBrowserRouter([
           const { PaymentsPage } = await import("@/pages/payments");
 
           return {
-            Component: PaymentsPage,
+            Component: () => (
+              <AdminRoute>
+                <PaymentsPage />
+              </AdminRoute>
+            ),
           };
         },
       },
@@ -193,7 +205,11 @@ export const router = createBrowserRouter([
           const { ExpensesPage } = await import("@/pages/expenses");
 
           return {
-            Component: ExpensesPage,
+            Component: () => (
+              <AdminRoute>
+                <ExpensesPage />
+              </AdminRoute>
+            ),
           };
         },
       },
@@ -203,7 +219,11 @@ export const router = createBrowserRouter([
           const { ExpenseCategoriesPage } = await import("@/pages/expense-categories");
 
           return {
-            Component: ExpenseCategoriesPage,
+            Component: () => (
+              <AdminRoute>
+                <ExpenseCategoriesPage />
+              </AdminRoute>
+            ),
           };
         },
       },
@@ -213,7 +233,11 @@ export const router = createBrowserRouter([
           const { ClientSourcesPage } = await import("@/pages/client-sources");
 
           return {
-            Component: ClientSourcesPage,
+            Component: () => (
+              <AdminRoute>
+                <ClientSourcesPage />
+              </AdminRoute>
+            ),
           };
         },
       },

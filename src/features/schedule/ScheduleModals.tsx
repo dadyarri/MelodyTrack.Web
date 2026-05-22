@@ -58,6 +58,7 @@ export function AppointmentEditModal({
   form,
   isStale,
   lockedProviderId,
+  canCreateClient = true,
   onCreateClient,
   onCancel,
   onSubmit,
@@ -68,6 +69,7 @@ export function AppointmentEditModal({
   form: FormInstance<AppointmentEditFormValues>;
   isStale: boolean;
   lockedProviderId?: string;
+  canCreateClient?: boolean;
   onCreateClient: () => void;
   onCancel: () => void;
   onSubmit: (values: AppointmentEditFormValues) => void;
@@ -111,7 +113,7 @@ export function AppointmentEditModal({
               <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
                 <ClientSelect extraOptions={createdClientOptions} />
               </Form.Item>
-              <Button onClick={onCreateClient}>Новый клиент</Button>
+              {canCreateClient ? <Button onClick={onCreateClient}>Новый клиент</Button> : null}
             </Space>
           </Form.Item>
           <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
@@ -140,6 +142,7 @@ export function AppointmentCreateModal({
   draftRestored,
   form,
   lockedProviderId,
+  canCreateClient = true,
   onCreateClient,
   onCancel,
   onDraftChange,
@@ -157,6 +160,7 @@ export function AppointmentCreateModal({
   draftRestored: boolean;
   form: FormInstance<AppointmentFormValues>;
   lockedProviderId?: string;
+  canCreateClient?: boolean;
   onCreateClient: () => void;
   onCancel: () => void;
   onDraftChange: (values: AppointmentFormValues) => void;
@@ -225,7 +229,7 @@ export function AppointmentCreateModal({
             <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
               <ClientSelect extraOptions={createdClientOptions} onResolvedLabelChange={onClientLabelChange} />
             </Form.Item>
-            <Button onClick={onCreateClient}>Новый клиент</Button>
+            {canCreateClient ? <Button onClick={onCreateClient}>Новый клиент</Button> : null}
           </Space>
         </Form.Item>
         <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
