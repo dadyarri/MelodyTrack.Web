@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, DatePicker, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { PaymentsAnalytics } from "@/api/types";
 import { STATS_CHART_COLORS, StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
+import { InfoLabel } from "@/components/InfoLabel";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -42,16 +43,13 @@ export function PaymentsStatsPage() {
       </ListFilters>
 
       <SummaryGrid>
-        <SummaryCard title="Неоплаченных записей" value={query.data?.unpaidAppointmentsCount ?? 0} />
-        <SummaryCard title="Должников" value={query.data?.debtorsCount ?? 0} />
-        <SummaryCard title="Общий долг" value={formatMoney(query.data?.totalDebt)} />
+        <SummaryCard title={<InfoLabel label="Неоплаченных записей" tooltip="Количество проведенных и сгоревших записей, которые еще не покрыты оплатами по FIFO-распределению." />} value={query.data?.unpaidAppointmentsCount ?? 0} />
+        <SummaryCard title={<InfoLabel label="Должников" tooltip="Количество клиентов, у которых выручка по проведенным и сгоревшим записям больше суммы оплат." />} value={query.data?.debtorsCount ?? 0} />
+        <SummaryCard title={<InfoLabel label="Общий долг" tooltip="Суммарная непокрытая оплатами стоимость проведенных и сгоревших записей." />} value={formatMoney(query.data?.totalDebt)} />
+        <SummaryCard title={<InfoLabel label="Средняя задержка" tooltip="Среднее число дней между датой записи и датой оплаты. Предоплата считается как 0 дней задержки." />} value={formatDelay(query.data?.averagePaymentDelayDays)} />
+        <SummaryCard title={<InfoLabel label="Медианная задержка" tooltip="Центральное значение задержки оплаты: половина оплат быстрее, половина медленнее." />} value={formatDelay(query.data?.medianPaymentDelayDays)} />
+        <SummaryCard title={<InfoLabel label="Максимальная задержка" tooltip="Самая длинная задержка оплаты среди попавших в выбранный период оплат." />} value={formatDelay(query.data?.maxPaymentDelayDays)} />
       </SummaryGrid>
-
-      <div className="profile-grid">
-        <DelayMetricCard title="Средняя задержка" value={formatDelay(query.data?.averagePaymentDelayDays)} />
-        <DelayMetricCard title="Медианная задержка" value={formatDelay(query.data?.medianPaymentDelayDays)} />
-        <DelayMetricCard title="Максимальная задержка" value={formatDelay(query.data?.maxPaymentDelayDays)} />
-      </div>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="Структура долга по услугам">
@@ -109,10 +107,10 @@ export function PaymentsStatsPage() {
               dataIndex: "debt",
               render: (value: number) => <Tag color={value > 0 ? "red" : "default"}>{formatMoney(value)}</Tag>,
             },
-            { title: "Неоплаченных записей", dataIndex: "unpaidAppointmentsCount" },
-            { title: "Средняя задержка", dataIndex: "averagePaymentDelayDays", render: formatDelay },
-            { title: "Медиана", dataIndex: "medianPaymentDelayDays", render: formatDelay },
-            { title: "Максимум", dataIndex: "maxPaymentDelayDays", render: formatDelay },
+            { title: <InfoLabel label="Неоплаченных записей" tooltip="Проведенные и сгоревшие записи клиента, которые еще не покрыты оплатами." />, dataIndex: "unpaidAppointmentsCount" },
+            { title: <InfoLabel label="Средняя задержка" tooltip="Среднее число дней от даты записи до даты оплаты." />, dataIndex: "averagePaymentDelayDays", render: formatDelay },
+            { title: <InfoLabel label="Медиана" tooltip="Центральное значение задержки оплаты." />, dataIndex: "medianPaymentDelayDays", render: formatDelay },
+            { title: <InfoLabel label="Максимум" tooltip="Наибольшая задержка оплаты." />, dataIndex: "maxPaymentDelayDays", render: formatDelay },
           ]}
         />
       </SectionCard>
@@ -150,20 +148,11 @@ export function PaymentsStatsPage() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <Card size="small" title={title}>
       {children}
     </Card>
-  );
-}
-
-function DelayMetricCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div>
-      <Typography.Text type="secondary">{title}</Typography.Text>
-      <Typography.Title level={4}>{value}</Typography.Title>
-    </div>
   );
 }
 
@@ -200,10 +189,10 @@ function PaymentsSliceTable<T>({
         { title: "Срез", render: (_, row) => getName(row) },
         { title: "Выручка", render: (_, row) => formatMoney(getRevenue(row)) },
         { title: "Долг", render: (_, row) => <Tag color={getDebt(row) > 0 ? "red" : "default"}>{formatMoney(getDebt(row))}</Tag> },
-        { title: "Неопл. записей", render: (_, row) => getUnpaid(row) },
-        { title: "Средняя задержка", render: (_, row) => formatDelay(getAverageDelay(row)) },
-        { title: "Медиана", render: (_, row) => formatDelay(getMedianDelay(row)) },
-        { title: "Макс. задержка", render: (_, row) => formatDelay(getMaxDelay(row)) },
+        { title: <InfoLabel label="Неопл. записей" tooltip="Записи в этом срезе, которые еще не покрыты оплатами." />, render: (_, row) => getUnpaid(row) },
+        { title: <InfoLabel label="Средняя задержка" tooltip="Среднее число дней от записи до оплаты в этом срезе." />, render: (_, row) => formatDelay(getAverageDelay(row)) },
+        { title: <InfoLabel label="Медиана" tooltip="Центральное значение задержки оплаты в этом срезе." />, render: (_, row) => formatDelay(getMedianDelay(row)) },
+        { title: <InfoLabel label="Макс. задержка" tooltip="Самая длинная задержка оплаты в этом срезе." />, render: (_, row) => formatDelay(getMaxDelay(row)) },
       ]}
     />
   );

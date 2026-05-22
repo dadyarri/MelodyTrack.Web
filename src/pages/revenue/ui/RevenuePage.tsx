@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, DatePicker, Select, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { NetProfitBucket, RevenueAnalytics } from "@/api/types";
 import { STATS_CHART_COLORS, StatsDonutChart, StatsTrendChart } from "@/components/charts/StatsCharts";
+import { InfoLabel } from "@/components/InfoLabel";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
+import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
 import { DATE_FORMAT } from "@/utils/date";
@@ -61,16 +63,16 @@ export function RevenuePage() {
         totalAmount={query.data?.totalRevenue}
         itemsCount={query.data?.revenueCountedAppointmentsCount}
         itemsTitle="Платных записей"
-        lastItemTitle="Плановая выручка"
+        lastItemTitle={<InfoLabel label="Плановая выручка" tooltip="Ожидаемая выручка по запланированным записям в выбранном периоде. В фактическую выручку не входит." />}
         lastItemAtLabel={formatMoney(query.data?.plannedRevenue)}
       />
 
-      <div className="profile-grid">
-        <MoneyMetricCard title="Расходы" value={formatMoney(query.data?.totalExpenses)} />
-        <MoneyMetricCard title="Чистая прибыль" value={formatMoney(query.data?.netProfit)} />
-        <MoneyMetricCard title="Средний чек" value={formatMoney(query.data?.averageReceipt)} />
-        <MoneyMetricCard title="Запланированных записей" value={String(query.data?.plannedAppointmentsCount ?? 0)} />
-      </div>
+      <SummaryGrid>
+        <SummaryCard title="Расходы" value={formatMoney(query.data?.totalExpenses)} />
+        <SummaryCard title={<InfoLabel label="Чистая прибыль" tooltip="Фактическая выручка минус расходы за выбранный период." />} value={formatMoney(query.data?.netProfit)} />
+        <SummaryCard title={<InfoLabel label="Средний чек" tooltip="Средняя выручка на одну проведенную или сгоревшую платную запись." />} value={formatMoney(query.data?.averageReceipt)} />
+        <SummaryCard title={<InfoLabel label="Запланированных записей" tooltip="Количество будущих или запланированных записей в выбранном периоде. Они не входят в фактическую выручку." />} value={query.data?.plannedAppointmentsCount ?? 0} />
+      </SummaryGrid>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="Тренд выручки и прибыли">
@@ -128,12 +130,12 @@ export function RevenuePage() {
             { title: "Преподаватель", dataIndex: "teacherDisplayName" },
             { title: "Выручка", dataIndex: "revenue", render: (value: number) => formatMoney(value) },
             {
-              title: "Доля",
+              title: <InfoLabel label="Доля" tooltip="Доля этого преподавателя в общей выручке выбранного периода." />,
               dataIndex: "revenueShare",
               render: formatPercent,
             },
             {
-              title: "Средний чек",
+              title: <InfoLabel label="Средний чек" tooltip="Средняя выручка на одну платную запись в этом срезе." />,
               dataIndex: "averageReceipt",
               render: (value?: number | null) => (value == null ? "—" : formatMoney(value)),
             },
@@ -163,7 +165,7 @@ export function RevenuePage() {
             columns={[
               { title: "Клиент", dataIndex: "clientDisplayName" },
               { title: "Выручка", dataIndex: "revenue", render: (value: number) => formatMoney(value) },
-              { title: "Средний чек", dataIndex: "averageReceipt", render: (value?: number | null) => (value == null ? "—" : formatMoney(value)) },
+              { title: <InfoLabel label="Средний чек" tooltip="Средняя выручка на одну платную запись клиента." />, dataIndex: "averageReceipt", render: (value?: number | null) => (value == null ? "—" : formatMoney(value)) },
               { title: "Платных записей", dataIndex: "revenueCountedAppointmentsCount" },
             ]}
           />
@@ -179,8 +181,8 @@ export function RevenuePage() {
             columns={[
               { title: "Услуга", dataIndex: "serviceName" },
               { title: "Выручка", dataIndex: "revenue", render: (value: number) => formatMoney(value) },
-              { title: "Доля", dataIndex: "revenueShare", render: formatPercent },
-              { title: "Средний чек", dataIndex: "averageReceipt", render: (value?: number | null) => (value == null ? "—" : formatMoney(value)) },
+              { title: <InfoLabel label="Доля" tooltip="Доля услуги в общей выручке выбранного периода." />, dataIndex: "revenueShare", render: formatPercent },
+              { title: <InfoLabel label="Средний чек" tooltip="Средняя выручка на одну платную запись по этой услуге." />, dataIndex: "averageReceipt", render: (value?: number | null) => (value == null ? "—" : formatMoney(value)) },
               {
                 title: "Статусы",
                 render: (_, row) => (
@@ -207,8 +209,8 @@ export function RevenuePage() {
             { title: "Выручка", dataIndex: "revenue", render: (value: number) => formatMoney(value) },
             { title: "Расходы", dataIndex: "expenses", render: (value: number) => formatMoney(value) },
             { title: "Чистая прибыль", dataIndex: "netProfit", render: (value: number) => <ProfitTag value={value} /> },
-            { title: "Изм. к прошлому", dataIndex: "changeFromPrevious", render: (value?: number | null) => (value == null ? "—" : <ProfitTag value={value} />) },
-            { title: "% к прошлому", dataIndex: "changePercentFromPrevious", render: formatPercent },
+            { title: <InfoLabel label="Изм. к прошлому" tooltip="Разница по чистой прибыли относительно предыдущего периода той же длины." />, dataIndex: "changeFromPrevious", render: (value?: number | null) => (value == null ? "—" : <ProfitTag value={value} />) },
+            { title: <InfoLabel label="% к прошлому" tooltip="Процентное изменение чистой прибыли относительно предыдущего периода той же длины." />, dataIndex: "changePercentFromPrevious", render: formatPercent },
           ]}
         />
       </SectionCard>
@@ -239,7 +241,7 @@ export function RevenuePage() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <Card size="small" title={title}>
       {children}
@@ -275,15 +277,6 @@ function BucketSummaryTable({
 
 function ProfitTag({ value }: { value: number }) {
   return <Tag color={value > 0 ? "green" : value < 0 ? "red" : "default"}>{formatSignedMoney(value)}</Tag>;
-}
-
-function MoneyMetricCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div>
-      <Typography.Text type="secondary">{title}</Typography.Text>
-      <Typography.Title level={4}>{value}</Typography.Title>
-    </div>
-  );
 }
 
 function formatPercent(value?: number | null) {

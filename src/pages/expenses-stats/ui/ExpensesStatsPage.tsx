@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, DatePicker, Select, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { ExpenseCategoryAnalytics, ExpenseDynamicsBucket, ExpensesAnalytics } from "@/api/types";
 import { STATS_CHART_COLORS, StatsDonutChart, StatsTrendChart } from "@/components/charts/StatsCharts";
+import { InfoLabel } from "@/components/InfoLabel";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -59,16 +60,13 @@ export function ExpensesStatsPage() {
 
       <SummaryGrid>
         <SummaryCard title="Всего расходов" value={formatMoney(query.data?.totalExpenses)} />
-        <SummaryCard title="Доля от выручки" value={formatPercent(query.data?.expenseToRevenueRatio)} />
+        <SummaryCard title={<InfoLabel label="Доля от выручки" tooltip="Какой процент выручки за тот же период составили расходы." />} value={formatPercent(query.data?.expenseToRevenueRatio)} />
         <SummaryCard title="Операций расходов" value={query.data?.expensesCount ?? 0} />
         <SummaryCard title="Категорий" value={query.data?.categories.length ?? 0} />
+        <SummaryCard title="Выручка за период" value={formatMoney(query.data?.totalRevenue)} />
+        <SummaryCard title={<InfoLabel label="Средний расход" tooltip="Средняя сумма одной расходной операции за выбранный период." />} value={formatAverageExpense(query.data)} />
+        <SummaryCard title="Крупнейшая категория" value={query.data?.categories[0] ? `${query.data.categories[0].categoryName}: ${formatMoney(query.data.categories[0].amount)}` : "—"} />
       </SummaryGrid>
-
-      <div className="profile-grid">
-        <MetricCard title="Выручка за период" value={formatMoney(query.data?.totalRevenue)} />
-        <MetricCard title="Средний расход" value={formatAverageExpense(query.data)} />
-        <MetricCard title="Крупнейшая категория" value={query.data?.categories[0] ? `${query.data.categories[0].categoryName}: ${formatMoney(query.data.categories[0].amount)}` : "—"} />
-      </div>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="График расходов">
@@ -116,8 +114,8 @@ export function ExpensesStatsPage() {
           columns={[
             { title: "Период", render: (_, row) => formatBucket(row, query.data) },
             { title: "Расходы", dataIndex: "expenses", render: (value: number) => formatMoney(value) },
-            { title: "Изм. к прошлому", dataIndex: "changeFromPrevious", render: (value?: number | null) => (value == null ? "—" : <ExpenseChangeTag value={value} money />) },
-            { title: "% к прошлому", dataIndex: "changePercentFromPrevious", render: formatPercent },
+            { title: <InfoLabel label="Изм. к прошлому" tooltip="Разница в сумме расходов относительно предыдущего периода той же длины." />, dataIndex: "changeFromPrevious", render: (value?: number | null) => (value == null ? "—" : <ExpenseChangeTag value={value} money />) },
+            { title: <InfoLabel label="% к прошлому" tooltip="Процентное изменение расходов относительно предыдущего периода той же длины." />, dataIndex: "changePercentFromPrevious", render: formatPercent },
           ]}
         />
       </SectionCard>
@@ -140,20 +138,11 @@ export function ExpensesStatsPage() {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionCard({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <Card size="small" title={title}>
       {children}
     </Card>
-  );
-}
-
-function MetricCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div>
-      <Typography.Text type="secondary">{title}</Typography.Text>
-      <Typography.Title level={4}>{value}</Typography.Title>
-    </div>
   );
 }
 

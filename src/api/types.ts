@@ -236,6 +236,65 @@ export interface DashboardStats {
   monthNet: number;
 }
 
+export interface ClientSourceAnalytics {
+  sourceName: string;
+  activeClientsCount: number;
+  previousPeriodActiveClientsCount: number;
+  retainedClientsCount: number;
+  retentionRate?: number | null;
+  newClientsCount: number;
+  newClientsShare?: number | null;
+  lostClientsCount: number;
+  lostShare?: number | null;
+  revenue: number;
+  averageLifetimeValue?: number | null;
+}
+
+export interface ClientAnalytics {
+  clientId: Ulid;
+  clientDisplayName: string;
+  sourceName: string;
+  lifetimeValue: number;
+  revenueCountedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  averageIntervalDays?: number | null;
+  lifetimeDays?: number | null;
+  daysSinceLastAppointment?: number | null;
+  createdAtUtc: string;
+  firstAppointmentAtUtc?: string | null;
+  lastAppointmentAtUtc?: string | null;
+  debt: number;
+  isLost: boolean;
+  isAtRisk: boolean;
+  isVip: boolean;
+  isRegular: boolean;
+  isSingleTime: boolean;
+  isDebtor: boolean;
+  isNew: boolean;
+}
+
+export interface ClientsAnalyticsResponse {
+  startDate: string;
+  endDate: string;
+  previousPeriodStartDate: string;
+  previousPeriodEndDate: string;
+  activeClientsCount: number;
+  previousPeriodActiveClientsCount: number;
+  retainedClientsCount: number;
+  retentionRate?: number | null;
+  newClientsCount: number;
+  lostClientsCount: number;
+  atRiskClientsCount: number;
+  averageLifetimeValue?: number | null;
+  averageClientLifetimeDays?: number | null;
+  vipClientsCount: number;
+  regularClientsCount: number;
+  singleTimeClientsCount: number;
+  debtorsCount: number;
+  sources: ClientSourceAnalytics[];
+  clients: ClientAnalytics[];
+}
+
 export interface TeacherRevenueAnalytics {
   teacherId?: Ulid | null;
   teacherDisplayName: string;

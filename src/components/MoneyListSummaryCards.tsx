@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatMoney } from "../utils/money";
 import { SummaryCard, SummaryGrid } from "./SummaryGrid";
 
@@ -11,8 +12,8 @@ export function MoneyListSummaryCards({
   totalAmount?: number | null;
   itemsCount?: number | null;
   lastItemAtLabel: string;
-  itemsTitle: string;
-  lastItemTitle: string;
+  itemsTitle: ReactNode;
+  lastItemTitle: ReactNode;
 }) {
   return (
     <SummaryGrid>

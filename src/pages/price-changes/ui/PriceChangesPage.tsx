@@ -5,6 +5,7 @@ import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
 import type { PriceChangeAnalytics, PriceChangeAnalyticsItem, PriceChangeRanking } from "@/api/types";
 import { STATS_CHART_COLORS, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
+import { InfoLabel } from "@/components/InfoLabel";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
@@ -54,8 +55,8 @@ export function PriceChangesPage() {
       <SummaryGrid>
         <SummaryCard title="Изменений найдено" value={query.data?.totalChanges ?? 0} />
         <SummaryCard title="Повышений цены" value={query.data?.priceIncreasesCount ?? 0} />
-        <SummaryCard title="С ростом выручки" value={query.data?.positiveRevenueImpactCount ?? 0} />
-        <SummaryCard title="С потерей спроса" value={query.data?.negativeDemandImpactCount ?? 0} />
+        <SummaryCard title={<InfoLabel label="С ростом выручки" tooltip="Количество изменений цены, после которых выручка в окне сравнения выросла." />} value={query.data?.positiveRevenueImpactCount ?? 0} />
+        <SummaryCard title={<InfoLabel label="С потерей спроса" tooltip="Количество изменений цены, после которых число записей в окне сравнения уменьшилось." />} value={query.data?.negativeDemandImpactCount ?? 0} />
       </SummaryGrid>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
@@ -105,7 +106,7 @@ export function PriceChangesPage() {
             render: (_, row) => formatTransition(formatMoney(row.oldPrice), formatMoney(row.newPrice)),
           },
           {
-            title: "Изменение цены",
+            title: <InfoLabel label="Изменение цены" tooltip="Абсолютное и процентное изменение новой цены относительно старой." />,
             render: (_, row) => (
               <MetricTag value={row.priceChange} suffix={formatPercent(row.priceChangePercent, { wrapped: true, empty: undefined })} money />
             ),
@@ -121,7 +122,7 @@ export function PriceChangesPage() {
             ),
           },
           {
-            title: "Спрос",
+            title: <InfoLabel label="Спрос" tooltip="Сравнение количества записей до и после изменения цены в выбранном окне сравнения." />,
             render: (_, row) => (
               <CompactDelta
                 before={String(row.appointmentsBefore)}
@@ -131,11 +132,15 @@ export function PriceChangesPage() {
             ),
           },
           {
-            title: "Кратко",
+            title: <InfoLabel label="Кратко" tooltip="Ключевые показатели по изменению: сколько записей затронуто, какой стал средний чек и как изменилась прибыль." />,
             render: (_, row) => (
               <>
-                <Tag color="blue">Затронуто: {row.affectedAppointmentsCount}</Tag>
-                <Tag color="green">Средний чек: {formatMoney(row.averageReceiptAfter)}</Tag>
+                <Tag color="blue">
+                  <InfoLabel label={`Затронуто: ${String(row.affectedAppointmentsCount)}`} tooltip="Количество записей услуги после даты изменения цены, попавших в анализ." />
+                </Tag>
+                <Tag color="green">
+                  <InfoLabel label={`Средний чек: ${formatMoney(row.averageReceiptAfter)}`} tooltip="Средняя выручка на одну платную запись после изменения цены." />
+                </Tag>
                 <Tag color={row.profitImpact > 0 ? "green" : row.profitImpact < 0 ? "red" : "default"}>
                   Прибыль: {formatSignedMoney(row.profitImpact)}
                 </Tag>
@@ -169,7 +174,7 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
       </SummaryGrid>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <Card size="small" title="Статусы">
+        <Card size="small" title={<InfoLabel label="Статусы" tooltip="Как изменились доли проведенных, отмененных и сгоревших записей до и после изменения цены." />}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Tag color="green">Проведено: {formatTransition(String(row.completedAppointmentsBefore), String(row.completedAppointmentsAfter))}</Tag>
             <Tag color="volcano">Отмена: {formatTransition(formatPercent(row.cancellationShareBefore), formatPercent(row.cancellationShareAfter))}</Tag>
@@ -177,18 +182,23 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
           </div>
         </Card>
 
-        <Card size="small" title="Финансовый эффект">
+        <Card size="small" title={<InfoLabel label="Финансовый эффект" tooltip="Сравнение расходов, прибыли, дополнительной выручки и оценка эластичности после изменения цены." />}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Tag color="blue">Затронуто записей: {row.affectedAppointmentsCount}</Tag>
             <Tag color="default">Расходы: {formatTransition(formatMoney(row.expensesBefore), formatMoney(row.expensesAfter))}</Tag>
             <Tag color={row.additionalRevenue != null && row.additionalRevenue > 0 ? "green" : row.additionalRevenue != null && row.additionalRevenue < 0 ? "red" : "default"}>
               Доп. выручка: {row.additionalRevenue == null ? "—" : formatSignedMoney(row.additionalRevenue)}
             </Tag>
-            <Tag color="default">Эластичность: {row.priceElasticity == null ? "—" : row.priceElasticity.toFixed(2)}</Tag>
+            <Tag color="default">
+              <InfoLabel
+                label={`Эластичность: ${row.priceElasticity == null ? "—" : row.priceElasticity.toFixed(2)}`}
+                tooltip="Эластичность показывает, насколько чувствителен спрос к изменению цены: это отношение процентного изменения числа записей к процентному изменению цены. Чем больше значение по модулю, тем сильнее спрос реагирует на цену."
+              />
+            </Tag>
           </div>
         </Card>
 
-        <Card size="small" title="Клиенты">
+        <Card size="small" title={<InfoLabel label="Клиенты" tooltip="Показывает, сколько клиентов продолжили, остановились или изменили частоту посещений после изменения цены." />}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Tag color="blue">Активны до: {row.activeClientsBeforeCount}</Tag>
             <Tag color="green">Продолжили: {row.continuedClientsCount}</Tag>
