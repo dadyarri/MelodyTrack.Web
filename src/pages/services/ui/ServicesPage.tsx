@@ -132,6 +132,7 @@ export function ServicesPage() {
       title="Услуги"
       actions={
         <ShortcutButton
+          data-onboarding-id="services-actions"
           shortcut="A"
           type="primary"
           leadingIcon={<PlusOutlined />}
@@ -142,30 +143,32 @@ export function ServicesPage() {
         />
       }
     >
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data?.data}
-        pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        columns={[
-          { title: "Название", dataIndex: "name" },
-          { title: "Описание", dataIndex: "description" },
-          { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
-          {
-            title: "",
-            width: 72,
-            render: (_, row) => (
-              <Button
-                icon={<DollarOutlined />}
-                onClick={() => {
-                  setPricing(row);
-                  priceForm.setFieldValue("price", row.price);
-                }}
-              />
-            ),
-          },
-        ]}
-      />
+      <div data-onboarding-id="services-page-content">
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data?.data}
+          pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+          columns={[
+            { title: "Название", dataIndex: "name" },
+            { title: "Описание", dataIndex: "description" },
+            { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
+            {
+              title: "",
+              width: 72,
+              render: (_, row) => (
+                <Button
+                  icon={<DollarOutlined />}
+                  onClick={() => {
+                    setPricing(row);
+                    priceForm.setFieldValue("price", row.price);
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+      </div>
       <Modal
         open={isCreateOpen}
         title={<DraftModalTitle title="Новая услуга" restored={hasCreateDraft && isCreateOpen} />}

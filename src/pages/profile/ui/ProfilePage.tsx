@@ -7,6 +7,7 @@ import {
   authApi,
   type ChangePasswordInput,
   type MeResponse,
+  onboardingApi,
   type RecoveryCodeItem,
   type SessionDto,
   type Setup2FaInput,
@@ -189,6 +190,14 @@ export function ProfilePage() {
     },
     onError: showErrors,
   });
+  const resetOnboardingMutation = useMutation({
+    mutationFn: () => onboardingApi.reset(),
+    onSuccess: async () => {
+      message.success("Экскурсия сброшена и снова появится в приложении.");
+      await queryClient.invalidateQueries({ queryKey: ["onboarding", "state"] });
+    },
+    onError: showErrors,
+  });
 
   function openRecoveryCodes(codes: RecoveryCodeItem[]) {
     setRecoveryCodes(codes);
@@ -239,10 +248,31 @@ export function ProfilePage() {
   return (
     <PageLayout title="Профиль" description="Управление паролем, 2FA, кодами восстановления и активными сессиями." size={20}>
       <div className="profile-grid">
-        <Card title="Аккаунт">{me ? <ProfileSummary me={me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}</Card>
+        <div data-onboarding-id="profile-account-card">
+          <Card title="Аккаунт">{me ? <ProfileSummary me={me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}</Card>
+        </div>
+        <Card
+          data-onboarding-id="profile-onboarding-reset"
+          title="Экскурсия по приложению"
+          extra={
+            <Button
+              icon={<ReloadOutlined />}
+              loading={resetOnboardingMutation.isPending}
+              onClick={() => {
+                resetOnboardingMutation.mutate();
+              }}
+            >
+              Сбросить
+            </Button>
+          }
+        >
+          <Typography.Text type="secondary">
+            Если хотите пройти онбординг заново, сбросьте прогресс. После этого гид снова откроется поверх приложения.
+          </Typography.Text>
+        </Card>
       </div>
 
-      <Card title="График работы и отпуск" loading={availabilityQuery.isLoading}>
+      <Card title="График работы и отпуск" loading={availabilityQuery.isLoading} data-onboarding-id="profile-availability">
         <Form<AvailabilityFormValues>
           form={availabilityForm}
           layout="vertical"
@@ -349,7 +379,7 @@ export function ProfilePage() {
         </Form>
       </Card>
 
-      <div className="profile-grid">
+      <div className="profile-grid" data-onboarding-id="profile-security">
         <Card title="Смена пароля">
           <Form<ChangePasswordInput>
             layout="vertical"

@@ -69,6 +69,7 @@ export function UsersPage() {
       title="Пользователи"
       actions={
         <ShortcutButton
+          data-onboarding-id="users-actions"
           shortcut="A"
           type="primary"
           leadingIcon={<PlusOutlined />}
@@ -79,17 +80,19 @@ export function UsersPage() {
         />
       }
     >
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data}
-        pagination={false}
-        columns={[
-          { title: "Фамилия", dataIndex: "lastName" },
-          { title: "Имя", dataIndex: "firstName" },
-          { title: "Роль", dataIndex: "roleDisplayName" },
-        ]}
-      />
+      <div data-onboarding-id="users-page-content">
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data}
+          pagination={false}
+          columns={[
+            { title: "Фамилия", dataIndex: "lastName" },
+            { title: "Имя", dataIndex: "firstName" },
+            { title: "Роль", dataIndex: "roleDisplayName" },
+          ]}
+        />
+      </div>
       <Modal
         open={isInviteOpen}
         title="Создать приглашение"

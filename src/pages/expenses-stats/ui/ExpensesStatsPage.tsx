@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, DatePicker, Select, Table, Tag, Typography } from "antd";
+import { Card, DatePicker, Select, Space, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
@@ -58,7 +58,8 @@ export function ExpensesStatsPage() {
         </div>
       </ListFilters>
 
-      <SummaryGrid>
+      <div data-onboarding-id="expenses-stats-summary">
+        <SummaryGrid>
         <SummaryCard title="Всего расходов" value={formatMoney(query.data?.totalExpenses)} />
         <SummaryCard title={<InfoLabel label="Доля от выручки" tooltip="Какой процент выручки за тот же период составили расходы." />} value={formatPercent(query.data?.expenseToRevenueRatio)} />
         <SummaryCard title="Операций расходов" value={query.data?.expensesCount ?? 0} />
@@ -66,9 +67,11 @@ export function ExpensesStatsPage() {
         <SummaryCard title="Выручка за период" value={formatMoney(query.data?.totalRevenue)} />
         <SummaryCard title={<InfoLabel label="Средний расход" tooltip="Средняя сумма одной расходной операции за выбранный период." />} value={formatAverageExpense(query.data)} />
         <SummaryCard title="Крупнейшая категория" value={query.data?.categories[0] ? `${query.data.categories[0].categoryName}: ${formatMoney(query.data.categories[0].amount)}` : "—"} />
-      </SummaryGrid>
+        </SummaryGrid>
+      </div>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+      <Space orientation="vertical" size={20} className="wide" data-onboarding-id="expenses-stats-main-blocks">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="График расходов">
           <StatsTrendChart
             data={query.data?.dynamics.map((item) => ({
@@ -102,7 +105,7 @@ export function ExpensesStatsPage() {
             totalValueLabel={formatMoney(query.data?.totalExpenses)}
           />
         </SectionCard>
-      </div>
+        </div>
 
       <SectionCard title="Динамика расходов">
         <Table<ExpenseDynamicsBucket>
@@ -134,6 +137,7 @@ export function ExpensesStatsPage() {
           ]}
         />
       </SectionCard>
+      </Space>
     </PageLayout>
   );
 }

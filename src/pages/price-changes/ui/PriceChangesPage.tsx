@@ -32,7 +32,8 @@ export function PriceChangesPage() {
       title="Изменения цен"
       description="Сравнивает выручку, спрос и прибыль до и после изменения цены услуги"
     >
-      <ListFilters>
+      <div data-onboarding-id="price-changes-filters">
+        <ListFilters>
         <div className={filterFieldClassName}>
           <Typography.Text type="secondary">Период изменений</Typography.Text>
           <DatePicker.RangePicker
@@ -50,7 +51,8 @@ export function PriceChangesPage() {
           <Typography.Text type="secondary">Окно сравнения, дней</Typography.Text>
           <InputNumber min={1} max={365} value={windowDays} onChange={(value) => setWindowDays(typeof value === "number" ? value : 30)} />
         </div>
-      </ListFilters>
+        </ListFilters>
+      </div>
 
       <SummaryGrid>
         <SummaryCard title="Изменений найдено" value={query.data?.totalChanges ?? 0} />
@@ -87,7 +89,8 @@ export function PriceChangesPage() {
         </Card>
       </div>
 
-      <Table<PriceChangeAnalyticsItem>
+      <div data-onboarding-id="price-changes-main-table">
+        <Table<PriceChangeAnalyticsItem>
         rowKey={(row) => `${row.serviceId}-${row.effectiveDate}`}
         loading={query.isLoading}
         dataSource={query.data?.changes}
@@ -148,7 +151,8 @@ export function PriceChangesPage() {
             ),
           },
         ]}
-      />
+        />
+      </div>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
         <Card size="small" title="Лучший эффект от повышения цены">

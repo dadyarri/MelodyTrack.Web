@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, DatePicker, Table, Tag, Typography } from "antd";
+import { Card, DatePicker, Space, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
@@ -52,68 +52,71 @@ export function AppointmentsStatsPage() {
         </div>
       </ListFilters>
 
-      <SummaryGrid>
-        <SummaryCard title="Всего записей" value={query.data?.totalAppointmentsCount ?? 0} />
-        <SummaryCard title="Активных преподавателей" value={query.data?.activeTeachersCount ?? 0} />
-        <SummaryCard title={<InfoLabel label="Занято часов" tooltip="Сумма длительностей запланированных, проведенных и сгоревших записей." />} value={formatHours(query.data?.takenHours)} />
-        <SummaryCard title={<InfoLabel label="Доступно часов" tooltip="Сумма рабочих часов преподавателей по настроенному графику и отпускам." />} value={formatHours(query.data?.availableHours)} />
-        <SummaryCard title={<InfoLabel label="Загрузка" tooltip="Доля занятого времени от доступного рабочего времени преподавателей." />} value={formatPercent(query.data?.loadPercentage)} />
-        <SummaryCard title={<InfoLabel label="Проведено часов" tooltip="Сумма длительностей только проведенных записей." />} value={formatHours(query.data?.workedHours)} />
-        <SummaryCard title="Свободно часов" value={formatHours(query.data?.freeHours)} />
-        <SummaryCard title={<InfoLabel label="Средне проведено на преподавателя" tooltip="Среднее число проведенных записей на одного активного преподавателя за выбранный период." />} value={formatDecimal(query.data?.averageCompletedAppointmentsPerTeacher)} />
-        <SummaryCard title={<InfoLabel label="Средний интервал между занятиями" tooltip="Средний положительный интервал между соседними проведенными занятиями одного преподавателя." />} value={formatHours(query.data?.averageGapBetweenServicesHours)} />
-        <SummaryCard title={<InfoLabel label="Выручка" tooltip="Выручка по проведенным и сгоревшим записям в выбранном периоде." />} value={formatMoney(query.data?.totalRevenue)} />
-        <SummaryCard title="Проведено" value={query.data?.completedAppointmentsCount ?? 0} />
-        <SummaryCard title="Запланировано" value={query.data?.plannedAppointmentsCount ?? 0} />
-        <SummaryCard title={<InfoLabel label="Отменено" tooltip="Отмененные записи не входят в фактическую выручку и по умолчанию не занимают слот в загрузке." />} value={query.data?.cancelledAppointmentsCount ?? 0} />
-        <SummaryCard title={<InfoLabel label="Сгорело" tooltip="Сгоревшие записи считаются в выручке и в занятом времени, но не в отработанных часах." />} value={query.data?.burnedAppointmentsCount ?? 0} />
-        <SummaryCard title="Доля отмен" value={formatPercent(query.data?.cancellationShare)} />
-        <SummaryCard title="Доля сгоревших" value={formatPercent(query.data?.burnedShare)} />
-      </SummaryGrid>
-
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
-        <SectionCard title="Структура статусов">
-          <StatsDonutChart
-            items={query.data?.statuses.map((item, index) => ({
-              key: item.status,
-              label: statusLabels[item.status],
-              value: item.count,
-              valueLabel: String(item.count),
-              shareLabel: formatPercent(item.share),
-              tooltip: `${statusLabels[item.status]}: ${item.count}${item.share == null ? "" : ` (${formatPercent(item.share)})`}`,
-              color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
-            }))}
-            totalLabel="Записи"
-            totalValueLabel={String(query.data?.totalAppointmentsCount ?? 0)}
-          />
-        </SectionCard>
-
-        <SectionCard title="Загрузка по дням">
-          <StatsTrendChart
-            data={query.data?.dailyLoad.map((item) => ({
-              key: item.date,
-              label: dayjs(item.date).format("DD.MM"),
-              tooltip: (
-                <div>
-                  <div>{dayjs(item.date).format(DATE_FORMAT)}</div>
-                  <div>Записей: {item.appointmentsCount}</div>
-                  <div>Загрузка: {formatPercent(item.loadPercentage)}</div>
-                  <div>Занято: {formatHours(item.takenHours)}</div>
-                  <div>Доступно: {formatHours(item.availableHours)}</div>
-                </div>
-              ),
-              values: {
-                load: item.loadPercentage ?? 0,
-                appointments: item.appointmentsCount,
-              },
-            }))}
-            series={[
-              { key: "load", label: "Загрузка, %", color: STATS_CHART_COLORS[0] },
-              { key: "appointments", label: "Записи", color: STATS_CHART_COLORS[1] },
-            ]}
-          />
-        </SectionCard>
+      <div data-onboarding-id="appointments-stats-summary">
+        <SummaryGrid>
+          <SummaryCard title="Всего записей" value={query.data?.totalAppointmentsCount ?? 0} />
+          <SummaryCard title="Активных преподавателей" value={query.data?.activeTeachersCount ?? 0} />
+          <SummaryCard title={<InfoLabel label="Занято часов" tooltip="Сумма длительностей запланированных, проведенных и сгоревших записей." />} value={formatHours(query.data?.takenHours)} />
+          <SummaryCard title={<InfoLabel label="Доступно часов" tooltip="Сумма рабочих часов преподавателей по настроенному графику и отпускам." />} value={formatHours(query.data?.availableHours)} />
+          <SummaryCard title={<InfoLabel label="Загрузка" tooltip="Доля занятого времени от доступного рабочего времени преподавателей." />} value={formatPercent(query.data?.loadPercentage)} />
+          <SummaryCard title={<InfoLabel label="Проведено часов" tooltip="Сумма длительностей только проведенных записей." />} value={formatHours(query.data?.workedHours)} />
+          <SummaryCard title="Свободно часов" value={formatHours(query.data?.freeHours)} />
+          <SummaryCard title={<InfoLabel label="Средне проведено на преподавателя" tooltip="Среднее число проведенных записей на одного активного преподавателя за выбранный период." />} value={formatDecimal(query.data?.averageCompletedAppointmentsPerTeacher)} />
+          <SummaryCard title={<InfoLabel label="Средний интервал между занятиями" tooltip="Средний положительный интервал между соседними проведенными занятиями одного преподавателя." />} value={formatHours(query.data?.averageGapBetweenServicesHours)} />
+          <SummaryCard title={<InfoLabel label="Выручка" tooltip="Выручка по проведенным и сгоревшим записям в выбранном периоде." />} value={formatMoney(query.data?.totalRevenue)} />
+          <SummaryCard title="Проведено" value={query.data?.completedAppointmentsCount ?? 0} />
+          <SummaryCard title="Запланировано" value={query.data?.plannedAppointmentsCount ?? 0} />
+          <SummaryCard title={<InfoLabel label="Отменено" tooltip="Отмененные записи не входят в фактическую выручку и по умолчанию не занимают слот в загрузке." />} value={query.data?.cancelledAppointmentsCount ?? 0} />
+          <SummaryCard title={<InfoLabel label="Сгорело" tooltip="Сгоревшие записи считаются в выручке и в занятом времени, но не в отработанных часах." />} value={query.data?.burnedAppointmentsCount ?? 0} />
+          <SummaryCard title="Доля отмен" value={formatPercent(query.data?.cancellationShare)} />
+          <SummaryCard title="Доля сгоревших" value={formatPercent(query.data?.burnedShare)} />
+        </SummaryGrid>
       </div>
+
+      <Space orientation="vertical" size={20} className="wide" data-onboarding-id="appointments-stats-main-blocks">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+          <SectionCard title="Структура статусов">
+            <StatsDonutChart
+              items={query.data?.statuses.map((item, index) => ({
+                key: item.status,
+                label: statusLabels[item.status],
+                value: item.count,
+                valueLabel: String(item.count),
+                shareLabel: formatPercent(item.share),
+                tooltip: `${statusLabels[item.status]}: ${item.count}${item.share == null ? "" : ` (${formatPercent(item.share)})`}`,
+                color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+              }))}
+              totalLabel="Записи"
+              totalValueLabel={String(query.data?.totalAppointmentsCount ?? 0)}
+            />
+          </SectionCard>
+
+          <SectionCard title="Загрузка по дням">
+            <StatsTrendChart
+              data={query.data?.dailyLoad.map((item) => ({
+                key: item.date,
+                label: dayjs(item.date).format("DD.MM"),
+                tooltip: (
+                  <div>
+                    <div>{dayjs(item.date).format(DATE_FORMAT)}</div>
+                    <div>Записей: {item.appointmentsCount}</div>
+                    <div>Загрузка: {formatPercent(item.loadPercentage)}</div>
+                    <div>Занято: {formatHours(item.takenHours)}</div>
+                    <div>Доступно: {formatHours(item.availableHours)}</div>
+                  </div>
+                ),
+                values: {
+                  load: item.loadPercentage ?? 0,
+                  appointments: item.appointmentsCount,
+                },
+              }))}
+              series={[
+                { key: "load", label: "Загрузка, %", color: STATS_CHART_COLORS[0] },
+                { key: "appointments", label: "Записи", color: STATS_CHART_COLORS[1] },
+              ]}
+            />
+          </SectionCard>
+        </div>
 
       <SectionCard title="По преподавателям">
         <Table<TeacherAppointmentsAnalytics>
@@ -169,7 +172,7 @@ export function AppointmentsStatsPage() {
         />
       </SectionCard>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
         <SectionCard title="Часы пик">
           <HoursTable
             loading={query.isLoading}
@@ -189,9 +192,9 @@ export function AppointmentsStatsPage() {
               .slice(0, 8)}
           />
         </SectionCard>
-      </div>
+        </div>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
         <SectionCard title="Самые прибыльные часы">
           <Table<AppointmentHourAnalytics>
             rowKey={(row) => row.hour}
@@ -216,9 +219,9 @@ export function AppointmentsStatsPage() {
             columns={hourColumns}
           />
         </SectionCard>
-      </div>
+        </div>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))" }}>
         <SectionCard title="Клиенты по сгоревшим записям">
           <Table<BurnedClientAnalytics>
             rowKey={(row) => row.clientId}
@@ -234,7 +237,7 @@ export function AppointmentsStatsPage() {
             ]}
           />
         </SectionCard>
-      </div>
+        </div>
 
       <SectionCard title="Загрузка по дням">
         <Table<AppointmentLoadByDay>
@@ -269,6 +272,7 @@ export function AppointmentsStatsPage() {
           ]}
         />
       </SectionCard>
+      </Space>
     </PageLayout>
   );
 }

@@ -57,34 +57,36 @@ export function ClientSourcesPage() {
         />
       }
     >
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data}
-        pagination={false}
-        columns={[
-          { title: "Название", dataIndex: "name" },
-          {
-            title: "",
-            width: 72,
-            render: (_, row) => (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => {
-                  modal.confirm({
-                    title: "Удалить источник?",
-                    content: "Связанные клиенты сохранятся без источника.",
-                    onOk: () => {
-                      deleteMutation.mutate(row.id);
-                    },
-                  });
-                }}
-              />
-            ),
-          },
-        ]}
-      />
+      <div data-onboarding-id="client-sources-page-content">
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data}
+          pagination={false}
+          columns={[
+            { title: "Название", dataIndex: "name" },
+            {
+              title: "",
+              width: 72,
+              render: (_, row) => (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    modal.confirm({
+                      title: "Удалить источник?",
+                      content: "Связанные клиенты сохранятся без источника.",
+                      onOk: () => {
+                        deleteMutation.mutate(row.id);
+                      },
+                    });
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+      </div>
       <ReferenceBookCreateModal
         open={isCreateOpen}
         title="Новый источник клиента"

@@ -173,7 +173,7 @@ export function ExpensesPage() {
     <PageLayout
       title="Расходы"
       actions={
-        <Space>
+        <Space data-onboarding-id="expenses-actions">
           <ShortcutButton
             shortcut="X"
             leadingIcon={<DownloadOutlined />}
@@ -195,85 +195,89 @@ export function ExpensesPage() {
         </Space>
       }
     >
-      <ListFilters>
-        <div className={filterFieldWideClassName}>
-          <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
-          <Input.Search
-            allowClear
-            placeholder="Введите часть описания или название статьи"
-            onSearch={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            onChange={(event) => {
-              if (!event.target.value) {
-                setSearch("");
+      <div data-onboarding-id="expenses-filters">
+        <ListFilters>
+          <div className={filterFieldWideClassName}>
+            <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
+            <Input.Search
+              allowClear
+              placeholder="Введите часть описания или название статьи"
+              onSearch={(value) => {
+                setSearch(value);
                 setPage(1);
-              }
-            }}
-          />
-        </div>
-        <div className={filterFieldClassName}>
-          <Typography.Text type="secondary">Период</Typography.Text>
-          <DatePicker.RangePicker
-            value={dateRange}
-            format={DATE_FORMAT}
-            onChange={(value) => {
-              setDateRange(value);
-              setPage(1);
-            }}
-          />
-        </div>
-        <div className={filterFieldClassName}>
-          <Typography.Text type="secondary">Действия</Typography.Text>
-          <Button
-            onClick={() => {
-              setSearch("");
-              setDateRange(null);
-              setPage(1);
-            }}
-          >
-            Сбросить
-          </Button>
-        </div>
-      </ListFilters>
-      <MoneyListSummaryCards
-        totalAmount={query.data?.summary.totalAmount}
-        itemsCount={query.data?.summary.itemsCount}
-        lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
-        itemsTitle="Расходов найдено"
-        lastItemTitle="Последний расход"
-      />
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data?.data}
-        pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
-        columns={[
-          { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-          { title: "Описание", dataIndex: "description" },
-          { title: "Категория", dataIndex: "categoryName", render: (value?: string | null) => value || "Без категории" },
-          { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
-          {
-            title: "",
-            width: 72,
-            render: (_, row) => (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() =>
-                  modal.confirm({
-                    title: "Удалить расход?",
-                    onOk: () => {
-                      deleteMutation.mutate(row.id);
-                    },
-                  })
+              }}
+              onChange={(event) => {
+                if (!event.target.value) {
+                  setSearch("");
+                  setPage(1);
                 }
-              />
-            ),
-          },
-        ]}
-      />
+              }}
+            />
+          </div>
+          <div className={filterFieldClassName}>
+            <Typography.Text type="secondary">Период</Typography.Text>
+            <DatePicker.RangePicker
+              value={dateRange}
+              format={DATE_FORMAT}
+              onChange={(value) => {
+                setDateRange(value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className={filterFieldClassName}>
+            <Typography.Text type="secondary">Действия</Typography.Text>
+            <Button
+              onClick={() => {
+                setSearch("");
+                setDateRange(null);
+                setPage(1);
+              }}
+            >
+              Сбросить
+            </Button>
+          </div>
+        </ListFilters>
+      </div>
+      <Space orientation="vertical" size={20} className="wide" data-onboarding-id="expenses-summary">
+        <MoneyListSummaryCards
+          totalAmount={query.data?.summary.totalAmount}
+          itemsCount={query.data?.summary.itemsCount}
+          lastItemAtLabel={formatOptionalDateTime(query.data?.summary.lastItemAtUtc)}
+          itemsTitle="Расходов найдено"
+          lastItemTitle="Последний расход"
+        />
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data?.data}
+          pagination={{ current: page, pageSize: 10, total: query.data?.info.total, onChange: setPage }}
+          columns={[
+            { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+            { title: "Описание", dataIndex: "description" },
+            { title: "Категория", dataIndex: "categoryName", render: (value?: string | null) => value || "Без категории" },
+            { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+            {
+              title: "",
+              width: 72,
+              render: (_, row) => (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() =>
+                    modal.confirm({
+                      title: "Удалить расход?",
+                      onOk: () => {
+                        deleteMutation.mutate(row.id);
+                      },
+                    })
+                  }
+                />
+              ),
+            },
+          ]}
+        />
+      </Space>
       <Modal
         open={isOpen}
         title={<DraftModalTitle title="Новый расход" restored={hasCreateDraft && isOpen} />}

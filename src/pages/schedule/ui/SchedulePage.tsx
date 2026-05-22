@@ -22,7 +22,7 @@ export function SchedulePage() {
         title="Расписание"
         customClass={styles.pageShell}
         actions={
-          <Space wrap className={styles.headerActions}>
+          <Space wrap className={styles.headerActions} data-onboarding-id="schedule-header-actions">
             <ShortcutButton
               shortcut="←"
               leadingIcon={<LeftOutlined />}
@@ -57,7 +57,7 @@ export function SchedulePage() {
         }
       >
         <section className={styles.pageShell}>
-          <div className={styles.toolbar}>
+          <div className={styles.toolbar} data-onboarding-id="schedule-toolbar">
             <div className={styles.quickFilters}>
               <Typography.Text type="secondary">Преподаватель</Typography.Text>
               <Space.Compact className={styles.quickFiltersControls}>
@@ -93,7 +93,7 @@ export function SchedulePage() {
               </Space.Compact>
             </div>
           </div>
-          <div className={styles.calendar}>
+          <div className={styles.calendar} data-onboarding-id="schedule-calendar">
             <AppointmentsCalendar
               appointments={controller.filteredAppointments}
               availability={controller.providerAvailabilityQuery.data}

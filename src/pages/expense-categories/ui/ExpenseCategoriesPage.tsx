@@ -57,34 +57,36 @@ export function ExpenseCategoriesPage() {
         />
       }
     >
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data}
-        pagination={false}
-        columns={[
-          { title: "Название", dataIndex: "name" },
-          {
-            title: "",
-            width: 72,
-            render: (_, row) => (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => {
-                  modal.confirm({
-                    title: "Удалить категорию?",
-                    content: "Связанные расходы сохранятся без категории.",
-                    onOk: () => {
-                      deleteMutation.mutate(row.id);
-                    },
-                  });
-                }}
-              />
-            ),
-          },
-        ]}
-      />
+      <div data-onboarding-id="expense-categories-page-content">
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data}
+          pagination={false}
+          columns={[
+            { title: "Название", dataIndex: "name" },
+            {
+              title: "",
+              width: 72,
+              render: (_, row) => (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    modal.confirm({
+                      title: "Удалить категорию?",
+                      content: "Связанные расходы сохранятся без категории.",
+                      onOk: () => {
+                        deleteMutation.mutate(row.id);
+                      },
+                    });
+                  }}
+                />
+              ),
+            },
+          ]}
+        />
+      </div>
       <ReferenceBookCreateModal
         open={isCreateOpen}
         title="Новая категория расхода"

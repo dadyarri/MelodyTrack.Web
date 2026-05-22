@@ -57,7 +57,7 @@ export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): I
       label: (
         <span className="app-nav-label">
           <span>Профиль</span>
-          <Shortcut keyb={"P"} />
+          <Shortcut keyb={"U"} />
         </span>
       ),
     },

@@ -24,6 +24,7 @@ export function ClientsPage() {
       title="Клиенты"
       actions={
         <ShortcutButton
+          data-onboarding-id="clients-actions"
           shortcut="A"
           type="primary"
           leadingIcon={<PlusOutlined />}
@@ -34,85 +35,87 @@ export function ClientsPage() {
         />
       }
     >
-      <ListFilters>
-        <div className={filterFieldWideClassName}>
-          <Input.Search
-            allowClear
-            placeholder="Поиск по ФИО"
-            onSearch={controller.handleSearch}
-            onChange={(event) => {
-              if (!event.target.value) {
-                controller.handleSearch("");
-              }
-            }}
-          />
-        </div>
-      </ListFilters>
-      <ListTable
-        rowKey="id"
-        loading={controller.query.isLoading}
-        dataSource={controller.query.data?.data}
-        pagination={{
-          current: controller.query.data?.info.page ?? controller.page,
-          pageSize: controller.query.data?.info.pageSize ?? 10,
-          total: controller.query.data?.info.total,
-          onChange: controller.setPage,
-        }}
-        columns={[
-          {
-            title: "ФИО",
-            render: (_, row) => (
-              <Button
-                type="link"
-                className={tableLinkButtonStyles.button}
-                onClick={() => {
-                  controller.setHistoryClient(row);
-                }}
-              >
-                {formatClientName(row)}
-              </Button>
-            ),
-          },
-          { title: "Последняя запись", render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет") },
-          { title: "Следующая запись", render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет") },
-          {
-            title: "Баланс",
-            dataIndex: "balance",
-            render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
-          },
-          { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
-          { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
-          { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
-          { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
-          {
-            title: "",
-            width: 112,
-            render: (_, row) => (
-              <Space>
+      <div data-onboarding-id="clients-page-content">
+        <ListFilters>
+          <div className={filterFieldWideClassName}>
+            <Input.Search
+              allowClear
+              placeholder="Поиск по ФИО"
+              onSearch={controller.handleSearch}
+              onChange={(event) => {
+                if (!event.target.value) {
+                  controller.handleSearch("");
+                }
+              }}
+            />
+          </div>
+        </ListFilters>
+        <ListTable
+          rowKey="id"
+          loading={controller.query.isLoading}
+          dataSource={controller.query.data?.data}
+          pagination={{
+            current: controller.query.data?.info.page ?? controller.page,
+            pageSize: controller.query.data?.info.pageSize ?? 10,
+            total: controller.query.data?.info.total,
+            onChange: controller.setPage,
+          }}
+          columns={[
+            {
+              title: "ФИО",
+              render: (_, row) => (
                 <Button
-                  icon={<ProfileOutlined />}
+                  type="link"
+                  className={tableLinkButtonStyles.button}
                   onClick={() => {
                     controller.setHistoryClient(row);
                   }}
-                />
-                <Button
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    controller.openEditor(row);
-                  }}
-                />
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => {
-                    controller.confirmDelete(row);
-                  }}
-                />
-              </Space>
-            ),
-          },
-        ]}
-      />
+                >
+                  {formatClientName(row)}
+                </Button>
+              ),
+            },
+            { title: "Последняя запись", render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет") },
+            { title: "Следующая запись", render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет") },
+            {
+              title: "Баланс",
+              dataIndex: "balance",
+              render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
+            },
+            { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
+            { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
+            { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
+            { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
+            {
+              title: "",
+              width: 112,
+              render: (_, row) => (
+                <Space>
+                  <Button
+                    icon={<ProfileOutlined />}
+                    onClick={() => {
+                      controller.setHistoryClient(row);
+                    }}
+                  />
+                  <Button
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      controller.openEditor(row);
+                    }}
+                  />
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      controller.confirmDelete(row);
+                    }}
+                  />
+                </Space>
+              ),
+            },
+          ]}
+        />
+      </div>
       <ClientEditorModal
         open={controller.isCreateOpen}
         editing={Boolean(controller.editing)}

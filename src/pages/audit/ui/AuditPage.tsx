@@ -83,61 +83,63 @@ export function AuditPage() {
 
   return (
     <PageLayout title="Аудит действий" description="Журналирует ключевые изменения в системе и действия пользователей.">
-      <ListFilters>
-        <div className={filterFieldWideClassName}>
-          <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
-          <Input.Search
-            allowClear
-            placeholder="Например: платеж, Иванова, вход, встреча"
-            onSearch={(value) => {
-              setSearch(value);
-              setPage(1);
-            }}
-            onChange={(event) => {
-              if (!event.target.value) {
-                setSearch("");
+      <div data-onboarding-id="audit-page-content">
+        <ListFilters>
+          <div className={filterFieldWideClassName}>
+            <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
+            <Input.Search
+              allowClear
+              placeholder="Например: платеж, Иванова, вход, встреча"
+              onSearch={(value) => {
+                setSearch(value);
                 setPage(1);
-              }
-            }}
-          />
-        </div>
-      </ListFilters>
-      <ListTable
-        rowKey="id"
-        loading={query.isLoading}
-        dataSource={query.data?.data}
-        pagination={{ current: page, pageSize: 20, total: query.data?.info.total, onChange: setPage }}
-        columns={[
-          { title: "Когда", dataIndex: "createdAtUtc", width: 170, render: (value: string) => formatDateTime(value) },
-          {
-            title: "Кто",
-            width: 180,
-            render: (_, row) => (
-              <div className={styles.activityCell}>
-                <Typography.Text strong>{formatActorLabel(row.actorDisplayName, row.actorEmail)}</Typography.Text>
-              </div>
-            ),
-          },
-          { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
-          { title: "Действие", dataIndex: "action", width: 260, render: (value: string) => formatAuditLabel(value, actionLabels) },
-          {
-            title: "Объект",
-            width: 220,
-            render: (_, row) => `${row.entityType}${row.entityId ? ` #${row.entityId}` : ""}`,
-          },
-          {
-            title: "Детали",
-            dataIndex: "details",
-            width: 260,
-            render: (value?: string | null) =>
-              value ? (
-                <div className={styles.activityDetails}>{value}</div>
-              ) : (
-                <Typography.Text type="secondary">Нет данных</Typography.Text>
+              }}
+              onChange={(event) => {
+                if (!event.target.value) {
+                  setSearch("");
+                  setPage(1);
+                }
+              }}
+            />
+          </div>
+        </ListFilters>
+        <ListTable
+          rowKey="id"
+          loading={query.isLoading}
+          dataSource={query.data?.data}
+          pagination={{ current: page, pageSize: 20, total: query.data?.info.total, onChange: setPage }}
+          columns={[
+            { title: "Когда", dataIndex: "createdAtUtc", width: 170, render: (value: string) => formatDateTime(value) },
+            {
+              title: "Кто",
+              width: 180,
+              render: (_, row) => (
+                <div className={styles.activityCell}>
+                  <Typography.Text strong>{formatActorLabel(row.actorDisplayName, row.actorEmail)}</Typography.Text>
+                </div>
               ),
-          },
-        ]}
-      />
+            },
+            { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
+            { title: "Действие", dataIndex: "action", width: 260, render: (value: string) => formatAuditLabel(value, actionLabels) },
+            {
+              title: "Объект",
+              width: 220,
+              render: (_, row) => `${row.entityType}${row.entityId ? ` #${row.entityId}` : ""}`,
+            },
+            {
+              title: "Детали",
+              dataIndex: "details",
+              width: 260,
+              render: (value?: string | null) =>
+                value ? (
+                  <div className={styles.activityDetails}>{value}</div>
+                ) : (
+                  <Typography.Text type="secondary">Нет данных</Typography.Text>
+                ),
+            },
+          ]}
+        />
+      </div>
     </PageLayout>
   );
 }

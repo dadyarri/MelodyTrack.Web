@@ -5,6 +5,7 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import { useTheme } from "../app/useTheme";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useAuth } from "../features/auth/useAuth";
+import { AppOnboarding } from "../features/onboarding/AppOnboarding";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
@@ -45,6 +46,10 @@ export function AppLayout() {
         return;
       }
 
+       if (isShellShortcutReserved(location.pathname, event.key)) {
+        return;
+      }
+
       const navItem = availableNavItems.find((item) => matchesPlainKey(event, item.shortcut));
       if (navItem) {
         event.preventDefault();
@@ -52,7 +57,7 @@ export function AppLayout() {
         return;
       }
 
-      if (matchesPlainKey(event, "p")) {
+      if (matchesPlainKey(event, "u")) {
         event.preventDefault();
         void navigate("/profile");
         return;
@@ -69,20 +74,24 @@ export function AppLayout() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [availableNavItems, navigate, toggleMode]);
+  }, [availableNavItems, location.pathname, navigate, toggleMode]);
 
   return (
     <Layout className={styles.shell}>
       <Layout.Sider width={296} className={styles.sider} breakpoint="lg" collapsedWidth={0}>
-        <div className={styles.brand}>MelodyTrack</div>
-        <Menu
-          mode="inline"
-          selectedKeys={[selectedKey]}
-          items={menuItems}
-          onClick={({ key }) => {
-            void navigate(key);
-          }}
-        />
+        <div className={styles.brand} data-onboarding-id="shell-brand">
+          MelodyTrack
+        </div>
+        <div data-onboarding-id="shell-navigation">
+          <Menu
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            items={menuItems}
+            onClick={({ key }) => {
+              void navigate(key);
+            }}
+          />
+        </div>
       </Layout.Sider>
       <Layout>
         <Layout.Header className={styles.header}>
@@ -113,7 +122,7 @@ export function AppLayout() {
               />
             }
           >
-            <button type="button" className={styles.headerUserTrigger} aria-label="Открыть меню пользователя">
+            <button type="button" className={styles.headerUserTrigger} aria-label="Открыть меню пользователя" data-onboarding-id="shell-profile-menu">
               <Space size={8}>
                 <UserOutlined />
                 <Typography.Text>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</Typography.Text>
@@ -170,6 +179,53 @@ export function AppLayout() {
           />
         </Space>
       </Drawer>
+      <AppOnboarding />
     </Layout>
   );
+}
+
+function isShellShortcutReserved(pathname: string, key: string) {
+  const normalizedKey = key.toLowerCase();
+
+  if (pathname.startsWith("/schedule")) {
+    return ["a", "m", "arrowleft", "arrowright", "home"].includes(normalizedKey);
+  }
+
+  if (pathname.startsWith("/profile")) {
+    return ["r", "g", "o", "f", "w"].includes(normalizedKey);
+  }
+
+  if (pathname.startsWith("/payments") && !pathname.startsWith("/payments-stats")) {
+    return ["a", "x"].includes(normalizedKey);
+  }
+
+  if (pathname.startsWith("/expenses") && pathname !== "/expenses-dashboard") {
+    return ["a", "x"].includes(normalizedKey);
+  }
+
+  if (pathname.startsWith("/services")) {
+    return normalizedKey === "a";
+  }
+
+  if (pathname.startsWith("/clients") && !pathname.startsWith("/clients-stats")) {
+    return normalizedKey === "a";
+  }
+
+  if (pathname.startsWith("/users")) {
+    return normalizedKey === "a";
+  }
+
+  if (pathname.startsWith("/expense-categories")) {
+    return normalizedKey === "a";
+  }
+
+  if (pathname.startsWith("/client-sources")) {
+    return normalizedKey === "a";
+  }
+
+  if (pathname === "/") {
+    return normalizedKey === "x";
+  }
+
+  return false;
 }

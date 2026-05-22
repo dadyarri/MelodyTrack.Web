@@ -68,7 +68,7 @@ export function DashboardPage() {
 
   return (
     <PageLayout title="Обзор">
-      <div className={styles.grid}>
+      <div className={styles.grid} data-onboarding-id="dashboard-content">
         <Card className={smallWidgetClassName}>
           <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
         </Card>
@@ -107,6 +107,7 @@ export function DashboardPage() {
         </Card>
 
         <Card
+          data-onboarding-id="dashboard-debtors"
           className={largeWidgetClassName}
           title="Клиенты с отрицательным балансом"
           extra={

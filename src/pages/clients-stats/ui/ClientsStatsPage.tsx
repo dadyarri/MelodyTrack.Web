@@ -1,6 +1,6 @@
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
-import { Card, DatePicker, Flex, Table, Tag, Tooltip, Typography } from "antd";
+import { Card, DatePicker, Flex, Space, Table, Tag, Tooltip, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
@@ -45,7 +45,8 @@ export function ClientsStatsPage() {
         </div>
       </ListFilters>
 
-      <StatsCardGrid>
+      <div data-onboarding-id="clients-stats-summary">
+        <StatsCardGrid>
         <SummaryCard title="Всего клиентов" value={query.data?.totalClientsCount ?? 0} />
         <SummaryCard
           title={titleWithInfo(
@@ -144,9 +145,11 @@ export function ClientsStatsPage() {
           )}
           value={query.data?.debtorsCount ?? 0}
         />
-      </StatsCardGrid>
+        </StatsCardGrid>
+      </div>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+      <Space orientation="vertical" size={20} className="wide" data-onboarding-id="clients-stats-main-blocks">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="Выручка по источникам">
           <StatsDonutChart
             items={query.data?.sources
@@ -231,7 +234,7 @@ export function ClientsStatsPage() {
             emptyText="Нет данных для RFM."
           />
         </SectionCard>
-      </div>
+        </div>
 
       <SectionCard title="По источникам">
         <Table<ClientSourceAnalytics>
@@ -262,6 +265,7 @@ export function ClientsStatsPage() {
           ]}
         />
       </SectionCard>
+      </Space>
 
       <SectionCard title="По клиентам">
         <Table<ClientAnalytics>

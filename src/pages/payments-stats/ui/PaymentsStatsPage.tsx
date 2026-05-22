@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, DatePicker, Table, Tag, Typography } from "antd";
+import { Card, DatePicker, Space, Table, Tag, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
@@ -42,16 +42,19 @@ export function PaymentsStatsPage() {
         </div>
       </ListFilters>
 
-      <SummaryGrid>
+      <div data-onboarding-id="payments-stats-summary">
+        <SummaryGrid>
         <SummaryCard title={<InfoLabel label="Неоплаченных записей" tooltip="Количество проведенных и сгоревших записей, которые еще не покрыты оплатами по FIFO-распределению." />} value={query.data?.unpaidAppointmentsCount ?? 0} />
         <SummaryCard title={<InfoLabel label="Должников" tooltip="Количество клиентов, у которых выручка по проведенным и сгоревшим записям больше суммы оплат." />} value={query.data?.debtorsCount ?? 0} />
         <SummaryCard title={<InfoLabel label="Общий долг" tooltip="Суммарная непокрытая оплатами стоимость проведенных и сгоревших записей." />} value={formatMoney(query.data?.totalDebt)} />
         <SummaryCard title={<InfoLabel label="Средняя задержка" tooltip="Среднее число дней между датой записи и датой оплаты. Предоплата считается как 0 дней задержки." />} value={formatDelay(query.data?.averagePaymentDelayDays)} />
         <SummaryCard title={<InfoLabel label="Медианная задержка" tooltip="Центральное значение задержки оплаты: половина оплат быстрее, половина медленнее." />} value={formatDelay(query.data?.medianPaymentDelayDays)} />
         <SummaryCard title={<InfoLabel label="Максимальная задержка" tooltip="Самая длинная задержка оплаты среди попавших в выбранный период оплат." />} value={formatDelay(query.data?.maxPaymentDelayDays)} />
-      </SummaryGrid>
+        </SummaryGrid>
+      </div>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+      <Space orientation="vertical" size={20} className="wide" data-onboarding-id="payments-stats-main-blocks">
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
         <SectionCard title="Структура долга по услугам">
           <StatsDonutChart
             items={query.data?.services
@@ -84,7 +87,7 @@ export function PaymentsStatsPage() {
               }))}
           />
         </SectionCard>
-      </div>
+        </div>
 
       <SectionCard title="Баланс по клиентам">
         <Table
@@ -115,7 +118,7 @@ export function PaymentsStatsPage() {
         />
       </SectionCard>
 
-      <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))" }}>
+        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(360px, 100%), 1fr))" }}>
         <SectionCard title="Долг по преподавателям">
           <PaymentsSliceTable
             loading={query.isLoading}
@@ -143,7 +146,8 @@ export function PaymentsStatsPage() {
             getMaxDelay={(row) => row.maxPaymentDelayDays}
           />
         </SectionCard>
-      </div>
+        </div>
+      </Space>
     </PageLayout>
   );
 }
