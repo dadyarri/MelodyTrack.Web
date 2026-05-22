@@ -4,7 +4,7 @@ import { Card, DatePicker, Flex, Table, Tag, Tooltip, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useState, type ReactNode } from "react";
 import { dashboardApi } from "@/api/crm";
-import type { ClientAnalytics, ClientSourceAnalytics, ClientsAnalyticsResponse } from "@/api/types";
+import type { ClientAnalytics, ClientRfmAnalytics, ClientSourceAnalytics, ClientsAnalyticsResponse } from "@/api/types";
 import { STATS_CHART_COLORS, StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
 import { SummaryCard } from "@/components/SummaryGrid";
 import { PageLayout, ListFilters } from "@/shared/ui";
@@ -46,6 +46,15 @@ export function ClientsStatsPage() {
       </ListFilters>
 
       <StatsCardGrid>
+        <SummaryCard title="Всего клиентов" value={query.data?.totalClientsCount ?? 0} />
+        <SummaryCard
+          title={titleWithInfo(
+            "Активные сейчас",
+            "Клиенты, у которых на конец выбранного периода была хотя бы одна оплата за последние 30 дней или хотя бы одна запись за последние 7 дней."
+          )}
+          value={query.data?.activeNowClientsCount ?? 0}
+        />
+        <SummaryCard title="Неактивные" value={query.data?.inactiveClientsCount ?? 0} />
         <SummaryCard
           title={titleWithInfo(
             "Удержание клиентов",
@@ -54,7 +63,28 @@ export function ClientsStatsPage() {
           value={formatPercent(query.data?.retentionRate)}
         />
         <SummaryCard title="Новых клиентов" value={query.data?.newClientsCount ?? 0} />
+        <SummaryCard
+          title={titleWithInfo(
+            "Вернувшиеся клиенты",
+            "Клиенты, у которых есть минимум две записи за историю и хотя бы одна запись в выбранном периоде после самой первой записи."
+          )}
+          value={query.data?.returnedClientsCount ?? 0}
+        />
+        <SummaryCard
+          title={titleWithInfo(
+            "Доля вернувшихся",
+            "Доля клиентов с повторным визитом среди клиентов, у которых в выбранном периоде была хотя бы одна запись."
+          )}
+          value={formatPercent(query.data?.returningClientsShare)}
+        />
         <SummaryCard title="Потеряно клиентов" value={query.data?.lostClientsCount ?? 0} />
+        <SummaryCard
+          title={titleWithInfo(
+            "Доля потерянных",
+            "Потерянные клиенты / клиенты, у которых в истории была хотя бы одна запись."
+          )}
+          value={formatPercent(query.data?.lostShare)}
+        />
         <SummaryCard
           title={titleWithInfo(
             "Под риском ухода",
@@ -72,6 +102,13 @@ export function ClientsStatsPage() {
         <SummaryCard title="Активны в периоде" value={query.data?.activeClientsCount ?? 0} />
         <SummaryCard title="Активны в прошлом периоде" value={query.data?.previousPeriodActiveClientsCount ?? 0} />
         <SummaryCard title="Вернулись из прошлого периода" value={query.data?.retainedClientsCount ?? 0} />
+        <SummaryCard
+          title={titleWithInfo(
+            "Средний интервал",
+            "Среднее число дней между соседними записями по всем клиентам, у которых есть хотя бы две записи."
+          )}
+          value={formatDays(query.data?.averageIntervalDays)}
+        />
         <SummaryCard
           title={titleWithInfo(
             "Средняя длина жизни",
@@ -170,6 +207,30 @@ export function ClientsStatsPage() {
             Один клиент может входить сразу в несколько сегментов, поэтому сумма сегментов может быть больше числа уникальных клиентов.
           </Typography.Text>
         </SectionCard>
+
+        <SectionCard
+          title={titleWithInfo(
+            "RFM сегменты",
+            <Flex vertical gap={8}>
+              <Typography.Text>
+                <b>RFM анализ:</b>
+              </Typography.Text>
+              <ul>
+                <li><b>Recency</b> — как давно клиент был в последний раз;</li>
+                <li><b>Frequency</b> — сколько проведенных записей у клиента в выбранном периоде;</li>
+                <li><b>Monetary</b> — сколько выручки клиент принес в выбранном периоде по проведенным и сгоревшим записям.</li>
+                <li>Оценки считаются по шкале от 1 до 5: чем выше, тем лучше.</li>
+              </ul>
+            </Flex>
+          )}
+        >
+          <StatsDonutChart
+            items={buildRfmSegmentChartItems(query.data)}
+            totalLabel="RFM"
+            totalValueLabel={String(query.data?.rfmClients.length ?? 0)}
+            emptyText="Нет данных для RFM."
+          />
+        </SectionCard>
       </div>
 
       <SectionCard title="По источникам">
@@ -181,7 +242,8 @@ export function ClientsStatsPage() {
           scroll={{ x: "max-content" }}
           columns={[
             { title: "Источник", dataIndex: "sourceName" },
-            { title: "Активные клиенты", dataIndex: "activeClientsCount" },
+            { title: "Клиентов", dataIndex: "clientsCount" },
+            { title: "Активны в периоде", dataIndex: "activeClientsCount" },
             { title: "Новые", dataIndex: "newClientsCount" },
             {
               title: titleWithInfo(
@@ -221,6 +283,60 @@ export function ClientsStatsPage() {
             { title: "Первая запись", dataIndex: "firstAppointmentAtUtc", render: formatUtcDateTime },
             { title: "Последняя запись", dataIndex: "lastAppointmentAtUtc", render: formatUtcDateTime },
             { title: "Сегменты", render: (_, row) => <SegmentTags row={row} /> },
+          ]}
+        />
+      </SectionCard>
+
+      <SectionCard
+        title={titleWithInfo(
+          "RFM по клиентам",
+          "Скоринг от 1 до 5 по давности последней записи, частоте визитов и выручке за выбранный период."
+        )}
+      >
+        <Table<ClientRfmAnalytics>
+          rowKey={(row) => row.clientId}
+          loading={query.isLoading}
+          dataSource={query.data?.rfmClients}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: "max-content" }}
+          columns={[
+            { title: "Клиент", dataIndex: "clientDisplayName" },
+            { title: "Источник", dataIndex: "sourceName" },
+            {
+              title: titleWithInfo(
+                "Recency",
+                "Сколько дней прошло с последней записи клиента на конец выбранного периода. Чем меньше дней, тем лучше значение и тем выше оценка."
+              ),
+              dataIndex: "recencyDays",
+              render: formatIntegerDays,
+            },
+            {
+              title: titleWithInfo(
+                "Frequency",
+                "Количество записей клиента со статусом 'Проведена' внутри выбранного периода. Чем больше таких записей, тем выше оценка."
+              ),
+              dataIndex: "frequency",
+            },
+            {
+              title: titleWithInfo(
+                "Monetary",
+                "Сумма выручки клиента внутри выбранного периода по записям со статусами 'Проведена' и 'Сгорела'. Чем больше сумма, тем выше оценка."
+              ),
+              dataIndex: "monetary",
+              render: (value: number) => formatMoney(value),
+            },
+            { title: titleWithInfo("R", "Оценка Recency от 1 до 5. 5 получают самые недавние клиенты."), dataIndex: "recencyScore" },
+            { title: titleWithInfo("F", "Оценка Frequency от 1 до 5. 5 получают клиенты с наибольшим числом проведенных записей за период."), dataIndex: "frequencyScore" },
+            { title: titleWithInfo("M", "Оценка Monetary от 1 до 5. 5 получают клиенты с наибольшей выручкой за период."), dataIndex: "monetaryScore" },
+            {
+              title: titleWithInfo(
+                "RFM",
+                "Склеенный код из трех оценок: Recency, Frequency и Monetary. Например, 555 — один из лучших профилей."
+              ),
+              dataIndex: "rfmScore",
+              render: (value: string) => <Tag color="geekblue">{value}</Tag>,
+            },
+            { title: "Сегмент", dataIndex: "segment", render: (value: string) => <RfmSegmentTag segment={value} /> },
           ]}
         />
       </SectionCard>
@@ -267,12 +383,26 @@ function SegmentTags({ row }: { row: ClientAnalytics }) {
     row.isRegular ? <Tag key="regular" color="blue">Регулярный</Tag> : null,
     row.isSingleTime ? <Tag key="single-time">Разовый</Tag> : null,
     row.isNew ? <Tag key="new" color="green">Новый</Tag> : null,
+    row.isReturned ? <Tag key="returned" color="cyan">Вернувшийся</Tag> : null,
     row.isAtRisk ? <Tag key="risk" color="orange">Риск</Tag> : null,
     row.isLost ? <Tag key="lost" color="red">Потерян</Tag> : null,
     row.isDebtor ? <Tag key="debtor" color="volcano">Должник</Tag> : null,
   ].filter(Boolean);
 
   return <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{tags.length > 0 ? tags : "—"}</div>;
+}
+
+function RfmSegmentTag({ segment }: { segment: string }) {
+  const colorBySegment: Record<string, string> = {
+    "Лучшие": "gold",
+    "Лояльные": "blue",
+    "Перспективные": "green",
+    "Под риском": "orange",
+    "Потерянные": "red",
+    "Низкая ценность": "default",
+  };
+
+  return <Tag color={colorBySegment[segment] ?? "default"}>{segment}</Tag>;
 }
 
 function formatPercent(value?: number | null) {
@@ -285,6 +415,10 @@ function formatDays(value?: number | null) {
 
 function formatUtcDateTime(value?: string | null) {
   return value ? formatDateTime(value) : "—";
+}
+
+function formatIntegerDays(value?: number | null) {
+  return value == null ? "—" : `${String(value)} дн.`;
 }
 
 function shareOf(data: ClientsAnalyticsResponse | undefined, value: number) {
@@ -331,8 +465,29 @@ function totalSegmentMemberships(data: ClientsAnalyticsResponse | undefined) {
     data.regularClientsCount +
     data.singleTimeClientsCount +
     data.newClientsCount +
+    data.returnedClientsCount +
     data.atRiskClientsCount +
     data.lostClientsCount +
     data.debtorsCount
   );
+}
+
+function buildRfmSegmentChartItems(data: ClientsAnalyticsResponse | undefined) {
+  if (!data) {
+    return [];
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data.rfmClients) {
+    counts.set(row.segment, (counts.get(row.segment) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries()).map(([segment, value], index) => ({
+    key: segment,
+    label: segment,
+    value,
+    valueLabel: String(value),
+    tooltip: `${segment}: ${String(value)}`,
+    color: STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+  }));
 }

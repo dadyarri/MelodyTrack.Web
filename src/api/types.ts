@@ -238,6 +238,7 @@ export interface DashboardStats {
 
 export interface ClientSourceAnalytics {
   sourceName: string;
+  clientsCount: number;
   activeClientsCount: number;
   previousPeriodActiveClientsCount: number;
   retainedClientsCount: number;
@@ -271,6 +272,21 @@ export interface ClientAnalytics {
   isSingleTime: boolean;
   isDebtor: boolean;
   isNew: boolean;
+  isReturned: boolean;
+}
+
+export interface ClientRfmAnalytics {
+  clientId: Ulid;
+  clientDisplayName: string;
+  sourceName: string;
+  recencyDays?: number | null;
+  frequency: number;
+  monetary: number;
+  recencyScore: number;
+  frequencyScore: number;
+  monetaryScore: number;
+  rfmScore: string;
+  segment: string;
 }
 
 export interface ClientsAnalyticsResponse {
@@ -278,13 +294,20 @@ export interface ClientsAnalyticsResponse {
   endDate: string;
   previousPeriodStartDate: string;
   previousPeriodEndDate: string;
+  totalClientsCount: number;
+  activeNowClientsCount: number;
+  inactiveClientsCount: number;
   activeClientsCount: number;
   previousPeriodActiveClientsCount: number;
   retainedClientsCount: number;
   retentionRate?: number | null;
   newClientsCount: number;
+  returnedClientsCount: number;
+  returningClientsShare?: number | null;
   lostClientsCount: number;
+  lostShare?: number | null;
   atRiskClientsCount: number;
+  averageIntervalDays?: number | null;
   averageLifetimeValue?: number | null;
   averageClientLifetimeDays?: number | null;
   vipClientsCount: number;
@@ -293,6 +316,7 @@ export interface ClientsAnalyticsResponse {
   debtorsCount: number;
   sources: ClientSourceAnalytics[];
   clients: ClientAnalytics[];
+  rfmClients: ClientRfmAnalytics[];
 }
 
 export interface TeacherRevenueAnalytics {
