@@ -1,6 +1,7 @@
 import { http } from "./http";
 import type {
   Appointment,
+  AppointmentsAnalytics,
   AuditLog,
   Client,
   ClientHistory,
@@ -83,6 +84,9 @@ export const dashboardApi = {
   },
   payments(params: { timezone: string; start: string; end: string }) {
     return http.get<PaymentsAnalytics>("/dashboard/payments", { params }).then((response) => response.data);
+  },
+  appointments(params: { timezone: string; start: string; end: string }) {
+    return http.get<AppointmentsAnalytics>("/dashboard/appointments", { params }).then((response) => response.data);
   },
   clients(params: { timezone: string; start: string; end: string }) {
     return http.get<ClientsAnalyticsResponse>("/dashboard/clients", { params }).then((response) => response.data);

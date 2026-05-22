@@ -193,9 +193,10 @@ export function StatsTrendChart({
     return <Typography.Text type="secondary">{emptyText}</Typography.Text>;
   }
 
+  const shouldRotateLabels = data.length > 8;
   const width = 720;
   const height = 260;
-  const padding = { top: 20, right: 20, bottom: 42, left: 56 };
+  const padding = { top: 20, right: 20, bottom: shouldRotateLabels ? 68 : 42, left: 56 };
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
   const values = data.flatMap((point) => series.map((item) => point.values[item.key] ?? 0));
@@ -284,17 +285,35 @@ export function StatsTrendChart({
         )}
 
         {pointMap.map((point) => (
-          <text key={`label-${point.item.key}`} x={point.x} y={height - 12} textAnchor="middle" fill={token.colorTextSecondary} fontSize="12">
+          <text
+            key={`label-${point.item.key}`}
+            x={point.x}
+            y={height - (shouldRotateLabels ? 14 : 12)}
+            textAnchor={shouldRotateLabels ? "end" : "middle"}
+            fill={token.colorTextSecondary}
+            fontSize="12"
+            transform={shouldRotateLabels ? `rotate(-28 ${point.x} ${height - 14})` : undefined}
+          >
             {point.item.label}
           </text>
         ))}
       </svg>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12 }}>
+      <div
+        style={{
+          display: "grid",
+          gap: 10,
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          marginTop: 12,
+          alignItems: "start",
+        }}
+      >
         {series.map((item) => (
-          <div key={item.key} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+          <div key={item.key} style={{ display: "flex", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
             <span style={{ width: 12, height: 12, borderRadius: "50%", background: item.color, display: "inline-block" }} />
-            <Typography.Text type="secondary">{item.label}</Typography.Text>
+            <Typography.Text type="secondary" style={{ lineHeight: 1.3 }}>
+              {item.label}
+            </Typography.Text>
           </div>
         ))}
       </div>

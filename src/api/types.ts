@@ -499,6 +499,116 @@ export interface PaymentsAnalytics {
   services: ServicePaymentsAnalytics[];
 }
 
+export interface AppointmentsAnalytics {
+  startDate: string;
+  endDate: string;
+  totalAppointmentsCount: number;
+  plannedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  cancelledAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  burnedShare?: number | null;
+  cancellationShare?: number | null;
+  totalRevenue: number;
+  takenHours: number;
+  workedHours: number;
+  availableHours: number;
+  freeHours: number;
+  loadPercentage?: number | null;
+  activeTeachersCount: number;
+  averageCompletedAppointmentsPerTeacher?: number | null;
+  averageGapBetweenServicesHours?: number | null;
+  statuses: AppointmentStatusCount[];
+  dailyLoad: AppointmentLoadByDay[];
+  hours: AppointmentHourAnalytics[];
+  teachers: TeacherAppointmentsAnalytics[];
+  burnedClients: BurnedClientAnalytics[];
+}
+
+export interface AppointmentStatusCount {
+  status: AppointmentStatus;
+  count: number;
+  share?: number | null;
+}
+
+export interface AppointmentLoadByDay {
+  date: string;
+  appointmentsCount: number;
+  servicesProvidedCount: number;
+  completedAppointmentsCount: number;
+  cancelledAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  uniqueClientsCount: number;
+  completedUniqueClientsCount: number;
+  revenue: number;
+  takenHours: number;
+  availableHours: number;
+  freeHours: number;
+  loadPercentage?: number | null;
+  burnedShare?: number | null;
+  cancellationShare?: number | null;
+}
+
+export interface AppointmentHourAnalytics {
+  hour: number;
+  appointmentsCount: number;
+  plannedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  cancelledAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  uniqueClientsCount: number;
+  revenue: number;
+  takenHours: number;
+  availableHours: number;
+  freeHours: number;
+  loadPercentage?: number | null;
+  cancellationRate?: number | null;
+  burnedShare?: number | null;
+}
+
+export interface TeacherAppointmentsAnalytics {
+  teacherId?: Ulid | null;
+  teacherDisplayName: string;
+  totalAppointmentsCount: number;
+  plannedAppointmentsCount: number;
+  completedAppointmentsCount: number;
+  cancelledAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  uniqueClientsCount: number;
+  workingDaysCount: number;
+  revenue: number;
+  workedHours: number;
+  occupiedHours: number;
+  availableHours: number;
+  freeHours: number;
+  loadPercentage?: number | null;
+  downtimeShare?: number | null;
+  cancellationShare?: number | null;
+  burnedShare?: number | null;
+  revenuePerWorkedHour?: number | null;
+  revenuePerOccupiedHour?: number | null;
+  averageCompletedAppointmentsPerWorkingDay?: number | null;
+  averageGapBetweenServicesHours?: number | null;
+  topServices: TeacherServiceAnalytics[];
+}
+
+export interface TeacherServiceAnalytics {
+  serviceId: Ulid;
+  serviceName: string;
+  completedAppointmentsCount: number;
+  revenueCountedAppointmentsCount: number;
+  revenue: number;
+  completedShare?: number | null;
+}
+
+export interface BurnedClientAnalytics {
+  clientId: Ulid;
+  clientDisplayName: string;
+  totalAppointmentsCount: number;
+  burnedAppointmentsCount: number;
+  burnedShare?: number | null;
+}
+
 export interface ExpensesAnalytics {
   startDate: string;
   endDate: string;

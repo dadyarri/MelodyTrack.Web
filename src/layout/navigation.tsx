@@ -36,6 +36,7 @@ export const appNavItems: AppNavItem[] = [
   { key: "/", icon: <DashboardOutlined />, label: "Обзор", shortcut: "1", visibility: "all" },
   { key: "/revenue", icon: <LineChartOutlined />, label: "Выручка", shortcut: "R", visibility: "stats", group: "stats" },
   { key: "/price-changes", icon: <LineChartOutlined />, label: "Изменения цен", shortcut: "P", visibility: "stats", group: "stats" },
+  { key: "/appointments-stats", icon: <LineChartOutlined />, label: "Записи", shortcut: "A", visibility: "stats", group: "stats" },
   { key: "/clients-stats", icon: <LineChartOutlined />, label: "Клиенты", shortcut: "C", visibility: "stats", group: "stats" },
   { key: "/payments-stats", icon: <LineChartOutlined />, label: "Платежи", shortcut: "M", visibility: "stats", group: "stats" },
   { key: "/expenses-dashboard", icon: <LineChartOutlined />, label: "Расходы", shortcut: "E", visibility: "stats", group: "stats" },
