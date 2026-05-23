@@ -255,7 +255,11 @@ export const scheduleApi = {
   ) {
     return http.patch<unknown>(`/appointments/${id}`, input).then(() => undefined);
   },
-  remove(id: Ulid, scope?: "single" | "this-and-following" | "all", options?: { expectedActivityId?: Ulid }) {
+  remove(
+    id: Ulid,
+    scope?: "single" | "this-and-following" | "all" | "weekday-this-and-following" | "weekday-all",
+    options?: { expectedActivityId?: Ulid },
+  ) {
     return http
       .delete<unknown>(`/appointments/${id}`, {
         params: {

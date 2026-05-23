@@ -40,6 +40,37 @@
   width: 100%;
 }
 
+.recurringActionButton {
+  height: auto;
+  padding-block: 10px;
+  text-align: left;
+}
+
+.recurringActionButtonConfirm {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger, #ff4d4f) 72%, white);
+}
+
+.recurringActionContent {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.recurringActionLabel {
+  display: block;
+  font-weight: 650;
+}
+
+.recurringActionDescription {
+  display: block;
+  margin-top: 4px;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.88;
+}
+
 @media (max-width: 720px) {
   .detailsGrid {
     grid-template-columns: 1fr;

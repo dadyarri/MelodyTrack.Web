@@ -14,7 +14,7 @@ import type { FormInstance } from "antd";
 import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
-import { type ReactNode, useEffect } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
 import { getPhoneUri } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
@@ -51,8 +51,21 @@ export type AppointmentEditFormValues = {
   startDate: Dayjs;
 };
 
-export type AppointmentDeleteScope = "single" | "this-and-following" | "all";
+export type AppointmentDeleteScope =
+  | "single"
+  | "this-and-following"
+  | "all"
+  | "weekday-this-and-following"
+  | "weekday-all";
 export type AppointmentRescheduleScope = AppointmentDeleteScope;
+
+type RecurringDeleteOption = {
+  scope: AppointmentDeleteScope;
+  label: string;
+  description: string;
+};
+
+const DELETE_CONFIRMATION_TIMEOUT_MS = 3000;
 
 export function AppointmentEditModal({
   appointment,
@@ -322,6 +335,52 @@ export function RecurringDeleteModal({
   onCancel: () => void;
   onDelete: (appointment: Appointment, scope: AppointmentDeleteScope) => void;
 }) {
+  const deleteOptions = appointment ? getRecurringDeleteOptions(appointment) : [];
+  const [confirmScope, setConfirmScope] = useState<AppointmentDeleteScope | null>(null);
+  const confirmTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (confirmTimeoutRef.current !== null) {
+        window.clearTimeout(confirmTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    setConfirmScope(null);
+    if (confirmTimeoutRef.current !== null) {
+      window.clearTimeout(confirmTimeoutRef.current);
+      confirmTimeoutRef.current = null;
+    }
+  }, [appointment]);
+
+  const armDeleteConfirmation = (scope: AppointmentDeleteScope) => {
+    setConfirmScope(scope);
+    if (confirmTimeoutRef.current !== null) {
+      window.clearTimeout(confirmTimeoutRef.current);
+    }
+
+    confirmTimeoutRef.current = window.setTimeout(() => {
+      setConfirmScope(null);
+      confirmTimeoutRef.current = null;
+    }, DELETE_CONFIRMATION_TIMEOUT_MS);
+  };
+
+  const handleDeleteClick = (currentAppointment: Appointment, scope: AppointmentDeleteScope) => {
+    if (confirmScope === scope) {
+      if (confirmTimeoutRef.current !== null) {
+        window.clearTimeout(confirmTimeoutRef.current);
+        confirmTimeoutRef.current = null;
+      }
+      setConfirmScope(null);
+      onDelete(currentAppointment, scope);
+      return;
+    }
+
+    armDeleteConfirmation(scope);
+  };
+
   return (
     <Modal
       open={appointment !== null}
@@ -340,37 +399,34 @@ export function RecurringDeleteModal({
             />
           ) : null}
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
+          {isMultiDayWeeklyRecurringAppointment(appointment) ? (
+            <Typography.Text type="secondary">
+              Серия повторяется по дням: {formatWeeklyPattern(appointment.recurringRule?.recurrencePattern)}. Если выбрать
+              удаление серии, действие затронет все эти дни, а не только {getWeekdayLabel(dayjs(appointment.startDate))}.
+            </Typography.Text>
+          ) : null}
           <Space orientation="vertical" size={10} className={`wide ${styles.recurringDeleteActions}`}>
-            <Button
-              danger
-              block
-              loading={deletePending}
-              onClick={() => {
-                onDelete(appointment, "single");
-              }}
-            >
-              Только эту запись
-            </Button>
-            <Button
-              danger
-              block
-              loading={deletePending}
-              onClick={() => {
-                onDelete(appointment, "this-and-following");
-              }}
-            >
-              Эту и следующие
-            </Button>
-            <Button
-              danger
-              block
-              loading={deletePending}
-              onClick={() => {
-                onDelete(appointment, "all");
-              }}
-            >
-              Все записи
-            </Button>
+            {deleteOptions.map((option) => (
+              <Button
+                key={option.scope}
+                danger
+                block
+                loading={deletePending}
+                className={`${styles.recurringActionButton} ${
+                  confirmScope === option.scope ? styles.recurringActionButtonConfirm : ""
+                }`}
+                onClick={() => {
+                  handleDeleteClick(appointment, option.scope);
+                }}
+              >
+                <span className={styles.recurringActionContent}>
+                  <span className={styles.recurringActionLabel}>
+                    {confirmScope === option.scope ? "Точно?" : option.label}
+                  </span>
+                  <span className={styles.recurringActionDescription}>{option.description}</span>
+                </span>
+              </Button>
+            ))}
             <Button block disabled={deletePending} onClick={onCancel}>
               Отмена
             </Button>
@@ -660,6 +716,88 @@ function formatWeeklyPattern(pattern?: number | null) {
     .filter((item) => (pattern & item.value) === item.value)
     .map((item) => item.label)
     .join(", ");
+}
+
+function getRecurringDeleteOptions(appointment: Appointment): RecurringDeleteOption[] {
+  if (isMultiDayWeeklyRecurringAppointment(appointment)) {
+    const selectedDayLabel = getWeekdayLabel(dayjs(appointment.startDate));
+    const weeklyPattern = formatWeeklyPattern(appointment.recurringRule?.recurrencePattern);
+    const remainingDays = formatRemainingWeeklyPattern(appointment.recurringRule?.recurrencePattern, dayjs(appointment.startDate));
+
+    return [
+      {
+        scope: "single",
+        label: "Только эту запись",
+        description: `Удалится только выбранная запись на ${selectedDayLabel}. Остальная серия останется без изменений.`,
+      },
+      {
+        scope: "weekday-this-and-following",
+        label: "Эту и следующие в этот день недели",
+        description: `Удалятся записи на ${selectedDayLabel}, начиная с этой даты. Дни ${remainingDays} останутся в серии.`,
+      },
+      {
+        scope: "weekday-all",
+        label: "Все записи в этот день недели",
+        description: `Удалятся все записи на ${selectedDayLabel}. Дни ${remainingDays} останутся в серии.`,
+      },
+      {
+        scope: "this-and-following",
+        label: "Эту и следующие во все дни недели",
+        description: `Удалятся записи начиная с этой даты для всех дней серии: ${weeklyPattern}.`,
+      },
+      {
+        scope: "all",
+        label: "Всю серию во все дни недели",
+        description: `Удалятся все записи серии для дней: ${weeklyPattern}.`,
+      },
+    ];
+  }
+
+  return [
+    {
+      scope: "single",
+      label: "Только эту запись",
+      description: "Удалится только выбранная запись.",
+    },
+    {
+      scope: "this-and-following",
+      label: "Эту и следующие",
+      description: "Удалятся записи начиная с этой даты.",
+    },
+    {
+      scope: "all",
+      label: "Все записи",
+      description: "Удалится вся серия.",
+    },
+  ];
+}
+
+function isMultiDayWeeklyRecurringAppointment(appointment: Appointment) {
+  if (appointment.recurringRule?.key !== "weekly" || !appointment.recurringRule.recurrencePattern) {
+    return false;
+  }
+
+  const recurrencePattern = appointment.recurringRule.recurrencePattern;
+  const selectedDaysCount = weeklyDayOptions.filter(
+    (item) => (recurrencePattern & item.value) === item.value,
+  ).length;
+
+  return selectedDaysCount > 1;
+}
+
+function getWeekdayLabel(date: Dayjs) {
+  const label = weeklyDayOptions.find((item) => item.value === getWeeklyBitmaskValue(date))?.label;
+  return label ?? "выбранный день";
+}
+
+function formatRemainingWeeklyPattern(pattern: number | null | undefined, selectedDate: Dayjs) {
+  const selectedDayValue = getWeeklyBitmaskValue(selectedDate);
+  const recurrencePattern = pattern ?? 0;
+  const remainingLabels = weeklyDayOptions
+    .filter((item) => (recurrencePattern & item.value) === item.value && item.value !== selectedDayValue)
+    .map((item) => item.label);
+
+  return remainingLabels.length ? remainingLabels.join(", ") : "другие дни не выбраны";
 }
 
 const appointmentStatusOptions: { value: AppointmentStatus; label: ReactNode }[] = [
