@@ -1,5 +1,6 @@
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Space, Typography } from "antd";
+import dayjs from "dayjs";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
 import { UserSelect } from "@/components/RemoteSelect";
 import {
@@ -35,7 +36,7 @@ export function SchedulePage() {
               shortcut="Home"
               label="Сегодня"
               onClick={() => {
-                controller.setWeekStart(controller.weekStart.startOf("week"));
+                controller.setWeekStart(dayjs().startOf("week"));
               }}
             />
             <ShortcutButton
