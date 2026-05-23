@@ -124,6 +124,7 @@ export function SchedulePage() {
                 });
               }}
               range={[controller.weekStart, controller.weekStart.endOf("week")]}
+              visibleHours={controller.visibleHours}
               reschedulePendingAppointmentId={
                 controller.rescheduleMutation.isPending ? controller.rescheduleMutation.variables.appointment.id : null
               }

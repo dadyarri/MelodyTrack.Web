@@ -21,6 +21,7 @@ import type {
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
+import { getVisibleScheduleHours } from "@/utils/userAvailability";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
@@ -162,6 +163,16 @@ export function useSchedulePageController() {
     enabled: Boolean(effectiveProviderFilterId),
     retry: false,
   });
+  const allProvidersAvailabilityQuery = useQuery({
+    queryKey: queryKeys.users.availabilities,
+    queryFn: () => usersApi.listAvailabilities(),
+    enabled: hasAdminAccess(auth.user) && !effectiveProviderFilterId,
+    retry: false,
+  });
+
+  const visibleHours = effectiveProviderFilterId
+    ? getVisibleScheduleHours([providerAvailabilityQuery.data])
+    : getVisibleScheduleHours(allProvidersAvailabilityQuery.data ?? []);
 
   const filteredAppointments = (query.data ?? []).filter((appointment) => {
     if (effectiveProviderFilterId && appointment.provider?.id !== effectiveProviderFilterId) {
@@ -614,6 +625,8 @@ export function useSchedulePageController() {
     query,
     recurrenceTypesQuery,
     providerAvailabilityQuery,
+    allProvidersAvailabilityQuery,
+    visibleHours,
     filteredAppointments,
     currentSelectedAppointment,
     currentEditingAppointment,

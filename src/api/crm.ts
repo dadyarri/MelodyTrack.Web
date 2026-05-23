@@ -275,6 +275,9 @@ export const usersApi = {
   list() {
     return http.get<{ users: User[] }>("/users").then((response) => response.data.users);
   },
+  listAvailabilities() {
+    return http.get<{ availabilities: UserAvailability[] }>("/users/availability").then((response) => response.data.availabilities);
+  },
   getAvailability(id: Ulid) {
     return http.get<UserAvailability>(`/users/${id}/availability`).then((response) => response.data);
   },

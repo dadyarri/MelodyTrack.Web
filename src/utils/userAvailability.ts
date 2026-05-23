@@ -83,6 +83,38 @@ export function getBlockedRanges(availability: UserAvailability | null | undefin
   return ranges.filter((range) => range.endMinute > range.startMinute);
 }
 
+export function getVisibleScheduleHours(
+  availabilities: Array<UserAvailability | null | undefined>,
+  fallback = { startHour: 10, endHour: 21 },
+) {
+  const workingRanges = availabilities.flatMap((availability) =>
+    (availability?.workingHours ?? []).flatMap((item) => {
+      if (!item.isWorkingDay || !item.startTime || !item.endTime) {
+        return [];
+      }
+
+      return [
+        {
+          startMinute: parseTimeToMinutes(item.startTime),
+          endMinute: parseTimeToMinutes(item.endTime),
+        },
+      ];
+    }),
+  );
+
+  if (workingRanges.length === 0) {
+    return fallback;
+  }
+
+  const minStartMinute = Math.min(...workingRanges.map((item) => item.startMinute));
+  const maxEndMinute = Math.max(...workingRanges.map((item) => item.endMinute));
+
+  return {
+    startHour: Math.max(0, Math.floor(minStartMinute / 60)),
+    endHour: Math.min(24, Math.max(Math.floor(minStartMinute / 60) + 1, Math.ceil(maxEndMinute / 60))),
+  };
+}
+
 function getWeekdayKey(day: Dayjs): WeekdayKey {
   switch (day.day()) {
     case 1:

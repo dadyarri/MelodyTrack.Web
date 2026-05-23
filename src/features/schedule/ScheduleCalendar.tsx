@@ -9,7 +9,7 @@ import { getAppointmentStatusColorVars, getAppointmentStatusLabel, renderAppoint
 import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;
-const defaultEndHour = 20;
+const defaultEndHour = 21;
 const hourHeight = 72;
 const stackOffset = 8;
 
@@ -24,6 +24,7 @@ export function AppointmentsCalendar({
   onSelect,
   reschedulePendingAppointmentId,
   selectedAppointmentId,
+  visibleHours,
 }: {
   appointments: Appointment[];
   availability?: UserAvailability;
@@ -35,9 +36,10 @@ export function AppointmentsCalendar({
   onSelect: (appointment: Appointment) => void;
   reschedulePendingAppointmentId: string | null;
   selectedAppointmentId: string | null;
+  visibleHours?: { startHour: number; endHour: number };
 }) {
   const days = getDays(range);
-  const hours = getHours();
+  const hours = getHours(visibleHours?.startHour, visibleHours?.endHour);
   const appointmentsByDay = groupAppointmentsByDay(appointments);
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
@@ -489,8 +491,8 @@ function getDays(range: [Dayjs, Dayjs]) {
   return days;
 }
 
-function getHours() {
-  return Array.from({ length: defaultEndHour - defaultStartHour }, (_, index) => defaultStartHour + index);
+function getHours(startHour = defaultStartHour, endHour = defaultEndHour) {
+  return Array.from({ length: Math.max(1, endHour - startHour) }, (_, index) => startHour + index);
 }
 
 function groupAppointmentsByDay(appointments: Appointment[]) {

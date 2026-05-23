@@ -75,6 +75,7 @@ export const queryKeys = {
   users: {
     all: ["users"] as const,
     availability: (userId?: string) => ["users", "availability", formatDateKey(userId)] as const,
+    availabilities: ["users", "availability", "all"] as const,
     roles: ["roles", "lookup"] as const,
   },
   schedule: {
