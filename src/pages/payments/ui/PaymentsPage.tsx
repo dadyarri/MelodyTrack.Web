@@ -1,5 +1,5 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, DatePicker, Input, Space, Typography } from "antd";
+import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
 import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
@@ -12,6 +12,7 @@ import { formatMoney } from "@/utils/money";
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();
+  const { modal } = AntdApp.useApp();
 
   return (
     <PageLayout
@@ -126,7 +127,12 @@ export function PaymentsPage() {
                     danger
                     icon={<DeleteOutlined />}
                     onClick={() => {
-                      controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
+                      modal.confirm({
+                        title: "Удалить платеж?",
+                        onOk: () => {
+                          controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
+                        },
+                      });
                     }}
                   />
                 ),
