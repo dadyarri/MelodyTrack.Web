@@ -1,38 +1,19 @@
-import { Button, Form, Input, Space, type InputProps, type InputRef } from "antd";
+import { Button, Form, Input, Space } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { ClientSourceSelect } from "@/components/RemoteSelect";
-import { type IMaskInputProps, IMaskMixin } from "react-imask";
-import { getRussianPhoneDigits, getRussianPhoneMask, hasRussianPhoneDigits, normalizeSocialLink } from "@/entities/client";
-
-const russianPhoneMask = getRussianPhoneMask();
-
-type MaskedAntdInputProps = IMaskInputProps<HTMLInputElement> &
-  Pick<InputProps, "placeholder" | "inputMode" | "autoComplete" | "disabled" | "status" | "size">;
-const MaskedAntdInput = IMaskMixin<HTMLInputElement, MaskedAntdInputProps>(({ inputRef, ...props }) => (
-  <Input
-    {...props}
-    ref={(node: InputRef | null) => {
-      const input = node?.input ?? null;
-      if (typeof inputRef === "function") {
-        inputRef(input);
-      } else if (inputRef) {
-        inputRef.current = input;
-      }
-    }}
-  />
-));
+import { formatPhone, formatPhoneInput, isValidPhone, normalizePhone, normalizeSocialLink } from "@/entities/client";
 
 export function ClientFormFields({
-  phoneInputKey,
   sourceOptions,
   onCreateSource,
   onSourceLabelChange,
 }: {
-  phoneInputKey?: number;
   sourceOptions?: DefaultOptionType[];
   onCreateSource?: () => void;
   onSourceLabelChange?: (label?: string) => void;
 }) {
+  const form = Form.useFormInstance();
+
   return (
     <>
       <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
@@ -50,13 +31,11 @@ export function ClientFormFields({
         rules={[
           {
             validator: (_, value?: string) =>
-              !hasRussianPhoneDigits(value) || getRussianPhoneDigits(value).length === 10
-                ? Promise.resolve()
-                : Promise.reject(new Error("Введите телефон полностью")),
+              !value?.trim() || isValidPhone(value) ? Promise.resolve() : Promise.reject(new Error("Введите корректный номер телефона")),
           },
         ]}
       >
-        <RussianPhoneInput key={phoneInputKey !== undefined ? ["phone", phoneInputKey].join("-") : undefined} />
+        <PhoneInput />
       </Form.Item>
       <Form.Item
         name="telegram"
@@ -96,36 +75,42 @@ export function ClientFormFields({
       </Form.Item>
     </>
   );
-}
 
-function RussianPhoneInput({ value, onChange }: { value?: string | null; onChange?: (value: string) => void }) {
-  return (
-    <MaskedAntdInput
-      {...russianPhoneMask}
-      value={getRussianPhoneDigits(value)}
-      unmask
-      onAccept={(nextValue) => {
-        if (typeof nextValue === "string") {
+  function PhoneInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
+    return (
+      <Input
+        value={value ?? ""}
+        inputMode="tel"
+        autoComplete="tel"
+        placeholder="+49 1512 3456789"
+        onChange={(event) => {
+          const nextValue = formatPhoneInput(event.target.value);
           if (onChange) {
-            onChange(nextValue);
+            onChange(nextValue || undefined);
+          } else {
+            form.setFieldValue("phone", nextValue || undefined);
           }
-          return;
-        }
+        }}
+        onBlur={(event) => {
+          const normalized = normalizePhone(event.target.value);
+          if (normalized) {
+            const formatted = formatPhone(normalized);
+            if (onChange) {
+              onChange(formatted || undefined);
+            } else {
+              form.setFieldValue("phone", formatted || undefined);
+            }
+            return;
+          }
 
-        if (typeof nextValue === "number") {
+          const formatted = formatPhoneInput(event.target.value);
           if (onChange) {
-            onChange(String(nextValue));
+            onChange(formatted || undefined);
+          } else {
+            form.setFieldValue("phone", formatted || undefined);
           }
-          return;
-        }
-
-        if (onChange) {
-          onChange("");
-        }
-      }}
-      inputMode="tel"
-      autoComplete="tel"
-      placeholder="+7 (999) 123-45-67"
-    />
-  );
+        }}
+      />
+    );
+  }
 }

@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client/lib/contact";
+import { normalizePhone, normalizeSocialLink } from "@/entities/client/lib/contact";
 import { createOrQueueOffline, isQueuedClientCreate } from "@/features/offline/createOrQueueOffline";
 import { clientSourcesApi, clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
@@ -53,7 +53,7 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
           firstName: values.firstName,
           lastName: values.lastName,
           patronymic: values.patronymic?.trim() || undefined,
-          phone: normalizeRussianPhone(values.phone),
+          phone: normalizePhone(values.phone),
           telegram: normalizeSocialLink(values.telegram, "telegram"),
           vk: normalizeSocialLink(values.vk, "vk"),
           sourceId: values.sourceId,

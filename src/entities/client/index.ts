@@ -5,11 +5,13 @@ export {
   renderClientSocialLink,
 } from "./lib/client";
 export {
-  formatRussianPhone,
-  getRussianPhoneDigits,
-  getRussianPhoneMask,
-  hasRussianPhoneDigits,
-  normalizeRussianPhone,
+  formatPhone,
+  formatPhoneInput,
+  getPhoneDigits,
+  getPhoneUri,
+  hasPhoneDigits,
+  isValidPhone,
+  normalizePhone,
   normalizeSocialLink,
 } from "./lib/contact";
 export { ClientHistoryDrawer } from "./ui/ClientHistoryDrawer";

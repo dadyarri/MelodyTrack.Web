@@ -3,7 +3,7 @@ import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { queryKeys } from "@/api/queryKeys";
-import { getClientContactValue, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
+import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
@@ -56,7 +56,6 @@ export function useClientsPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [createPhoneInputKey, setCreatePhoneInputKey] = useState(() => (hasCreateDraft ? 1 : 0));
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
@@ -157,7 +156,7 @@ export function useClientsPageController() {
               ...freshClient,
               telegram: getClientContactValue(freshClient, "telegram"),
               vk: getClientContactValue(freshClient, "vk"),
-              phone: getRussianPhoneDigits(getClientContactValue(freshClient, "phone")),
+              phone: getClientContactValue(freshClient, "phone"),
             });
           });
         },
@@ -205,7 +204,7 @@ export function useClientsPageController() {
             ...client,
             telegram: getClientContactValue(client, "telegram"),
             vk: getClientContactValue(client, "vk"),
-            phone: getRussianPhoneDigits(getClientContactValue(client, "phone")),
+            phone: getClientContactValue(client, "phone"),
           });
         });
         return;
@@ -219,7 +218,6 @@ export function useClientsPageController() {
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       setCreateOpen(true);
-      setCreatePhoneInputKey((current) => current + 1);
       withHydration(() => {
         form.resetFields();
         form.setFieldsValue(draftValues ?? {});
@@ -248,7 +246,6 @@ export function useClientsPageController() {
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
-    setCreatePhoneInputKey((current) => current + 1);
     resetStoredDraft(() => {
       form.resetFields();
     });
@@ -305,7 +302,6 @@ export function useClientsPageController() {
     isCreateOpen,
     hasCreateDraft,
     form,
-    createPhoneInputKey,
     currentEditingClient,
     isEditingClientStale,
     editingBaselineActivityId,
@@ -359,7 +355,7 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
     firstName: values.firstName,
     lastName: values.lastName,
     patronymic: values.patronymic,
-    phone: normalizeRussianPhone(values.phone),
+    phone: normalizePhone(values.phone),
     telegram: normalizeSocialLink(values.telegram, "telegram"),
     vk: normalizeSocialLink(values.vk, "vk"),
     sourceId: values.sourceId ?? undefined,

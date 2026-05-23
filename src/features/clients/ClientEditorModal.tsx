@@ -16,7 +16,6 @@ export function ClientEditorModal({
   savePending,
   isStale,
   staleActivity,
-  phoneInputKey,
   sourceOptions,
   onCancel,
   onClearDraft,
@@ -32,7 +31,6 @@ export function ClientEditorModal({
   savePending: boolean;
   isStale: boolean;
   staleActivity?: Client["lastActivity"];
-  phoneInputKey: number;
   sourceOptions: DefaultOptionType[];
   onCancel: () => void;
   onClearDraft: () => void;
@@ -66,12 +64,7 @@ export function ClientEditorModal({
             description={formatRecordActivitySummary(staleActivity)}
           />
         ) : null}
-        <ClientFormFields
-          phoneInputKey={phoneInputKey}
-          sourceOptions={sourceOptions}
-          onCreateSource={onCreateSource}
-          onSourceLabelChange={onSourceLabelChange}
-        />
+        <ClientFormFields sourceOptions={sourceOptions} onCreateSource={onCreateSource} onSourceLabelChange={onSourceLabelChange} />
       </Form>
     </Modal>
   );

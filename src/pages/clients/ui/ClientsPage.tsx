@@ -137,7 +137,6 @@ export function ClientsPage() {
         savePending={controller.saveMutation.isPending}
         isStale={controller.isEditingClientStale}
         staleActivity={controller.currentEditingClient?.lastActivity}
-        phoneInputKey={controller.createPhoneInputKey}
         sourceOptions={controller.createdSourceOptions}
         onCancel={controller.closeEditor}
         onClearDraft={controller.handleClearCreateDraft}

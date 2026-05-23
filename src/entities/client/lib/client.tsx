@@ -1,6 +1,6 @@
 import type { Client, ClientHistory } from "@/api/types";
 import { getAppointmentStatusLabel } from "@/features/schedule/appointmentStatus";
-import { formatRussianPhone, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "./contact";
+import { formatPhone, getPhoneUri, normalizeSocialLink } from "./contact";
 
 export type ClientWithOptionalContacts = Client & {
   telegram?: string | null;
@@ -17,12 +17,12 @@ export function getClientContactValue(client: ClientWithOptionalContacts, key: "
 }
 
 export function renderClientPhoneLink(value?: string | null) {
-  const normalized = normalizeRussianPhone(value);
-  if (!normalized) {
+  const uri = getPhoneUri(value);
+  if (!uri) {
     return null;
   }
 
-  return <a href={`tel:${normalized}`}>{formatRussianPhone(getRussianPhoneDigits(normalized))}</a>;
+  return <a href={uri}>{formatPhone(value)}</a>;
 }
 
 export function renderClientSocialLink(value: string | null | undefined, type: "telegram" | "vk") {
