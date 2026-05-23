@@ -107,12 +107,7 @@ export function AuditPage() {
               ),
             },
             { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
-            { title: "Действие", dataIndex: "action", width: 260, render: (value: string) => formatAuditLabel(value, actionLabels) },
-            {
-              title: "Объект",
-              width: 220,
-              render: (_, row) => `${row.entityType}${row.entityId ? ` #${row.entityId}` : ""}`,
-            },
+            { title: "Действие", dataIndex: "action", width: 160, render: (value: string) => formatAuditLabel(value, actionLabels) },
             {
               title: "Детали",
               dataIndex: "details",
