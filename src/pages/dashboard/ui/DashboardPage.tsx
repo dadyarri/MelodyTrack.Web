@@ -1,127 +1,98 @@
 import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
-import { clientsApi, dashboardApi, scheduleApi } from "@/api/crm";
-import type { Appointment, Client } from "@/api/types";
+import type { Appointment } from "@/api/types";
 import { ClientHistoryDrawer } from "@/entities/client";
-import { useAuth } from "@/features/auth/useAuth";
+import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatDateTime, TIME_FORMAT } from "@/utils/date";
-import { downloadBlob } from "@/utils/download";
 import { formatMoney } from "@/utils/money";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
-import styles from "./DashboardPage.module.css";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
+import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {
-  const auth = useAuth();
-  const canSeeFinancialOverview = Boolean(auth.user?.isAdmin);
-  const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const navigate = useNavigate();
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const statsQuery = useQuery({ queryKey: ["dashboard", "stats", timezone], queryFn: () => dashboardApi.stats(timezone) });
-  const debtorsQuery = useQuery({
-    queryKey: ["clients", "debtors"],
-    queryFn: () => clientsApi.debtors(),
-    enabled: canSeeFinancialOverview,
-  });
-  const miniQuery = useQuery({ queryKey: ["schedule", "mini", timezone], queryFn: () => scheduleApi.mini(timezone) });
-  const historyQuery = useQuery({
-    queryKey: ["clients", "history", historyClient?.id],
-    queryFn: () => {
-      const clientId = historyClient?.id;
-      if (!clientId) {
-        throw new Error("History client is not selected.");
-      }
-      return clientsApi.history(clientId);
-    },
-    enabled: Boolean(historyClient),
-  });
-  const debtorsExportMutation = useMutation({
-    mutationFn: () => clientsApi.exportDebtors(),
-    onSuccess: (blob) => {
-      downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
-    },
-  });
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
-        return;
-      }
-
-      if (matchesPlainKey(event, "x")) {
-        if (!canSeeFinancialOverview) {
-          return;
-        }
-
-        event.preventDefault();
-        debtorsExportMutation.mutate();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [canSeeFinancialOverview, debtorsExportMutation]);
-
-  const todayKey = dayjs().format("YYYY-MM-DD");
-  const tomorrowKey = dayjs().add(1, "day").format("YYYY-MM-DD");
-  const todayAppointments = miniQuery.data?.[todayKey] ?? [];
-  const tomorrowAppointments = miniQuery.data?.[tomorrowKey] ?? [];
+  const controller = useDashboardPageController();
   const smallWidgetClassName = `${styles.widget} ${styles.widgetSmall}`;
   const largeWidgetClassName = `${styles.widget} ${styles.widgetLarge}`;
 
   return (
     <PageLayout title="Обзор">
       <div className={styles.grid} data-onboarding-id="dashboard-content">
-        {canSeeFinancialOverview ? (
+        {controller.canSeeFinancialOverview ? (
           <>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Записи сегодня" value={statsQuery.data?.appointmentsToday ?? 0} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Записи сегодня"
+                value={controller.statsQuery.data?.appointmentsToday ?? 0}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Записи завтра" value={statsQuery.data?.appointmentsTomorrow ?? 0} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Записи завтра"
+                value={controller.statsQuery.data?.appointmentsTomorrow ?? 0}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Всего клиентов" value={statsQuery.data?.totalClients ?? 0} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Всего клиентов"
+                value={controller.statsQuery.data?.totalClients ?? 0}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Должники" value={statsQuery.data?.debtorsCount ?? 0} loading={statsQuery.isLoading} />
+              <Statistic title="Должники" value={controller.statsQuery.data?.debtorsCount ?? 0} loading={controller.statsQuery.isLoading} />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Общий долг" value={formatMoney(statsQuery.data?.totalDebt)} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Общий долг"
+                value={formatMoney(controller.statsQuery.data?.totalDebt)}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Доход за месяц" value={formatMoney(statsQuery.data?.monthIncome)} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Доход за месяц"
+                value={formatMoney(controller.statsQuery.data?.monthIncome)}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Расход за месяц" value={formatMoney(statsQuery.data?.monthExpenses)} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Расход за месяц"
+                value={formatMoney(controller.statsQuery.data?.monthExpenses)}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic title="Итог за месяц" value={formatMoney(statsQuery.data?.monthNet)} loading={statsQuery.isLoading} />
+              <Statistic
+                title="Итог за месяц"
+                value={formatMoney(controller.statsQuery.data?.monthNet)}
+                loading={controller.statsQuery.isLoading}
+              />
             </Card>
           </>
         ) : null}
 
-        <Card className={largeWidgetClassName} title={`Записи на сегодня, ${formatDateTitle(dayjs())}`} loading={miniQuery.isLoading}>
-          <ReminderList appointments={todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
+        <Card
+          className={largeWidgetClassName}
+          title={`Записи на сегодня, ${formatDateTitle(controller.today)}`}
+          loading={controller.miniQuery.isLoading}
+        >
+          <ReminderList appointments={controller.todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
         </Card>
 
         <Card
           className={largeWidgetClassName}
-          title={`Записи на завтра, ${formatDateTitle(dayjs().add(1, "day"))}`}
-          loading={miniQuery.isLoading}
+          title={`Записи на завтра, ${formatDateTitle(controller.tomorrow)}`}
+          loading={controller.miniQuery.isLoading}
         >
-          <ReminderList appointments={tomorrowAppointments} emptyDescription="На завтра записей нет" showTimeOnly />
+          <ReminderList appointments={controller.tomorrowAppointments} emptyDescription="На завтра записей нет" showTimeOnly />
         </Card>
 
-        {canSeeFinancialOverview ? (
+        {controller.canSeeFinancialOverview ? (
           <Card
             data-onboarding-id="dashboard-debtors"
             className={largeWidgetClassName}
@@ -130,18 +101,18 @@ export function DashboardPage() {
               <ShortcutButton
                 shortcut="X"
                 leadingIcon={<DownloadOutlined />}
-                loading={debtorsExportMutation.isPending}
+                loading={controller.debtorsExportMutation.isPending}
                 label="Экспорт"
                 onClick={() => {
-                  debtorsExportMutation.mutate();
+                  controller.debtorsExportMutation.mutate();
                 }}
               />
             }
           >
             <Table
               rowKey="id"
-              loading={debtorsQuery.isLoading}
-              dataSource={debtorsQuery.data}
+              loading={controller.debtorsQuery.isLoading}
+              dataSource={controller.debtorsQuery.data}
               pagination={false}
               scroll={{ x: "max-content" }}
               columns={[
@@ -152,7 +123,7 @@ export function DashboardPage() {
                       type="link"
                       className={tableLinkButtonStyles.button}
                       onClick={() => {
-                        setHistoryClient(row);
+                        controller.setHistoryClient(row);
                       }}
                     >
                       {`${row.lastName} ${row.firstName}`}
@@ -166,33 +137,21 @@ export function DashboardPage() {
         ) : null}
       </div>
       <ClientHistoryDrawer
-        client={historyClient}
-        data={historyQuery.data}
-        isLoading={historyQuery.isLoading}
-        isError={historyQuery.isError}
+        client={controller.historyClient}
+        data={controller.historyQuery.data}
+        isLoading={controller.historyQuery.isLoading}
+        isError={controller.historyQuery.isError}
         onClose={() => {
-          setHistoryClient(null);
+          controller.setHistoryClient(null);
         }}
-        onCreateAppointment={
-          auth.user?.isAdmin ? (client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }) : undefined
-        }
-        onCreatePayment={
-          auth.user?.isAdmin ? (client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } }) : undefined
-        }
+        onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
+        onCreatePayment={controller.clientHistoryActions.onCreatePayment}
       />
     </PageLayout>
   );
 }
 
-function ReminderList({
-  appointments,
-  emptyDescription,
-  showTimeOnly = false,
-}: {
-  appointments: Appointment[];
-  emptyDescription: string;
-  showTimeOnly?: boolean;
-}) {
+function ReminderList({ appointments, emptyDescription, showTimeOnly = false }: DashboardReminderListProps) {
   if (appointments.length === 0) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription} />;
   }

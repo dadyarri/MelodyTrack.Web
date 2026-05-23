@@ -1,6 +1,5 @@
 .shell {
   height: 100dvh;
-  min-height: 100vh;
   min-height: 100dvh;
   background: var(--bg-app);
   overflow: hidden;
@@ -113,14 +112,13 @@
   gap: 8px;
 }
 
-.mobileNavDrawer :global(.ant-menu),
-.mobileNavMenu,
-.mobileNavActionsMenu {
-  border-inline-end: 0 !important;
+.mobileNavDrawer :global(.ant-menu).mobileNavMenu,
+.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu {
+  border-inline-end: 0;
 }
 
-.mobileNavMenu :global(.ant-menu-item),
-.mobileNavActionsMenu :global(.ant-menu-item) {
+.mobileNavDrawer :global(.ant-menu).mobileNavMenu :global(.ant-menu-item),
+.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu :global(.ant-menu-item) {
   width: 100%;
 }
 

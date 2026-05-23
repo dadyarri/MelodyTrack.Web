@@ -1,14 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useRef, useState } from "react";
 import { normalizeRussianPhone, normalizeSocialLink } from "@/entities/client/lib/contact";
+import { createOrQueueOffline, isQueuedClientCreate } from "@/features/offline/createOrQueueOffline";
 import { clientSourcesApi, clientsApi } from "../api/crm";
 import { getApiErrorMessages } from "../api/http";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
+import { useCreatedReferenceOptions } from "../features/reference-books/useCreatedReferenceOptions";
 import { ReferenceBookCreateModal } from "./ReferenceBookCreateModal";
 import { createReplayKey } from "../utils/drafts";
-import { createOfflineTempId, enqueueOfflineCreate, shouldQueueOfflineError } from "../utils/offlineQueue";
+import { createOfflineTempId } from "../utils/offlineQueue";
 
 type ClientQuickCreateValues = {
   firstName: string;
@@ -29,7 +30,7 @@ type ClientQuickCreateModalProps = {
 export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuickCreateModalProps) {
   const [form] = Form.useForm<ClientQuickCreateValues>();
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
-  const [createdSourceOptions, setCreatedSourceOptions] = useState<DefaultOptionType[]>([]);
+  const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const replayKeyRef = useRef(createReplayKey());
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -45,46 +46,35 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
   }, [open]);
 
   const createMutation = useMutation({
-    mutationFn: async (values: ClientQuickCreateValues) => {
-      const input = {
-        firstName: values.firstName,
-        lastName: values.lastName,
-        patronymic: values.patronymic?.trim() || undefined,
-        phone: normalizeRussianPhone(values.phone),
-        telegram: normalizeSocialLink(values.telegram, "telegram"),
-        vk: normalizeSocialLink(values.vk, "vk"),
-        sourceId: values.sourceId,
-      };
-
-      try {
-        return {
-          created: await clientsApi.create(input, { replayKey: replayKeyRef.current }),
-          offline: false as const,
-        };
-      } catch (error) {
-        if (!shouldQueueOfflineError(error)) {
-          throw error;
-        }
-
-        const tempId = createOfflineTempId("client");
-        enqueueOfflineCreate({
+    mutationFn: (values: ClientQuickCreateValues) => {
+      const tempId = createOfflineTempId("client");
+      return createOrQueueOffline({
+        input: {
+          firstName: values.firstName,
+          lastName: values.lastName,
+          patronymic: values.patronymic?.trim() || undefined,
+          phone: normalizeRussianPhone(values.phone),
+          telegram: normalizeSocialLink(values.telegram, "telegram"),
+          vk: normalizeSocialLink(values.vk, "vk"),
+          sourceId: values.sourceId,
+        },
+        replayKey: replayKeyRef.current,
+        create: (input) => clientsApi.create(input, { replayKey: replayKeyRef.current }),
+        buildQueueItem: (input, replayKey) => ({
           kind: "clients:create",
-          replayKey: replayKeyRef.current,
+          replayKey,
           tempId,
           payload: input,
-        });
-        return {
-          created: { id: tempId },
-          offline: true as const,
-        };
-      }
+        }),
+      });
     },
     onSuccess: (result, values) => {
       message.success(result.offline ? "Клиент сохранен локально" : "Клиент создан");
       form.resetFields();
       replayKeyRef.current = createReplayKey();
+      const createdId = result.offline && isQueuedClientCreate(result.queuedItem) ? result.queuedItem.tempId : result.response.id;
       onCreated({
-        id: result.created.id,
+        id: createdId,
         displayName: formatClientName(values),
         isOffline: result.offline,
       });
@@ -96,8 +86,7 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
     mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
     onSuccess: (result, values) => {
       message.success("Источник создан");
-      const option = { value: result.id, label: values.name.trim() } satisfies DefaultOptionType;
-      setCreatedSourceOptions((current) => [option, ...current.filter((item) => item.value !== option.value)]);
+      createdSourceOptions.addCreatedOption({ id: result.id, label: values.name.trim() });
       form.setFieldValue("sourceId", result.id);
       setSourceCreateOpen(false);
     },
@@ -126,7 +115,12 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
           createMutation.mutate(values);
         }}
       >
-        <ClientFormFields sourceOptions={createdSourceOptions} onCreateSource={() => setSourceCreateOpen(true)} />
+        <ClientFormFields
+          sourceOptions={createdSourceOptions.createdOptions}
+          onCreateSource={() => {
+            setSourceCreateOpen(true);
+          }}
+        />
       </Form>
       <ReferenceBookCreateModal
         open={isSourceCreateOpen}

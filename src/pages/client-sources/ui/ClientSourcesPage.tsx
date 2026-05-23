@@ -1,45 +1,22 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button } from "antd";
-import { useState } from "react";
+import { Button } from "antd";
 import { clientSourcesApi } from "@/api/crm";
+import { queryKeys } from "@/api/queryKeys";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { getApiErrorMessages } from "@/api/http";
-import { ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { useReferenceBookPageController } from "@/features/reference-books";
+import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 
 export function ClientSourcesPage() {
-  const [isCreateOpen, setCreateOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => {
-    for (const errorMessage of getApiErrorMessages(error)) {
-      void message.error(errorMessage);
-    }
-  };
-
-  const query = useQuery({
-    queryKey: ["client-sources"],
-    queryFn: () => clientSourcesApi.list(),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
-    onSuccess: async () => {
-      message.success("Источник создан");
-      setCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["client-sources"] });
+  const controller = useReferenceBookPageController({
+    successMessages: {
+      create: "Источник создан",
+      delete: "Источник удален",
     },
-    onError: showErrors,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => clientSourcesApi.remove(id),
-    onSuccess: async () => {
-      message.success("Источник удален");
-      await queryClient.invalidateQueries({ queryKey: ["client-sources"] });
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
-    },
-    onError: showErrors,
+    createItem: (values) => clientSourcesApi.create(values),
+    deleteItem: (id) => clientSourcesApi.remove(id),
+    listQueryKey: queryKeys.clients.sources,
+    listQueryFn: () => clientSourcesApi.list(),
+    invalidateQueryKeys: [queryKeys.clients.all],
   });
 
   return (
@@ -52,51 +29,52 @@ export function ClientSourcesPage() {
           leadingIcon={<PlusOutlined />}
           label="Добавить"
           onClick={() => {
-            setCreateOpen(true);
+            controller.setCreateOpen(true);
           }}
         />
       }
     >
-      <div data-onboarding-id="client-sources-page-content">
-        <ListTable
-          rowKey="id"
-          loading={query.isLoading}
-          dataSource={query.data}
-          pagination={false}
-          columns={[
-            { title: "Название", dataIndex: "name" },
-            {
-              title: "",
-              width: 72,
-              render: (_, row) => (
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => {
-                    modal.confirm({
-                      title: "Удалить источник?",
-                      content: "Связанные клиенты сохранятся без источника.",
-                      onOk: () => {
-                        deleteMutation.mutate(row.id);
-                      },
-                    });
-                  }}
-                />
-              ),
-            },
-          ]}
-        />
-      </div>
+      <ListPageScaffold
+        contentOnboardingId="client-sources-page-content"
+        table={
+          <ListTable
+            rowKey="id"
+            loading={controller.query.isLoading}
+            dataSource={controller.query.data}
+            pagination={false}
+            columns={[
+              { title: "Название", dataIndex: "name" },
+              {
+                title: "",
+                width: 72,
+                render: (_, row) => (
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      controller.modal.confirm({
+                        title: "Удалить источник?",
+                        content: "Связанные клиенты сохранятся без источника.",
+                        onOk: () => {
+                          controller.onDelete(row.id);
+                        },
+                      });
+                    }}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
       <ReferenceBookCreateModal
-        open={isCreateOpen}
+        open={controller.isCreateOpen}
         title="Новый источник клиента"
-        confirmLoading={createMutation.isPending}
+        confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
-          setCreateOpen(false);
+          controller.setCreateOpen(false);
         }}
-        onSubmit={(values) => {
-          createMutation.mutate(values);
-        }}
+        onSubmit={controller.onCreate}
       />
     </PageLayout>
   );

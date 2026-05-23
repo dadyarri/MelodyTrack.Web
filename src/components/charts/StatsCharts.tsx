@@ -1,25 +1,10 @@
 import { Tooltip, Typography, theme } from "antd";
 import type { ReactNode } from "react";
+import { STATS_CHART_COLORS } from "./chartColors";
 
-export const STATS_CHART_COLORS = [
-  "#3b5f8a", // dim blue
-  "#7f4d4d", // dim red
-  "#4f7a5f", // dim green
-  "#8a6a3f", // dim amber
-  "#6f5a8f", // dim violet
-  "#3f7a86", // dim cyan
-  "#8a5a3f", // dim orange
-  "#6f7f3f", // dim lime
-
-  "#5b6f91", // muted sky
-  "#8f5f73", // muted rose
-  "#5f8a7a", // muted teal
-  "#8a7a5f", // muted yellow
-  "#735f8f", // muted purple
-  "#5f7f8f", // muted light blue
-  "#8f6f5f", // muted coral
-  "#708f5f", // muted leaf
-] as const;
+function stringifyNumber(value: number) {
+  return String(value);
+}
 
 type DonutChartItem = {
   key: string;
@@ -76,32 +61,48 @@ export function StatsDonutChart({
   const strokeWidth = 34;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  let offset = 0;
+  const segments = preparedItems.map((item, index) => {
+    const previousValue = preparedItems.slice(0, index).reduce((sum, current) => sum + current.value, 0);
+    const dash = (item.value / total) * circumference;
+    const offset = (previousValue / total) * circumference;
+
+    return {
+      item,
+      color: item.color ?? STATS_CHART_COLORS[index % STATS_CHART_COLORS.length],
+      dash,
+      offset,
+    };
+  });
 
   return (
     <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(180px, 220px) minmax(220px, 1fr)", alignItems: "center" }}>
-      <svg viewBox={`0 0 ${size} ${size}`} style={{ width: "100%", maxWidth: size, justifySelf: "center" }} role="img" aria-label={totalLabel}>
+      <svg
+        viewBox={["0", "0", stringifyNumber(size), stringifyNumber(size)].join(" ")}
+        style={{ width: "100%", maxWidth: size, justifySelf: "center" }}
+        role="img"
+        aria-label={totalLabel}
+      >
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={token.colorFillSecondary} strokeWidth={strokeWidth} />
-        {preparedItems.map((item, index) => {
-          const dash = (item.value / total) * circumference;
+        {segments.map(({ item, color, dash, offset }) => {
           const segment = (
-            <Tooltip key={item.key} title={item.tooltip ?? `${item.label}: ${item.valueLabel}${item.shareLabel ? ` (${item.shareLabel})` : ""}`}>
+            <Tooltip
+              key={item.key}
+              title={item.tooltip ?? `${item.label}: ${item.valueLabel}${item.shareLabel ? ` (${item.shareLabel})` : ""}`}
+            >
               <circle
                 cx={size / 2}
                 cy={size / 2}
                 r={radius}
                 fill="none"
-                stroke={item.color ?? STATS_CHART_COLORS[index % STATS_CHART_COLORS.length]}
+                stroke={color}
                 strokeWidth={strokeWidth}
-                strokeDasharray={`${dash} ${circumference - dash}`}
+                strokeDasharray={[dash, circumference - dash].map(stringifyNumber).join(" ")}
                 strokeDashoffset={-offset}
-                transform={`rotate(-90 ${size / 2} ${size / 2})`}
+                transform={["rotate(-90", stringifyNumber(size / 2), `${stringifyNumber(size / 2)})`].join(" ")}
                 style={{ cursor: "pointer" }}
               />
             </Tooltip>
           );
-
-          offset += dash;
           return segment;
         })}
         <text x="50%" y="46%" textAnchor="middle" fontSize="15" fill={token.colorTextSecondary}>
@@ -138,13 +139,7 @@ export function StatsDonutChart({
   );
 }
 
-export function StatsHorizontalBarChart({
-  items,
-  emptyText = "Нет данных для графика.",
-}: {
-  items?: BarChartItem[];
-  emptyText?: string;
-}) {
+export function StatsHorizontalBarChart({ items, emptyText = "Нет данных для графика." }: { items?: BarChartItem[]; emptyText?: string }) {
   const { token } = theme.useToken();
   const preparedItems = (items ?? []).filter((item) => item.value !== 0);
 
@@ -168,7 +163,7 @@ export function StatsHorizontalBarChart({
                 <Typography.Text strong>{item.valueLabel}</Typography.Text>
               </div>
               <div style={{ height: 12, background: token.colorFillSecondary, borderRadius: 999, overflow: "hidden" }}>
-                <div style={{ width: `${widthPercent}%`, height: "100%", background: color, borderRadius: 999 }} />
+                <div style={{ width: `${String(widthPercent)}%`, height: "100%", background: color, borderRadius: 999 }} />
               </div>
             </div>
           </Tooltip>
@@ -216,7 +211,12 @@ export function StatsTrendChart({
 
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
-      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", minWidth: 560, display: "block" }} role="img" aria-label="График динамики">
+      <svg
+        viewBox={["0", "0", stringifyNumber(width), stringifyNumber(height)].join(" ")}
+        style={{ width: "100%", minWidth: 560, display: "block" }}
+        role="img"
+        aria-label="График динамики"
+      >
         {ticks.map((value) => {
           const y = getY(value);
           return (
@@ -239,13 +239,7 @@ export function StatsTrendChart({
               stroke={token.colorBorderSecondary}
               strokeDasharray="4 4"
             />
-            <text
-              x={padding.left - 12}
-              y={zeroY + 4}
-              textAnchor="end"
-              fill={token.colorTextSecondary}
-              fontSize="12"
-            >
+            <text x={padding.left - 12} y={zeroY + 4} textAnchor="end" fill={token.colorTextSecondary} fontSize="12">
               0
             </text>
           </g>
@@ -255,7 +249,7 @@ export function StatsTrendChart({
           const linePoints = pointMap
             .map((point) => {
               const y = getY(point.item.values[seriesItem.key] ?? 0);
-              return `${point.x},${y}`;
+              return [point.x, y].map(stringifyNumber).join(",");
             })
             .join(" ");
 
@@ -292,7 +286,9 @@ export function StatsTrendChart({
             textAnchor={shouldRotateLabels ? "end" : "middle"}
             fill={token.colorTextSecondary}
             fontSize="12"
-            transform={shouldRotateLabels ? `rotate(-28 ${point.x} ${height - 14})` : undefined}
+            transform={
+              shouldRotateLabels ? ["rotate(-28", stringifyNumber(point.x), `${stringifyNumber(height - 14)})`].join(" ") : undefined
+            }
           >
             {point.item.label}
           </text>
@@ -329,5 +325,5 @@ function shortNumber(value: number) {
     return `${value < 0 ? "-" : ""}${shortened}k`;
   }
 
-  return `${Math.round(value)}`;
+  return String(Math.round(value));
 }

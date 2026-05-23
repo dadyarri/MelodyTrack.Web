@@ -1,23 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { paymentsApi } from "../../api/crm";
-import { getApiErrorMessages } from "../../api/http";
-import { formatDateTime } from "../../utils/date";
-import { downloadBlob } from "../../utils/download";
-import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
-import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
-import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
-import { handleStaleEntityConflict } from "../../utils/staleEntity";
-import type { PaymentCreateFormValues } from "./PaymentCreateModal";
-
-type PaymentPageLocationState = {
-  openCreate?: boolean;
-  clientId?: string;
-};
+import { useCallback, useEffect, useState } from "react";
+import { queryKeys } from "@/api/queryKeys";
+import { paymentsApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
+import { useDraftFormState } from "@/features/drafts/useDraftFormState";
+import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
+import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
+import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
+import { formatDateTime } from "@/utils/date";
+import { downloadBlob } from "@/utils/download";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { handleStaleEntityConflict } from "@/utils/staleEntity";
+import type { PaymentCreateFormValues } from "@/features/payments/PaymentCreateModal";
 
 export type PaymentDraftValues = {
   clientId?: string;
@@ -31,25 +27,32 @@ export type PaymentDraftValues = {
 const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
 
 export function usePaymentsPageController() {
+  const {
+    hasSavedDraft,
+    replayKeyRef,
+    isHydratingRef,
+    loadDraftValues,
+    withHydration,
+    resetStoredDraft,
+    saveDraftValues: saveDraftFormValues,
+  } = useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
   const [page, setPage] = useState(1);
-  const hasCreateDraft = hasDraft(PAYMENT_CREATE_DRAFT_KEY);
+  const hasCreateDraft = hasSavedDraft;
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [clientId, setClientId] = useState<string | undefined>();
   const [serviceId, setServiceId] = useState<string | undefined>();
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
-  const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
+  const createdClientOptions = useCreatedReferenceOptions("client");
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
   const [selectedServicePrice, setSelectedServicePrice] = useState<number | undefined>();
-  const draftReplayKeyRef = useRef(getDraftReplayKey(PAYMENT_CREATE_DRAFT_KEY));
-  const isDraftHydratingRef = useRef(false);
   const [form] = Form.useForm<PaymentCreateFormValues>();
   const selectedCreateServiceId = Form.useWatch("serviceId", form);
   const selectedCreateQuantity = Form.useWatch("quantity", form) ?? 1;
-  const location = useLocation();
-  const navigate = useNavigate();
+  const draftHydrationRef = isHydratingRef;
+  const createRouteIntent = useOpenCreateRouteIntent();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -57,12 +60,12 @@ export function usePaymentsPageController() {
       void message.error(errorMessage);
     }
   };
-  const locationState = (location.state ?? null) as PaymentPageLocationState | null;
-  const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
-  const isCreateModalOpen = isOpen || Boolean(locationState?.openCreate);
+  const createPrefillClientId = createRouteIntent.prefillClientId;
+  const isCreateModalOpen = isOpen || createRouteIntent.hasOpenCreateIntent;
+  const listQueryKey = queryKeys.payments.list(page, search, clientId, serviceId, dateRange?.[0], dateRange?.[1]);
 
   const query = useQuery({
-    queryKey: ["payments", page, search, clientId, serviceId, dateRange?.[0]?.toISOString(), dateRange?.[1]?.toISOString()],
+    queryKey: listQueryKey,
     queryFn: () =>
       paymentsApi.list({
         page,
@@ -76,35 +79,29 @@ export function usePaymentsPageController() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (values: PaymentCreateFormValues) => {
-      const input = {
-        clientId: values.clientId,
-        serviceId: values.serviceId,
-        amount: values.amount,
-        date: values.date.toISOString(),
-        description: values.description,
-      };
-      try {
-        return { offline: false as const, response: await paymentsApi.create(input, { replayKey: draftReplayKeyRef.current }) };
-      } catch (error) {
-        if (!shouldQueueOfflineError(error)) {
-          throw error;
-        }
-
-        enqueueOfflineCreate({
+    mutationFn: (values: PaymentCreateFormValues) =>
+      createOrQueueOffline({
+        input: {
+          clientId: values.clientId,
+          serviceId: values.serviceId,
+          amount: values.amount,
+          date: values.date.toISOString(),
+          description: values.description,
+        },
+        replayKey: replayKeyRef.current,
+        create: (input) => paymentsApi.create(input, { replayKey: replayKeyRef.current }),
+        buildQueueItem: (input, replayKey) => ({
           kind: "payments:create",
-          replayKey: draftReplayKeyRef.current,
+          replayKey,
           payload: { ...input, clientLabel: createClientLabel, serviceLabel: createServiceLabel },
-        });
-        return { offline: true as const, response: null };
-      }
-    },
+        }),
+      }),
     onSuccess: async (result) => {
       message.success(result.offline ? "Платеж сохранен локально" : "Платеж создан");
       closeCreateModal();
-      resetDraft(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
+      resetStoredDraft();
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: ["payments"] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
       }
     },
     onError: showErrors,
@@ -116,14 +113,14 @@ export function usePaymentsPageController() {
     },
     onSuccess: async () => {
       message.success("Платеж удален");
-      await queryClient.invalidateQueries({ queryKey: ["payments"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["payments"],
+        invalidateQueryKey: queryKeys.payments.all,
         showErrors,
         title: "Платеж уже изменен",
         okText: "Удалить все равно",
@@ -132,7 +129,7 @@ export function usePaymentsPageController() {
           deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
         },
         onReload: () => {
-          void queryClient.invalidateQueries({ queryKey: ["payments"] });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
         },
       });
     },
@@ -158,16 +155,21 @@ export function usePaymentsPageController() {
     setOpen(true);
   }, []);
 
+  const resetFilters = useCallback(() => {
+    setSearch("");
+    setClientId(undefined);
+    setServiceId(undefined);
+    setDateRange(null);
+    setPage(1);
+  }, []);
+
   useEffect(() => {
     if (!isCreateModalOpen) {
       return;
     }
 
-    const draft = loadDraft<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
-    const draftValues = draft?.values ?? {};
-
-    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(PAYMENT_CREATE_DRAFT_KEY);
-    withDraftHydration(isDraftHydratingRef, () => {
+    const draftValues = loadDraftValues() ?? {};
+    withHydration(() => {
       form.setFieldsValue({
         clientId: draftValues.clientId ?? createPrefillClientId,
         serviceId: draftValues.serviceId,
@@ -177,7 +179,7 @@ export function usePaymentsPageController() {
         description: draftValues.description,
       });
     });
-  }, [createPrefillClientId, form, isCreateModalOpen]);
+  }, [createPrefillClientId, form, isCreateModalOpen, loadDraftValues, withHydration]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -204,24 +206,16 @@ export function usePaymentsPageController() {
   }, [exportMutation, openCreateModal]);
 
   useEffect(() => {
-    if (!selectedCreateServiceId || selectedServicePrice === undefined || isDraftHydratingRef.current) {
+    if (!selectedCreateServiceId || selectedServicePrice === undefined || draftHydrationRef.current) {
       return;
     }
 
     form.setFieldValue("amount", selectedServicePrice * selectedCreateQuantity);
-  }, [form, selectedCreateQuantity, selectedCreateServiceId, selectedServicePrice]);
-
-  function clearCreateRouteState() {
-    if (!location.state) {
-      return;
-    }
-
-    void navigate(location.pathname, { replace: true, state: null });
-  }
+  }, [draftHydrationRef, form, selectedCreateQuantity, selectedCreateServiceId, selectedServicePrice]);
 
   function closeCreateModal() {
     setOpen(false);
-    withDraftHydration(isDraftHydratingRef, () => {
+    withHydration(() => {
       form.setFieldsValue({
         clientId: undefined,
         serviceId: undefined,
@@ -232,12 +226,11 @@ export function usePaymentsPageController() {
       });
     });
     setSelectedServicePrice(undefined);
-    clearCreateRouteState();
+    createRouteIntent.clearOpenCreateIntent();
   }
 
   function handleClearCreateDraft() {
-    resetDraft(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
-    withDraftHydration(isDraftHydratingRef, () => {
+    resetStoredDraft(() => {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
@@ -263,15 +256,14 @@ export function usePaymentsPageController() {
     setDateRange,
     isQuickClientCreateOpen,
     setQuickClientCreateOpen,
-    createdClientOptions,
-    setCreatedClientOptions,
+    createdClientOptions: createdClientOptions.createdOptions,
     createClientLabel,
     setCreateClientLabel,
     setCreateServiceLabel,
     selectedServicePrice,
     setSelectedServicePrice,
     form,
-    draftHydrationRef: isDraftHydratingRef,
+    draftHydrationRef,
     selectedCreateServiceId,
     hasCreateDraft,
     isCreateModalOpen,
@@ -281,18 +273,20 @@ export function usePaymentsPageController() {
     exportMutation,
     openCreateModal,
     closeCreateModal,
+    resetFilters,
     handleClearCreateDraft,
     onCreateValuesChange: (_: Partial<PaymentCreateFormValues>, values: PaymentCreateFormValues) => {
-      saveDraftValues(PAYMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, {
+      saveDraftFormValues({
         ...values,
         date: values.date.toISOString(),
       });
     },
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
-      setCreatedClientOptions((current) => [
-        { value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName },
-        ...current,
-      ]);
+      createdClientOptions.addCreatedOption({
+        id: client.id,
+        label: client.displayName,
+        optionLabel: client.isOffline ? `${client.displayName} (локально)` : client.displayName,
+      });
       setCreateClientLabel(client.displayName);
       form.setFieldValue("clientId", client.id);
       setQuickClientCreateOpen(false);

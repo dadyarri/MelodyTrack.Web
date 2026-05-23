@@ -1,8 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Input, Typography } from "antd";
-import { useState } from "react";
-import { auditApi } from "@/api/crm";
-import { useAuth } from "@/features/auth/useAuth";
+import { useAuditPageController } from "@/features/audit/useAuditPageController";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
@@ -69,15 +66,9 @@ function formatActorLabel(displayName?: string | null, email?: string | null) {
 }
 
 export function AuditPage() {
-  const auth = useAuth();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const query = useQuery({
-    queryKey: ["audit-logs", page, search],
-    queryFn: () => auditApi.list({ page, page_size: 20, search: search.trim() || undefined }),
-  });
+  const controller = useAuditPageController();
 
-  if (!auth.user?.isSuperuser) {
+  if (!controller.canViewAudit) {
     return <AccessDeniedNotice message="Доступ к журналу действий есть только у суперпользователя." />;
   }
 
@@ -90,14 +81,10 @@ export function AuditPage() {
             <Input.Search
               allowClear
               placeholder="Например: платеж, Иванова, вход, встреча"
-              onSearch={(value) => {
-                setSearch(value);
-                setPage(1);
-              }}
+              onSearch={controller.handleSearch}
               onChange={(event) => {
                 if (!event.target.value) {
-                  setSearch("");
-                  setPage(1);
+                  controller.handleSearch("");
                 }
               }}
             />
@@ -105,9 +92,9 @@ export function AuditPage() {
         </ListFilters>
         <ListTable
           rowKey="id"
-          loading={query.isLoading}
-          dataSource={query.data?.data}
-          pagination={{ current: page, pageSize: 20, total: query.data?.info.total, onChange: setPage }}
+          loading={controller.query.isLoading}
+          dataSource={controller.query.data?.data}
+          pagination={{ current: controller.page, pageSize: 20, total: controller.query.data?.info.total, onChange: controller.setPage }}
           columns={[
             { title: "Когда", dataIndex: "createdAtUtc", width: 170, render: (value: string) => formatDateTime(value) },
             {

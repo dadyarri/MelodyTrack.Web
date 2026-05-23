@@ -1,66 +1,13 @@
 import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { App as AntdApp, Button, Form, Input, Modal, Space } from "antd";
-import { useEffect, useState } from "react";
-import { authApi, type CreateInviteInput } from "@/api/auth";
-import { usersApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { Button, Form, Input, Modal, Space } from "antd";
 import { RoleSelect } from "@/components/RemoteSelect";
-import { useAuth } from "@/features/auth/useAuth";
-import { AccessDeniedNotice, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { useUsersPageController } from "@/features/users/useUsersPageController";
+import { AccessDeniedNotice, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 
 export function UsersPage() {
-  const auth = useAuth();
-  const [isInviteOpen, setInviteOpen] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState("");
-  const [form] = Form.useForm();
-  const { message } = AntdApp.useApp();
-  const showErrors = (error: unknown) => {
-    for (const errorMessage of getApiErrorMessages(error)) {
-      void message.error(errorMessage);
-    }
-  };
-  const query = useQuery({ queryKey: ["users"], queryFn: () => usersApi.list() });
-  const createInviteMutation = useMutation({
-    mutationFn: (input: CreateInviteInput) => authApi.createInvite(input),
-    onSuccess: (data) => {
-      setInviteUrl(data.url);
-      message.success("Приглашение создано");
-    },
-    onError: showErrors,
-  });
+  const controller = useUsersPageController();
 
-  const closeInviteModal = () => {
-    setInviteOpen(false);
-    setInviteUrl("");
-    form.resetFields();
-  };
-
-  const copyInviteUrl = async () => {
-    await navigator.clipboard.writeText(inviteUrl);
-    message.success("Ссылка скопирована");
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
-        return;
-      }
-
-      if (matchesPlainKey(event, "a")) {
-        event.preventDefault();
-        setInviteOpen(true);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, []);
-
-  if (!auth.user?.isAdmin) {
+  if (!controller.canManageUsers) {
     return <AccessDeniedNotice message="Доступ к управлению пользователями есть только у администраторов." />;
   }
 
@@ -75,47 +22,40 @@ export function UsersPage() {
           leadingIcon={<PlusOutlined />}
           label="Создать приглашение"
           onClick={() => {
-            setInviteOpen(true);
+            controller.setInviteOpen(true);
           }}
         />
       }
     >
-      <div data-onboarding-id="users-page-content">
-        <ListTable
-          rowKey="id"
-          loading={query.isLoading}
-          dataSource={query.data}
-          pagination={false}
-          columns={[
-            { title: "Фамилия", dataIndex: "lastName" },
-            { title: "Имя", dataIndex: "firstName" },
-            { title: "Роль", dataIndex: "roleDisplayName" },
-          ]}
-        />
-      </div>
+      <ListPageScaffold
+        contentOnboardingId="users-page-content"
+        table={
+          <ListTable
+            rowKey="id"
+            loading={controller.query.isLoading}
+            dataSource={controller.query.data}
+            pagination={false}
+            columns={[
+              { title: "Фамилия", dataIndex: "lastName" },
+              { title: "Имя", dataIndex: "firstName" },
+              { title: "Роль", dataIndex: "roleDisplayName" },
+            ]}
+          />
+        }
+      />
       <Modal
-        open={isInviteOpen}
+        open={controller.isInviteOpen}
         title="Создать приглашение"
-        onCancel={closeInviteModal}
+        onCancel={controller.closeInviteModal}
         onOk={() => {
-          form.submit();
+          controller.form.submit();
         }}
         okText="Создать"
         cancelText="Закрыть"
-        confirmLoading={createInviteMutation.isPending}
+        confirmLoading={controller.createInviteMutation.isPending}
       >
         <Space orientation="vertical" size={16} className="wide">
-          <Form<CreateInviteInput>
-            form={form}
-            layout="vertical"
-            requiredMark={false}
-            onFinish={(values) => {
-              createInviteMutation.mutate({
-                ...values,
-                email: values.email?.trim() || undefined,
-              });
-            }}
-          >
+          <Form form={controller.form} layout="vertical" requiredMark={false} onFinish={controller.onInviteSubmit}>
             <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
               <Input placeholder="Необязательно" />
             </Form.Item>
@@ -125,8 +65,8 @@ export function UsersPage() {
           </Form>
           <Form.Item label="Ссылка приглашения">
             <Space.Compact className="wide">
-              <Input readOnly value={inviteUrl} />
-              <Button icon={<CopyOutlined />} disabled={!inviteUrl} onClick={copyInviteUrl} />
+              <Input readOnly value={controller.inviteUrl} />
+              <Button icon={<CopyOutlined />} disabled={!controller.inviteUrl} onClick={controller.copyInviteUrl} />
             </Space.Compact>
           </Form.Item>
         </Space>

@@ -1,45 +1,22 @@
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Button } from "antd";
+import { Button } from "antd";
+import { queryKeys } from "@/api/queryKeys";
 import { expenseCategoriesApi } from "@/api/crm";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { getApiErrorMessages } from "@/api/http";
-import { ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { useState } from "react";
+import { useReferenceBookPageController } from "@/features/reference-books";
+import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 
 export function ExpenseCategoriesPage() {
-  const [isCreateOpen, setCreateOpen] = useState(false);
-  const queryClient = useQueryClient();
-  const { message, modal } = AntdApp.useApp();
-  const showErrors = (error: unknown) => {
-    for (const errorMessage of getApiErrorMessages(error)) {
-      void message.error(errorMessage);
-    }
-  };
-
-  const query = useQuery({
-    queryKey: ["expense-categories"],
-    queryFn: () => expenseCategoriesApi.list(),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (values: { name: string }) => expenseCategoriesApi.create(values),
-    onSuccess: async () => {
-      message.success("Категория создана");
-      setCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
+  const controller = useReferenceBookPageController({
+    successMessages: {
+      create: "Категория создана",
+      delete: "Категория удалена",
     },
-    onError: showErrors,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => expenseCategoriesApi.remove(id),
-    onSuccess: async () => {
-      message.success("Категория удалена");
-      await queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
-      await queryClient.invalidateQueries({ queryKey: ["expenses"] });
-    },
-    onError: showErrors,
+    createItem: (values) => expenseCategoriesApi.create(values),
+    deleteItem: (id) => expenseCategoriesApi.remove(id),
+    listQueryKey: queryKeys.expenses.categories,
+    listQueryFn: () => expenseCategoriesApi.list(),
+    invalidateQueryKeys: [queryKeys.expenses.all],
   });
 
   return (
@@ -52,51 +29,52 @@ export function ExpenseCategoriesPage() {
           leadingIcon={<PlusOutlined />}
           label="Добавить"
           onClick={() => {
-            setCreateOpen(true);
+            controller.setCreateOpen(true);
           }}
         />
       }
     >
-      <div data-onboarding-id="expense-categories-page-content">
-        <ListTable
-          rowKey="id"
-          loading={query.isLoading}
-          dataSource={query.data}
-          pagination={false}
-          columns={[
-            { title: "Название", dataIndex: "name" },
-            {
-              title: "",
-              width: 72,
-              render: (_, row) => (
-                <Button
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => {
-                    modal.confirm({
-                      title: "Удалить категорию?",
-                      content: "Связанные расходы сохранятся без категории.",
-                      onOk: () => {
-                        deleteMutation.mutate(row.id);
-                      },
-                    });
-                  }}
-                />
-              ),
-            },
-          ]}
-        />
-      </div>
+      <ListPageScaffold
+        contentOnboardingId="expense-categories-page-content"
+        table={
+          <ListTable
+            rowKey="id"
+            loading={controller.query.isLoading}
+            dataSource={controller.query.data}
+            pagination={false}
+            columns={[
+              { title: "Название", dataIndex: "name" },
+              {
+                title: "",
+                width: 72,
+                render: (_, row) => (
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      controller.modal.confirm({
+                        title: "Удалить категорию?",
+                        content: "Связанные расходы сохранятся без категории.",
+                        onOk: () => {
+                          controller.onDelete(row.id);
+                        },
+                      });
+                    }}
+                  />
+                ),
+              },
+            ]}
+          />
+        }
+      />
       <ReferenceBookCreateModal
-        open={isCreateOpen}
+        open={controller.isCreateOpen}
         title="Новая категория расхода"
-        confirmLoading={createMutation.isPending}
+        confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
-          setCreateOpen(false);
+          controller.setCreateOpen(false);
         }}
-        onSubmit={(values) => {
-          createMutation.mutate(values);
-        }}
+        onSubmit={controller.onCreate}
       />
     </PageLayout>
   );

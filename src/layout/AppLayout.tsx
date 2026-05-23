@@ -1,17 +1,22 @@
 import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
-import { useEffect, useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router";
 import { useTheme } from "../app/useTheme";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useAuth } from "../features/auth/useAuth";
-import { AppOnboarding } from "../features/onboarding/AppOnboarding";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
 import styles from "./AppLayout.module.css";
 
-export function AppLayout() {
+const AppOnboarding = lazy(async () => {
+  const module = await import("@/features/onboarding/AppOnboarding");
+
+  return { default: module.AppOnboarding };
+});
+
+export function AppLayout({ children }: { children?: ReactNode }) {
   const auth = useAuth();
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
@@ -46,7 +51,7 @@ export function AppLayout() {
         return;
       }
 
-       if (isShellShortcutReserved(location.pathname, event.key)) {
+      if (isShellShortcutReserved(location.pathname, event.key)) {
         return;
       }
 
@@ -122,7 +127,12 @@ export function AppLayout() {
               />
             }
           >
-            <button type="button" className={styles.headerUserTrigger} aria-label="Открыть меню пользователя" data-onboarding-id="shell-profile-menu">
+            <button
+              type="button"
+              className={styles.headerUserTrigger}
+              aria-label="Открыть меню пользователя"
+              data-onboarding-id="shell-profile-menu"
+            >
               <Space size={8}>
                 <UserOutlined />
                 <Typography.Text>{renderUserName(auth.user?.firstName, auth.user?.lastName)}</Typography.Text>
@@ -138,7 +148,7 @@ export function AppLayout() {
         </Layout.Header>
         <Layout.Content className={styles.content}>
           <Space orientation="vertical" className={styles.contentStack}>
-            <Outlet />
+            {children}
           </Space>
         </Layout.Content>
       </Layout>
@@ -179,7 +189,9 @@ export function AppLayout() {
           />
         </Space>
       </Drawer>
-      <AppOnboarding />
+      <Suspense fallback={null}>
+        <AppOnboarding />
+      </Suspense>
     </Layout>
   );
 }

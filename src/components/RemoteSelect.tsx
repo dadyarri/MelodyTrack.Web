@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
+import { queryKeys } from "@/api/queryKeys";
 import { useAuth } from "@/features/auth/useAuth";
 import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
@@ -23,10 +24,10 @@ export function ClientSelect({
   onResolvedLabelChange?: (label?: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const query = useQuery({ queryKey: ["clients", "lookup", search], queryFn: () => clientsApi.lookup(search), retry: false });
+  const query = useQuery({ queryKey: queryKeys.clients.lookup(search), queryFn: () => clientsApi.lookup(search), retry: false });
   const pendingClientOption = getQueuedClientOption(value);
   const selectedQuery = useQuery({
-    queryKey: ["clients", "selected", value],
+    queryKey: queryKeys.clients.selected(value),
     queryFn: () => {
       if (!value) {
         throw new Error("Client id is missing.");
@@ -107,9 +108,9 @@ export function ServiceSelect({
   onResolvedPriceChange?: (price?: number) => void;
 }) {
   const [search, setSearch] = useState("");
-  const query = useQuery({ queryKey: ["services", "lookup", search], queryFn: () => servicesApi.lookup(search), retry: false });
+  const query = useQuery({ queryKey: queryKeys.services.lookup(search), queryFn: () => servicesApi.lookup(search), retry: false });
   const selectedQuery = useQuery({
-    queryKey: ["services", "selected", value],
+    queryKey: queryKeys.services.selected(value),
     queryFn: () => {
       if (!value) {
         throw new Error("Service id is missing.");
@@ -180,14 +181,13 @@ export function UserSelect({
 }) {
   const auth = useAuth();
   const query = useQuery({
-    queryKey: ["users"],
+    queryKey: queryKeys.users.all,
     queryFn: () => usersApi.list(),
     enabled: !disabled,
     retry: false,
   });
   const cachedLabel = getCachedReferenceLabel("user", value);
-  const currentUserLabel =
-    auth.user && auth.user.id === value ? `${auth.user.lastName} ${auth.user.firstName}`.trim() : undefined;
+  const currentUserLabel = auth.user && auth.user.id === value ? `${auth.user.lastName} ${auth.user.firstName}`.trim() : undefined;
   const options = useMemo<DefaultOptionType[]>(
     () =>
       query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ??
@@ -221,7 +221,7 @@ export function UserSelect({
 }
 
 export function RoleSelect({ value, onChange }: { value?: string; onChange?: (value: string) => void }) {
-  const query = useQuery({ queryKey: ["roles", "lookup"], queryFn: () => rolesApi.lookup(), retry: false });
+  const query = useQuery({ queryKey: queryKeys.users.roles, queryFn: () => rolesApi.lookup(), retry: false });
   const options = useMemo<DefaultOptionType[]>(
     () => query.data?.map((role) => ({ value: role.id, label: role.displayName })) ?? [],
     [query.data],
@@ -241,7 +241,7 @@ export function ExpenseCategorySelect({
   extraOptions?: DefaultOptionType[];
   onResolvedLabelChange?: (label?: string) => void;
 }) {
-  const query = useQuery({ queryKey: ["expense-categories"], queryFn: () => expenseCategoriesApi.list(), retry: false });
+  const query = useQuery({ queryKey: queryKeys.expenses.categories, queryFn: () => expenseCategoriesApi.list(), retry: false });
   const cachedLabel = getCachedReferenceLabel("expense-category", value);
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];
@@ -278,7 +278,7 @@ export function ClientSourceSelect({
   extraOptions?: DefaultOptionType[];
   onResolvedLabelChange?: (label?: string) => void;
 }) {
-  const query = useQuery({ queryKey: ["client-sources"], queryFn: () => clientSourcesApi.list(), retry: false });
+  const query = useQuery({ queryKey: queryKeys.clients.sources, queryFn: () => clientSourcesApi.list(), retry: false });
   const cachedLabel = getCachedReferenceLabel("client-source", value);
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];

@@ -1,24 +1,26 @@
-import { useQuery } from "@tanstack/react-query";
 import { Card, DatePicker, InputNumber, Table, Tag, Typography } from "antd";
-import dayjs, { type Dayjs } from "dayjs";
-import { useState, type ReactNode } from "react";
+import dayjs from "dayjs";
+import type { ReactNode } from "react";
+import { queryKeys } from "@/api/queryKeys";
 import { dashboardApi } from "@/api/crm";
 import type { PriceChangeAnalytics, PriceChangeAnalyticsItem, PriceChangeRanking } from "@/api/types";
-import { STATS_CHART_COLORS, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
+import { StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
+import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
 import { InfoLabel } from "@/components/InfoLabel";
 import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
+import { useDashboardDateRangeWindowDaysQuery } from "@/features/stats/useDashboardStatsQuery";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
 import { DATE_FORMAT } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 
 export function PriceChangesPage() {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([dayjs().startOf("year"), dayjs().endOf("month")]);
-  const [windowDays, setWindowDays] = useState(30);
-  const query = useQuery({
-    queryKey: ["dashboard", "price-changes", timezone, dateRange[0].toISOString(), dateRange[1].toISOString(), windowDays],
-    queryFn: () =>
+  const controller = useDashboardDateRangeWindowDaysQuery<PriceChangeAnalytics>({
+    initialRange: [dayjs().startOf("year"), dayjs().endOf("month")],
+    initialWindowDays: 30,
+    getQueryKey: ({ timezone, dateRange, windowDays }) =>
+      queryKeys.dashboard.priceChanges(timezone, dateRange[0], dateRange[1], windowDays),
+    queryFn: ({ timezone, dateRange, windowDays }) =>
       dashboardApi.priceChanges({
         timezone,
         start: dateRange[0].format("YYYY-MM-DD"),
@@ -26,39 +28,44 @@ export function PriceChangesPage() {
         windowDays,
       }),
   });
+  const dateRange = controller.dateRange;
+  const windowDays = controller.windowDays;
+  const query = controller.query;
 
   return (
-    <PageLayout
-      title="Изменения цен"
-      description="Сравнивает выручку, спрос и прибыль до и после изменения цены услуги"
-    >
+    <PageLayout title="Изменения цен" description="Сравнивает выручку, спрос и прибыль до и после изменения цены услуги">
       <div data-onboarding-id="price-changes-filters">
         <ListFilters>
-        <div className={filterFieldClassName}>
-          <Typography.Text type="secondary">Период изменений</Typography.Text>
-          <DatePicker.RangePicker
-            value={dateRange}
-            format={DATE_FORMAT}
-            onChange={(value) => {
-              if (value?.[0] && value[1]) {
-                setDateRange([value[0], value[1]]);
-              }
-            }}
-          />
-        </div>
+          <div className={filterFieldClassName}>
+            <Typography.Text type="secondary">Период изменений</Typography.Text>
+            <DatePicker.RangePicker value={dateRange} format={DATE_FORMAT} onChange={controller.onDateRangeChange} />
+          </div>
 
-        <div className={filterFieldClassName}>
-          <Typography.Text type="secondary">Окно сравнения, дней</Typography.Text>
-          <InputNumber min={1} max={365} value={windowDays} onChange={(value) => setWindowDays(typeof value === "number" ? value : 30)} />
-        </div>
+          <div className={filterFieldClassName}>
+            <Typography.Text type="secondary">Окно сравнения, дней</Typography.Text>
+            <InputNumber min={1} max={365} value={windowDays} onChange={controller.onWindowDaysChange} />
+          </div>
         </ListFilters>
       </div>
 
       <SummaryGrid>
         <SummaryCard title="Изменений найдено" value={query.data?.totalChanges ?? 0} />
         <SummaryCard title="Повышений цены" value={query.data?.priceIncreasesCount ?? 0} />
-        <SummaryCard title={<InfoLabel label="С ростом выручки" tooltip="Количество изменений цены, после которых выручка в окне сравнения выросла." />} value={query.data?.positiveRevenueImpactCount ?? 0} />
-        <SummaryCard title={<InfoLabel label="С потерей спроса" tooltip="Количество изменений цены, после которых число записей в окне сравнения уменьшилось." />} value={query.data?.negativeDemandImpactCount ?? 0} />
+        <SummaryCard
+          title={
+            <InfoLabel label="С ростом выручки" tooltip="Количество изменений цены, после которых выручка в окне сравнения выросла." />
+          }
+          value={query.data?.positiveRevenueImpactCount ?? 0}
+        />
+        <SummaryCard
+          title={
+            <InfoLabel
+              label="С потерей спроса"
+              tooltip="Количество изменений цены, после которых число записей в окне сравнения уменьшилось."
+            />
+          }
+          value={query.data?.negativeDemandImpactCount ?? 0}
+        />
       </SummaryGrid>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
@@ -91,66 +98,90 @@ export function PriceChangesPage() {
 
       <div data-onboarding-id="price-changes-main-table">
         <Table<PriceChangeAnalyticsItem>
-        rowKey={(row) => `${row.serviceId}-${row.effectiveDate}`}
-        loading={query.isLoading}
-        dataSource={query.data?.changes}
-        pagination={{ pageSize: 10 }}
-        expandable={{
-          expandedRowRender: (row) => (
-            <PriceChangeDetails row={row} />
-          ),
-          rowExpandable: (row) => row.teachers.length > 0,
-        }}
-        columns={[
-          { title: "Услуга", dataIndex: "serviceName" },
-          { title: "Дата", dataIndex: "effectiveDate", render: (value: string) => dayjs(value).format("DD.MM.YYYY") },
-          {
-            title: "Цена",
-            render: (_, row) => formatTransition(formatMoney(row.oldPrice), formatMoney(row.newPrice)),
-          },
-          {
-            title: <InfoLabel label="Изменение цены" tooltip="Абсолютное и процентное изменение новой цены относительно старой." />,
-            render: (_, row) => (
-              <MetricTag value={row.priceChange} suffix={formatPercent(row.priceChangePercent, { wrapped: true, empty: undefined })} money />
-            ),
-          },
-          {
-            title: "Выручка",
-            render: (_, row) => (
-              <CompactDelta
-                before={formatMoney(row.revenueBefore)}
-                after={formatMoney(row.revenueAfter)}
-                delta={<MetricTag value={row.revenueChange} suffix={formatPercent(row.revenueChangePercent, { wrapped: true, empty: undefined })} money />}
-              />
-            ),
-          },
-          {
-            title: <InfoLabel label="Спрос" tooltip="Сравнение количества записей до и после изменения цены в выбранном окне сравнения." />,
-            render: (_, row) => (
-              <CompactDelta
-                before={String(row.appointmentsBefore)}
-                after={String(row.appointmentsAfter)}
-                delta={<MetricTag value={row.appointmentChange} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} />}
-              />
-            ),
-          },
-          {
-            title: <InfoLabel label="Кратко" tooltip="Ключевые показатели по изменению: сколько записей затронуто, какой стал средний чек и как изменилась прибыль." />,
-            render: (_, row) => (
-              <>
-                <Tag color="blue">
-                  <InfoLabel label={`Затронуто: ${String(row.affectedAppointmentsCount)}`} tooltip="Количество записей услуги после даты изменения цены, попавших в анализ." />
-                </Tag>
-                <Tag color="green">
-                  <InfoLabel label={`Средний чек: ${formatMoney(row.averageReceiptAfter)}`} tooltip="Средняя выручка на одну платную запись после изменения цены." />
-                </Tag>
-                <Tag color={row.profitImpact > 0 ? "green" : row.profitImpact < 0 ? "red" : "default"}>
-                  Прибыль: {formatSignedMoney(row.profitImpact)}
-                </Tag>
-              </>
-            ),
-          },
-        ]}
+          rowKey={(row) => `${row.serviceId}-${row.effectiveDate}`}
+          loading={query.isLoading}
+          dataSource={query.data?.changes}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: "max-content" }}
+          expandable={{
+            expandedRowRender: (row) => <PriceChangeDetails row={row} />,
+            rowExpandable: (row) => row.teachers.length > 0,
+          }}
+          columns={[
+            { title: "Услуга", dataIndex: "serviceName" },
+            { title: "Дата", dataIndex: "effectiveDate", render: (value: string) => dayjs(value).format("DD.MM.YYYY") },
+            {
+              title: "Цена",
+              render: (_, row) => formatTransition(formatMoney(row.oldPrice), formatMoney(row.newPrice)),
+            },
+            {
+              title: <InfoLabel label="Изменение цены" tooltip="Абсолютное и процентное изменение новой цены относительно старой." />,
+              render: (_, row) => (
+                <MetricTag
+                  value={row.priceChange}
+                  suffix={formatPercent(row.priceChangePercent, { wrapped: true, empty: undefined })}
+                  money
+                />
+              ),
+            },
+            {
+              title: "Выручка",
+              render: (_, row) => (
+                <CompactDelta
+                  before={formatMoney(row.revenueBefore)}
+                  after={formatMoney(row.revenueAfter)}
+                  delta={
+                    <MetricTag
+                      value={row.revenueChange}
+                      suffix={formatPercent(row.revenueChangePercent, { wrapped: true, empty: undefined })}
+                      money
+                    />
+                  }
+                />
+              ),
+            },
+            {
+              title: (
+                <InfoLabel label="Спрос" tooltip="Сравнение количества записей до и после изменения цены в выбранном окне сравнения." />
+              ),
+              render: (_, row) => (
+                <CompactDelta
+                  before={String(row.appointmentsBefore)}
+                  after={String(row.appointmentsAfter)}
+                  delta={
+                    <MetricTag value={row.appointmentChange} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} />
+                  }
+                />
+              ),
+            },
+            {
+              title: (
+                <InfoLabel
+                  label="Кратко"
+                  tooltip="Ключевые показатели по изменению: сколько записей затронуто, какой стал средний чек и как изменилась прибыль."
+                />
+              ),
+              render: (_, row) => (
+                <>
+                  <Tag color="blue">
+                    <InfoLabel
+                      label={`Затронуто: ${String(row.affectedAppointmentsCount)}`}
+                      tooltip="Количество записей услуги после даты изменения цены, попавших в анализ."
+                    />
+                  </Tag>
+                  <Tag color="green">
+                    <InfoLabel
+                      label={`Средний чек: ${formatMoney(row.averageReceiptAfter)}`}
+                      tooltip="Средняя выручка на одну платную запись после изменения цены."
+                    />
+                  </Tag>
+                  <Tag color={row.profitImpact > 0 ? "green" : row.profitImpact < 0 ? "red" : "default"}>
+                    Прибыль: {formatSignedMoney(row.profitImpact)}
+                  </Tag>
+                </>
+              ),
+            },
+          ]}
         />
       </div>
 
@@ -171,26 +202,69 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
   return (
     <div style={{ display: "grid", gap: 16 }}>
       <SummaryGrid>
-        <SummaryCard title="Выручка" value={formatTransition(formatMoney(row.revenueBefore), formatMoney(row.revenueAfter))} caption={<MetricTag value={row.revenueChange} suffix={formatPercent(row.revenueChangePercent, { wrapped: true })} money />} />
-        <SummaryCard title="Спрос" value={formatTransition(String(row.appointmentsBefore), String(row.appointmentsAfter))} caption={<MetricTag value={row.appointmentChange} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} />} />
-        <SummaryCard title="Средний чек" value={formatTransition(formatMoney(row.averageReceiptBefore), formatMoney(row.averageReceiptAfter))} />
-        <SummaryCard title="Чистая прибыль" value={formatTransition(formatMoney(row.netProfitBefore), formatMoney(row.netProfitAfter))} caption={<MetricTag value={row.profitImpact} money />} />
+        <SummaryCard
+          title="Выручка"
+          value={formatTransition(formatMoney(row.revenueBefore), formatMoney(row.revenueAfter))}
+          caption={<MetricTag value={row.revenueChange} suffix={formatPercent(row.revenueChangePercent, { wrapped: true })} money />}
+        />
+        <SummaryCard
+          title="Спрос"
+          value={formatTransition(String(row.appointmentsBefore), String(row.appointmentsAfter))}
+          caption={<MetricTag value={row.appointmentChange} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} />}
+        />
+        <SummaryCard
+          title="Средний чек"
+          value={formatTransition(formatMoney(row.averageReceiptBefore), formatMoney(row.averageReceiptAfter))}
+        />
+        <SummaryCard
+          title="Чистая прибыль"
+          value={formatTransition(formatMoney(row.netProfitBefore), formatMoney(row.netProfitAfter))}
+          caption={<MetricTag value={row.profitImpact} money />}
+        />
       </SummaryGrid>
 
       <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
-        <Card size="small" title={<InfoLabel label="Статусы" tooltip="Как изменились доли проведенных, отмененных и сгоревших записей до и после изменения цены." />}>
+        <Card
+          size="small"
+          title={
+            <InfoLabel
+              label="Статусы"
+              tooltip="Как изменились доли проведенных, отмененных и сгоревших записей до и после изменения цены."
+            />
+          }
+        >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <Tag color="green">Проведено: {formatTransition(String(row.completedAppointmentsBefore), String(row.completedAppointmentsAfter))}</Tag>
-            <Tag color="volcano">Отмена: {formatTransition(formatPercent(row.cancellationShareBefore), formatPercent(row.cancellationShareAfter))}</Tag>
+            <Tag color="green">
+              Проведено: {formatTransition(String(row.completedAppointmentsBefore), String(row.completedAppointmentsAfter))}
+            </Tag>
+            <Tag color="volcano">
+              Отмена: {formatTransition(formatPercent(row.cancellationShareBefore), formatPercent(row.cancellationShareAfter))}
+            </Tag>
             <Tag color="gold">Сгорело: {formatTransition(formatPercent(row.burnedShareBefore), formatPercent(row.burnedShareAfter))}</Tag>
           </div>
         </Card>
 
-        <Card size="small" title={<InfoLabel label="Финансовый эффект" tooltip="Сравнение расходов, прибыли, дополнительной выручки и оценка эластичности после изменения цены." />}>
+        <Card
+          size="small"
+          title={
+            <InfoLabel
+              label="Финансовый эффект"
+              tooltip="Сравнение расходов, прибыли, дополнительной выручки и оценка эластичности после изменения цены."
+            />
+          }
+        >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Tag color="blue">Затронуто записей: {row.affectedAppointmentsCount}</Tag>
             <Tag color="default">Расходы: {formatTransition(formatMoney(row.expensesBefore), formatMoney(row.expensesAfter))}</Tag>
-            <Tag color={row.additionalRevenue != null && row.additionalRevenue > 0 ? "green" : row.additionalRevenue != null && row.additionalRevenue < 0 ? "red" : "default"}>
+            <Tag
+              color={
+                row.additionalRevenue != null && row.additionalRevenue > 0
+                  ? "green"
+                  : row.additionalRevenue != null && row.additionalRevenue < 0
+                    ? "red"
+                    : "default"
+              }
+            >
               Доп. выручка: {row.additionalRevenue == null ? "—" : formatSignedMoney(row.additionalRevenue)}
             </Tag>
             <Tag color="default">
@@ -202,7 +276,15 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
           </div>
         </Card>
 
-        <Card size="small" title={<InfoLabel label="Клиенты" tooltip="Показывает, сколько клиентов продолжили, остановились или изменили частоту посещений после изменения цены." />}>
+        <Card
+          size="small"
+          title={
+            <InfoLabel
+              label="Клиенты"
+              tooltip="Показывает, сколько клиентов продолжили, остановились или изменили частоту посещений после изменения цены."
+            />
+          }
+        >
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <Tag color="blue">Активны до: {row.activeClientsBeforeCount}</Tag>
             <Tag color="green">Продолжили: {row.continuedClientsCount}</Tag>
@@ -225,21 +307,13 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
           {
             title: "Выручка",
             render: (_, teacher) => (
-              <CompactDelta
-                before={formatMoney(teacher.revenueBefore)}
-                after={formatMoney(teacher.revenueAfter)}
-                delta={undefined}
-              />
+              <CompactDelta before={formatMoney(teacher.revenueBefore)} after={formatMoney(teacher.revenueAfter)} delta={undefined} />
             ),
           },
           {
             title: "Записи",
             render: (_, teacher) => (
-              <CompactDelta
-                before={String(teacher.appointmentsBefore)}
-                after={String(teacher.appointmentsAfter)}
-                delta={undefined}
-              />
+              <CompactDelta before={String(teacher.appointmentsBefore)} after={String(teacher.appointmentsAfter)} delta={undefined} />
             ),
           },
           {
@@ -250,8 +324,12 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
             title: "Статусы",
             render: (_, teacher) => (
               <>
-                <Tag color="volcano">Отмена: {formatTransition(formatPercent(teacher.cancellationShareBefore), formatPercent(teacher.cancellationShareAfter))}</Tag>
-                <Tag color="gold">Сгорело: {formatTransition(formatPercent(teacher.burnedShareBefore), formatPercent(teacher.burnedShareAfter))}</Tag>
+                <Tag color="volcano">
+                  Отмена: {formatTransition(formatPercent(teacher.cancellationShareBefore), formatPercent(teacher.cancellationShareAfter))}
+                </Tag>
+                <Tag color="gold">
+                  Сгорело: {formatTransition(formatPercent(teacher.burnedShareBefore), formatPercent(teacher.burnedShareAfter))}
+                </Tag>
               </>
             ),
           },
@@ -269,19 +347,16 @@ function PriceChangeDetails({ row }: { row: PriceChangeAnalyticsItem }) {
           { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value ?? "—" },
           {
             title: "Выручка",
-            render: (_, client) => (
-              <CompactDelta before={formatMoney(client.revenueBefore)} after={formatMoney(client.revenueAfter)} />
-            ),
+            render: (_, client) => <CompactDelta before={formatMoney(client.revenueBefore)} after={formatMoney(client.revenueAfter)} />,
           },
           {
             title: "Частота",
-            render: (_, client) => (
-              <CompactDelta before={String(client.appointmentsBefore)} after={String(client.appointmentsAfter)} />
-            ),
+            render: (_, client) => <CompactDelta before={String(client.appointmentsBefore)} after={String(client.appointmentsAfter)} />,
           },
           {
             title: "Интервал",
-            render: (_, client) => formatTransition(formatDays(client.averageIntervalBeforeDays), formatDays(client.averageIntervalAfterDays)),
+            render: (_, client) =>
+              formatTransition(formatDays(client.averageIntervalBeforeDays), formatDays(client.averageIntervalAfterDays)),
           },
           {
             title: "Реакция",
@@ -308,12 +383,19 @@ function PriceChangeRankingTable({ data, loading }: { data?: PriceChangeRanking[
       dataSource={data}
       pagination={false}
       size="small"
+      scroll={{ x: "max-content" }}
       columns={[
         { title: "Услуга", dataIndex: "serviceName" },
         { title: "Дата", dataIndex: "effectiveDate", render: (value: string) => dayjs(value).format(DATE_FORMAT) },
         { title: "Выручка", dataIndex: "revenueChange", render: (value: number) => <MetricTag value={value} money /> },
         { title: "Прибыль", dataIndex: "profitImpact", render: (value: number) => <MetricTag value={value} money /> },
-        { title: "Спрос", dataIndex: "appointmentChange", render: (value: number, row) => <MetricTag value={value} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} /> },
+        {
+          title: "Спрос",
+          dataIndex: "appointmentChange",
+          render: (value: number, row) => (
+            <MetricTag value={value} suffix={formatPercent(row.appointmentChangePercent, { wrapped: true })} />
+          ),
+        },
         { title: "Отток", dataIndex: "churnShare", render: (value?: number | null) => formatPercent(value) },
       ]}
     />
@@ -369,7 +451,7 @@ function formatSignedMoney(value: number) {
 
 function formatSignedNumber(value: number) {
   if (Number.isInteger(value)) {
-    return value > 0 ? `+${value}` : String(value);
+    return value > 0 ? `+${String(value)}` : String(value);
   }
 
   if (value > 0) {

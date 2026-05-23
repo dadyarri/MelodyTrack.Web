@@ -2,11 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Tour } from "antd";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { queryKeys } from "@/api/queryKeys";
 import { onboardingApi, type OnboardingStateResponse } from "@/api/auth";
 import { useAuth } from "@/features/auth/useAuth";
 import { canAccessOnboardingStep, onboardingSteps } from "./tourSteps";
-
-const onboardingQueryKey = ["onboarding", "state"] as const;
 
 export function AppOnboarding() {
   const auth = useAuth();
@@ -18,14 +17,14 @@ export function AppOnboarding() {
   const pendingPathRef = useRef<string | null>(null);
 
   const onboardingQuery = useQuery({
-    queryKey: onboardingQueryKey,
+    queryKey: queryKeys.onboarding.state,
     queryFn: () => onboardingApi.getState(),
     enabled: auth.isAuthenticated,
   });
   const visibleSteps = useMemo(() => onboardingSteps.filter((step) => canAccessOnboardingStep(step, auth.user)), [auth.user]);
 
   const setState = (state: OnboardingStateResponse) => {
-    queryClient.setQueryData(onboardingQueryKey, state);
+    queryClient.setQueryData(queryKeys.onboarding.state, state);
   };
 
   const setActiveStep = (currentStep: string, currentPath: string) => {
@@ -118,7 +117,7 @@ export function AppOnboarding() {
   const open = Boolean(currentState?.shouldLaunch);
 
   const handleChange = (nextIndex: number) => {
-    const nextStep = visibleSteps[nextIndex];
+    const nextStep = visibleSteps.at(nextIndex);
     if (!nextStep || progressMutation.isPending) {
       return;
     }
@@ -176,7 +175,12 @@ export function AppOnboarding() {
 
             <div style={{ justifySelf: "end", display: "flex", gap: 2 }}>
               {info.current > 0 ? (
-                <Button onClick={() => handleChange(info.current - 1)} disabled={isBusy}>
+                <Button
+                  onClick={() => {
+                    handleChange(info.current - 1);
+                  }}
+                  disabled={isBusy}
+                >
                   Назад
                 </Button>
               ) : null}

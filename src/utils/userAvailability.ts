@@ -41,12 +41,7 @@ export function isSlotAvailable(availability: UserAvailability | null | undefine
   return startMinute >= parseTimeToMinutes(workingDay.startTime) && endMinute <= parseTimeToMinutes(workingDay.endTime);
 }
 
-export function getBlockedRanges(
-  availability: UserAvailability | null | undefined,
-  day: Dayjs,
-  startHour: number,
-  endHour: number,
-) {
+export function getBlockedRanges(availability: UserAvailability | null | undefined, day: Dayjs, startHour: number, endHour: number) {
   if (!availability) {
     return [];
   }

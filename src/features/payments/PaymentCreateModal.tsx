@@ -1,9 +1,9 @@
 import type { FormInstance } from "antd";
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Space } from "antd";
+import { Button, DatePicker, Form, Input, InputNumber, Space } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import type dayjs from "dayjs";
 import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
-import { DraftModalFooter, DraftModalTitle } from "@/shared/ui";
+import { DraftFormModal } from "@/shared/ui";
 import { DATE_TIME_FORMAT, TIME_FORMAT } from "../../utils/date";
 
 export type PaymentCreateFormValues = {
@@ -51,16 +51,17 @@ export function PaymentCreateModal({
   onServicePriceChange: (price?: number) => void;
 }) {
   return (
-    <Modal
+    <DraftFormModal
       open={open}
-      title={<DraftModalTitle title="Новый платеж" restored={draftRestored} />}
+      title="Новый платеж"
+      restored={draftRestored}
+      onClearDraft={onClearDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
       confirmLoading={createPending}
       destroyOnHidden
-      footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
     >
       <Form
         form={form}
@@ -120,6 +121,6 @@ export function PaymentCreateModal({
           <Input />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }

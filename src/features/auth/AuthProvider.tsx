@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { queryKeys } from "@/api/queryKeys";
 import { authApi, type MeResponse } from "../../api/auth";
 import { authExpiredEventName, http } from "../../api/http";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
@@ -20,12 +21,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(cachedMeStorageKey);
     }
-    void queryClient.cancelQueries({ queryKey: ["auth", "me"] });
-    queryClient.removeQueries({ queryKey: ["auth", "me"] });
+    void queryClient.cancelQueries({ queryKey: queryKeys.auth.me });
+    queryClient.removeQueries({ queryKey: queryKeys.auth.me });
   }, [queryClient]);
 
   const meQuery = useQuery({
-    queryKey: ["auth", "me"],
+    queryKey: queryKeys.auth.me,
     queryFn: () => authApi.getMe(),
     enabled: hasSession,
     retry: false,
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authStore.setSession(accessToken, refreshToken);
       setHasSession(true);
       const me = await queryClient.fetchQuery<MeResponse>({
-        queryKey: ["auth", "me"],
+        queryKey: queryKeys.auth.me,
         queryFn: () => authApi.getMe(),
         staleTime: 0,
       });

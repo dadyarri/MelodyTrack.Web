@@ -11,8 +11,8 @@ import {
   WalletOutlined,
 } from "@ant-design/icons";
 import type { ReactNode } from "react";
+import { canAccessAudience, type AccessAudience, type AppUser } from "@/features/auth/access";
 
-type NavVisibility = "all" | "admin" | "superuser" | "stats";
 type NavGroup = "stats" | "reference-books";
 
 export type AppNavItem = {
@@ -20,17 +20,9 @@ export type AppNavItem = {
   icon: ReactNode;
   label: string;
   shortcut: string;
-  visibility: NavVisibility;
+  visibility: AccessAudience;
   group?: NavGroup;
 };
-
-export type NavigationUser =
-  | {
-      isAdmin?: boolean;
-      isSuperuser?: boolean;
-    }
-  | null
-  | undefined;
 
 export const appNavItems: AppNavItem[] = [
   { key: "/", icon: <DashboardOutlined />, label: "Обзор", shortcut: "1", visibility: "all" },
@@ -47,24 +39,24 @@ export const appNavItems: AppNavItem[] = [
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы", shortcut: "6", visibility: "admin" },
   { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", shortcut: "7", visibility: "superuser" },
   { key: "/users", icon: <UserOutlined />, label: "Пользователи", shortcut: "8", visibility: "admin" },
-  { key: "/expense-categories", icon: <FolderOpenOutlined />, label: "Статьи расходов", shortcut: "9", visibility: "admin", group: "reference-books" },
-  { key: "/client-sources", icon: <FolderOpenOutlined />, label: "Источники клиентов", shortcut: "0", visibility: "admin", group: "reference-books" },
+  {
+    key: "/expense-categories",
+    icon: <FolderOpenOutlined />,
+    label: "Статьи расходов",
+    shortcut: "9",
+    visibility: "admin",
+    group: "reference-books",
+  },
+  {
+    key: "/client-sources",
+    icon: <FolderOpenOutlined />,
+    label: "Источники клиентов",
+    shortcut: "0",
+    visibility: "admin",
+    group: "reference-books",
+  },
 ];
 
-export function getAvailableNavItems(user: NavigationUser) {
-  return appNavItems.filter((item) => {
-    if (item.visibility === "superuser") {
-      return Boolean(user?.isSuperuser);
-    }
-
-    if (item.visibility === "admin") {
-      return Boolean(user?.isAdmin);
-    }
-
-    if (item.visibility === "stats") {
-      return Boolean(user?.isAdmin || user?.isSuperuser);
-    }
-
-    return true;
-  });
+export function getAvailableNavItems(user: AppUser) {
+  return appNavItems.filter((item) => canAccessAudience(user, item.visibility));
 }

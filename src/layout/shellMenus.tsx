@@ -27,9 +27,7 @@ export function buildNavMenuItems(items: AppNavItem[], options: BuildNavMenuItem
 
   return [
     ...ungroupedItems,
-    ...(statsItems.length > 0
-      ? [{ key: "group:stats", label: navGroupLabels.stats, children: statsItems }]
-      : []),
+    ...(statsItems.length > 0 ? [{ key: "group:stats", label: navGroupLabels.stats, children: statsItems }] : []),
     ...(referenceBookItems.length > 0
       ? [{ key: "group:reference-books", label: navGroupLabels["reference-books"], children: referenceBookItems }]
       : []),

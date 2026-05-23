@@ -1,27 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { scheduleApi, usersApi } from "../../api/crm";
-import { getApiErrorMessages } from "../../api/http";
-import type { Appointment, AppointmentStatus, RecurrenceType, Ulid } from "../../api/types";
-import { useAuth } from "../../features/auth/useAuth";
-import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
-import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
-import { getBackgroundRefetchInterval } from "../../utils/refetch";
-import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
-import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
-import type { AppointmentDeleteScope, AppointmentEditFormValues, AppointmentFormValues } from "./ScheduleModals";
+import { useCallback, useEffect, useState } from "react";
+import { queryKeys } from "@/api/queryKeys";
+import { scheduleApi, usersApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
+import type { Appointment, AppointmentStatus, RecurrenceType, Ulid } from "@/api/types";
+import { hasAdminAccess } from "@/features/auth/access";
+import { useDraftFormState } from "@/features/drafts/useDraftFormState";
+import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
+import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
+import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
+import { useAuth } from "@/features/auth/useAuth";
+import type { AppointmentDeleteScope, AppointmentEditFormValues, AppointmentFormValues } from "@/features/schedule/ScheduleModals";
+import { getBackgroundRefetchInterval } from "@/utils/refetch";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
-
-type SchedulePageLocationState = {
-  openCreate?: boolean;
-  clientId?: string;
-};
 
 export type AppointmentDraftValues = {
   clientId?: string;
@@ -34,8 +31,16 @@ export type AppointmentDraftValues = {
 };
 
 export function useSchedulePageController() {
+  const {
+    hasSavedDraft,
+    replayKeyRef: draftReplayKeyRef,
+    loadDraftValues,
+    withHydration,
+    resetStoredDraft,
+    saveDraftValues: saveCreateDraftValues,
+  } = useDraftFormState<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
-  const hasCreateDraft = hasDraft(APPOINTMENT_CREATE_DRAFT_KEY);
+  const hasCreateDraft = hasSavedDraft;
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedAppointmentBaselineActivityId, setSelectedAppointmentBaselineActivityId] = useState<Ulid | null | undefined>();
@@ -44,20 +49,17 @@ export function useSchedulePageController() {
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [appointmentToDeleteBaselineActivityId, setAppointmentToDeleteBaselineActivityId] = useState<Ulid | null | undefined>();
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
-  const [createdClientOptions, setCreatedClientOptions] = useState<DefaultOptionType[]>([]);
+  const createdClientOptions = useCreatedReferenceOptions("client");
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
   const [pendingCreateProviderId, setPendingCreateProviderId] = useState<string | undefined>();
-  const draftReplayKeyRef = useRef(getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY));
-  const isDraftHydratingRef = useRef(false);
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
   const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
   const [createProviderLabel, setCreateProviderLabel] = useState<string | undefined>();
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const createRouteIntent = useOpenCreateRouteIntent();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -66,13 +68,12 @@ export function useSchedulePageController() {
     }
   };
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
-  const canCreateAppointments = Boolean(auth.user?.isAdmin);
-  const isSpecialistFilterLocked = Boolean(auth.user && !auth.user.isAdmin);
+  const canCreateAppointments = hasAdminAccess(auth.user);
+  const isSpecialistFilterLocked = Boolean(auth.user && !hasAdminAccess(auth.user));
   const effectiveProviderFilterId = isSpecialistFilterLocked ? auth.user?.id : providerFilterId;
   const lockedProviderId = isSpecialistFilterLocked ? auth.user?.id : undefined;
-  const locationState = (location.state ?? null) as SchedulePageLocationState | null;
-  const createPrefillClientId = locationState?.openCreate ? locationState.clientId : undefined;
-  const isCreateModalOpen = canCreateAppointments && (isOpen || Boolean(locationState?.openCreate));
+  const createPrefillClientId = createRouteIntent.prefillClientId;
+  const isCreateModalOpen = canCreateAppointments && (isOpen || createRouteIntent.hasOpenCreateIntent);
 
   const openCreateModal = useCallback(() => {
     if (!canCreateAppointments) {
@@ -131,16 +132,16 @@ export function useSchedulePageController() {
   }, [auth.user?.id, canCreateAppointments, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
-    queryKey: ["appointments", range[0].toISOString(), range[1].toISOString()],
+    queryKey: queryKeys.schedule.appointments(range[0].toISOString(), range[1].toISOString()),
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
     refetchInterval: getBackgroundRefetchInterval(Boolean(selectedAppointment || appointmentToEdit || appointmentToDelete)),
   });
   const recurrenceTypesQuery = useQuery({
-    queryKey: ["appointments", "recurrenceTypes"],
+    queryKey: queryKeys.schedule.recurrenceTypes,
     queryFn: () => scheduleApi.recurrenceTypes(),
   });
   const providerAvailabilityQuery = useQuery({
-    queryKey: ["users", "availability", effectiveProviderFilterId],
+    queryKey: queryKeys.schedule.availability(effectiveProviderFilterId),
     queryFn: () => {
       if (!effectiveProviderFilterId) {
         throw new Error("Provider is not selected.");
@@ -182,7 +183,7 @@ export function useSchedulePageController() {
     (appointmentId: Ulid) => {
       const freshAppointment = findItemInQueryData(
         queryClient,
-        ["appointments"],
+        queryKeys.schedule.all,
         (data) => data as Appointment[] | undefined,
         appointmentId,
       );
@@ -209,32 +210,26 @@ export function useSchedulePageController() {
   );
 
   const createMutation = useMutation({
-    mutationFn: async (values: AppointmentFormValues) => {
-      const input = buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone);
-      try {
-        return { input, offline: false as const, response: await scheduleApi.create(input, { replayKey: draftReplayKeyRef.current }) };
-      } catch (error) {
-        if (!shouldQueueOfflineError(error)) {
-          throw error;
-        }
-
-        enqueueOfflineCreate({
+    mutationFn: (values: AppointmentFormValues) =>
+      createOrQueueOffline({
+        input: buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone),
+        replayKey: draftReplayKeyRef.current,
+        create: (input) => scheduleApi.create(input, { replayKey: draftReplayKeyRef.current }),
+        buildQueueItem: (input, replayKey) => ({
           kind: "appointments:create",
-          replayKey: draftReplayKeyRef.current,
+          replayKey,
           payload: {
             ...input,
             clientLabel: createClientLabel,
             serviceLabel: createServiceLabel,
             providerLabel: createProviderLabel,
           },
-        });
-        return { input, offline: true as const, response: null };
-      }
-    },
+        }),
+      }),
     onSuccess: async (result) => {
       message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
       if (result.offline) {
-        queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => {
+        queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.all }, (current) => {
           if (!current) {
             return current;
           }
@@ -252,24 +247,17 @@ export function useSchedulePageController() {
         });
       }
       closeCreateModal();
-      resetDraft(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
+      resetStoredDraft();
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
       }
     },
     onError: showErrors,
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      input,
-      expectedActivityId,
-    }: {
-      id: string;
-      input: { status?: AppointmentStatus };
-      expectedActivityId?: Ulid;
-    }) => scheduleApi.update(id, { ...input, expectedActivityId }),
+    mutationFn: ({ id, input, expectedActivityId }: { id: string; input: { status?: AppointmentStatus }; expectedActivityId?: Ulid }) =>
+      scheduleApi.update(id, { ...input, expectedActivityId }),
     onMutate: ({ id, input }) => {
       const nextState = (appointment: Appointment) =>
         appointment.id === id
@@ -280,12 +268,12 @@ export function useSchedulePageController() {
           : appointment;
 
       setSelectedAppointment((current) => (current ? nextState(current) : current));
-      queryClient.setQueriesData<Appointment[]>({ queryKey: ["appointments"] }, (current) => {
+      queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.all }, (current) => {
         return current ? current.map(nextState) : current;
       });
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
       syncAppointmentBaseline(variables.id);
     },
     onError: async (error, variables) => {
@@ -293,7 +281,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["appointments"],
+        invalidateQueryKey: queryKeys.schedule.all,
         showErrors,
         title: "Запись уже изменена",
         okText: "Повторить поверх новой версии",
@@ -304,7 +292,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            ["appointments"],
+            queryKeys.schedule.all,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );
@@ -334,7 +322,7 @@ export function useSchedulePageController() {
       message.success("Запись обновлена");
       setAppointmentToEdit(null);
       setAppointmentToEditBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
     },
     onError: async (error, variables) => {
       if (!appointmentToEdit) {
@@ -346,7 +334,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["appointments"],
+        invalidateQueryKey: queryKeys.schedule.all,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перезаписать",
@@ -356,7 +344,7 @@ export function useSchedulePageController() {
         },
         onReload: () => {
           const freshAppointment =
-            findItemInQueryData(queryClient, ["appointments"], (data) => data as Appointment[] | undefined, appointmentToEdit.id) ??
+            findItemInQueryData(queryClient, queryKeys.schedule.all, (data) => data as Appointment[] | undefined, appointmentToEdit.id) ??
             currentEditingAppointment;
           if (!freshAppointment) {
             return;
@@ -409,7 +397,7 @@ export function useSchedulePageController() {
         setAppointmentToDeleteBaselineActivityId(undefined);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
       syncAppointmentBaseline(variables.appointment.id);
     },
     onError: async (error, variables) => {
@@ -417,7 +405,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["appointments"],
+        invalidateQueryKey: queryKeys.schedule.all,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перенести поверх новой версии",
@@ -428,7 +416,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            ["appointments"],
+            queryKeys.schedule.all,
             (data) => data as Appointment[] | undefined,
             variables.appointment.id,
           );
@@ -465,14 +453,14 @@ export function useSchedulePageController() {
       setSelectedAppointmentBaselineActivityId(undefined);
       setAppointmentToDelete(null);
       setAppointmentToDeleteBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["appointments"],
+        invalidateQueryKey: queryKeys.schedule.all,
         showErrors,
         title: "Запись уже изменена",
         okText: "Удалить все равно",
@@ -483,7 +471,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            ["appointments"],
+            queryKeys.schedule.all,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );
@@ -503,68 +491,69 @@ export function useSchedulePageController() {
     },
   });
 
-  const handleCreateDraftChange = useCallback((values: AppointmentFormValues) => {
-    if (isDraftHydratingRef.current) {
-      return;
-    }
+  const handleCreateDraftChange = useCallback(
+    (values: AppointmentFormValues) => {
+      saveCreateDraftValues(serializeAppointmentDraft(values));
+    },
+    [saveCreateDraftValues],
+  );
 
-    saveDraftValues(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, serializeAppointmentDraft(values));
-  }, []);
+  const openCreateModalAt = useCallback(
+    (startDate: Dayjs) => {
+      if (!canCreateAppointments) {
+        return;
+      }
 
-  const openCreateModalAt = useCallback((startDate: Dayjs) => {
-    if (!canCreateAppointments) {
-      return;
-    }
-
-    setPendingCreateStartDate(startDate.second(0).millisecond(0));
-    setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
-    setOpen(true);
-  }, [canCreateAppointments, effectiveProviderFilterId, lockedProviderId]);
+      setPendingCreateStartDate(startDate.second(0).millisecond(0));
+      setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
+      setOpen(true);
+    },
+    [canCreateAppointments, effectiveProviderFilterId, lockedProviderId],
+  );
 
   useEffect(() => {
     if (!isCreateModalOpen) {
       return;
     }
 
-    const draft = loadDraft<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
-    const startDate = draft?.values.startDate ? dayjs(draft.values.startDate) : (pendingCreateStartDate ?? dayjs());
-    const providerId = pendingCreateProviderId ?? lockedProviderId ?? draft?.values.providerId;
+    const draftValues = loadDraftValues();
+    const startDate = draftValues?.startDate ? dayjs(draftValues.startDate) : (pendingCreateStartDate ?? dayjs());
+    const providerId = pendingCreateProviderId ?? lockedProviderId ?? draftValues?.providerId;
 
-    draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(APPOINTMENT_CREATE_DRAFT_KEY);
-    withDraftHydration(isDraftHydratingRef, () => {
+    withHydration(() => {
       form.setFieldsValue({
-        clientId: draft?.values.clientId ?? createPrefillClientId,
-        serviceId: draft?.values.serviceId,
+        clientId: draftValues?.clientId ?? createPrefillClientId,
+        serviceId: draftValues?.serviceId,
         providerId,
         startDate,
-        recurrenceTypeId: draft?.values.recurrenceTypeId,
-        patternEndDate: draft?.values.patternEndDate ? dayjs(draft.values.patternEndDate) : undefined,
-        weeklyDays: draft?.values.weeklyDays,
+        recurrenceTypeId: draftValues?.recurrenceTypeId,
+        patternEndDate: draftValues?.patternEndDate ? dayjs(draftValues.patternEndDate) : undefined,
+        weeklyDays: draftValues?.weeklyDays,
       });
     });
-  }, [createPrefillClientId, form, isCreateModalOpen, lockedProviderId, pendingCreateProviderId, pendingCreateStartDate]);
-
-  function clearCreateRouteState() {
-    if (!location.state) {
-      return;
-    }
-
-    void navigate(location.pathname, { replace: true, state: null });
-  }
+  }, [
+    createPrefillClientId,
+    form,
+    isCreateModalOpen,
+    loadDraftValues,
+    lockedProviderId,
+    pendingCreateProviderId,
+    pendingCreateStartDate,
+    withHydration,
+  ]);
 
   function closeCreateModal() {
     setOpen(false);
     setPendingCreateStartDate(null);
     setPendingCreateProviderId(undefined);
-    withDraftHydration(isDraftHydratingRef, () => {
+    withHydration(() => {
       form.resetFields();
     });
-    clearCreateRouteState();
+    createRouteIntent.clearOpenCreateIntent();
   }
 
   function handleClearCreateDraft() {
-    resetDraft(APPOINTMENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
-    withDraftHydration(isDraftHydratingRef, () => {
+    resetStoredDraft(() => {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
@@ -599,8 +588,7 @@ export function useSchedulePageController() {
     appointmentToDeleteBaselineActivityId,
     isQuickClientCreateOpen,
     setQuickClientCreateOpen,
-    createdClientOptions,
-    setCreatedClientOptions,
+    createdClientOptions: createdClientOptions.createdOptions,
     providerFilterId,
     setProviderFilterId,
     effectiveProviderFilterId,
@@ -631,8 +619,11 @@ export function useSchedulePageController() {
     setCreateProviderLabel,
     createPrefillClientId,
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
-      const option = { value: client.id, label: client.isOffline ? `${client.displayName} (локально)` : client.displayName };
-      setCreatedClientOptions((current) => [option, ...current]);
+      createdClientOptions.addCreatedOption({
+        id: client.id,
+        label: client.displayName,
+        optionLabel: client.isOffline ? `${client.displayName} (локально)` : client.displayName,
+      });
       setCreateClientLabel(client.displayName);
 
       if (isCreateModalOpen) {

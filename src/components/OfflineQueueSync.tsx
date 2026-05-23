@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
+import { queryKeys } from "@/api/queryKeys";
 import { clientsApi, expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
 import { probeBackendReachable } from "../api/http";
 import { authStore } from "../features/auth/authStore";
@@ -101,12 +102,12 @@ export function OfflineQueueSync() {
       if (syncedCount > 0) {
         message.success(`Синхронизировано ${String(syncedCount)} отложенных изменений`);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["clients"] }),
-          queryClient.invalidateQueries({ queryKey: ["services"] }),
-          queryClient.invalidateQueries({ queryKey: ["payments"] }),
-          queryClient.invalidateQueries({ queryKey: ["expenses"] }),
-          queryClient.invalidateQueries({ queryKey: ["schedule"] }),
-          queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.services.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
         ]);
       }
 

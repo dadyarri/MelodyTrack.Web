@@ -86,6 +86,8 @@ export type OfflineQueuedCreateInput =
   | Omit<Extract<OfflineQueuedCreate, { kind: "expenses:create" }>, "id" | "createdAtUtc">
   | Omit<Extract<OfflineQueuedCreate, { kind: "appointments:create" }>, "id" | "createdAtUtc">;
 
+export type QueuedCreateFromInput<TInput extends OfflineQueuedCreateInput> = Extract<OfflineQueuedCreate, { kind: TInput["kind"] }>;
+
 const offlineQueueStorageKey = "melodytrack:offline-queue";
 export const offlineQueueChangedEventName = "melodytrack:offline-queue-changed";
 
@@ -116,7 +118,7 @@ export function saveOfflineQueue(queue: OfflineQueuedCreate[]) {
   window.dispatchEvent(new Event(offlineQueueChangedEventName));
 }
 
-export function enqueueOfflineCreate(item: OfflineQueuedCreateInput) {
+export function enqueueOfflineCreate<TInput extends OfflineQueuedCreateInput>(item: TInput): QueuedCreateFromInput<TInput> {
   const queue = loadOfflineQueue();
   const queuedItem: OfflineQueuedCreate = {
     ...item,
@@ -126,7 +128,7 @@ export function enqueueOfflineCreate(item: OfflineQueuedCreateInput) {
 
   queue.push(queuedItem);
   saveOfflineQueue(queue);
-  return queuedItem;
+  return queuedItem as QueuedCreateFromInput<TInput>;
 }
 
 export function removeOfflineQueueItem(id: string) {

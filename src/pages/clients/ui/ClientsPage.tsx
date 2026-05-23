@@ -10,7 +10,7 @@ import {
 } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
-import { ListFilters, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
@@ -23,7 +23,7 @@ export function ClientsPage() {
     <PageLayout
       title="Клиенты"
       actions={
-        controller.auth.user?.isAdmin ? (
+        controller.canCreateClients ? (
           <ShortcutButton
             data-onboarding-id="clients-actions"
             shortcut="A"
@@ -37,87 +37,98 @@ export function ClientsPage() {
         ) : undefined
       }
     >
-      <div data-onboarding-id="clients-page-content">
-        <ListFilters>
-          <div className={filterFieldWideClassName}>
-            <Input.Search
-              allowClear
-              placeholder="Поиск по ФИО"
-              onSearch={controller.handleSearch}
-              onChange={(event) => {
-                if (!event.target.value) {
-                  controller.handleSearch("");
-                }
-              }}
-            />
-          </div>
-        </ListFilters>
-        <ListTable
-          rowKey="id"
-          loading={controller.query.isLoading}
-          dataSource={controller.query.data?.data}
-          pagination={{
-            current: controller.query.data?.info.page ?? controller.page,
-            pageSize: controller.query.data?.info.pageSize ?? 10,
-            total: controller.query.data?.info.total,
-            onChange: controller.setPage,
-          }}
-          columns={[
-            {
-              title: "ФИО",
-              render: (_, row) => (
-                <Button
-                  type="link"
-                  className={tableLinkButtonStyles.button}
-                  onClick={() => {
-                    controller.setHistoryClient(row);
-                  }}
-                >
-                  {formatClientName(row)}
-                </Button>
-              ),
-            },
-            { title: "Последняя запись", render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет") },
-            { title: "Следующая запись", render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет") },
-            {
-              title: "Баланс",
-              dataIndex: "balance",
-              render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
-            },
-            { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
-            { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
-            { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
-            { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
-            {
-              title: "",
-              width: 112,
-              render: (_, row) => (
-                <Space>
+      <ListPageScaffold
+        contentOnboardingId="clients-page-content"
+        filters={
+          <ListFilters>
+            <div className={filterFieldWideClassName}>
+              <Input.Search
+                allowClear
+                placeholder="Поиск по ФИО"
+                onSearch={controller.handleSearch}
+                onChange={(event) => {
+                  if (!event.target.value) {
+                    controller.handleSearch("");
+                  }
+                }}
+              />
+            </div>
+          </ListFilters>
+        }
+        table={
+          <ListTable
+            rowKey="id"
+            loading={controller.query.isLoading}
+            dataSource={controller.query.data?.data}
+            pagination={{
+              current: controller.query.data?.info.page ?? controller.page,
+              pageSize: controller.query.data?.info.pageSize ?? 10,
+              total: controller.query.data?.info.total,
+              onChange: controller.setPage,
+            }}
+            columns={[
+              {
+                title: "ФИО",
+                render: (_, row) => (
                   <Button
-                    icon={<ProfileOutlined />}
+                    type="link"
+                    className={tableLinkButtonStyles.button}
                     onClick={() => {
                       controller.setHistoryClient(row);
                     }}
-                  />
-                  <Button
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      controller.openEditor(row);
-                    }}
-                  />
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                      controller.confirmDelete(row);
-                    }}
-                  />
-                </Space>
-              ),
-            },
-          ]}
-        />
-      </div>
+                  >
+                    {formatClientName(row)}
+                  </Button>
+                ),
+              },
+              {
+                title: "Последняя запись",
+                render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет"),
+              },
+              {
+                title: "Следующая запись",
+                render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет"),
+              },
+              {
+                title: "Баланс",
+                dataIndex: "balance",
+                render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
+              },
+              { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
+              { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
+              { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
+              { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
+              {
+                title: "",
+                width: 112,
+                render: (_, row) => (
+                  <Space>
+                    <Button
+                      icon={<ProfileOutlined />}
+                      onClick={() => {
+                        controller.setHistoryClient(row);
+                      }}
+                    />
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        controller.openEditor(row);
+                      }}
+                    />
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => {
+                        controller.confirmDelete(row);
+                      }}
+                    />
+                  </Space>
+                ),
+              },
+            ]}
+          />
+        }
+      />
       <ClientEditorModal
         open={controller.isCreateOpen}
         editing={Boolean(controller.editing)}
@@ -132,7 +143,7 @@ export function ClientsPage() {
         onClearDraft={controller.handleClearCreateDraft}
         onSubmit={controller.onSubmit}
         onValuesChange={controller.onValuesChange}
-        onCreateSource={controller.auth.user?.isAdmin ? controller.openSourceCreate : undefined}
+        onCreateSource={controller.canCreateClients ? controller.openSourceCreate : undefined}
         onSourceLabelChange={controller.onSourceLabelChange}
       />
       <ReferenceBookCreateModal
@@ -150,8 +161,8 @@ export function ClientsPage() {
         onClose={() => {
           controller.setHistoryClient(null);
         }}
-        onCreateAppointment={controller.openClientHistoryFromDashboard.onCreateAppointment}
-        onCreatePayment={controller.openClientHistoryFromDashboard.onCreatePayment}
+        onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
+        onCreatePayment={controller.clientHistoryActions.onCreatePayment}
       />
     </PageLayout>
   );

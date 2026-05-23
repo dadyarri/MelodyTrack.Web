@@ -1,0 +1,325 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { App as AntdApp, Form } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
+import { useEffect, useState } from "react";
+import {
+  authApi,
+  type ChangePasswordInput,
+  onboardingApi,
+  type RecoveryCodeItem,
+  type SessionDto,
+  type Setup2FaInput,
+  type Setup2FaResponse,
+} from "@/api/auth";
+import { queryKeys } from "@/api/queryKeys";
+import { usersApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
+import type { UserAvailability, WeekdayKey } from "@/api/types";
+import { useAuth } from "@/features/auth/useAuth";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { weekdayOrder } from "@/utils/userAvailability";
+
+type TotpSetupState = Setup2FaResponse & { password: string };
+
+export type AvailabilityFormValues = {
+  workingHours: Array<{
+    dayOfWeek: WeekdayKey;
+    isWorkingDay: boolean;
+    timeRange?: [Dayjs, Dayjs];
+  }>;
+  vacations: Array<{
+    period?: [Dayjs, Dayjs];
+  }>;
+};
+
+function hasVacationPeriod(period?: [Dayjs, Dayjs]) {
+  return Boolean(period?.[0] && period[1]);
+}
+
+function mapAvailabilityToForm(availability: UserAvailability): AvailabilityFormValues {
+  return {
+    workingHours: weekdayOrder.map((dayOfWeek) => {
+      const item = availability.workingHours.find((entry) => entry.dayOfWeek === dayOfWeek);
+      return {
+        dayOfWeek,
+        isWorkingDay: item?.isWorkingDay ?? false,
+        timeRange:
+          item?.isWorkingDay && item.startTime && item.endTime ? [timeToDayjs(item.startTime), timeToDayjs(item.endTime)] : undefined,
+      };
+    }),
+    vacations: availability.vacations.map((vacation) => ({
+      period: [dayjs(vacation.startDate), dayjs(vacation.endDate)],
+    })),
+  };
+}
+
+function timeToDayjs(value: string) {
+  const [hours = "0", minutes = "0"] = value.split(":");
+  return dayjs().hour(Number(hours)).minute(Number(minutes)).second(0).millisecond(0);
+}
+
+export function useProfilePageController() {
+  const auth = useAuth();
+  const { message } = AntdApp.useApp();
+  const queryClient = useQueryClient();
+  const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
+  const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
+  const [availabilityForm] = Form.useForm<AvailabilityFormValues>();
+  const showErrors = (error: unknown) => {
+    for (const errorMessage of getApiErrorMessages(error)) {
+      void message.error(errorMessage);
+    }
+  };
+
+  const meQuery = useQuery({
+    queryKey: queryKeys.auth.me,
+    queryFn: () => authApi.getMe(),
+  });
+
+  const sessionsQuery = useQuery({
+    queryKey: queryKeys.auth.sessions,
+    queryFn: () => authApi.getSessions(),
+  });
+
+  const availabilityQuery = useQuery({
+    queryKey: queryKeys.users.availability(meQuery.data?.id),
+    queryFn: () => {
+      const userId = meQuery.data?.id;
+      if (!userId) {
+        throw new Error("User id is missing.");
+      }
+
+      return usersApi.getAvailability(userId);
+    },
+    enabled: Boolean(meQuery.data?.id),
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (input: ChangePasswordInput) => authApi.changePassword(input),
+    onSuccess: async () => {
+      message.success("Пароль изменен. Войдите снова.");
+      await auth.logout();
+    },
+    onError: showErrors,
+  });
+
+  const setup2FaMutation = useMutation({
+    mutationFn: (input: Setup2FaInput) => authApi.setup2Fa(input),
+    onSuccess: (data, variables) => {
+      setSetupState({ ...data, password: variables.password });
+    },
+    onError: showErrors,
+  });
+
+  const verify2FaMutation = useMutation({
+    mutationFn: ({ otp }: { otp: string }) => {
+      const me = meQuery.data;
+      if (!setupState || !me) {
+        throw new Error("Нет данных для настройки 2FA");
+      }
+
+      return authApi.verify2Fa({
+        email: me.email,
+        otp,
+        otpSecret: setupState.secret,
+      });
+    },
+    onSuccess: (data) => {
+      message.success("2FA включен. Сохраните коды восстановления.");
+      setSetupState(null);
+      setRecoveryCodes(data.allCodes);
+      void meQuery.refetch();
+    },
+    onError: showErrors,
+  });
+
+  const getRecoveryCodesMutation = useMutation({
+    mutationFn: () => authApi.getRecoveryCodes(),
+    onSuccess: (data) => {
+      setRecoveryCodes(data.allCodes);
+    },
+    onError: showErrors,
+  });
+
+  const regenerateRecoveryCodesMutation = useMutation({
+    mutationFn: () => authApi.regenerateRecoveryCodes(),
+    onSuccess: (data) => {
+      message.success("Новые коды восстановления созданы.");
+      setRecoveryCodes(data.allCodes);
+    },
+    onError: showErrors,
+  });
+
+  const remove2FaMutation = useMutation({
+    mutationFn: () => authApi.remove2Fa(),
+    onSuccess: () => {
+      message.success("2FA отключен.");
+      void meQuery.refetch();
+      setRecoveryCodes(null);
+    },
+    onError: showErrors,
+  });
+
+  const logoutAllMutation = useMutation({
+    mutationFn: () => authApi.logoutAll(),
+    onSuccess: async () => {
+      message.success("Все сессии завершены. Войдите снова.");
+      await auth.logout();
+    },
+    onError: showErrors,
+  });
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: async (session: SessionDto) => {
+      await authApi.revokeSession(session.id);
+      return session;
+    },
+    onSuccess: async (session) => {
+      message.success(session.isCurrent ? "Текущая сессия завершена." : "Сессия завершена.");
+
+      if (session.isCurrent) {
+        await auth.logout();
+        return;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions });
+    },
+    onError: showErrors,
+  });
+
+  const saveAvailabilityMutation = useMutation({
+    mutationFn: (values: AvailabilityFormValues) => {
+      const userId = meQuery.data?.id;
+      if (!userId) {
+        throw new Error("User id is missing.");
+      }
+
+      return usersApi.updateAvailability(userId, {
+        workingHours: values.workingHours.map((item) => ({
+          dayOfWeek: item.dayOfWeek,
+          isWorkingDay: item.isWorkingDay,
+          startTime: item.isWorkingDay && item.timeRange?.[0] ? item.timeRange[0].format("HH:mm") : null,
+          endTime: item.isWorkingDay && item.timeRange?.[1] ? item.timeRange[1].format("HH:mm") : null,
+        })),
+        vacations: values.vacations
+          .filter((item) => hasVacationPeriod(item.period))
+          .map((item) => ({
+            startDate: item.period[0].format("YYYY-MM-DD"),
+            endDate: item.period[1].format("YYYY-MM-DD"),
+          })),
+      });
+    },
+    onSuccess: async () => {
+      message.success("График работы сохранен");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.users.availability(meQuery.data?.id) });
+    },
+    onError: showErrors,
+  });
+
+  const resetOnboardingMutation = useMutation({
+    mutationFn: () => onboardingApi.reset(),
+    onSuccess: async () => {
+      message.success("Экскурсия сброшена и снова появится в приложении.");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.onboarding.state });
+    },
+    onError: showErrors,
+  });
+
+  const me = meQuery.data;
+  const isTwoFactorEnabled = me?.isTwoFactorEnabled ?? false;
+  const isTwoFactorRequired = me?.isTwoFactorRequired ?? false;
+
+  useEffect(() => {
+    if (!availabilityQuery.data) {
+      return;
+    }
+
+    availabilityForm.setFieldsValue(mapAvailabilityToForm(availabilityQuery.data));
+  }, [availabilityForm, availabilityQuery.data]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target) || !isTwoFactorEnabled) {
+        return;
+      }
+
+      if (matchesPlainKey(event, "r")) {
+        event.preventDefault();
+        getRecoveryCodesMutation.mutate();
+        return;
+      }
+
+      if (matchesPlainKey(event, "g")) {
+        event.preventDefault();
+        regenerateRecoveryCodesMutation.mutate();
+        return;
+      }
+
+      if (matchesPlainKey(event, "o") && !isTwoFactorRequired) {
+        event.preventDefault();
+        remove2FaMutation.mutate();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [getRecoveryCodesMutation, isTwoFactorEnabled, isTwoFactorRequired, regenerateRecoveryCodesMutation, remove2FaMutation]);
+
+  return {
+    me,
+    setupState,
+    recoveryCodes,
+    availabilityForm,
+    meQuery,
+    sessionsQuery,
+    availabilityQuery,
+    changePasswordMutation,
+    setup2FaMutation,
+    verify2FaMutation,
+    getRecoveryCodesMutation,
+    regenerateRecoveryCodesMutation,
+    remove2FaMutation,
+    logoutAllMutation,
+    revokeSessionMutation,
+    saveAvailabilityMutation,
+    resetOnboardingMutation,
+    isTwoFactorEnabled,
+    isTwoFactorRequired,
+    addVacationDraft: () => {
+      const vacations = (availabilityForm.getFieldValue("vacations") as AvailabilityFormValues["vacations"] | undefined) ?? [];
+      availabilityForm.setFieldValue("vacations", [...vacations, { period: undefined }]);
+    },
+    onAvailabilitySubmit: (values: AvailabilityFormValues) => {
+      saveAvailabilityMutation.mutate(values);
+    },
+    onPasswordSubmit: (values: ChangePasswordInput) => {
+      changePasswordMutation.mutate(values);
+    },
+    onSetup2FaSubmit: (values: Setup2FaInput) => {
+      setup2FaMutation.mutate(values);
+    },
+    onVerify2FaSubmit: (values: { otp: string }) => {
+      verify2FaMutation.mutate(values);
+    },
+    showRecoveryCodes: () => {
+      getRecoveryCodesMutation.mutate();
+    },
+    regenerateRecoveryCodes: () => {
+      regenerateRecoveryCodesMutation.mutate();
+    },
+    remove2Fa: () => {
+      remove2FaMutation.mutate();
+    },
+    logoutAll: () => {
+      logoutAllMutation.mutate();
+    },
+    revokeSession: (session: SessionDto) => {
+      revokeSessionMutation.mutate(session);
+    },
+    resetOnboarding: () => {
+      resetOnboardingMutation.mutate();
+    },
+  };
+}

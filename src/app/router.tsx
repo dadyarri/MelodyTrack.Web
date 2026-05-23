@@ -1,8 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
 
 import { AdminRoute } from "../layout/AdminRoute";
-import { AppLayout } from "../layout/AppLayout";
-import { ProtectedRoute } from "../layout/ProtectedRoute";
 import { StatsRoute } from "../layout/StatsRoute";
 import { SuperuserRoute } from "../layout/SuperuserRoute";
 
@@ -39,11 +37,13 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: (
-      <ProtectedRoute>
-        <AppLayout />
-      </ProtectedRoute>
-    ),
+    lazy: async () => {
+      const { ProtectedAppShell } = await import("@/layout/ProtectedAppShell");
+
+      return {
+        Component: ProtectedAppShell,
+      };
+    },
     children: [
       {
         index: true,

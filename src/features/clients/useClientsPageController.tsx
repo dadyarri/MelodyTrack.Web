@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
-import type { DefaultOptionType } from "antd/es/select";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { queryKeys } from "@/api/queryKeys";
 import { getClientContactValue, getRussianPhoneDigits, normalizeRussianPhone, normalizeSocialLink } from "@/entities/client";
+import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
+import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
+import { useDraftFormState } from "@/features/drafts/useDraftFormState";
+import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
+import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
-import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "../../utils/drafts";
-import { enqueueOfflineCreate, shouldQueueOfflineError } from "../../utils/offlineQueue";
+import { createOfflineTempId } from "../../utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "../../utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
@@ -36,18 +40,25 @@ type ClientDraftValues = {
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
 export function useClientsPageController() {
+  const {
+    hasSavedDraft,
+    replayKeyRef: draftReplayKeyRef,
+    isHydratingRef: isDraftHydratingRef,
+    loadDraftValues,
+    withHydration,
+    resetStoredDraft,
+    saveDraftValues: saveDraftFormValues,
+  } = useDraftFormState<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
-  const hasCreateDraft = hasDraft(CLIENT_CREATE_DRAFT_KEY);
+  const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const draftReplayKeyRef = useRef(getDraftReplayKey(CLIENT_CREATE_DRAFT_KEY));
-  const isDraftHydratingRef = useRef(false);
   const [createPhoneInputKey, setCreatePhoneInputKey] = useState(() => (hasCreateDraft ? 1 : 0));
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
-  const [createdSourceOptions, setCreatedSourceOptions] = useState<DefaultOptionType[]>([]);
+  const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
   const navigate = useNavigate();
   const auth = useAuth();
@@ -58,15 +69,15 @@ export function useClientsPageController() {
       void message.error(errorMessage);
     }
   };
-  const canCreateClients = Boolean(auth.user?.isAdmin);
+  const canCreateClients = hasAdminAccess(auth.user);
 
   const query = useQuery({
-    queryKey: ["clients", page, search],
+    queryKey: queryKeys.clients.list(page, search),
     queryFn: () => clientsApi.list({ page, page_size: 10, search: search.trim() || undefined }),
     refetchInterval: getBackgroundRefetchInterval(isCreateOpen && Boolean(editing)),
   });
   const historyQuery = useQuery({
-    queryKey: ["clients", "history", historyClient?.id],
+    queryKey: queryKeys.clients.history(historyClient?.id),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -82,44 +93,35 @@ export function useClientsPageController() {
     ? isActivityStale(currentEditingClient.lastActivity?.id, editingBaselineActivityId)
     : false;
 
-  const saveMutation = useMutation({
-    mutationFn: async ({ values, expectedActivityId }: { values: ClientFormValues; expectedActivityId?: Ulid }) => {
+  const saveMutation = useMutation<{ offline: boolean }, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>({
+    mutationFn: ({ values, expectedActivityId }) => {
       const input = prepareClientInput(values);
       if (editing) {
-        await clientsApi.update(editing.id, input, { expectedActivityId });
-        return { offline: false as const, response: null };
+        return clientsApi.update(editing.id, input, { expectedActivityId }).then(() => ({ offline: false as const, response: null }));
       }
 
-      try {
-        return {
-          offline: false as const,
-          response: await clientsApi.create(input, { replayKey: draftReplayKeyRef.current }),
-        };
-      } catch (error) {
-        if (!shouldQueueOfflineError(error)) {
-          throw error;
-        }
-
-        enqueueOfflineCreate({
+      return createOrQueueOffline({
+        input,
+        replayKey: draftReplayKeyRef.current,
+        create: (createInput) => clientsApi.create(createInput, { replayKey: draftReplayKeyRef.current }),
+        buildQueueItem: (createInput, replayKey) => ({
           kind: "clients:create",
-          replayKey: draftReplayKeyRef.current,
-          tempId: `offline:client:${draftReplayKeyRef.current}`,
-          payload: input,
-        });
-        return { offline: true as const, response: null };
-      }
+          replayKey,
+          tempId: createOfflineTempId("client"),
+          payload: createInput,
+        }),
+      });
     },
     onSuccess: async (result) => {
       message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
       setCreateOpen(false);
       setEditing(null);
       setEditingBaselineActivityId(undefined);
-      resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
-      withDraftHydration(isDraftHydratingRef, () => {
+      resetStoredDraft(() => {
         form.resetFields();
       });
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: ["clients"] });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
       }
     },
     onError: async (error, variables) => {
@@ -132,7 +134,7 @@ export function useClientsPageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["clients"],
+        invalidateQueryKey: queryKeys.clients.all,
         showErrors,
         title: "Клиент уже изменен",
         okText: "Перезаписать",
@@ -142,7 +144,7 @@ export function useClientsPageController() {
         },
         onReload: () => {
           const freshClient =
-            findItemInQueryData(queryClient, ["clients"], (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
+            findItemInQueryData(queryClient, queryKeys.clients.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
             currentEditingClient;
           if (!freshClient) {
             return;
@@ -150,7 +152,7 @@ export function useClientsPageController() {
 
           setEditing(freshClient);
           setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
-          withDraftHydration(isDraftHydratingRef, () => {
+          withHydration(() => {
             form.setFieldsValue({
               ...freshClient,
               telegram: getClientContactValue(freshClient, "telegram"),
@@ -169,14 +171,14 @@ export function useClientsPageController() {
     },
     onSuccess: async () => {
       message.success("Клиент удален");
-      await queryClient.invalidateQueries({ queryKey: ["clients"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: ["clients"],
+        invalidateQueryKey: queryKeys.clients.all,
         showErrors,
         title: "Клиент уже изменен",
         okText: "Удалить все равно",
@@ -185,7 +187,7 @@ export function useClientsPageController() {
           deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
         },
         onReload: () => {
-          void queryClient.invalidateQueries({ queryKey: ["clients"] });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
         },
       });
     },
@@ -197,7 +199,7 @@ export function useClientsPageController() {
         setEditing(client);
         setEditingBaselineActivityId(client.lastActivity?.id ?? null);
         setCreateOpen(true);
-        withDraftHydration(isDraftHydratingRef, () => {
+        withHydration(() => {
           form.resetFields();
           form.setFieldsValue({
             ...client,
@@ -213,32 +215,32 @@ export function useClientsPageController() {
         return;
       }
 
-      const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
+      const draftValues = loadDraftValues();
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       setCreateOpen(true);
-      draftReplayKeyRef.current = draft?.replayKey ?? getDraftReplayKey(CLIENT_CREATE_DRAFT_KEY);
       setCreatePhoneInputKey((current) => current + 1);
-      withDraftHydration(isDraftHydratingRef, () => {
+      withHydration(() => {
         form.resetFields();
-        form.setFieldsValue(draft?.values ?? {});
+        form.setFieldsValue(draftValues ?? {});
       });
     },
-    [canCreateClients, form],
+    [canCreateClients, form, loadDraftValues, withHydration],
   );
 
   const createSourceMutation = useMutation({
     mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
     onSuccess: async (result, values) => {
       message.success("Источник создан");
-      const option = { value: result.id, label: values.name.trim() } satisfies DefaultOptionType;
-      setCreatedSourceOptions((current) => [option, ...current.filter((item) => item.value !== option.value)]);
+      createdSourceOptions.addCreatedOption({ id: result.id, label: values.name.trim() });
       form.setFieldValue("sourceId", result.id);
       setSourceCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["client-sources"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.sources });
     },
     onError: showErrors,
   });
+
+  const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
@@ -246,12 +248,11 @@ export function useClientsPageController() {
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
-    resetDraft(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef);
     setCreatePhoneInputKey((current) => current + 1);
-    withDraftHydration(isDraftHydratingRef, () => {
+    resetStoredDraft(() => {
       form.resetFields();
     });
-  }, [form]);
+  }, [form, resetStoredDraft]);
 
   const closeEditor = useCallback(() => {
     setCreateOpen(false);
@@ -261,14 +262,14 @@ export function useClientsPageController() {
 
   useLayoutEffect(() => {
     if (isCreateOpen && !editing) {
-      const draft = loadDraft<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
-      if (draft) {
-        withDraftHydration(isDraftHydratingRef, () => {
-          form.setFieldsValue(draft.values);
+      const draftValues = loadDraftValues();
+      if (draftValues) {
+        withHydration(() => {
+          form.setFieldsValue(draftValues);
         });
       }
     }
-  }, [editing, form, isCreateOpen]);
+  }, [editing, form, isCreateOpen, loadDraftValues, withHydration]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -293,7 +294,7 @@ export function useClientsPageController() {
   }, [canCreateClients, openEditor]);
 
   return {
-    auth,
+    canCreateClients,
     page,
     setPage,
     query,
@@ -309,7 +310,7 @@ export function useClientsPageController() {
     isEditingClientStale,
     editingBaselineActivityId,
     isSourceCreateOpen,
-    createdSourceOptions,
+    createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
     createSourceMutation,
     deleteMutation,
@@ -325,12 +326,9 @@ export function useClientsPageController() {
         return;
       }
 
-      saveDraftValues(CLIENT_CREATE_DRAFT_KEY, draftReplayKeyRef.current, values);
+      saveDraftFormValues(values);
     },
-    openClientHistoryFromDashboard: {
-      onCreateAppointment: canCreateClients ? (client: Client) => navigate("/schedule", { state: { openCreate: true, clientId: client.id } }) : undefined,
-      onCreatePayment: canCreateClients ? (client: Client) => navigate("/payments", { state: { openCreate: true, clientId: client.id } }) : undefined,
-    },
+    clientHistoryActions,
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",

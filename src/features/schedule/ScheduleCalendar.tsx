@@ -169,7 +169,7 @@ export function AppointmentsCalendar({
               {getBlockedRanges(availability, day, hours[0], hours[hours.length - 1] + 1).map((range) => (
                 <div
                   className={`${styles.blockedRange}${range.isVacation ? ` ${styles.blockedRangeVacation}` : ""}`}
-                  key={`${day.format("YYYY-MM-DD")}:${range.startMinute}:${range.endMinute}`}
+                  key={[day.format("YYYY-MM-DD"), String(range.startMinute), String(range.endMinute)].join(":")}
                   style={getBlockedRangeStyle(range.startMinute, range.endMinute, hours[0])}
                 />
               ))}
@@ -504,7 +504,7 @@ function getBlockedRangeStyle(startMinute: number, endMinute: number, startHour:
   const top = ((startMinute - startHour * 60) / 60) * hourHeight;
   const height = ((endMinute - startMinute) / 60) * hourHeight;
   return {
-    top: `${top}px`,
-    height: `${height}px`,
+    top: `${String(top)}px`,
+    height: `${String(height)}px`,
   };
 }

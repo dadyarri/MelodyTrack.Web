@@ -1,12 +1,11 @@
 import type { TourProps } from "antd";
-
-type OnboardingAudience = "all" | "admin" | "superuser" | "stats";
+import { canAccessAudience, type AccessAudience, type AppUser } from "@/features/auth/access";
 
 export type OnboardingStepDefinition = {
   id: string;
   path: string;
   targetId: string;
-  audience?: OnboardingAudience;
+  audience?: AccessAudience;
 } & Pick<NonNullable<TourProps["steps"]>[number], "title" | "description" | "placement">;
 
 export const onboardingSteps: OnboardingStepDefinition[] = [
@@ -40,7 +39,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "dashboard-debtors",
     placement: "top",
     title: "Блок должников",
-    description: "Этот блок показывает клиентов с отрицательным балансом. Из него можно открыть историю клиента и выгрузить список должников.",
+    description:
+      "Этот блок показывает клиентов с отрицательным балансом. Из него можно открыть историю клиента и выгрузить список должников.",
     audience: "admin",
   },
   {
@@ -75,7 +75,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "schedule-calendar",
     placement: "top",
     title: "Календарь записей",
-    description: "Календарь показывает рабочую неделю, занятые интервалы, статусы записей и нерабочее время преподавателей. Из календаря можно открыть детали записи.",
+    description:
+      "Календарь показывает рабочую неделю, занятые интервалы, статусы записей и нерабочее время преподавателей. Из календаря можно открыть детали записи.",
   },
   {
     id: "clients",
@@ -137,7 +138,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "payments-actions",
     placement: "left",
     title: "Создание платежа",
-    description: "Создание платежа выполняется из кнопки в шапке. Платеж можно связать с клиентом и услугой, а при необходимости быстро создать нового клиента.",
+    description:
+      "Создание платежа выполняется из кнопки в шапке. Платеж можно связать с клиентом и услугой, а при необходимости быстро создать нового клиента.",
     audience: "admin",
   },
   {
@@ -182,7 +184,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "client-sources-page-content",
     placement: "top",
     title: "Справочник источников клиентов",
-    description: "Этот справочник используется для учета каналов привлечения клиентов. Источники применяются в карточке клиента и в клиентской аналитике.",
+    description:
+      "Этот справочник используется для учета каналов привлечения клиентов. Источники применяются в карточке клиента и в клиентской аналитике.",
     audience: "admin",
   },
   {
@@ -200,7 +203,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "revenue-main-blocks",
     placement: "top",
     title: "Блоки аналитики выручки",
-    description: "Страница показывает фактическую и плановую выручку, чистую прибыль, структуру по услугам, а также таблицы по преподавателям, клиентам и периодам.",
+    description:
+      "Страница показывает фактическую и плановую выручку, чистую прибыль, структуру по услугам, а также таблицы по преподавателям, клиентам и периодам.",
     audience: "stats",
   },
   {
@@ -218,7 +222,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "price-changes-main-table",
     placement: "top",
     title: "Результаты изменения цен",
-    description: "Основная таблица показывает старую и новую цену, изменение спроса, изменение выручки и дополнительные показатели по каждой услуге.",
+    description:
+      "Основная таблица показывает старую и новую цену, изменение спроса, изменение выручки и дополнительные показатели по каждой услуге.",
     audience: "stats",
   },
   {
@@ -227,7 +232,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "appointments-stats-summary",
     placement: "top",
     title: "Сводка по записям",
-    description: "Сводка показывает количество записей по статусам, рабочее и занятое время преподавателей, загрузку и выручку по занятиям.",
+    description:
+      "Сводка показывает количество записей по статусам, рабочее и занятое время преподавателей, загрузку и выручку по занятиям.",
     audience: "stats",
   },
   {
@@ -236,7 +242,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "appointments-stats-main-blocks",
     placement: "top",
     title: "Разделы аналитики записей",
-    description: "Ниже находятся графики статусов и загрузки, таблица по преподавателям, анализ часов, список клиентов со сгоревшими записями и дневная детализация.",
+    description:
+      "Ниже находятся графики статусов и загрузки, таблица по преподавателям, анализ часов, список клиентов со сгоревшими записями и дневная детализация.",
     audience: "stats",
   },
   {
@@ -245,7 +252,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "clients-stats-summary",
     placement: "top",
     title: "Сводка по клиентам",
-    description: "Сводка показывает количество клиентов, удержание, новых и потерянных клиентов, риск ухода, LTV, сегменты и задолженность.",
+    description:
+      "Сводка показывает количество клиентов, удержание, новых и потерянных клиентов, риск ухода, LTV, сегменты и задолженность.",
     audience: "stats",
   },
   {
@@ -272,7 +280,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "payments-stats-main-blocks",
     placement: "top",
     title: "Разделы платежной аналитики",
-    description: "Ниже находятся структура долга по услугам, крупнейшие должники, баланс по клиентам и отдельные срезы по преподавателям и услугам.",
+    description:
+      "Ниже находятся структура долга по услугам, крупнейшие должники, баланс по клиентам и отдельные срезы по преподавателям и услугам.",
     audience: "stats",
   },
   {
@@ -308,7 +317,8 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
     targetId: "users-actions",
     placement: "bottom",
     title: "Приглашение пользователя",
-    description: "Кнопка в шапке создает приглашение с ролью и, при необходимости, с привязкой к email. После создания ссылку можно скопировать и отправить сотруднику.",
+    description:
+      "Кнопка в шапке создает приглашение с ролью и, при необходимости, с привязкой к email. После создания ссылку можно скопировать и отправить сотруднику.",
     audience: "admin",
   },
   {
@@ -354,18 +364,6 @@ export const onboardingSteps: OnboardingStepDefinition[] = [
   },
 ];
 
-export function canAccessOnboardingStep(
-  step: OnboardingStepDefinition,
-  user?: { isAdmin?: boolean; isSuperuser?: boolean } | null,
-) {
-  switch (step.audience) {
-    case "superuser":
-      return Boolean(user?.isSuperuser);
-    case "admin":
-      return Boolean(user?.isAdmin);
-    case "stats":
-      return Boolean(user?.isAdmin || user?.isSuperuser);
-    default:
-      return true;
-  }
+export function canAccessOnboardingStep(step: OnboardingStepDefinition, user: AppUser) {
+  return canAccessAudience(user, step.audience);
 }
