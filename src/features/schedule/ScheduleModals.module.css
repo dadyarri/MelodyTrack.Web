@@ -27,8 +27,8 @@
 
 .weeklyDays {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, max-content));
-  gap: 10px 14px;
+  grid-template-columns: repeat(7, minmax(0, max-content));
+  gap: 10px;
 }
 
 .recurrenceHint {
@@ -43,10 +43,6 @@
 @media (max-width: 720px) {
   .detailsGrid {
     grid-template-columns: 1fr;
-  }
-
-  .weeklyDays {
-    grid-template-columns: repeat(2, minmax(0, max-content));
   }
 
   .detailsHeader {

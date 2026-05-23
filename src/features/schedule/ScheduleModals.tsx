@@ -178,30 +178,40 @@ export function AppointmentCreateModal({
   const recurrenceTypeId = Form.useWatch("recurrenceTypeId", form);
   const startDate = Form.useWatch("startDate", form);
   const weeklyDays = Form.useWatch("weeklyDays", form);
-  const recurrenceType = recurrenceTypes.find((item) => item.id === recurrenceTypeId);
-  const recurrenceKey = recurrenceType?.key;
+  const weeklyRecurrenceType = recurrenceTypes.find((item) => item.key === "weekly");
+  const recurrenceEnabled = Boolean(recurrenceTypeId);
 
-  const handleRecurrenceTypeChange = (value?: string) => {
-    form.setFieldValue("recurrenceTypeId", value);
-
-    if (!value) {
-      form.setFieldsValue({ patternEndDate: undefined, weeklyDays: undefined });
+  useEffect(() => {
+    if (!recurrenceTypeId || !weeklyRecurrenceType || recurrenceTypeId === weeklyRecurrenceType.id) {
       return;
     }
 
-    const nextType = recurrenceTypes.find((item) => item.id === value);
-    if (nextType?.key === "weekly") {
-      const { startDate: currentStartDate, weeklyDays: currentWeeklyDays } = form.getFieldsValue(["startDate", "weeklyDays"]) as Pick<
-        AppointmentFormValues,
-        "startDate" | "weeklyDays"
-      >;
-      const nextStartDate = currentStartDate;
-      if (!currentWeeklyDays?.length) {
-        form.setFieldValue("weeklyDays", [getWeeklyBitmaskValue(nextStartDate)]);
-      }
-    } else {
-      form.setFieldValue("weeklyDays", undefined);
+    const nextWeeklyDays = weeklyDays?.length ? weeklyDays : [getWeeklyBitmaskValue(startDate)];
+    form.setFieldsValue({
+      recurrenceTypeId: weeklyRecurrenceType.id,
+      weeklyDays: nextWeeklyDays,
+    });
+  }, [form, recurrenceTypeId, startDate, weeklyDays, weeklyRecurrenceType]);
+
+  useEffect(() => {
+    if (!recurrenceEnabled || weeklyDays?.length) {
+      return;
     }
+
+    form.setFieldValue("weeklyDays", [getWeeklyBitmaskValue(startDate)]);
+  }, [form, recurrenceEnabled, startDate, weeklyDays]);
+
+  const handleRecurrenceEnabledChange = (enabled: boolean) => {
+    if (!enabled || !weeklyRecurrenceType) {
+      form.setFieldsValue({ patternEndDate: undefined, weeklyDays: undefined });
+      form.setFieldValue("recurrenceTypeId", undefined);
+      return;
+    }
+
+    form.setFieldsValue({
+      recurrenceTypeId: weeklyRecurrenceType.id,
+      weeklyDays: weeklyDays?.length ? weeklyDays : [getWeeklyBitmaskValue(startDate)],
+    });
   };
 
   return (
@@ -226,6 +236,9 @@ export function AppointmentCreateModal({
           onDraftChange(values);
         }}
       >
+        <Form.Item name="recurrenceTypeId" hidden>
+          <input type="hidden" />
+        </Form.Item>
         <Form.Item label="Клиент">
           <Space orientation="vertical" size={8} className="wide">
             <Form.Item name="clientId" noStyle rules={[{ required: true }]}>
@@ -243,17 +256,18 @@ export function AppointmentCreateModal({
         <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
           <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
         </Form.Item>
-        <Form.Item name="recurrenceTypeId" label="Повторение">
-          <Select
-            allowClear
-            loading={recurrenceTypesLoading}
-            options={recurrenceTypes.map((item) => ({ value: item.id, label: item.displayName }))}
-            placeholder="Без повтора"
-            value={recurrenceTypeId}
-            onChange={handleRecurrenceTypeChange}
-          />
+        <Form.Item label="Повторение">
+          <Checkbox
+            checked={recurrenceEnabled}
+            disabled={recurrenceTypesLoading || !weeklyRecurrenceType}
+            onChange={(event) => {
+              handleRecurrenceEnabledChange(event.target.checked);
+            }}
+          >
+            Повторять еженедельно
+          </Checkbox>
         </Form.Item>
-        {recurrenceKey ? (
+        {recurrenceEnabled ? (
           <>
             <Form.Item
               name="patternEndDate"
@@ -268,26 +282,24 @@ export function AppointmentCreateModal({
                 }}
               />
             </Form.Item>
-            {recurrenceKey === "weekly" ? (
-              <Form.Item
-                name="weeklyDays"
-                label="Дни недели"
-                rules={[
-                  {
-                    validator: (_, value?: number[]) => {
-                      if (value?.length) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error("Выберите хотя бы один день недели"));
-                    },
+            <Form.Item
+              name="weeklyDays"
+              label="Дни недели"
+              rules={[
+                {
+                  validator: (_, value?: number[]) => {
+                    if (value?.length) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("Выберите хотя бы один день недели"));
                   },
-                ]}
-              >
-                <Checkbox.Group className={styles.weeklyDays} options={weeklyDayOptions} />
-              </Form.Item>
-            ) : null}
+                },
+              ]}
+            >
+              <Checkbox.Group className={styles.weeklyDays} options={weeklyDayOptions} />
+            </Form.Item>
             <div className={styles.recurrenceHint}>
-              <Typography.Text type="secondary">{getRecurrenceSummary(recurrenceKey, startDate, weeklyDays)}</Typography.Text>
+              <Typography.Text type="secondary">{getRecurrenceSummary("weekly", startDate, weeklyDays)}</Typography.Text>
             </div>
           </>
         ) : null}
