@@ -232,13 +232,19 @@
   width: 100%;
   text-align: left;
   font: inherit;
-  color: inherit;
+  color: var(--schedule-entry-text, var(--text-main));
   appearance: none;
   -webkit-appearance: none;
   transition:
     box-shadow 0.16s ease,
     transform 0.16s ease,
     border-color 0.16s ease;
+}
+
+:global([data-theme="dark"]) .entry {
+  border-color: var(--schedule-entry-border-dark, var(--schedule-entry-border));
+  background: var(--schedule-entry-background-dark, var(--schedule-entry-background));
+  color: var(--schedule-entry-text-dark, var(--schedule-entry-text, var(--text-main)));
 }
 
 .entry:hover,
