@@ -77,10 +77,10 @@ export function AuditPage() {
       <div data-onboarding-id="audit-page-content">
         <ListFilters>
           <div className={filterFieldWideClassName}>
-            <Typography.Text type="secondary">Поиск по пользователю, действию, объекту или деталям</Typography.Text>
+            <Typography.Text type="secondary">Поиск по пользователю, действию или деталям</Typography.Text>
             <Input.Search
               allowClear
-              placeholder="Например: платеж, Иванова, вход, встреча"
+              placeholder="Например: платеж, Иванова, вход, цена"
               onSearch={controller.handleSearch}
               onChange={(event) => {
                 if (!event.target.value) {
