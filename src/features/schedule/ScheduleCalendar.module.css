@@ -487,10 +487,14 @@
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
   color: var(--schedule-entry-icon-color);
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
   transition:
     background-color 0.16s ease,
     transform 0.16s ease;
@@ -500,6 +504,7 @@
 .eventAction:focus-visible {
   background: rgba(255, 255, 255, 1);
   transform: translateY(-1px);
+  outline: none;
 }
 
 :global([data-theme="dark"]) .eventAction {

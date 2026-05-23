@@ -484,7 +484,7 @@ function AppointmentContent({
               <button
                 className={styles.eventAction}
                 type="button"
-                title="Отметить как проведено"
+                title="Отметить как завершённую"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
