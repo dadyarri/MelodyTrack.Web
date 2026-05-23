@@ -1,7 +1,7 @@
-import { SyncOutlined } from "@ant-design/icons";
+import { CheckOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, type DragEvent, type MouseEvent, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Appointment, UserAvailability } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
@@ -22,6 +22,7 @@ export function AppointmentsCalendar({
   onCreateAt,
   onReschedule,
   onSelect,
+  onComplete,
   reschedulePendingAppointmentId,
   selectedAppointmentId,
   visibleHours,
@@ -34,6 +35,7 @@ export function AppointmentsCalendar({
   onCreateAt: (startDate: Dayjs) => void;
   onReschedule: (appointment: Appointment, startDate: Dayjs) => void;
   onSelect: (appointment: Appointment) => void;
+  onComplete: (appointment: Appointment) => void;
   reschedulePendingAppointmentId: string | null;
   selectedAppointmentId: string | null;
   visibleHours?: { startHour: number; endHour: number };
@@ -285,6 +287,7 @@ export function AppointmentsCalendar({
                   onDragEnd={handleAppointmentDragEnd}
                   onDragStart={handleAppointmentDragStart}
                   onSelect={onSelect}
+                  onComplete={onComplete}
                   reschedulePendingAppointmentId={reschedulePendingAppointmentId}
                   selectedAppointmentId={selectedAppointmentId}
                 />
@@ -309,6 +312,7 @@ export function AppointmentsCalendar({
                     isSelected={appointment.id === selectedAppointmentId}
                     key={appointment.id}
                     onSelect={onSelect}
+                    onComplete={onComplete}
                   />
                 ))
               ) : (
@@ -329,6 +333,7 @@ function AppointmentStack({
   onDragStart,
   startHour,
   onSelect,
+  onComplete,
   reschedulePendingAppointmentId,
   selectedAppointmentId,
 }: {
@@ -338,6 +343,7 @@ function AppointmentStack({
   onDragStart: (appointment: Appointment) => void;
   startHour: number;
   onSelect: (appointment: Appointment) => void;
+  onComplete: (appointment: Appointment) => void;
   reschedulePendingAppointmentId: string | null;
   selectedAppointmentId: string | null;
 }) {
@@ -398,7 +404,7 @@ function AppointmentStack({
             }
           }}
         >
-          <AppointmentContent appointment={item} density={getStackDensity(appointments.length)} />
+          <AppointmentContent appointment={item} density={getStackDensity(appointments.length)} onComplete={onComplete} />
         </button>
       ))}
     </div>
@@ -409,10 +415,12 @@ function AppointmentAgendaItem({
   appointment,
   isSelected,
   onSelect,
+  onComplete,
 }: {
   appointment: Appointment;
   isSelected: boolean;
   onSelect: (appointment: Appointment) => void;
+  onComplete: (appointment: Appointment) => void;
 }) {
   return (
     <button
@@ -429,7 +437,7 @@ function AppointmentAgendaItem({
         }
       }}
     >
-      <AppointmentContent appointment={appointment} showTime />
+      <AppointmentContent appointment={appointment} showTime onComplete={onComplete} />
     </button>
   );
 }
@@ -438,10 +446,12 @@ function AppointmentContent({
   appointment,
   density = "full",
   showTime = false,
+  onComplete,
 }: {
   appointment: Appointment;
   density?: "full" | "compact" | "dense";
   showTime?: boolean;
+  onComplete?: (appointment: Appointment) => void;
 }) {
   const start = dayjs(appointment.startDate);
   const end = dayjs(appointment.endDate);
@@ -459,13 +469,39 @@ function AppointmentContent({
           <div className={styles.eventTitlePrimary}>{clientName}</div>
         )}
         <div className={styles.eventIcons}>
-          <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment.status)}>
-            {renderAppointmentStatusIcon(appointment.status)}
-          </span>
-          {appointment.recurringRule ? (
-            <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
-              <SyncOutlined />
+          <div className={styles.eventIconsRow}>
+            <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment.status)}>
+              {renderAppointmentStatusIcon(appointment.status)}
             </span>
+            {appointment.recurringRule ? (
+              <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
+                <SyncOutlined />
+              </span>
+            ) : null}
+          </div>
+          {appointment.status === "planned" && onComplete ? (
+            <div className={styles.eventActionRow}>
+              <span
+                className={styles.eventAction}
+                role="button"
+                tabIndex={0}
+                title="Отметить как проведено"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  event.preventDefault();
+                  onComplete(appointment);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onComplete(appointment);
+                  }
+                }}
+              >
+                <CheckOutlined />
+              </span>
+            </div>
           ) : null}
         </div>
       </div>

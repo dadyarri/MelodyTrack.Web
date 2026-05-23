@@ -133,6 +133,13 @@ export function SchedulePage() {
                 controller.setSelectedAppointment(appointment);
                 controller.setSelectedAppointmentBaselineActivityId(appointment.lastActivity?.id ?? null);
               }}
+              onComplete={(appointment) => {
+                controller.updateMutation.mutate({
+                  id: appointment.id,
+                  input: { status: "completed" },
+                  expectedActivityId: appointment.lastActivity?.id,
+                });
+              }}
               selectedAppointmentId={controller.selectedAppointment?.id ?? null}
             />
           </div>

@@ -418,10 +418,25 @@
   position: absolute;
   top: 0;
   right: 0;
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 3px;
+}
+
+.eventIconsRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+}
+
+.eventActionRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
 }
 
 .eventTime,
@@ -460,6 +475,29 @@
   font-size: 12px;
 }
 
+.eventAction {
+  width: 22px;
+  height: 22px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  color: var(--schedule-entry-icon-color);
+  cursor: pointer;
+  transition: background-color 0.16s ease, transform 0.16s ease;
+}
+
+.eventAction:hover,
+.eventAction:focus-visible {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+:global([data-theme="dark"]) .eventAction {
+  background: rgba(18, 14, 10, 0.72);
+}
+
 .eventRecurringIcon {
   color: color-mix(in srgb, var(--schedule-entry-icon-color) 74%, var(--accent));
 }
@@ -483,7 +521,19 @@
 }
 
 .eventContentCompact .eventIcons {
-  gap: 3px;
+  gap: 2px;
+}
+
+.eventContentCompact .eventIconsRow {
+  gap: 2px;
+}
+
+.eventContentDense .eventIcons {
+  gap: 2px;
+}
+
+.eventContentDense .eventIconsRow {
+  gap: 2px;
 }
 
 .eventContentDense .eventTitlePrimary,
