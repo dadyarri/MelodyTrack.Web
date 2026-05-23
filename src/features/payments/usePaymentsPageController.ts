@@ -25,6 +25,7 @@ export type PaymentDraftValues = {
 };
 
 const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
+const getDefaultPaymentsDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function usePaymentsPageController() {
   const {
@@ -42,7 +43,7 @@ export function usePaymentsPageController() {
   const [search, setSearch] = useState("");
   const [clientId, setClientId] = useState<string | undefined>();
   const [serviceId, setServiceId] = useState<string | undefined>();
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultPaymentsDateRange());
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const createdClientOptions = useCreatedReferenceOptions("client");
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
@@ -159,7 +160,7 @@ export function usePaymentsPageController() {
     setSearch("");
     setClientId(undefined);
     setServiceId(undefined);
-    setDateRange(null);
+    setDateRange(getDefaultPaymentsDateRange());
     setPage(1);
   }, []);
 

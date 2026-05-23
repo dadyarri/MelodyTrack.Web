@@ -7,7 +7,7 @@ import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
 import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/utils/date";
+import { DATE_FORMAT, formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 
 export function PaymentsPage() {
@@ -84,8 +84,7 @@ export function PaymentsPage() {
               <Typography.Text type="secondary">Период</Typography.Text>
               <DatePicker.RangePicker
                 value={controller.dateRange}
-                format={DATE_TIME_FORMAT}
-                showTime={{ format: TIME_FORMAT }}
+                format={DATE_FORMAT}
                 onChange={(value) => {
                   controller.setDateRange(value);
                   controller.setPage(1);

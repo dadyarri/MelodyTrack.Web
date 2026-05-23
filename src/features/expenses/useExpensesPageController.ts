@@ -18,6 +18,7 @@ export type ExpenseDraftValues = {
 };
 
 const EXPENSE_CREATE_DRAFT_KEY = "draft:expenses:create";
+const getDefaultExpensesDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function useExpensesPageController() {
   const {
@@ -32,7 +33,7 @@ export function useExpensesPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
+  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultExpensesDateRange());
   const [form] = Form.useForm<ExpenseDraftValues>();
   const [isCategoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const createdCategoryOptions = useCreatedReferenceOptions("expense-category");
@@ -173,7 +174,7 @@ export function useExpensesPageController() {
     createdCategoryOptions: createdCategoryOptions.createdOptions,
     resetFilters: () => {
       setSearch("");
-      setDateRange(null);
+      setDateRange(getDefaultExpensesDateRange());
       setPage(1);
     },
     handleClearCreateDraft: () => {
