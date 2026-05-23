@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router";
 export type OpenCreateRouteIntent = {
   openCreate?: boolean;
   clientId?: string;
+  serviceId?: string;
 };
 
 export function useOpenCreateRouteIntent() {
@@ -14,6 +15,7 @@ export function useOpenCreateRouteIntent() {
   return {
     hasOpenCreateIntent: Boolean(routeIntent?.openCreate),
     prefillClientId: routeIntent?.openCreate ? routeIntent.clientId : undefined,
+    prefillServiceId: routeIntent?.openCreate ? routeIntent.serviceId : undefined,
     clearOpenCreateIntent: useCallback(() => {
       if (!location.state) {
         return;

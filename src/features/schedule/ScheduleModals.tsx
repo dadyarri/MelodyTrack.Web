@@ -3,6 +3,7 @@ import {
   ClockCircleOutlined,
   CloseOutlined,
   DeleteOutlined,
+  DollarOutlined,
   EditOutlined,
   FireOutlined,
   LinkOutlined,
@@ -460,6 +461,7 @@ export function AppointmentDetailsModal({
   onEdit,
   onStatusChange,
   onDelete,
+  onCreatePayment,
 }: {
   appointment: Appointment | null;
   isStale: boolean;
@@ -467,6 +469,7 @@ export function AppointmentDetailsModal({
   onEdit: (appointment: Appointment) => void;
   onStatusChange: (appointment: Appointment, status: AppointmentStatus) => void;
   onDelete: (appointment: Appointment) => void;
+  onCreatePayment?: (appointment: Appointment) => void;
 }) {
   if (!appointment) {
     return null;
@@ -571,6 +574,16 @@ export function AppointmentDetailsModal({
           >
             Изменить
           </Button>
+          {onCreatePayment ? (
+            <Button
+              icon={<DollarOutlined />}
+              onClick={() => {
+                onCreatePayment(appointment);
+              }}
+            >
+              Создать платеж
+            </Button>
+          ) : null}
           <Button
             danger
             icon={<DeleteOutlined />}

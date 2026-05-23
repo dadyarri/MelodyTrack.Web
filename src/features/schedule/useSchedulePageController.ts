@@ -10,6 +10,7 @@ import { hasAdminAccess } from "@/features/auth/access";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
+import { usePaymentCreateController } from "@/features/payments/usePaymentCreateController";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { useAuth } from "@/features/auth/useAuth";
 import type {
@@ -69,6 +70,7 @@ export function useSchedulePageController() {
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
   const createRouteIntent = useOpenCreateRouteIntent();
+  const paymentCreate = usePaymentCreateController();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -93,6 +95,22 @@ export function useSchedulePageController() {
     setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
   }, [canCreateAppointments, effectiveProviderFilterId, lockedProviderId]);
+
+  const openPaymentCreateForAppointment = useCallback(
+    (appointment: Appointment) => {
+      if (!canCreateAppointments) {
+        return;
+      }
+
+      setSelectedAppointment(null);
+      setSelectedAppointmentBaselineActivityId(undefined);
+      paymentCreate.openCreateModal({
+        clientId: appointment.client.id,
+        serviceId: appointment.service.id,
+      });
+    },
+    [canCreateAppointments, paymentCreate],
+  );
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -676,6 +694,8 @@ export function useSchedulePageController() {
     setCreateClientLabel,
     setCreateServiceLabel,
     setCreateProviderLabel,
+    openPaymentCreateForAppointment,
+    paymentCreate,
     createPrefillClientId,
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
       createdClientOptions.addCreatedOption({

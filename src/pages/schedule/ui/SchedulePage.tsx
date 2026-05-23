@@ -2,6 +2,7 @@ import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
 import { Button, Space, Typography } from "antd";
 import dayjs from "dayjs";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
+import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
 import { UserSelect } from "@/components/RemoteSelect";
 import {
   AppointmentCreateModal,
@@ -158,6 +159,13 @@ export function SchedulePage() {
           controller.setAppointmentToEdit(appointment);
           controller.setAppointmentToEditBaselineActivityId(appointment.lastActivity?.id ?? null);
         }}
+        onCreatePayment={
+          controller.canCreateAppointments
+            ? (appointment) => {
+                controller.openPaymentCreateForAppointment(appointment);
+              }
+            : undefined
+        }
         onStatusChange={(appointment, status) => {
           controller.updateMutation.mutate({
             id: appointment.id,
@@ -276,6 +284,35 @@ export function SchedulePage() {
           controller.setQuickClientCreateOpen(false);
         }}
         onCreated={controller.onQuickClientCreated}
+      />
+      <PaymentCreateModal
+        open={controller.paymentCreate.isCreateModalOpen}
+        draftRestored={controller.paymentCreate.hasCreateDraft && controller.paymentCreate.isCreateModalOpen}
+        form={controller.paymentCreate.form}
+        createPending={controller.paymentCreate.createMutation.isPending}
+        createdClientOptions={controller.paymentCreate.createdClientOptions}
+        draftHydrationRef={controller.paymentCreate.draftHydrationRef}
+        selectedCreateServiceId={controller.paymentCreate.selectedCreateServiceId}
+        selectedServicePrice={controller.paymentCreate.selectedServicePrice}
+        onCancel={controller.paymentCreate.closeCreateModal}
+        onClearDraft={controller.paymentCreate.handleClearCreateDraft}
+        onSubmit={(values) => {
+          controller.paymentCreate.createMutation.mutate(values);
+        }}
+        onValuesChange={controller.paymentCreate.onCreateValuesChange}
+        onCreateClient={() => {
+          controller.paymentCreate.setQuickClientCreateOpen(true);
+        }}
+        onClientLabelChange={controller.paymentCreate.setCreateClientLabel}
+        onServiceLabelChange={controller.paymentCreate.setCreateServiceLabel}
+        onServicePriceChange={controller.paymentCreate.setSelectedServicePrice}
+      />
+      <ClientQuickCreateModal
+        open={controller.paymentCreate.isQuickClientCreateOpen}
+        onCancel={() => {
+          controller.paymentCreate.setQuickClientCreateOpen(false);
+        }}
+        onCreated={controller.paymentCreate.onQuickClientCreated}
       />
     </>
   );
