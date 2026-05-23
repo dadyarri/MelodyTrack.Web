@@ -491,7 +491,9 @@
   background: rgba(255, 255, 255, 0.88);
   color: var(--schedule-entry-icon-color);
   cursor: pointer;
-  transition: background-color 0.16s ease, transform 0.16s ease;
+  transition:
+    background-color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .eventAction:hover,

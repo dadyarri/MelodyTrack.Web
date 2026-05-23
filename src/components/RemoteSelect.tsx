@@ -4,12 +4,21 @@ import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { useAuth } from "@/features/auth/useAuth";
+import { formatMoney } from "@/utils/money";
 import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";
 
 function formatClientLabel(client: { firstName: string; lastName: string; patronymic?: string | null }) {
   return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
+}
+
+function formatServiceLabel(name: string, price?: number, showPrice = false) {
+  if (!showPrice || price === undefined) {
+    return name;
+  }
+
+  return `${name} · ${formatMoney(price)}`;
 }
 
 export function ClientSelect({
@@ -98,12 +107,14 @@ export function ServiceSelect({
   value,
   onChange,
   allowClear = true,
+  showPrice = false,
   onResolvedLabelChange,
   onResolvedPriceChange,
 }: {
   value?: string;
   onChange?: (value: string) => void;
   allowClear?: boolean;
+  showPrice?: boolean;
   onResolvedLabelChange?: (label?: string) => void;
   onResolvedPriceChange?: (price?: number) => void;
 }) {
@@ -121,27 +132,34 @@ export function ServiceSelect({
     retry: false,
   });
   const cachedLabel = getCachedReferenceLabel("service", value);
+  const selectedService = selectedQuery.data?.id === value ? selectedQuery.data : undefined;
+
   const options = useMemo<DefaultOptionType[]>(() => {
-    const selectedOption = selectedQuery.data
-      ? [{ value: selectedQuery.data.id, label: selectedQuery.data.name }]
+    const selectedOption = selectedService
+      ? [{ value: selectedService.id, label: formatServiceLabel(selectedService.name, selectedService.price, showPrice) }]
       : cachedLabel && value
         ? [{ value, label: cachedLabel }]
         : [];
-    const lookupOptions = query.data?.map((service) => ({ value: service.id, label: service.name })) ?? [];
+    const lookupOptions =
+      query.data?.map((service) => ({
+        value: service.id,
+        label: formatServiceLabel(service.name, service.price, showPrice),
+      })) ?? [];
     const mergedOptions = [...selectedOption, ...lookupOptions];
 
     return mergedOptions.filter((option, index, items) => items.findIndex((item) => item.value === option.value) === index);
-  }, [cachedLabel, query.data, selectedQuery.data, value]);
+  }, [cachedLabel, query.data, selectedService, showPrice, value]);
 
   useEffect(() => {
-    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
-    onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
-  }, [cachedLabel, onResolvedLabelChange, options, value]);
+    const service = selectedService ?? query.data?.find((item) => item.id === value);
+    const label = service?.name ?? cachedLabel;
+    onResolvedLabelChange?.(label);
+  }, [cachedLabel, onResolvedLabelChange, query.data, selectedService, value]);
 
   useEffect(() => {
-    const service = selectedQuery.data ?? query.data?.find((item) => item.id === value);
+    const service = selectedService ?? query.data?.find((item) => item.id === value);
     onResolvedPriceChange?.(service?.price);
-  }, [onResolvedPriceChange, query.data, selectedQuery.data, value]);
+  }, [onResolvedPriceChange, query.data, selectedService, value]);
 
   useEffect(() => {
     if (query.data) {

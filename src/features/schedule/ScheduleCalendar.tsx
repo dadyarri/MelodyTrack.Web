@@ -1,7 +1,7 @@
 import { CheckOutlined, SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { type CSSProperties, type DragEvent, type MouseEvent, useEffect, useEffectEvent, useRef, useState } from "react";
+import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Appointment, UserAvailability } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
@@ -481,26 +481,18 @@ function AppointmentContent({
           </div>
           {appointment.status === "planned" && onComplete ? (
             <div className={styles.eventActionRow}>
-              <span
+              <button
                 className={styles.eventAction}
-                role="button"
-                tabIndex={0}
+                type="button"
                 title="Отметить как проведено"
                 onClick={(event) => {
                   event.stopPropagation();
                   event.preventDefault();
                   onComplete(appointment);
                 }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onComplete(appointment);
-                  }
-                }}
               >
                 <CheckOutlined />
-              </span>
+              </button>
             </div>
           ) : null}
         </div>

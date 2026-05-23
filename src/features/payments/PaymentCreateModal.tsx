@@ -97,6 +97,7 @@ export function PaymentCreateModal({
           <div style={{ display: "flex", alignItems: "center", paddingTop: 30 }}>x</div>
           <Form.Item name="serviceId" label="Услуга" style={{ width: "80%", marginBottom: 0 }}>
             <ServiceSelect
+              showPrice
               onResolvedLabelChange={onServiceLabelChange}
               onResolvedPriceChange={(price) => {
                 onServicePriceChange(price);

@@ -119,7 +119,7 @@ export function AppointmentEditModal({
             </Space>
           </Form.Item>
           <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
-            <ServiceSelect allowClear={false} />
+            <ServiceSelect allowClear={false} showPrice />
           </Form.Item>
           <Form.Item name="providerId" label="Преподаватель">
             <UserSelect disabled={Boolean(lockedProviderId)} />
@@ -248,7 +248,7 @@ export function AppointmentCreateModal({
           </Space>
         </Form.Item>
         <Form.Item name="serviceId" label="Услуга" rules={[{ required: true }]}>
-          <ServiceSelect allowClear={false} onResolvedLabelChange={onServiceLabelChange} />
+          <ServiceSelect allowClear={false} showPrice onResolvedLabelChange={onServiceLabelChange} />
         </Form.Item>
         <Form.Item name="providerId" label="Преподаватель">
           <UserSelect disabled={Boolean(lockedProviderId)} onResolvedLabelChange={onProviderLabelChange} />

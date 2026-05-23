@@ -74,6 +74,7 @@ export function PaymentsPage() {
             <div className={filterFieldServiceClassName}>
               <Typography.Text type="secondary">Услуга</Typography.Text>
               <ServiceSelect
+                showPrice
                 value={controller.serviceId}
                 onChange={(value) => {
                   controller.setServiceId(value);
