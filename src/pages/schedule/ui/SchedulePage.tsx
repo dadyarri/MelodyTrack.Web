@@ -17,11 +17,13 @@ import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
+  const weekRangeLabel = formatScheduleWeekRange(controller.weekStart);
 
   return (
     <>
       <PageLayout
         title="Расписание"
+        description={weekRangeLabel}
         customClass={styles.pageShell}
         actions={
           <Space wrap className={styles.headerActions} data-onboarding-id="schedule-header-actions">
@@ -269,4 +271,19 @@ export function SchedulePage() {
       />
     </>
   );
+}
+
+function formatScheduleWeekRange(weekStart: dayjs.Dayjs) {
+  const start = weekStart.startOf("week");
+  const end = weekStart.endOf("week");
+
+  if (start.isSame(end, "month")) {
+    return `${start.format("D")} - ${end.format("D MMMM YYYY")}`;
+  }
+
+  if (start.isSame(end, "year")) {
+    return `${start.format("D MMMM")} - ${end.format("D MMMM YYYY")}`;
+  }
+
+  return `${start.format("D MMMM YYYY")} - ${end.format("D MMMM YYYY")}`;
 }
