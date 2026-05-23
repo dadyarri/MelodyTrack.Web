@@ -1,3 +1,4 @@
+import { AppointmentRescheduleScope } from "@/features/schedule/ScheduleModals";
 import { http } from "./http";
 import type {
   Appointment,
@@ -249,7 +250,7 @@ export const scheduleApi = {
       startDate: string;
       timezone: string;
       status: "planned" | "completed" | "cancelled" | "burned";
-      scope: "single" | "this-and-following" | "all";
+      scope: AppointmentRescheduleScope;
       expectedActivityId: Ulid;
     }>,
   ) {

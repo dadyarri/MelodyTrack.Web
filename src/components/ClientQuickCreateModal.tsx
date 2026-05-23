@@ -72,7 +72,7 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
       message.success(result.offline ? "Клиент сохранен локально" : "Клиент создан");
       form.resetFields();
       replayKeyRef.current = createReplayKey();
-      const createdId = result.offline && isQueuedClientCreate(result.queuedItem) ? result.queuedItem.tempId : result.response.id;
+      const createdId = result.offline && isQueuedClientCreate(result.queuedItem) ? result.queuedItem.tempId : result.response?.id ?? "";
       onCreated({
         id: createdId,
         displayName: formatClientName(values),

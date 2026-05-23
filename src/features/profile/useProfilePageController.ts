@@ -28,7 +28,7 @@ export type AvailabilityFormValues = {
     timeRange?: [Dayjs, Dayjs];
   }>;
   vacations: Array<{
-    period?: [Dayjs, Dayjs];
+    period: [Dayjs, Dayjs];
   }>;
 };
 
