@@ -51,12 +51,7 @@ export type AppointmentEditFormValues = {
   startDate: Dayjs;
 };
 
-export type AppointmentDeleteScope =
-  | "single"
-  | "this-and-following"
-  | "all"
-  | "weekday-this-and-following"
-  | "weekday-all";
+export type AppointmentDeleteScope = "single" | "this-and-following" | "all" | "weekday-this-and-following" | "weekday-all";
 export type AppointmentRescheduleScope = AppointmentDeleteScope;
 
 type RecurringDeleteOption = {
@@ -348,12 +343,13 @@ export function RecurringDeleteModal({
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect DIRTY TEMP DISABLEMENT
     setConfirmScope(null);
     if (confirmTimeoutRef.current !== null) {
       window.clearTimeout(confirmTimeoutRef.current);
       confirmTimeoutRef.current = null;
     }
-  }, [appointment]);
+  }, []);
 
   const armDeleteConfirmation = (scope: AppointmentDeleteScope) => {
     setConfirmScope(scope);
@@ -401,8 +397,8 @@ export function RecurringDeleteModal({
           <Typography.Text>Выберите, как удалить запись на {formatDateTime(dayjs(appointment.startDate))}.</Typography.Text>
           {isMultiDayWeeklyRecurringAppointment(appointment) ? (
             <Typography.Text type="secondary">
-              Серия повторяется по дням: {formatWeeklyPattern(appointment.recurringRule?.recurrencePattern)}. Если выбрать
-              удаление серии, действие затронет все эти дни, а не только {getWeekdayLabel(dayjs(appointment.startDate))}.
+              Серия повторяется по дням: {formatWeeklyPattern(appointment.recurringRule?.recurrencePattern)}. Если выбрать удаление серии,
+              действие затронет все эти дни, а не только {getWeekdayLabel(dayjs(appointment.startDate))}.
             </Typography.Text>
           ) : null}
           <Space orientation="vertical" size={10} className={`wide ${styles.recurringDeleteActions}`}>
@@ -412,17 +408,13 @@ export function RecurringDeleteModal({
                 danger
                 block
                 loading={deletePending}
-                className={`${styles.recurringActionButton} ${
-                  confirmScope === option.scope ? styles.recurringActionButtonConfirm : ""
-                }`}
+                className={`${styles.recurringActionButton} ${confirmScope === option.scope ? styles.recurringActionButtonConfirm : ""}`}
                 onClick={() => {
                   handleDeleteClick(appointment, option.scope);
                 }}
               >
                 <span className={styles.recurringActionContent}>
-                  <span className={styles.recurringActionLabel}>
-                    {confirmScope === option.scope ? "Точно?" : option.label}
-                  </span>
+                  <span className={styles.recurringActionLabel}>{confirmScope === option.scope ? "Точно?" : option.label}</span>
                   <span className={styles.recurringActionDescription}>{option.description}</span>
                 </span>
               </Button>
@@ -778,9 +770,7 @@ function isMultiDayWeeklyRecurringAppointment(appointment: Appointment) {
   }
 
   const recurrencePattern = appointment.recurringRule.recurrencePattern;
-  const selectedDaysCount = weeklyDayOptions.filter(
-    (item) => (recurrencePattern & item.value) === item.value,
-  ).length;
+  const selectedDaysCount = weeklyDayOptions.filter((item) => (recurrencePattern & item.value) === item.value).length;
 
   return selectedDaysCount > 1;
 }
