@@ -345,7 +345,7 @@
 .stackBadge {
   position: absolute;
   top: var(--badge-top);
-  right: -4px;
+  left: -8px;
   z-index: 5;
   min-width: 20px;
   height: 20px;
