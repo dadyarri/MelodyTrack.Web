@@ -47,8 +47,12 @@ const actionLabels: Record<string, string> = {
   appointment_updated: "Встреча обновлена",
   recurring_appointment_detached_and_updated: "Повторяющаяся встреча изменена отдельно",
   appointment_deleted: "Встреча удалена",
+  recurring_appointments_rescheduled: "Вся серия перенесена",
+  recurring_appointments_split_and_rescheduled: "Серия разделена и перенесена",
   appointments_deleted_this_and_following: "Удалены эта и следующие встречи",
   appointments_deleted_all: "Удалена вся серия",
+  appointments_deleted_selected_weekday_this_and_following: "Удалены выбранный день и следующие",
+  appointments_deleted_selected_weekday_all: "Удален выбранный день серии",
 };
 
 function formatAuditLabel(value: string, labels: Record<string, string>) {
