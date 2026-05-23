@@ -13,7 +13,7 @@
     "typecheck": "tsgo --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "full": "biome format . --write && eslint . --fix && biome lint . && tsgo --noEmit && vite build"
+    "full": "biome format . --write && eslint . --fix && biome lint . && tsgo -b && vite build"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.3",
