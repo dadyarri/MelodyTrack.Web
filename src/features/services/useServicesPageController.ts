@@ -27,6 +27,11 @@ type ServicePriceFormValues = {
   price: number;
 };
 
+type ServiceEditFormValues = {
+  name: string;
+  description?: string;
+};
+
 const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
 
 export function useServicesPageController() {
@@ -42,8 +47,10 @@ export function useServicesPageController() {
   const [page, setPage] = useState(1);
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
+  const [editing, setEditing] = useState<Service | null>(null);
   const [pricing, setPricing] = useState<Service | null>(null);
   const [form] = Form.useForm<ServiceDraftValues>();
+  const [editForm] = Form.useForm<ServiceEditFormValues>();
   const [priceForm] = Form.useForm<ServicePriceFormValues>();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
@@ -93,6 +100,25 @@ export function useServicesPageController() {
     onError: showErrors,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: ServiceEditFormValues }) => servicesApi.update(id, values),
+    onSuccess: async () => {
+      message.success("Услуга обновлена");
+      setEditing(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.services.all });
+    },
+    onError: showErrors,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => servicesApi.remove(id),
+    onSuccess: async () => {
+      message.success("Услуга удалена");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.services.all });
+    },
+    onError: showErrors,
+  });
+
   useEffect(() => {
     if (!isCreateOpen) {
       return;
@@ -103,6 +129,18 @@ export function useServicesPageController() {
       form.setFieldsValue(draftValues ?? {});
     });
   }, [form, isCreateOpen, loadDraftValues, withHydration]);
+
+  useEffect(() => {
+    if (!editing) {
+      editForm.resetFields();
+      return;
+    }
+
+    editForm.setFieldsValue({
+      name: editing.name,
+      description: editing.description ?? undefined,
+    });
+  }, [editForm, editing]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -129,15 +167,20 @@ export function useServicesPageController() {
     page,
     setPage,
     query,
+    editing,
+    setEditing,
     pricing,
     setPricing,
     hasCreateDraft,
     isCreateOpen,
     setCreateOpen,
     form,
+    editForm,
     priceForm,
     createMutation,
     priceMutation,
+    updateMutation,
+    deleteMutation,
     handleClearCreateDraft: () => {
       resetStoredDraft(() => {
         form.resetFields();
@@ -155,6 +198,13 @@ export function useServicesPageController() {
       }
 
       priceMutation.mutate({ id: pricing.id, price: values.price });
+    },
+    onEditSubmit: (values: ServiceEditFormValues) => {
+      if (!editing) {
+        return;
+      }
+
+      updateMutation.mutate({ id: editing.id, values });
     },
   };
 }

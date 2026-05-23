@@ -31,6 +31,8 @@ const actionLabels: Record<string, string> = {
   client_updated: "Клиент обновлен",
   client_deleted: "Клиент удален",
   service_created: "Услуга создана",
+  service_updated: "Услуга обновлена",
+  service_deleted: "Услуга удалена",
   service_price_updated: "Цена услуги изменена",
   payment_created: "Платеж создан",
   payment_deleted: "Платеж удален",

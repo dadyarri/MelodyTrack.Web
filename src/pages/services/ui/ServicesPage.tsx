@@ -1,11 +1,12 @@
-import { DollarOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Modal } from "antd";
+import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space } from "antd";
 import { useServicesPageController } from "@/features/services/useServicesPageController";
 import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatMoney } from "@/utils/money";
 
 export function ServicesPage() {
   const controller = useServicesPageController();
+  const { modal } = AntdApp.useApp();
 
   return (
     <PageLayout
@@ -39,20 +40,51 @@ export function ServicesPage() {
               { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
               {
                 title: "",
-                width: 72,
+                width: 132,
                 render: (_, row) => (
-                  <Button
-                    icon={<DollarOutlined />}
-                    disabled={!controller.canManageServices}
-                    onClick={() => {
-                      if (!controller.canManageServices) {
-                        return;
-                      }
+                  <Space>
+                    <Button
+                      icon={<EditOutlined />}
+                      disabled={!controller.canManageServices}
+                      onClick={() => {
+                        if (!controller.canManageServices) {
+                          return;
+                        }
 
-                      controller.setPricing(row);
-                      controller.priceForm.setFieldValue("price", row.price);
-                    }}
-                  />
+                        controller.setEditing(row);
+                      }}
+                    />
+                    <Button
+                      icon={<DollarOutlined />}
+                      disabled={!controller.canManageServices}
+                      onClick={() => {
+                        if (!controller.canManageServices) {
+                          return;
+                        }
+
+                        controller.setPricing(row);
+                        controller.priceForm.setFieldValue("price", row.price);
+                      }}
+                    />
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      disabled={!controller.canManageServices}
+                      onClick={() => {
+                        if (!controller.canManageServices) {
+                          return;
+                        }
+
+                        modal.confirm({
+                          title: "Удалить услугу?",
+                          content: "Услуга будет удалена только если она еще не использовалась в расписании или платежах.",
+                          onOk: () => {
+                            controller.deleteMutation.mutate(row.id);
+                          },
+                        });
+                      }}
+                    />
+                  </Space>
                 ),
               },
             ]}
@@ -90,6 +122,26 @@ export function ServicesPage() {
           </Form.Item>
         </Form>
       </DraftFormModal>
+      <Modal
+        open={controller.canManageServices && Boolean(controller.editing)}
+        title="Редактировать услугу"
+        onCancel={() => {
+          controller.setEditing(null);
+        }}
+        onOk={() => {
+          controller.editForm.submit();
+        }}
+        confirmLoading={controller.updateMutation.isPending}
+      >
+        <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
+          <Form.Item name="name" label="Название" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="description" label="Описание">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         open={controller.canManageServices && Boolean(controller.pricing)}
         title="Обновить цену"

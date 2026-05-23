@@ -125,8 +125,14 @@ export const servicesApi = {
   create(input: { name: string; description?: string; price: number }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
+  update(id: Ulid, input: { name: string; description?: string }) {
+    return http.put<unknown>(`/services/${id}`, input).then(() => undefined);
+  },
   updatePrice(id: Ulid, price: number) {
     return http.patch<unknown>(`/services/${id}/price`, { price }).then(() => undefined);
+  },
+  remove(id: Ulid) {
+    return http.delete<unknown>(`/services/${id}`).then(() => undefined);
   },
 };
 
