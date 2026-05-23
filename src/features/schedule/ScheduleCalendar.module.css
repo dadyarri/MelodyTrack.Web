@@ -9,6 +9,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .desktop {
@@ -22,12 +23,46 @@
   position: relative;
 }
 
+.scrollIndicator {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+}
+
+.scrollIndicator span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-card) 78%, var(--accent));
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border-main));
+  box-shadow: var(--shadow-soft);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+
+.scrollIndicatorTop {
+  top: 82px;
+}
+
+.scrollIndicatorBottom {
+  bottom: 12px;
+}
+
 .header {
   display: grid;
   min-width: max-content;
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 8;
   background: var(--bg-card);
   border-bottom: 1px solid var(--border-main);
 }
@@ -35,7 +70,7 @@
 .corner {
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 9;
   background: var(--bg-card);
   border-right: 1px solid var(--border-soft);
 }
@@ -82,7 +117,7 @@
 .timeRail {
   position: sticky;
   left: 0;
-  z-index: 3;
+  z-index: 7;
   border-right: 1px solid var(--border-soft);
   background: var(--bg-elevated);
 }
@@ -522,6 +557,10 @@
 }
 
 @media (max-width: 720px) {
+  .scrollIndicator {
+    display: none;
+  }
+
   .desktop {
     display: none;
   }

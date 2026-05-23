@@ -1,7 +1,7 @@
 import { SyncOutlined } from "@ant-design/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { type CSSProperties, type DragEvent, useState } from "react";
+import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Appointment, UserAvailability } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
@@ -41,9 +41,91 @@ export function AppointmentsCalendar({
   const appointmentsByDay = groupAppointmentsByDay(appointments);
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
+  const desktopScrollRef = useRef<HTMLDivElement | null>(null);
+  const desktopHeaderRef = useRef<HTMLDivElement | null>(null);
+  const desktopGridRef = useRef<HTMLDivElement | null>(null);
+  const [hasHiddenAppointmentsAbove, setHasHiddenAppointmentsAbove] = useState(false);
+  const [hasHiddenAppointmentsBelow, setHasHiddenAppointmentsBelow] = useState(false);
   const draggedAppointment = draggedAppointmentId
     ? (appointments.find((appointment) => appointment.id === draggedAppointmentId) ?? null)
     : null;
+
+  const updateScrollIndicators = useEffectEvent(() => {
+    const container = desktopScrollRef.current;
+    const header = desktopHeaderRef.current;
+    if (!container || !header) {
+      return;
+    }
+
+    const entries = container.querySelectorAll<HTMLElement>("[data-schedule-entry='desktop']");
+    if (entries.length === 0) {
+      setHasHiddenAppointmentsAbove(false);
+      setHasHiddenAppointmentsBelow(false);
+      return;
+    }
+
+    const containerRect = container.getBoundingClientRect();
+    const headerRect = header.getBoundingClientRect();
+    const visibleTop = headerRect.bottom;
+    const visibleBottom = containerRect.bottom;
+
+    let nextHasHiddenAbove = false;
+    let nextHasHiddenBelow = false;
+
+    for (const entry of entries) {
+      const entryRect = entry.getBoundingClientRect();
+      if (entryRect.top < visibleTop - 4) {
+        nextHasHiddenAbove = true;
+      }
+
+      if (entryRect.bottom > visibleBottom + 4) {
+        nextHasHiddenBelow = true;
+      }
+
+      if (nextHasHiddenAbove && nextHasHiddenBelow) {
+        break;
+      }
+    }
+
+    setHasHiddenAppointmentsAbove(nextHasHiddenAbove);
+    setHasHiddenAppointmentsBelow(nextHasHiddenBelow);
+  });
+
+  useEffect(() => {
+    const container = desktopScrollRef.current;
+    if (!container) {
+      return;
+    }
+
+    updateScrollIndicators();
+    container.addEventListener("scroll", updateScrollIndicators, { passive: true });
+    window.addEventListener("resize", updateScrollIndicators);
+    const resizeObserver = new ResizeObserver(() => {
+      updateScrollIndicators();
+    });
+    resizeObserver.observe(container);
+    const header = desktopHeaderRef.current;
+    if (header) {
+      resizeObserver.observe(header);
+    }
+    const grid = desktopGridRef.current;
+    if (grid) {
+      resizeObserver.observe(grid);
+    }
+    const mutationObserver = new MutationObserver(() => {
+      updateScrollIndicators();
+    });
+    if (grid) {
+      mutationObserver.observe(grid, { childList: true, subtree: true, attributes: true });
+    }
+
+    return () => {
+      container.removeEventListener("scroll", updateScrollIndicators);
+      window.removeEventListener("resize", updateScrollIndicators);
+      resizeObserver.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, []);
 
   const handleAppointmentDragStart = (appointment: Appointment) => {
     if (reschedulePendingAppointmentId) {
@@ -116,8 +198,22 @@ export function AppointmentsCalendar({
 
   return (
     <section className={`${styles.calendar}${draggedAppointmentId ? ` ${styles.dragActive}` : ""}`} aria-busy={loading}>
-      <div className={styles.desktop}>
-        <div className={styles.header} style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}>
+      {hasHiddenAppointmentsAbove ? (
+        <div className={`${styles.scrollIndicator} ${styles.scrollIndicatorTop}`}>
+          <span>Есть записи выше</span>
+        </div>
+      ) : null}
+      {hasHiddenAppointmentsBelow ? (
+        <div className={`${styles.scrollIndicator} ${styles.scrollIndicatorBottom}`}>
+          <span>Есть записи ниже</span>
+        </div>
+      ) : null}
+      <div className={styles.desktop} ref={desktopScrollRef}>
+        <div
+          className={styles.header}
+          ref={desktopHeaderRef}
+          style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}
+        >
           <div className={styles.corner} />
           {days.map((day) => (
             <div
@@ -130,6 +226,7 @@ export function AppointmentsCalendar({
           ))}
         </div>
         <div
+          ref={desktopGridRef}
           className={styles.grid}
           style={{
             gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))`,
@@ -273,6 +370,7 @@ function AppointmentStack({
         <button
           type="button"
           className={`${styles.entry} ${styles.event} ${styles.eventStacked} ${styles.entryDraggable} ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? ` ${styles.entrySelected}` : ""}${item.id === reschedulePendingAppointmentId ? ` ${styles.entryDragDisabled}` : ""}`}
+          data-schedule-entry="desktop"
           draggable={reschedulePendingAppointmentId === null}
           style={
             {
