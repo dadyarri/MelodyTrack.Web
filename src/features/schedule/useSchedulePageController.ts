@@ -12,7 +12,12 @@ import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRou
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { useAuth } from "@/features/auth/useAuth";
-import type { AppointmentDeleteScope, AppointmentEditFormValues, AppointmentFormValues } from "@/features/schedule/ScheduleModals";
+import type {
+  AppointmentDeleteScope,
+  AppointmentEditFormValues,
+  AppointmentFormValues,
+  AppointmentRescheduleScope,
+} from "@/features/schedule/ScheduleModals";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
@@ -48,6 +53,9 @@ export function useSchedulePageController() {
   const [appointmentToEditBaselineActivityId, setAppointmentToEditBaselineActivityId] = useState<Ulid | null | undefined>();
   const [appointmentToDelete, setAppointmentToDelete] = useState<Appointment | null>(null);
   const [appointmentToDeleteBaselineActivityId, setAppointmentToDeleteBaselineActivityId] = useState<Ulid | null | undefined>();
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<Appointment | null>(null);
+  const [appointmentToRescheduleStartDate, setAppointmentToRescheduleStartDate] = useState<Dayjs | null>(null);
+  const [appointmentToRescheduleBaselineActivityId, setAppointmentToRescheduleBaselineActivityId] = useState<Ulid | null | undefined>();
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const createdClientOptions = useCreatedReferenceOptions("client");
   const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
@@ -134,7 +142,9 @@ export function useSchedulePageController() {
   const query = useQuery({
     queryKey: queryKeys.schedule.appointments(range[0].toISOString(), range[1].toISOString()),
     queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
-    refetchInterval: getBackgroundRefetchInterval(Boolean(selectedAppointment || appointmentToEdit || appointmentToDelete)),
+    refetchInterval: getBackgroundRefetchInterval(
+      Boolean(selectedAppointment || appointmentToEdit || appointmentToDelete || appointmentToReschedule),
+    ),
   });
   const recurrenceTypesQuery = useQuery({
     queryKey: queryKeys.schedule.recurrenceTypes,
@@ -169,6 +179,9 @@ export function useSchedulePageController() {
   const currentDeletingAppointment = appointmentToDelete
     ? ((query.data ?? []).find((item) => item.id === appointmentToDelete.id) ?? appointmentToDelete)
     : null;
+  const currentReschedulingAppointment = appointmentToReschedule
+    ? ((query.data ?? []).find((item) => item.id === appointmentToReschedule.id) ?? appointmentToReschedule)
+    : null;
   const isSelectedAppointmentStale = currentSelectedAppointment
     ? isActivityStale(currentSelectedAppointment.lastActivity?.id, selectedAppointmentBaselineActivityId)
     : false;
@@ -178,12 +191,15 @@ export function useSchedulePageController() {
   const isDeletingAppointmentStale = currentDeletingAppointment
     ? isActivityStale(currentDeletingAppointment.lastActivity?.id, appointmentToDeleteBaselineActivityId)
     : false;
+  const isReschedulingAppointmentStale = currentReschedulingAppointment
+    ? isActivityStale(currentReschedulingAppointment.lastActivity?.id, appointmentToRescheduleBaselineActivityId)
+    : false;
 
   const syncAppointmentBaseline = useCallback(
     (appointmentId: Ulid) => {
       const freshAppointment = findItemInQueryData(
         queryClient,
-        queryKeys.schedule.all,
+        queryKeys.schedule.appointmentsAll,
         (data) => data as Appointment[] | undefined,
         appointmentId,
       );
@@ -205,8 +221,13 @@ export function useSchedulePageController() {
         setAppointmentToDelete(freshAppointment);
         setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
       }
+
+      if (appointmentToReschedule?.id === appointmentId) {
+        setAppointmentToReschedule(freshAppointment);
+        setAppointmentToRescheduleBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+      }
     },
-    [appointmentToDelete?.id, appointmentToEdit?.id, queryClient, selectedAppointment?.id],
+    [appointmentToDelete?.id, appointmentToEdit?.id, appointmentToReschedule?.id, queryClient, selectedAppointment?.id],
   );
 
   const createMutation = useMutation({
@@ -229,7 +250,7 @@ export function useSchedulePageController() {
     onSuccess: async (result) => {
       message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
       if (result.offline) {
-        queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.all }, (current) => {
+        queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.appointmentsAll }, (current) => {
           if (!current) {
             return current;
           }
@@ -249,7 +270,7 @@ export function useSchedulePageController() {
       closeCreateModal();
       resetStoredDraft();
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+        await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
       }
     },
     onError: showErrors,
@@ -268,12 +289,12 @@ export function useSchedulePageController() {
           : appointment;
 
       setSelectedAppointment((current) => (current ? nextState(current) : current));
-      queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.all }, (current) => {
+      queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.appointmentsAll }, (current) => {
         return current ? current.map(nextState) : current;
       });
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
       syncAppointmentBaseline(variables.id);
     },
     onError: async (error, variables) => {
@@ -281,7 +302,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.all,
+        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Повторить поверх новой версии",
@@ -292,7 +313,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.all,
+            queryKeys.schedule.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );
@@ -322,7 +343,7 @@ export function useSchedulePageController() {
       message.success("Запись обновлена");
       setAppointmentToEdit(null);
       setAppointmentToEditBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
     },
     onError: async (error, variables) => {
       if (!appointmentToEdit) {
@@ -334,7 +355,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.all,
+        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перезаписать",
@@ -344,8 +365,12 @@ export function useSchedulePageController() {
         },
         onReload: () => {
           const freshAppointment =
-            findItemInQueryData(queryClient, queryKeys.schedule.all, (data) => data as Appointment[] | undefined, appointmentToEdit.id) ??
-            currentEditingAppointment;
+            findItemInQueryData(
+              queryClient,
+              queryKeys.schedule.appointmentsAll,
+              (data) => data as Appointment[] | undefined,
+              appointmentToEdit.id,
+            ) ?? currentEditingAppointment;
           if (!freshAppointment) {
             return;
           }
@@ -367,15 +392,18 @@ export function useSchedulePageController() {
     mutationFn: ({
       appointment,
       startDate,
+      scope,
       expectedActivityId,
     }: {
       appointment: Appointment;
       startDate: Dayjs;
+      scope?: AppointmentRescheduleScope;
       expectedActivityId?: Ulid;
     }) => {
       return scheduleApi.update(appointment.id, {
         startDate: startDate.toISOString(),
         timezone,
+        scope,
         expectedActivityId,
       });
     },
@@ -397,7 +425,13 @@ export function useSchedulePageController() {
         setAppointmentToDeleteBaselineActivityId(undefined);
       }
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+      if (appointmentToReschedule?.id === variables.appointment.id) {
+        setAppointmentToReschedule(null);
+        setAppointmentToRescheduleStartDate(null);
+        setAppointmentToRescheduleBaselineActivityId(undefined);
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
       syncAppointmentBaseline(variables.appointment.id);
     },
     onError: async (error, variables) => {
@@ -405,7 +439,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.all,
+        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перенести поверх новой версии",
@@ -416,7 +450,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.all,
+            queryKeys.schedule.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.appointment.id,
           );
@@ -438,6 +472,12 @@ export function useSchedulePageController() {
             setAppointmentToDelete(freshAppointment);
             setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
           }
+
+          if (appointmentToReschedule?.id === variables.appointment.id) {
+            setAppointmentToReschedule(freshAppointment);
+            setAppointmentToRescheduleStartDate(variables.startDate);
+            setAppointmentToRescheduleBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+          }
         },
       });
     },
@@ -453,14 +493,14 @@ export function useSchedulePageController() {
       setSelectedAppointmentBaselineActivityId(undefined);
       setAppointmentToDelete(null);
       setAppointmentToDeleteBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.all,
+        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Удалить все равно",
@@ -471,7 +511,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.all,
+            queryKeys.schedule.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );
@@ -578,9 +618,12 @@ export function useSchedulePageController() {
     currentSelectedAppointment,
     currentEditingAppointment,
     currentDeletingAppointment,
+    currentReschedulingAppointment,
+    appointmentToRescheduleStartDate,
     isSelectedAppointmentStale,
     isEditingAppointmentStale,
     isDeletingAppointmentStale,
+    isReschedulingAppointmentStale,
     selectedAppointment,
     selectedAppointmentBaselineActivityId,
     appointmentToEdit,
@@ -614,6 +657,9 @@ export function useSchedulePageController() {
     setAppointmentToEditBaselineActivityId,
     setAppointmentToDelete,
     setAppointmentToDeleteBaselineActivityId,
+    setAppointmentToReschedule,
+    setAppointmentToRescheduleStartDate,
+    setAppointmentToRescheduleBaselineActivityId,
     setCreateClientLabel,
     setCreateServiceLabel,
     setCreateProviderLabel,

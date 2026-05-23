@@ -106,7 +106,7 @@ export function OfflineQueueSync() {
           queryClient.invalidateQueries({ queryKey: queryKeys.services.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.schedule.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll }),
           queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
         ]);
       }

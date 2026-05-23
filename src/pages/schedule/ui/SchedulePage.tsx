@@ -8,6 +8,7 @@ import {
   AppointmentDetailsModal,
   AppointmentEditModal,
   RecurringDeleteModal,
+  RecurringRescheduleModal,
 } from "@/features/schedule/ScheduleModals";
 import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
 import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
@@ -101,10 +102,23 @@ export function SchedulePage() {
               canCreateAppointments={controller.canCreateAppointments}
               loading={controller.query.isLoading}
               onReschedule={(appointment, startDate) => {
-                controller.rescheduleMutation.mutate({
-                  appointment,
-                  startDate,
-                  expectedActivityId: appointment.lastActivity?.id,
+                if (appointment.recurringRule) {
+                  controller.setAppointmentToReschedule(appointment);
+                  controller.setAppointmentToRescheduleStartDate(startDate);
+                  controller.setAppointmentToRescheduleBaselineActivityId(appointment.lastActivity?.id ?? null);
+                  return;
+                }
+
+                controller.modal.confirm({
+                  title: "Перенести запись?",
+                  content: `Перенести запись на ${startDate.format("DD.MM.YYYY HH:mm")}?`,
+                  onOk: () => {
+                    controller.rescheduleMutation.mutate({
+                      appointment,
+                      startDate,
+                      expectedActivityId: appointment.lastActivity?.id,
+                    });
+                  },
                 });
               }}
               range={[controller.weekStart, controller.weekStart.endOf("week")]}
@@ -174,6 +188,25 @@ export function SchedulePage() {
             id: appointment.id,
             scope,
             expectedActivityId: controller.appointmentToDeleteBaselineActivityId ?? undefined,
+          });
+        }}
+      />
+      <RecurringRescheduleModal
+        appointment={controller.currentReschedulingAppointment}
+        nextStartDate={controller.appointmentToRescheduleStartDate}
+        reschedulePending={controller.rescheduleMutation.isPending}
+        isStale={controller.isReschedulingAppointmentStale}
+        onCancel={() => {
+          controller.setAppointmentToReschedule(null);
+          controller.setAppointmentToRescheduleStartDate(null);
+          controller.setAppointmentToRescheduleBaselineActivityId(undefined);
+        }}
+        onReschedule={(appointment, startDate, scope) => {
+          controller.rescheduleMutation.mutate({
+            appointment,
+            startDate,
+            scope,
+            expectedActivityId: controller.currentReschedulingAppointment?.lastActivity?.id ?? undefined,
           });
         }}
       />

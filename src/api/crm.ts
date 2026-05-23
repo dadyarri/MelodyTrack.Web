@@ -243,6 +243,7 @@ export const scheduleApi = {
       startDate: string;
       timezone: string;
       status: "planned" | "completed" | "cancelled" | "burned";
+      scope: "single" | "this-and-following" | "all";
       expectedActivityId: Ulid;
     }>,
   ) {

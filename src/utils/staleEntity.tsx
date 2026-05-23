@@ -105,7 +105,12 @@ export function findItemInQueryData<TItem extends { id: Ulid }>(
 ) {
   const queryData = queryClient.getQueriesData({ queryKey });
   for (const [, data] of queryData) {
-    const item = getItems(data)?.find((entry) => entry.id === id);
+    const items = getItems(data);
+    if (!Array.isArray(items)) {
+      continue;
+    }
+
+    const item = items.find((entry) => entry.id === id);
     if (item) {
       return item;
     }

@@ -177,12 +177,12 @@
 }
 
 .entry {
-  --schedule-entry-border: color-mix(in srgb, var(--service-border, #b89755) 74%, var(--border-main));
-  --schedule-entry-background: color-mix(in srgb, var(--service-background, #b89755) 28%, var(--bg-card));
+  --schedule-entry-border: #4e8fc8;
+  --schedule-entry-background: linear-gradient(180deg, rgba(132, 182, 234, 0.32), rgba(78, 143, 200, 0.18));
   --schedule-entry-shadow: 0 4px 10px rgba(72, 52, 27, 0.12);
   --schedule-entry-icon-background: rgba(255, 255, 255, 0.68);
   --schedule-entry-icon-color: var(--text-main);
-  --schedule-entry-selected-ring: color-mix(in srgb, var(--service-border, #b89755) 54%, var(--accent));
+  --schedule-entry-selected-ring: rgba(78, 143, 200, 0.72);
   padding: 7px;
   display: flex;
   flex-direction: column;
@@ -321,44 +321,37 @@
 }
 
 .eventPlanned {
-  --schedule-entry-border: color-mix(in srgb, var(--service-border, #b8860b) 78%, var(--border-main));
-  --schedule-entry-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--service-background, #b8860b) 30%, var(--bg-card)),
-    color-mix(in srgb, var(--service-background, #b8860b) 22%, var(--bg-card))
-  );
+  --schedule-entry-border: #4e8fc8;
+  --schedule-entry-background: linear-gradient(180deg, rgba(132, 182, 234, 0.32), rgba(78, 143, 200, 0.18));
+  --schedule-entry-selected-ring: rgba(78, 143, 200, 0.72);
+  --schedule-entry-icon-color: #2f6f9f;
 }
 
 .eventCompleted {
-  --schedule-entry-border: color-mix(in srgb, var(--service-border, #5f8f4d) 70%, var(--border-main));
-  --schedule-entry-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--service-background, #5f8f4d) 24%, var(--bg-card)),
-    color-mix(in srgb, var(--service-background, #5f8f4d) 16%, var(--bg-card))
-  );
-  --schedule-entry-icon-color: #3e7a31;
+  --schedule-entry-border: #4f8b57;
+  --schedule-entry-background: linear-gradient(180deg, rgba(123, 181, 113, 0.32), rgba(96, 155, 88, 0.18));
+  --schedule-entry-selected-ring: rgba(79, 139, 87, 0.72);
+  --schedule-entry-icon-color: #2f6a39;
 }
 
 .eventCanceled {
-  --schedule-entry-border: color-mix(in srgb, var(--service-border, #bd6b62) 74%, var(--border-main));
+  --schedule-entry-border: #b35d63;
   --schedule-entry-background: repeating-linear-gradient(
     135deg,
-    color-mix(in srgb, var(--service-background, #bd6b62) 24%, var(--bg-card)),
-    color-mix(in srgb, var(--service-background, #bd6b62) 24%, var(--bg-card)) 8px,
-    color-mix(in srgb, var(--service-background, #bd6b62) 34%, var(--bg-card)) 8px,
-    color-mix(in srgb, var(--service-background, #bd6b62) 34%, var(--bg-card)) 16px
+    rgba(217, 138, 160, 0.26),
+    rgba(217, 138, 160, 0.26) 8px,
+    rgba(195, 107, 120, 0.34) 8px,
+    rgba(195, 107, 120, 0.34) 16px
   );
-  --schedule-entry-icon-color: #a33f36;
+  --schedule-entry-selected-ring: rgba(179, 93, 99, 0.72);
+  --schedule-entry-icon-color: #8d3941;
 }
 
 .eventBurned {
-  --schedule-entry-border: color-mix(in srgb, var(--service-border, #d97706) 76%, var(--border-main));
-  --schedule-entry-background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--service-background, #d97706) 28%, var(--bg-card)),
-    color-mix(in srgb, var(--service-background, #d97706) 20%, var(--bg-card))
-  );
-  --schedule-entry-icon-color: #b45309;
+  --schedule-entry-border: #d97706;
+  --schedule-entry-background: linear-gradient(180deg, rgba(251, 191, 36, 0.3), rgba(217, 119, 6, 0.18));
+  --schedule-entry-selected-ring: rgba(217, 119, 6, 0.72);
+  --schedule-entry-icon-color: #a24d08;
 }
 
 .eventContent {

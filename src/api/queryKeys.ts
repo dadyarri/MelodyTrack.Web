@@ -79,6 +79,7 @@ export const queryKeys = {
   },
   schedule: {
     all: ["schedule"] as const,
+    appointmentsAll: ["schedule", "appointments"] as const,
     appointments: (startDateIso: string, endDateIso: string) => ["schedule", "appointments", startDateIso, endDateIso] as const,
     recurrenceTypes: ["schedule", "recurrenceTypes"] as const,
     availability: (userId?: string) => ["schedule", "availability", formatDateKey(userId)] as const,

@@ -5,21 +5,13 @@ import { type CSSProperties, type DragEvent, useState } from "react";
 import type { Appointment, UserAvailability } from "../../api/types";
 import { formatDate, TIME_FORMAT } from "../../utils/date";
 import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
-import { getAppointmentStatusLabel, renderAppointmentStatusIcon } from "./appointmentStatus";
+import { getAppointmentStatusColorVars, getAppointmentStatusLabel, renderAppointmentStatusIcon } from "./appointmentStatus";
 import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;
 const defaultEndHour = 20;
 const hourHeight = 72;
 const stackOffset = 8;
-const serviceColors = [
-  { background: "#84b6ea", border: "#4e8fc8" },
-  { background: "#d8b35a", border: "#b8860b" },
-  { background: "#7cb071", border: "#5f8f4d" },
-  { background: "#9a84dc", border: "#7b61c8" },
-  { background: "#d98aa0", border: "#c85f7d" },
-  { background: "#6eb79e", border: "#3f9b7c" },
-];
 
 export function AppointmentsCalendar({
   appointments,
@@ -287,7 +279,7 @@ function AppointmentStack({
               "--stack-index": String(index),
               "--stack-top": `${String(index * stackOffset)}px`,
               "--stack-card-height": `${String(cardHeight)}px`,
-              ...getServiceColorVars(item),
+              ...getAppointmentStatusColorVars(item.status),
             } as CSSProperties
           }
           key={item.id}
@@ -326,7 +318,7 @@ function AppointmentAgendaItem({
     <button
       type="button"
       className={`${styles.entry} ${styles.agendaItem} ${getAppointmentClassName(appointment)}${isSelected ? ` ${styles.entrySelected}` : ""}`}
-      style={getServiceColorVars(appointment) as CSSProperties}
+      style={getAppointmentStatusColorVars(appointment.status)}
       onClick={() => {
         onSelect(appointment);
       }}
@@ -471,22 +463,6 @@ function getAppointmentStatusRank(appointment: Appointment) {
     default:
       return 4;
   }
-}
-
-function getServiceColorVars(appointment: Appointment) {
-  const color = serviceColors[getStableColorIndex(appointment.service.name, serviceColors.length)];
-  return {
-    "--service-background": color.background,
-    "--service-border": color.border,
-  };
-}
-
-function getStableColorIndex(value: string, modulo: number) {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) % modulo;
-  }
-  return hash;
 }
 
 function getDropHour(event: DragEvent<HTMLDivElement>, startHour: number, endHour: number) {

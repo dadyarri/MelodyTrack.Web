@@ -50,6 +50,7 @@ export type AppointmentEditFormValues = {
 };
 
 export type AppointmentDeleteScope = "single" | "this-and-following" | "all";
+export type AppointmentRescheduleScope = AppointmentDeleteScope;
 
 export function AppointmentEditModal({
   appointment,
@@ -357,6 +358,79 @@ export function RecurringDeleteModal({
               Все записи
             </Button>
             <Button block disabled={deletePending} onClick={onCancel}>
+              Отмена
+            </Button>
+          </Space>
+        </Space>
+      ) : null}
+    </Modal>
+  );
+}
+
+export function RecurringRescheduleModal({
+  appointment,
+  nextStartDate,
+  reschedulePending,
+  isStale,
+  onCancel,
+  onReschedule,
+}: {
+  appointment: Appointment | null;
+  nextStartDate: Dayjs | null;
+  reschedulePending: boolean;
+  isStale: boolean;
+  onCancel: () => void;
+  onReschedule: (appointment: Appointment, nextStartDate: Dayjs, scope: AppointmentRescheduleScope) => void;
+}) {
+  return (
+    <Modal
+      open={appointment !== null && nextStartDate !== null}
+      title="Перенести повторяющуюся запись"
+      onCancel={reschedulePending ? undefined : onCancel}
+      footer={null}
+      destroyOnHidden
+    >
+      {appointment && nextStartDate ? (
+        <Space orientation="vertical" size={16} className="wide">
+          {isStale ? (
+            <StatusBanner
+              type="warning"
+              title="Запись изменилась в другом окне"
+              description={formatRecordActivitySummary(appointment.lastActivity)}
+            />
+          ) : null}
+          <Typography.Text>
+            Выберите, как перенести запись с {formatDateTime(dayjs(appointment.startDate))} на {formatDateTime(nextStartDate)}.
+          </Typography.Text>
+          <Space orientation="vertical" size={10} className={`wide ${styles.recurringDeleteActions}`}>
+            <Button
+              block
+              loading={reschedulePending}
+              onClick={() => {
+                onReschedule(appointment, nextStartDate, "single");
+              }}
+            >
+              Только эту запись
+            </Button>
+            <Button
+              block
+              loading={reschedulePending}
+              onClick={() => {
+                onReschedule(appointment, nextStartDate, "this-and-following");
+              }}
+            >
+              Эту и следующие
+            </Button>
+            <Button
+              block
+              loading={reschedulePending}
+              onClick={() => {
+                onReschedule(appointment, nextStartDate, "all");
+              }}
+            >
+              Все записи
+            </Button>
+            <Button block disabled={reschedulePending} onClick={onCancel}>
               Отмена
             </Button>
           </Space>
