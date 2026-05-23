@@ -15,6 +15,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { type ReactNode, useEffect } from "react";
 import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
+import { getPhoneUri } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import type { Appointment, AppointmentStatus, RecurrenceType } from "../../api/types";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
@@ -487,7 +488,7 @@ export function AppointmentDetailsModal({
                 <Button
                   shape="circle"
                   icon={<PhoneOutlined />}
-                  href={`tel:${appointment.client.contacts.phone}`}
+                  href={getPhoneUri(appointment.client.contacts.phone)}
                   title={appointment.client.contacts.phone}
                 />
               ) : null}

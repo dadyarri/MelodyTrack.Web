@@ -2,7 +2,7 @@ import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@an
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { Appointment } from "@/api/types";
-import { ClientHistoryDrawer } from "@/entities/client";
+import { ClientHistoryDrawer, getPhoneUri } from "@/entities/client";
 import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
@@ -179,7 +179,7 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
                 shape="circle"
                 size="small"
                 icon={<PhoneOutlined />}
-                href={`tel:${appointment.client.contacts.phone}`}
+                href={getPhoneUri(appointment.client.contacts.phone)}
                 title={appointment.client.contacts.phone}
               />
             ) : null}
