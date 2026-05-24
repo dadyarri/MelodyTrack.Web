@@ -85,6 +85,10 @@
   gap: 4px;
   border-right: 1px solid var(--border-soft);
   color: var(--text-muted);
+  position: relative;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
 }
 
 .dayHeading span {
@@ -105,6 +109,19 @@
 .dayHeadingToday strong {
   background: var(--accent);
   color: #fff7e8;
+}
+
+.dayHeadingActive {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+  color: var(--text-main);
+}
+
+.dayHeadingActive::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: color-mix(in srgb, var(--accent) 78%, white 8%);
 }
 
 .grid {
@@ -130,6 +147,15 @@
   font-size: 12px;
   border-bottom: 1px solid var(--border-soft-alt);
   background: var(--bg-elevated);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.timeSlotActive {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
+  color: var(--text-main);
+  font-weight: 700;
 }
 
 .dayColumn {
@@ -186,23 +212,38 @@
   z-index: 1;
 }
 
-.hourSlotGhostTime {
+.hourSlotHighlight {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: calc(72px * 0.32);
-  font-weight: 600;
-  line-height: 1;
-  color: color-mix(in srgb, var(--text-main) 12%, transparent);
+  opacity: 0;
   pointer-events: none;
-  user-select: none;
+  transition: opacity 0.16s ease;
+}
+
+.hourSlotHighlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
+}
+
+.hourSlotHighlight::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: color-mix(in srgb, var(--accent) 76%, white 8%);
 }
 
 .hourSlotButton:hover,
 .hourSlotButton:focus-visible {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   outline: none;
+}
+
+.hourSlotButton:hover .hourSlotHighlight,
+.hourSlotButton:focus-visible .hourSlotHighlight {
+  opacity: 1;
 }
 
 .hourSlotDropTarget {

@@ -45,6 +45,7 @@ export function AppointmentsCalendar({
   const appointmentsByDay = groupAppointmentsByDay(appointments);
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
+  const [hoveredSlot, setHoveredSlot] = useState<{ dayKey: string; hour: number } | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
   const desktopHeaderRef = useRef<HTMLDivElement | null>(null);
   const desktopGridRef = useRef<HTMLDivElement | null>(null);
@@ -221,7 +222,7 @@ export function AppointmentsCalendar({
           <div className={styles.corner} />
           {days.map((day) => (
             <div
-              className={day.isSame(dayjs(), "day") ? `${styles.dayHeading} ${styles.dayHeadingToday}` : styles.dayHeading}
+              className={`${day.isSame(dayjs(), "day") ? `${styles.dayHeading} ${styles.dayHeadingToday}` : styles.dayHeading}${hoveredSlot?.dayKey === day.format("YYYY-MM-DD") ? ` ${styles.dayHeadingActive}` : ""}`}
               key={day.format("YYYY-MM-DD")}
             >
               <span>{formatWeekday(day)}</span>
@@ -239,7 +240,7 @@ export function AppointmentsCalendar({
         >
           <div className={styles.timeRail}>
             {hours.map((hour) => (
-              <div className={styles.timeSlot} key={hour}>
+              <div className={`${styles.timeSlot}${hoveredSlot?.hour === hour ? ` ${styles.timeSlotActive}` : ""}`} key={hour}>
                 {`${hour.toString().padStart(2, "0")}:00`}
               </div>
             ))}
@@ -273,13 +274,23 @@ export function AppointmentsCalendar({
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
                   disabled={!(canCreateAppointments && isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)))}
+                  onBlur={() => {
+                    setHoveredSlot((current) => (current?.dayKey === day.format("YYYY-MM-DD") && current.hour === hour ? null : current));
+                  }}
                   onClick={() => {
                     onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
                   }}
+                  onFocus={() => {
+                    setHoveredSlot({ dayKey: day.format("YYYY-MM-DD"), hour });
+                  }}
+                  onMouseEnter={() => {
+                    setHoveredSlot({ dayKey: day.format("YYYY-MM-DD"), hour });
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredSlot((current) => (current?.dayKey === day.format("YYYY-MM-DD") && current.hour === hour ? null : current));
+                  }}
                 >
-                  <span aria-hidden="true" className={styles.hourSlotGhostTime}>
-                    {hour.toString().padStart(2, "0")}:00
-                  </span>
+                  <span className={styles.hourSlotHighlight} aria-hidden="true" />
                 </button>
               ))}
               {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
