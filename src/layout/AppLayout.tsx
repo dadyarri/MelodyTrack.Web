@@ -1,10 +1,21 @@
-import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  FileSearchOutlined,
+  LeftOutlined,
+  LogoutOutlined,
+  MenuOutlined,
+  MoonOutlined,
+  RightOutlined,
+  SettingOutlined,
+  SunOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { recoverableImport } from "../app/chunkLoadRecovery";
 import { useTheme } from "../app/useTheme";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
+import { hasSuperuserAccess } from "../features/auth/access";
 import { useAuth } from "../features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
 import { getAvailableNavItems } from "./navigation";
@@ -23,17 +34,32 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const availableNavItems = getAvailableNavItems(auth.user);
-  const menuItems = buildNavMenuItems(availableNavItems);
-  const mobileActionItems = buildShellActionItems({ isDarkMode: mode === "dark" });
+  const canViewAudit = hasSuperuserAccess(auth.user);
+  const menuItems = buildNavMenuItems(availableNavItems, {
+    showShortcuts: true,
+    groupedPopupLabels: !desktopNavOpen,
+    submenuPopupClassName: !desktopNavOpen ? styles.desktopNavSubmenuPopup : undefined,
+  });
+  const mobileMenuItems = buildNavMenuItems(availableNavItems, {
+    showShortcuts: false,
+  });
+  const mobileActionItems = buildShellActionItems({ canViewAudit, isDarkMode: mode === "dark" });
   const mobileDrawerActionItems = [
     { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
+    ...(canViewAudit ? [{ key: "audit", icon: <FileSearchOutlined />, label: "Аудит" }] : []),
     { key: "theme", icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />, label: mode === "dark" ? "Светлая тема" : "Темная тема" },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
   ];
   const handleUserAction = (key: ShellActionKey) => {
     if (key === "profile") {
       void navigate("/profile");
+      return;
+    }
+
+    if (key === "audit") {
+      void navigate("/audit");
       return;
     }
 
@@ -84,13 +110,25 @@ export function AppLayout({ children }: { children?: ReactNode }) {
 
   return (
     <Layout className={styles.shell}>
-      <Layout.Sider width={296} className={styles.sider} breakpoint="lg" collapsedWidth={0}>
-        <div className={styles.brand} data-onboarding-id="shell-brand">
+      <Layout.Sider
+        width={296}
+        collapsedWidth={88}
+        className={styles.sider}
+        breakpoint="lg"
+        collapsible
+        trigger={null}
+        collapsed={!desktopNavOpen}
+        onCollapse={(collapsed) => {
+          setDesktopNavOpen(!collapsed);
+        }}
+      >
+        {/* <div className={styles.brand} data-onboarding-id="shell-brand">
           MelodyTrack
-        </div>
+        </div> */}
         <div data-onboarding-id="shell-navigation">
           <Menu
             mode="inline"
+            inlineCollapsed={!desktopNavOpen}
             selectedKeys={[selectedKey]}
             items={menuItems}
             onClick={({ key }) => {
@@ -101,6 +139,18 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       </Layout.Sider>
       <Layout>
         <Layout.Header className={styles.header}>
+          <Button
+            type="text"
+            className={styles.desktopCollapseButton}
+            icon={desktopNavOpen ? <LeftOutlined /> : <RightOutlined />}
+            aria-label={desktopNavOpen ? "Свернуть навигацию" : "Развернуть навигацию"}
+            onClick={() => {
+              setDesktopNavOpen((current) => !current);
+            }}
+          />
+          <Typography.Text className={styles.headerBrand} data-onboarding-id="shell-brand">
+            MelodyTrack
+          </Typography.Text>
           <Button
             type="text"
             className={styles.mobileMenuButton}
@@ -167,11 +217,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             mode="inline"
             className={styles.mobileNavMenu}
             selectedKeys={[selectedKey]}
-            items={availableNavItems.map((item) => ({
-              key: item.key,
-              icon: item.icon,
-              label: item.label,
-            }))}
+            items={mobileMenuItems}
             onClick={({ key }) => {
               void navigate(key);
               setMobileNavOpen(false);

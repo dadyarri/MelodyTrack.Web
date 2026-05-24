@@ -14,6 +14,11 @@
   border-right: 1px solid var(--border-strong);
 }
 
+.sider :global(.ant-layout-sider-children) {
+  display: flex;
+  flex-direction: column;
+}
+
 .brand {
   height: 64px;
   display: flex;
@@ -42,17 +47,47 @@
   gap: 16px;
 }
 
+.headerBrand {
+  color: var(--text-main);
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
 .headerSpacer {
   flex: 1 1 auto;
   min-width: 0;
 }
 
+.header :global(.ant-btn).desktopCollapseButton,
+.header :global(.ant-btn).mobileMenuButton {
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--border-main);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  color: var(--text-main);
+  box-shadow: none;
+}
+
+.header :global(.ant-btn).desktopCollapseButton {
+  display: inline-flex;
+}
+
 .header :global(.ant-btn).mobileMenuButton {
   display: none;
-  padding-inline: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+}
+
+.header :global(.ant-btn).desktopCollapseButton:hover,
+.header :global(.ant-btn).desktopCollapseButton:focus-visible,
+.header :global(.ant-btn).mobileMenuButton:hover,
+.header :global(.ant-btn).mobileMenuButton:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
+  color: var(--text-main);
 }
 
 .headerUserTrigger {
@@ -89,6 +124,56 @@
   font-weight: 600;
 }
 
+.mobileNavDrawer :global(.ant-menu).mobileNavMenu,
+.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu {
+  border-inline-end: 0;
+}
+
+.mobileNavDrawer :global(.ant-menu-submenu-title),
+.mobileNavDrawer :global(.ant-menu-item),
+.mobileNavDrawer :global(.ant-menu-item-group-title) {
+  white-space: normal;
+}
+
+.mobileNavDrawer :global(.ant-menu).mobileNavMenu :global(.ant-menu-item),
+.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu :global(.ant-menu-item) {
+  width: 100%;
+}
+
+.desktopNavSubmenuPopup :global(.ant-menu) {
+  min-width: 280px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-main);
+  box-shadow: var(--shadow-soft);
+}
+
+.desktopNavSubmenuPopup :global(.ant-menu-item),
+.desktopNavSubmenuPopup :global(.ant-menu-submenu-title) {
+  height: auto;
+  min-height: 40px;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.desktopNavSubmenuPopup :global(.ant-menu-title-content) {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: block;
+  overflow: visible;
+}
+
+.desktopNavSubmenuPopup :global(.app-nav-label) {
+  display: inline-flex;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.desktopNavSubmenuPopup :global(.ant-menu-item .ant-menu-item-icon + span),
+.desktopNavSubmenuPopup :global(.ant-menu-submenu-title .ant-menu-item-icon + span),
+.desktopNavSubmenuPopup :global(.ant-menu-submenu-title .anticon + span) {
+  display: inline-flex;
+}
+
 .headerUserPopover :global(.ant-menu).headerUserMenu {
   width: 200px;
   background: transparent;
@@ -108,18 +193,8 @@
   line-height: 1.2;
 }
 
-.headerUserMenu :global(.app-nav-label) {
+.headerUserPopover :global(.headerUserMenu) :global(.app-nav-label) {
   gap: 8px;
-}
-
-.mobileNavDrawer :global(.ant-menu).mobileNavMenu,
-.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu {
-  border-inline-end: 0;
-}
-
-.mobileNavDrawer :global(.ant-menu).mobileNavMenu :global(.ant-menu-item),
-.mobileNavDrawer :global(.ant-menu).mobileNavActionsMenu :global(.ant-menu-item) {
-  width: 100%;
 }
 
 .content {
@@ -151,8 +226,11 @@
 
   .header :global(.ant-btn).mobileMenuButton {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  }
+
+  .header :global(.ant-btn).desktopCollapseButton,
+  .headerBrand {
+    display: none;
   }
 
   .content {

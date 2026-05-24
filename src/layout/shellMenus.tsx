@@ -1,35 +1,51 @@
-import { LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@ant-design/icons";
+import { FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@ant-design/icons";
 import type { ItemType } from "antd/es/menu/interface";
 import type { ReactNode } from "react";
-import type { AppNavItem } from "./navigation";
+import { navGroupIcons, navGroupLabels, type AppNavItem } from "./navigation";
 import { Shortcut } from "@/shared/ui/Shortcut";
 
-export type ShellActionKey = "profile" | "theme" | "logout";
+export type ShellActionKey = "profile" | "audit" | "theme" | "logout";
 
 type ShellActionItemOptions = {
+  canViewAudit?: boolean;
   isDarkMode: boolean;
 };
 
 type BuildNavMenuItemsOptions = {
   showShortcuts?: boolean;
+  groupedPopupLabels?: boolean;
+  submenuPopupClassName?: string;
 };
 
-const navGroupLabels = {
-  stats: "Статистика",
-  "reference-books": "Справочники",
-} as const;
-
 export function buildNavMenuItems(items: AppNavItem[], options: BuildNavMenuItemsOptions = {}): ItemType[] {
-  const { showShortcuts = true } = options;
+  const { showShortcuts = true, groupedPopupLabels = false, submenuPopupClassName } = options;
   const ungroupedItems = items.filter((item) => !item.group).map((item) => buildNavItem(item, showShortcuts));
   const statsItems = items.filter((item) => item.group === "stats").map((item) => buildNavItem(item, showShortcuts));
   const referenceBookItems = items.filter((item) => item.group === "reference-books").map((item) => buildNavItem(item, showShortcuts));
 
   return [
     ...ungroupedItems,
-    ...(statsItems.length > 0 ? [{ key: "group:stats", label: navGroupLabels.stats, children: statsItems }] : []),
+    ...(statsItems.length > 0
+      ? [
+          {
+            key: "group:stats",
+            icon: navGroupIcons.stats,
+            label: groupedPopupLabels ? navGroupLabels.stats : navGroupLabels.stats,
+            popupClassName: submenuPopupClassName,
+            children: statsItems,
+          },
+        ]
+      : []),
     ...(referenceBookItems.length > 0
-      ? [{ key: "group:reference-books", label: navGroupLabels["reference-books"], children: referenceBookItems }]
+      ? [
+          {
+            key: "group:reference-books",
+            icon: navGroupIcons["reference-books"],
+            label: groupedPopupLabels ? navGroupLabels["reference-books"] : navGroupLabels["reference-books"],
+            popupClassName: submenuPopupClassName,
+            children: referenceBookItems,
+          },
+        ]
       : []),
   ];
 }
@@ -47,7 +63,7 @@ function buildNavItem(item: AppNavItem, showShortcuts: boolean): ItemType {
   };
 }
 
-export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): ItemType[] {
+export function buildShellActionItems({ canViewAudit = false, isDarkMode }: ShellActionItemOptions): ItemType[] {
   return [
     {
       key: "profile",
@@ -59,6 +75,20 @@ export function buildShellActionItems({ isDarkMode }: ShellActionItemOptions): I
         </span>
       ),
     },
+    ...(canViewAudit
+      ? [
+          {
+            key: "audit",
+            icon: <FileSearchOutlined />,
+            label: (
+              <span className="app-nav-label">
+                <span>Аудит</span>
+                <Shortcut keyb={"7"} />
+              </span>
+            ),
+          } satisfies ItemType,
+        ]
+      : []),
     {
       key: "theme",
       icon: isDarkMode ? <SunOutlined /> : <MoonOutlined />,

@@ -2,7 +2,6 @@ import {
   CalendarOutlined,
   CreditCardOutlined,
   DashboardOutlined,
-  FileSearchOutlined,
   FolderOpenOutlined,
   LineChartOutlined,
   TeamOutlined,
@@ -24,6 +23,16 @@ export type AppNavItem = {
   group?: NavGroup;
 };
 
+export const navGroupLabels = {
+  stats: "Статистика",
+  "reference-books": "Справочники",
+} as const;
+
+export const navGroupIcons: Record<NavGroup, ReactNode> = {
+  stats: <LineChartOutlined />,
+  "reference-books": <FolderOpenOutlined />,
+};
+
 export const appNavItems: AppNavItem[] = [
   { key: "/", icon: <DashboardOutlined />, label: "Обзор", shortcut: "1", visibility: "all" },
   { key: "/revenue", icon: <LineChartOutlined />, label: "Выручка", shortcut: "R", visibility: "stats", group: "stats" },
@@ -34,11 +43,10 @@ export const appNavItems: AppNavItem[] = [
   { key: "/expenses-dashboard", icon: <LineChartOutlined />, label: "Расходы", shortcut: "E", visibility: "stats", group: "stats" },
   { key: "/schedule", icon: <CalendarOutlined />, label: "Расписание", shortcut: "2", visibility: "all" },
   { key: "/clients", icon: <TeamOutlined />, label: "Клиенты", shortcut: "3", visibility: "admin" },
-  { key: "/services", icon: <ToolOutlined />, label: "Услуги", shortcut: "4", visibility: "admin" },
+  { key: "/services", icon: <ToolOutlined />, label: "Услуги", shortcut: "4", visibility: "admin", group: "reference-books" },
   { key: "/payments", icon: <CreditCardOutlined />, label: "Платежи", shortcut: "5", visibility: "admin" },
   { key: "/expenses", icon: <WalletOutlined />, label: "Расходы", shortcut: "6", visibility: "admin" },
-  { key: "/audit", icon: <FileSearchOutlined />, label: "Аудит", shortcut: "7", visibility: "superuser" },
-  { key: "/users", icon: <UserOutlined />, label: "Пользователи", shortcut: "8", visibility: "admin" },
+  { key: "/users", icon: <UserOutlined />, label: "Пользователи", shortcut: "8", visibility: "admin", group: "reference-books" },
   {
     key: "/expense-categories",
     icon: <FolderOpenOutlined />,
