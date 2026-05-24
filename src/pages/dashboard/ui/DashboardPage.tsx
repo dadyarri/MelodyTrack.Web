@@ -55,7 +55,7 @@ export function DashboardPage() {
                 loading={controller.statsQuery.isLoading}
               />
             </Card>
-            
+
             <Card className={smallWidgetClassName}>
               <Statistic
                 title="Весь резерв"
