@@ -281,9 +281,10 @@ export function AppointmentCreateModal({
             <Form.Item
               name="patternEndDate"
               label="Повторять до"
-              rules={[{ required: true, message: "Укажите дату окончания повторения" }]}
+              extra="Необязательно. Без даты окончания серия остается бессрочной: в календаре и статистике учитываются только записи, попавшие в открытый период."
             >
               <DatePicker
+                allowClear
                 format={DATE_FORMAT}
                 className="wide"
                 disabledDate={(current) => {
