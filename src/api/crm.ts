@@ -127,7 +127,7 @@ export const servicesApi = {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
   update(id: Ulid, input: { name: string; description?: string }) {
-    return http.put<unknown>(`/services/${id}`, input).then(() => undefined);
+    return http.put<unknown>(`/services/${id}`, { id, ...input }).then(() => undefined);
   },
   updatePrice(id: Ulid, price: number) {
     return http.patch<unknown>(`/services/${id}/price`, { price }).then(() => undefined);
