@@ -397,10 +397,10 @@
 
 .eventContent {
   min-width: 0;
-  position: relative;
-  padding-right: 28px;
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
 }
 
 .eventContentCompact {
@@ -411,38 +411,17 @@
   gap: 1px;
 }
 
-.eventTopline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 20px;
-  padding-right: 2px;
+.eventText {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
 }
 
 .eventIcons {
-  position: absolute;
-  top: 0;
-  right: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 3px;
-}
-
-.eventIconsRow {
-  display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 3px;
-}
-
-.eventActionRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
 }
 
 .eventTime,
@@ -466,7 +445,6 @@
 
 .eventTitlePrimary {
   min-width: 0;
-  padding-right: 20px;
 }
 
 .eventStatusIcon {
@@ -475,26 +453,30 @@
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
+  line-height: 1;
   border-radius: 50%;
   background: var(--schedule-entry-icon-background);
-  color: var(--schedule-entry-icon-color);
+  color: var(--text-main);
   font-size: 12px;
+  overflow: visible;
 }
 
 .eventAction {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
   padding: 0;
   border: 0;
+  line-height: 1;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.88);
-  color: var(--schedule-entry-icon-color);
+  color: var(--text-main);
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
+  overflow: visible;
   transition:
     background-color 0.16s ease,
     transform 0.16s ease;
@@ -512,13 +494,23 @@
 }
 
 .eventRecurringIcon {
-  color: color-mix(in srgb, var(--schedule-entry-icon-color) 74%, var(--accent));
+  color: var(--text-main);
 }
 
 .eventContentCompact .eventTitlePrimary,
 .eventContentCompact .eventTitle {
   font-size: 11px;
   line-height: 1.1;
+}
+
+.eventContentCompact .eventText {
+  gap: 2px;
+}
+
+.eventContentCompact .eventIcons {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .eventContentCompact .eventService,
@@ -533,19 +525,13 @@
   font-size: 11px;
 }
 
+.eventContentCompact .eventAction {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+
 .eventContentCompact .eventIcons {
-  gap: 2px;
-}
-
-.eventContentCompact .eventIconsRow {
-  gap: 2px;
-}
-
-.eventContentDense .eventIcons {
-  gap: 2px;
-}
-
-.eventContentDense .eventIconsRow {
   gap: 2px;
 }
 
@@ -553,6 +539,16 @@
 .eventContentDense .eventTitle {
   font-size: 10px;
   line-height: 1.05;
+}
+
+.eventContentDense .eventText {
+  gap: 1px;
+}
+
+.eventContentDense .eventIcons {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2px;
 }
 
 .eventContentDense .eventService,
@@ -568,8 +564,10 @@
   font-size: 10px;
 }
 
-.eventContentDense .eventIcons {
-  gap: 2px;
+.eventContentDense .eventAction {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
 }
 
 .eventService,

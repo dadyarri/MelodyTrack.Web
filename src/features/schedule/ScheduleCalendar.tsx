@@ -375,8 +375,10 @@ function AppointmentStack({
     >
       {appointments.length > 1 ? <div className={styles.stackBadge}>{appointments.length}</div> : null}
       {appointments.map((item, index) => (
-        <button
-          type="button"
+        /* biome-ignore lint/a11y/useSemanticElements: the card container must stay non-button so the nested completion button remains valid interactive HTML. */
+        <div
+          role="button"
+          tabIndex={0}
           className={`${styles.entry} ${styles.event} ${styles.eventStacked} ${styles.entryDraggable} ${getAppointmentClassName(item)}${item.id === selectedAppointmentId ? ` ${styles.entrySelected}` : ""}${item.id === reschedulePendingAppointmentId ? ` ${styles.entryDragDisabled}` : ""}`}
           data-schedule-entry="desktop"
           draggable={reschedulePendingAppointmentId === null}
@@ -405,7 +407,7 @@ function AppointmentStack({
           }}
         >
           <AppointmentContent appointment={item} density={getStackDensity(appointments.length)} onComplete={onComplete} />
-        </button>
+        </div>
       ))}
     </div>
   );
@@ -423,8 +425,10 @@ function AppointmentAgendaItem({
   onComplete: (appointment: Appointment) => void;
 }) {
   return (
-    <button
-      type="button"
+    /* biome-ignore lint/a11y/useSemanticElements: the agenda card container must stay non-button so the nested completion button remains valid interactive HTML. */
+    <div
+      role="button"
+      tabIndex={0}
       className={`${styles.entry} ${styles.agendaItem} ${getAppointmentClassName(appointment)}${isSelected ? ` ${styles.entrySelected}` : ""}`}
       style={getAppointmentStatusColorVars(appointment.status)}
       onClick={() => {
@@ -438,7 +442,7 @@ function AppointmentAgendaItem({
       }}
     >
       <AppointmentContent appointment={appointment} showTime onComplete={onComplete} />
-    </button>
+    </div>
   );
 }
 
@@ -460,50 +464,45 @@ function AppointmentContent({
 
   return (
     <div className={`${styles.eventContent} ${densityClassName}`.trim()}>
-      <div className={styles.eventTopline}>
+      <div className={styles.eventText}>
         {showTime ? (
           <div className={styles.eventTime}>
             {start.format(TIME_FORMAT)} - {end.format(TIME_FORMAT)}
           </div>
-        ) : (
-          <div className={styles.eventTitlePrimary}>{clientName}</div>
-        )}
-        <div className={styles.eventIcons}>
-          <div className={styles.eventIconsRow}>
-            <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment.status)}>
-              {renderAppointmentStatusIcon(appointment.status)}
-            </span>
-            {appointment.recurringRule ? (
-              <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
-                <SyncOutlined />
-              </span>
-            ) : null}
+        ) : null}
+        <div className={showTime ? styles.eventTitle : styles.eventTitlePrimary}>{clientName}</div>
+        <div className={styles.eventService}>{appointment.service.name}</div>
+        {appointment.provider ? (
+          <div className={styles.eventProvider}>
+            {appointment.provider.lastName} {appointment.provider.firstName}
           </div>
-          {appointment.status === "planned" && onComplete ? (
-            <div className={styles.eventActionRow}>
-              <button
-                className={styles.eventAction}
-                type="button"
-                title="Отметить как завершённую"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  onComplete(appointment);
-                }}
-              >
-                <CheckOutlined />
-              </button>
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-      {showTime ? <div className={styles.eventTitle}>{clientName}</div> : null}
-      <div className={styles.eventService}>{appointment.service.name}</div>
-      {appointment.provider ? (
-        <div className={styles.eventProvider}>
-          {appointment.provider.lastName} {appointment.provider.firstName}
-        </div>
-      ) : null}
+      <div className={styles.eventIcons}>
+        <span className={styles.eventStatusIcon} title={getAppointmentStatusLabel(appointment.status)}>
+          {renderAppointmentStatusIcon(appointment.status)}
+        </span>
+        {appointment.recurringRule ? (
+          <span className={`${styles.eventStatusIcon} ${styles.eventRecurringIcon}`} title="Повторяющаяся запись">
+            <SyncOutlined />
+          </span>
+        ) : null}
+        {appointment.status === "planned" && onComplete ? (
+          <button
+            className={styles.eventAction}
+            type="button"
+            aria-label="Отметить запись как завершённую"
+            title="Отметить как завершённую"
+            onClick={(event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              onComplete(appointment);
+            }}
+          >
+            <CheckOutlined />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -561,7 +560,11 @@ function formatWeekday(day: Dayjs) {
   return day.format("dd").toUpperCase();
 }
 
-function getStackDensity(stackSize: number): "compact" | "dense" {
+function getStackDensity(stackSize: number): "full" | "compact" | "dense" {
+  if (stackSize <= 1) {
+    return "full";
+  }
+
   return stackSize >= 3 ? "dense" : "compact";
 }
 
