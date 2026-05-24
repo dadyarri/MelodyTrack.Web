@@ -41,9 +41,11 @@ function useDateRangeState(initialRange: DateRange) {
     dateRange,
     setDateRange,
     onDateRangeChange: (value: [Dayjs | null, Dayjs | null] | null) => {
-      if (value?.[0] !== undefined && value?.[0] !== null && value?.[1] !== undefined && value?.[1] !== null) {
-        setDateRange([value?.[0], value?.[1]]);
+      if (!value || value[0] === null || value[1] === null) {
+        return;
       }
+
+      setDateRange([value[0], value[1]]);
     },
   };
 }

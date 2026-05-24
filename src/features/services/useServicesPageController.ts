@@ -186,8 +186,16 @@ export function useServicesPageController() {
         form.resetFields();
       });
     },
-    onCreateSubmit: (values: ServiceCreateInput) => {
-      createMutation.mutate(values);
+    onCreateSubmit: (values: ServiceDraftValues) => {
+      if (!values.name || values.price === undefined) {
+        return;
+      }
+
+      createMutation.mutate({
+        name: values.name,
+        description: values.description,
+        price: values.price,
+      });
     },
     onCreateValuesChange: (_: Partial<ServiceDraftValues>, values: ServiceDraftValues) => {
       saveDraftFormValues(values);

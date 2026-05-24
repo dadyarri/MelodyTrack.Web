@@ -342,15 +342,6 @@ export function RecurringDeleteModal({
     };
   }, []);
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect DIRTY TEMP DISABLEMENT
-    setConfirmScope(null);
-    if (confirmTimeoutRef.current !== null) {
-      window.clearTimeout(confirmTimeoutRef.current);
-      confirmTimeoutRef.current = null;
-    }
-  }, []);
-
   const armDeleteConfirmation = (scope: AppointmentDeleteScope) => {
     setConfirmScope(scope);
     if (confirmTimeoutRef.current !== null) {

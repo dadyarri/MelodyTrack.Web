@@ -1,4 +1,4 @@
-import { AppointmentRescheduleScope } from "@/features/schedule/ScheduleModals";
+import type { AppointmentRescheduleScope } from "@/features/schedule/ScheduleModals";
 import { http } from "./http";
 import type {
   Appointment,

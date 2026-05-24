@@ -108,7 +108,6 @@ export function ServicesPage() {
           form={controller.form}
           layout="vertical"
           requiredMark={false}
-          // @ts-ignore - Temporary ignore to allow undefined values, which are needed for the draft form (FIXME!)
           onFinish={controller.onCreateSubmit}
           onValuesChange={controller.onCreateValuesChange}
         >
