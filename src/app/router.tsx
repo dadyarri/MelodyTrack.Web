@@ -1,4 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
+import { recoverableImport } from "./chunkLoadRecovery";
+import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
 import { AdminRoute } from "../layout/AdminRoute";
 import { StatsRoute } from "../layout/StatsRoute";
@@ -7,8 +9,9 @@ import { SuperuserRoute } from "../layout/SuperuserRoute";
 export const router = createBrowserRouter([
   {
     path: "/invite/:inviteCode",
+    errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { InviteRedirect } = await import("@/pages/invite-redirect");
+      const { InviteRedirect } = await recoverableImport(() => import("@/pages/invite-redirect"));
 
       return {
         Component: InviteRedirect,
@@ -17,8 +20,9 @@ export const router = createBrowserRouter([
   },
   {
     path: "/login",
+    errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { AuthPage } = await import("@/pages/auth");
+      const { AuthPage } = await recoverableImport(() => import("@/pages/auth"));
 
       return {
         Component: AuthPage,
@@ -27,8 +31,9 @@ export const router = createBrowserRouter([
   },
   {
     path: "/restore",
+    errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { RestorePasswordPage } = await import("@/pages/restore-password");
+      const { RestorePasswordPage } = await recoverableImport(() => import("@/pages/restore-password"));
 
       return {
         Component: RestorePasswordPage,
@@ -37,8 +42,9 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
+    errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { ProtectedAppShell } = await import("@/layout/ProtectedAppShell");
+      const { ProtectedAppShell } = await recoverableImport(() => import("@/layout/ProtectedAppShell"));
 
       return {
         Component: ProtectedAppShell,
@@ -48,7 +54,7 @@ export const router = createBrowserRouter([
       {
         index: true,
         lazy: async () => {
-          const { DashboardPage } = await import("@/pages/dashboard");
+          const { DashboardPage } = await recoverableImport(() => import("@/pages/dashboard"));
 
           return {
             Component: DashboardPage,
@@ -58,7 +64,7 @@ export const router = createBrowserRouter([
       {
         path: "revenue",
         lazy: async () => {
-          const { RevenuePage } = await import("@/pages/revenue");
+          const { RevenuePage } = await recoverableImport(() => import("@/pages/revenue"));
 
           return {
             Component: () => (
@@ -72,7 +78,7 @@ export const router = createBrowserRouter([
       {
         path: "price-changes",
         lazy: async () => {
-          const { PriceChangesPage } = await import("@/pages/price-changes");
+          const { PriceChangesPage } = await recoverableImport(() => import("@/pages/price-changes"));
 
           return {
             Component: () => (
@@ -86,7 +92,7 @@ export const router = createBrowserRouter([
       {
         path: "appointments-stats",
         lazy: async () => {
-          const { AppointmentsStatsPage } = await import("@/pages/appointments-stats");
+          const { AppointmentsStatsPage } = await recoverableImport(() => import("@/pages/appointments-stats"));
 
           return {
             Component: () => (
@@ -100,7 +106,7 @@ export const router = createBrowserRouter([
       {
         path: "clients-stats",
         lazy: async () => {
-          const { ClientsStatsPage } = await import("@/pages/clients-stats");
+          const { ClientsStatsPage } = await recoverableImport(() => import("@/pages/clients-stats"));
 
           return {
             Component: () => (
@@ -114,7 +120,7 @@ export const router = createBrowserRouter([
       {
         path: "payments-stats",
         lazy: async () => {
-          const { PaymentsStatsPage } = await import("@/pages/payments-stats");
+          const { PaymentsStatsPage } = await recoverableImport(() => import("@/pages/payments-stats"));
 
           return {
             Component: () => (
@@ -128,7 +134,7 @@ export const router = createBrowserRouter([
       {
         path: "expenses-dashboard",
         lazy: async () => {
-          const { ExpensesStatsPage } = await import("@/pages/expenses-stats");
+          const { ExpensesStatsPage } = await recoverableImport(() => import("@/pages/expenses-stats"));
 
           return {
             Component: () => (
@@ -146,7 +152,7 @@ export const router = createBrowserRouter([
       {
         path: "clients",
         lazy: async () => {
-          const { ClientsPage } = await import("@/pages/clients");
+          const { ClientsPage } = await recoverableImport(() => import("@/pages/clients"));
 
           return {
             Component: () => (
@@ -160,7 +166,7 @@ export const router = createBrowserRouter([
       {
         path: "audit",
         lazy: async () => {
-          const { AuditPage } = await import("@/pages/audit");
+          const { AuditPage } = await recoverableImport(() => import("@/pages/audit"));
 
           return {
             Component: () => (
@@ -174,7 +180,7 @@ export const router = createBrowserRouter([
       {
         path: "services",
         lazy: async () => {
-          const { ServicesPage } = await import("@/pages/services");
+          const { ServicesPage } = await recoverableImport(() => import("@/pages/services"));
 
           return {
             Component: () => (
@@ -188,7 +194,7 @@ export const router = createBrowserRouter([
       {
         path: "payments",
         lazy: async () => {
-          const { PaymentsPage } = await import("@/pages/payments");
+          const { PaymentsPage } = await recoverableImport(() => import("@/pages/payments"));
 
           return {
             Component: () => (
@@ -202,7 +208,7 @@ export const router = createBrowserRouter([
       {
         path: "expenses",
         lazy: async () => {
-          const { ExpensesPage } = await import("@/pages/expenses");
+          const { ExpensesPage } = await recoverableImport(() => import("@/pages/expenses"));
 
           return {
             Component: () => (
@@ -216,7 +222,7 @@ export const router = createBrowserRouter([
       {
         path: "expense-categories",
         lazy: async () => {
-          const { ExpenseCategoriesPage } = await import("@/pages/expense-categories");
+          const { ExpenseCategoriesPage } = await recoverableImport(() => import("@/pages/expense-categories"));
 
           return {
             Component: () => (
@@ -230,7 +236,7 @@ export const router = createBrowserRouter([
       {
         path: "client-sources",
         lazy: async () => {
-          const { ClientSourcesPage } = await import("@/pages/client-sources");
+          const { ClientSourcesPage } = await recoverableImport(() => import("@/pages/client-sources"));
 
           return {
             Component: () => (
@@ -244,7 +250,7 @@ export const router = createBrowserRouter([
       {
         path: "schedule",
         lazy: async () => {
-          const { SchedulePage } = await import("@/pages/schedule");
+          const { SchedulePage } = await recoverableImport(() => import("@/pages/schedule"));
 
           return {
             Component: SchedulePage,
@@ -254,7 +260,7 @@ export const router = createBrowserRouter([
       {
         path: "users",
         lazy: async () => {
-          const { UsersPage } = await import("@/pages/users");
+          const { UsersPage } = await recoverableImport(() => import("@/pages/users"));
 
           return {
             Component: () => (
@@ -268,7 +274,7 @@ export const router = createBrowserRouter([
       {
         path: "profile",
         lazy: async () => {
-          const { ProfilePage } = await import("@/pages/profile");
+          const { ProfilePage } = await recoverableImport(() => import("@/pages/profile"));
 
           return {
             Component: ProfilePage,

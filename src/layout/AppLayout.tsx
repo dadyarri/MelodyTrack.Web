@@ -2,6 +2,7 @@ import { LogoutOutlined, MenuOutlined, MoonOutlined, SettingOutlined, SunOutline
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { recoverableImport } from "../app/chunkLoadRecovery";
 import { useTheme } from "../app/useTheme";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { useAuth } from "../features/auth/useAuth";
@@ -11,7 +12,7 @@ import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUser
 import styles from "./AppLayout.module.css";
 
 const AppOnboarding = lazy(async () => {
-  const module = await import("@/features/onboarding/AppOnboarding");
+  const module = await recoverableImport(() => import("@/features/onboarding/AppOnboarding"));
 
   return { default: module.AppOnboarding };
 });
