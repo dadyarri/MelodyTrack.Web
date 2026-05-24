@@ -17,6 +17,7 @@ import { getApiErrorMessages } from "@/api/http";
 import type { UserAvailability, WeekdayKey } from "@/api/types";
 import { useAuth } from "@/features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { handleStaleEntityConflict } from "@/utils/staleEntity";
 import { weekdayOrder } from "@/utils/userAvailability";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
@@ -30,6 +31,11 @@ export type AvailabilityFormValues = {
   vacations: Array<{
     period: [Dayjs, Dayjs];
   }>;
+};
+
+type SaveAvailabilityInput = {
+  values: AvailabilityFormValues;
+  expectedActivityId?: string;
 };
 
 function hasVacationPeriod(period?: [Dayjs, Dayjs]) {
@@ -60,7 +66,7 @@ function timeToDayjs(value: string) {
 
 export function useProfilePageController() {
   const auth = useAuth();
-  const { message } = AntdApp.useApp();
+  const { message, modal } = AntdApp.useApp();
   const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
@@ -188,32 +194,56 @@ export function useProfilePageController() {
   });
 
   const saveAvailabilityMutation = useMutation({
-    mutationFn: (values: AvailabilityFormValues) => {
+    mutationFn: ({ values, expectedActivityId }: SaveAvailabilityInput) => {
       const userId = meQuery.data?.id;
       if (!userId) {
         throw new Error("User id is missing.");
       }
 
-      return usersApi.updateAvailability(userId, {
-        workingHours: values.workingHours.map((item) => ({
-          dayOfWeek: item.dayOfWeek,
-          isWorkingDay: item.isWorkingDay,
-          startTime: item.isWorkingDay && item.timeRange?.[0] ? item.timeRange[0].format("HH:mm") : null,
-          endTime: item.isWorkingDay && item.timeRange?.[1] ? item.timeRange[1].format("HH:mm") : null,
-        })),
-        vacations: values.vacations
-          .filter((item) => hasVacationPeriod(item.period))
-          .map((item) => ({
-            startDate: item.period[0].format("YYYY-MM-DD"),
-            endDate: item.period[1].format("YYYY-MM-DD"),
+      return usersApi.updateAvailability(
+        userId,
+        {
+          workingHours: values.workingHours.map((item) => ({
+            dayOfWeek: item.dayOfWeek,
+            isWorkingDay: item.isWorkingDay,
+            startTime: item.isWorkingDay && item.timeRange?.[0] ? item.timeRange[0].format("HH:mm") : null,
+            endTime: item.isWorkingDay && item.timeRange?.[1] ? item.timeRange[1].format("HH:mm") : null,
           })),
-      });
+          vacations: values.vacations
+            .filter((item) => hasVacationPeriod(item.period))
+            .map((item) => ({
+              startDate: item.period[0].format("YYYY-MM-DD"),
+              endDate: item.period[1].format("YYYY-MM-DD"),
+            })),
+        },
+        { expectedActivityId },
+      );
     },
     onSuccess: async () => {
       message.success("График работы сохранен");
       await queryClient.invalidateQueries({ queryKey: queryKeys.users.availability(meQuery.data?.id) });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: queryKeys.users.availability(meQuery.data?.id),
+        showErrors,
+        title: "График уже изменен",
+        okText: "Сохранить все равно",
+        cancelText: "Обновить данные",
+        onConfirm: (conflict) => {
+          saveAvailabilityMutation.mutate({
+            values: variables.values,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.users.availability(meQuery.data?.id) });
+        },
+      });
+    },
   });
 
   const resetOnboardingMutation = useMutation({
@@ -292,7 +322,10 @@ export function useProfilePageController() {
       availabilityForm.setFieldValue("vacations", [...vacations, { period: undefined }]);
     },
     onAvailabilitySubmit: (values: AvailabilityFormValues) => {
-      saveAvailabilityMutation.mutate(values);
+      saveAvailabilityMutation.mutate({
+        values,
+        expectedActivityId: availabilityQuery.data?.lastActivity?.id,
+      });
     },
     onPasswordSubmit: (values: ChangePasswordInput) => {
       changePasswordMutation.mutate(values);

@@ -34,6 +34,7 @@ export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned"
 export interface ReferenceBookItem {
   id: Ulid;
   name: string;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface ClientContacts {
@@ -155,6 +156,7 @@ export interface UserAvailability {
   userId: Ulid;
   workingHours: UserWorkingHoursDay[];
   vacations: UserVacation[];
+  lastActivity?: RecordActivity | null;
 }
 
 export interface Role {
@@ -219,6 +221,7 @@ export interface Expense {
   date: string;
   categoryId?: Ulid | null;
   categoryName?: string | null;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface ExpensesResponse extends PaginatedResponse<Expense> {

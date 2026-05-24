@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useState } from "react";
 import { getApiErrorMessages } from "@/api/http";
+import type { ReferenceBookItem, Ulid } from "@/api/types";
+import { handleStaleEntityConflict } from "@/utils/staleEntity";
 
 type ReferenceBookControllerOptions<TItem> = {
   successMessages: {
@@ -9,19 +11,25 @@ type ReferenceBookControllerOptions<TItem> = {
     delete: string;
   };
   createItem: (values: { name: string }) => Promise<unknown>;
-  deleteItem: (id: string) => Promise<unknown>;
+  deleteItem: (id: Ulid, options?: { expectedActivityId?: Ulid }) => Promise<unknown>;
   listQueryKey: readonly unknown[];
   listQueryFn: () => Promise<TItem[]>;
   invalidateQueryKeys?: ReadonlyArray<readonly unknown[]>;
+  staleConflict: {
+    title: string;
+    okText: string;
+    cancelText: string;
+  };
 };
 
-export function useReferenceBookPageController<TItem>({
+export function useReferenceBookPageController<TItem extends ReferenceBookItem>({
   successMessages,
   createItem,
   deleteItem,
   listQueryKey,
   listQueryFn,
   invalidateQueryKeys = [],
+  staleConflict,
 }: ReferenceBookControllerOptions<TItem>) {
   const [isCreateOpen, setCreateOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -48,13 +56,30 @@ export function useReferenceBookPageController<TItem>({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteItem,
+    mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => deleteItem(id, { expectedActivityId }),
     onSuccess: async () => {
       message.success(successMessages.delete);
       await queryClient.invalidateQueries({ queryKey: listQueryKey });
       await Promise.all(invalidateQueryKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: listQueryKey,
+        showErrors,
+        title: staleConflict.title,
+        okText: staleConflict.okText,
+        cancelText: staleConflict.cancelText,
+        onConfirm: (conflict) => {
+          deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: listQueryKey });
+        },
+      });
+    },
   });
 
   return {
@@ -67,8 +92,8 @@ export function useReferenceBookPageController<TItem>({
     onCreate: (values: { name: string }) => {
       createMutation.mutate(values);
     },
-    onDelete: (id: string) => {
-      deleteMutation.mutate(id);
+    onDelete: (id: Ulid, expectedActivityId?: Ulid) => {
+      deleteMutation.mutate({ id, expectedActivityId });
     },
   };
 }

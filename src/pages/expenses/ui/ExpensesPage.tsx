@@ -109,7 +109,7 @@ export function ExpensesPage() {
                       controller.modal.confirm({
                         title: "Удалить расход?",
                         onOk: () => {
-                          controller.deleteMutation.mutate(row.id);
+                          controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
                         },
                       })
                     }

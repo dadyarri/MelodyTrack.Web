@@ -178,8 +178,12 @@ export const expenseCategoriesApi = {
       .post<CreateEntityResponse>("/expense-categories", input, buildReplayConfig(options?.replayKey))
       .then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete<unknown>(`/expense-categories/${id}`).then(() => undefined);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/expense-categories/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
   },
 };
 
@@ -192,8 +196,12 @@ export const clientSourcesApi = {
       .post<CreateEntityResponse>("/client-sources", input, buildReplayConfig(options?.replayKey))
       .then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete<unknown>(`/client-sources/${id}`).then(() => undefined);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/client-sources/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
   },
 };
 
@@ -207,8 +215,12 @@ export const expensesApi = {
   create(input: { description: string; amount: number; categoryId?: Ulid }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/expenses", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  remove(id: Ulid) {
-    return http.delete<unknown>(`/expenses/${id}`).then(() => undefined);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/expenses/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
   },
 };
 
@@ -298,8 +310,11 @@ export const usersApi = {
       workingHours: UserWorkingHoursDay[];
       vacations: Array<{ startDate: string; endDate: string }>;
     },
+    options?: { expectedActivityId?: Ulid },
   ) {
-    return http.put<unknown>(`/users/${id}/availability`, input).then(() => undefined);
+    return http
+      .put<unknown>(`/users/${id}/availability`, { ...input, expectedActivityId: options?.expectedActivityId })
+      .then(() => undefined);
   },
 };
 

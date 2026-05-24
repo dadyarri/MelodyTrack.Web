@@ -12,8 +12,13 @@ export function ClientSourcesPage() {
       create: "Источник создан",
       delete: "Источник удален",
     },
+    staleConflict: {
+      title: "Источник уже изменен",
+      okText: "Удалить все равно",
+      cancelText: "Обновить список",
+    },
     createItem: (values) => clientSourcesApi.create(values),
-    deleteItem: (id) => clientSourcesApi.remove(id),
+    deleteItem: (id, options) => clientSourcesApi.remove(id, options),
     listQueryKey: queryKeys.clients.sources,
     listQueryFn: () => clientSourcesApi.list(),
     invalidateQueryKeys: [queryKeys.clients.all],
@@ -56,7 +61,7 @@ export function ClientSourcesPage() {
                         title: "Удалить источник?",
                         content: "Связанные клиенты сохранятся без источника.",
                         onOk: () => {
-                          controller.onDelete(row.id);
+                          controller.onDelete(row.id, row.lastActivity?.id);
                         },
                       });
                     }}

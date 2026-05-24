@@ -12,8 +12,13 @@ export function ExpenseCategoriesPage() {
       create: "Категория создана",
       delete: "Категория удалена",
     },
+    staleConflict: {
+      title: "Категория уже изменена",
+      okText: "Удалить все равно",
+      cancelText: "Обновить список",
+    },
     createItem: (values) => expenseCategoriesApi.create(values),
-    deleteItem: (id) => expenseCategoriesApi.remove(id),
+    deleteItem: (id, options) => expenseCategoriesApi.remove(id, options),
     listQueryKey: queryKeys.expenses.categories,
     listQueryFn: () => expenseCategoriesApi.list(),
     invalidateQueryKeys: [queryKeys.expenses.all],
@@ -56,7 +61,7 @@ export function ExpenseCategoriesPage() {
                         title: "Удалить категорию?",
                         content: "Связанные расходы сохранятся без категории.",
                         onOk: () => {
-                          controller.onDelete(row.id);
+                          controller.onDelete(row.id, row.lastActivity?.id);
                         },
                       });
                     }}

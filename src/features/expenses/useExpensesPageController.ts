@@ -10,6 +10,7 @@ import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { downloadBlob } from "@/utils/download";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { handleStaleEntityConflict } from "@/utils/staleEntity";
 
 export type ExpenseDraftValues = {
   description?: string;
@@ -83,12 +84,29 @@ export function useExpensesPageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => expensesApi.remove(id),
+    mutationFn: ({ id, expectedActivityId }: { id: string; expectedActivityId?: string }) => expensesApi.remove(id, { expectedActivityId }),
     onSuccess: async () => {
       message.success("Расход удален");
       await queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
     },
-    onError: showErrors,
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: queryKeys.expenses.all,
+        showErrors,
+        title: "Расход уже изменен",
+        okText: "Удалить все равно",
+        cancelText: "Обновить список",
+        onConfirm: (conflict) => {
+          deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
+        },
+      });
+    },
   });
 
   const exportMutation = useMutation({
