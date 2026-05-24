@@ -35,7 +35,7 @@ export const queryKeys = {
   },
   audit: {
     all: ["audit"] as const,
-    list: (page: number, search: string) => ["audit", "list", page, search] as const,
+    list: (page: number, search: string, timezone: string) => ["audit", "list", page, search, timezone] as const,
   },
   clients: {
     all: ["clients"] as const,

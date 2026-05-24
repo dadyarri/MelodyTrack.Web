@@ -71,6 +71,57 @@ function formatActorLabel(displayName?: string | null, email?: string | null) {
   return "Система";
 }
 
+type ParsedAuditDetail = {
+  label: string;
+  value?: string;
+  before?: string;
+  after?: string;
+};
+
+function parseAuditDetails(value: string) {
+  const parts = value
+    .split(";")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const changed: ParsedAuditDetail[] = [];
+  const context: ParsedAuditDetail[] = [];
+  const other: string[] = [];
+
+  for (const part of parts) {
+    const separatorIndex = part.indexOf(": ");
+    if (separatorIndex === -1) {
+      other.push(part);
+      continue;
+    }
+
+    const label = part.slice(0, separatorIndex).trim();
+    const content = part.slice(separatorIndex + 2).trim();
+    if (!label || !content) {
+      other.push(part);
+      continue;
+    }
+
+    const changeSeparator = " → ";
+    if (content.includes(changeSeparator)) {
+      const [before, after, ...rest] = content.split(changeSeparator);
+      if (before && after && rest.length === 0) {
+        changed.push({ label, before, after });
+        continue;
+      }
+    }
+
+    context.push({ label, value: content });
+  }
+
+  return {
+    changed,
+    context,
+    other,
+    isStructured: changed.length > 0 || context.length > 0,
+  };
+}
+
 export function AuditPage() {
   const controller = useAuditPageController();
 
@@ -119,15 +170,68 @@ export function AuditPage() {
               dataIndex: "details",
               width: 260,
               render: (value?: string | null) =>
-                value ? (
-                  <div className={styles.activityDetails}>{value}</div>
-                ) : (
-                  <Typography.Text type="secondary">Нет данных</Typography.Text>
-                ),
+                value ? <AuditDetails value={value} /> : <Typography.Text type="secondary">Нет данных</Typography.Text>,
             },
           ]}
         />
       </div>
     </PageLayout>
+  );
+}
+
+function AuditDetails({ value }: { value: string }) {
+  const parsed = parseAuditDetails(value);
+
+  if (!parsed.isStructured) {
+    return <div className={styles.activityDetails}>{value}</div>;
+  }
+
+  return (
+    <div className={styles.activityDetails}>
+      {parsed.changed.length > 0 ? (
+        <section className={styles.activityDetailsSection}>
+          <Typography.Text type="secondary" className={styles.activityDetailsHeading}>
+            Изменено
+          </Typography.Text>
+          <ul className={styles.activityDetailsList}>
+            {parsed.changed.map((item, index) => (
+              <li key={`${item.label}:changed:${String(index)}`} className={styles.activityDetailsItem}>
+                <Typography.Text strong>{item.label}:</Typography.Text> <span className={styles.activityDetailsBefore}>{item.before}</span>
+                <span className={styles.activityDetailsArrow}>→</span>
+                <span>{item.after}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {parsed.context.length > 0 ? (
+        <section className={styles.activityDetailsSection}>
+          <Typography.Text type="secondary" className={styles.activityDetailsHeading}>
+            Контекст
+          </Typography.Text>
+          <ul className={styles.activityDetailsList}>
+            {parsed.context.map((item, index) => (
+              <li key={`${item.label}:context:${String(index)}`} className={styles.activityDetailsItem}>
+                <Typography.Text strong>{item.label}:</Typography.Text> <span>{item.value}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {parsed.other.length > 0 ? (
+        <section className={styles.activityDetailsSection}>
+          <Typography.Text type="secondary" className={styles.activityDetailsHeading}>
+            Дополнительно
+          </Typography.Text>
+          <ul className={styles.activityDetailsList}>
+            {parsed.other.map((item) => (
+              <li key={item} className={styles.activityDetailsItem}>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+    </div>
   );
 }

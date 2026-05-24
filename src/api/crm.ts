@@ -106,7 +106,7 @@ export const dashboardApi = {
 };
 
 export const auditApi = {
-  list(params: PaginatedParams & { search?: string }) {
+  list(params: PaginatedParams & { search?: string; timezone?: string }) {
     return http.get<PaginatedResponse<AuditLog>>("/audit-logs", { params }).then((response) => response.data);
   },
 };

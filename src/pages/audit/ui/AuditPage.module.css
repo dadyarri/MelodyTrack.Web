@@ -5,9 +5,40 @@
 }
 
 .activityDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.activityDetailsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.activityDetailsHeading {
+  font-size: 12px;
+}
+
+.activityDetailsList {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.activityDetailsItem {
+  line-height: 1.5;
+}
+
+.activityDetailsBefore {
+  color: var(--text-secondary);
+}
+
+.activityDetailsArrow {
+  margin: 0 6px;
+  color: var(--text-secondary);
 }
 
 .entityDetails {

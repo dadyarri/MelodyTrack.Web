@@ -9,10 +9,11 @@ export function useAuditPageController() {
   const auth = useAuth();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const canViewAudit = hasSuperuserAccess(auth.user);
   const query = useQuery({
-    queryKey: queryKeys.audit.list(page, search),
-    queryFn: () => auditApi.list({ page, page_size: 20, search: search.trim() || undefined }),
+    queryKey: queryKeys.audit.list(page, search, timezone),
+    queryFn: () => auditApi.list({ page, page_size: 20, search: search.trim() || undefined, timezone }),
     enabled: canViewAudit,
   });
 
