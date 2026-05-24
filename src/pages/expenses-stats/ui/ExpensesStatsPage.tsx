@@ -25,7 +25,7 @@ const groupByOptions: Array<{ label: string; value: ExpenseGroupBy }> = [
 
 export function ExpensesStatsPage() {
   const controller = useDashboardDateRangeGroupByQuery<ExpensesAnalytics, ExpenseGroupBy>({
-    initialGroupBy: "week",
+    initialGroupBy: "month",
     getQueryKey: ({ timezone, dateRange, groupBy }) => queryKeys.dashboard.expenses(timezone, dateRange[0], dateRange[1], groupBy),
     queryFn: ({ timezone, dateRange, groupBy }) =>
       dashboardApi.expenses({

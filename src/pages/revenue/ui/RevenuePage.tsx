@@ -26,7 +26,7 @@ const groupByOptions: Array<{ label: string; value: RevenueGroupBy }> = [
 
 export function RevenuePage() {
   const controller = useDashboardDateRangeGroupByQuery<RevenueAnalytics, RevenueGroupBy>({
-    initialGroupBy: "week",
+    initialGroupBy: "month",
     getQueryKey: ({ timezone, dateRange, groupBy }) => queryKeys.dashboard.revenue(timezone, dateRange[0], dateRange[1], groupBy),
     queryFn: ({ timezone, dateRange, groupBy }) =>
       dashboardApi.revenue({
