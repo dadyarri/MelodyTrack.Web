@@ -20,6 +20,22 @@
   grid-column: span 4;
 }
 
+.widgetMiniSchedule {
+  grid-column: span 4;
+}
+
+.widgetMiniScheduleToday {
+  grid-column: 1 / span 4;
+}
+
+.widgetMiniScheduleTomorrow {
+  grid-column: 5 / span 4;
+}
+
+.widgetDebtors {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;
@@ -27,7 +43,11 @@
   }
 
   .widgetSmall,
-  .widgetLarge {
+  .widgetLarge,
+  .widgetMiniSchedule,
+  .widgetMiniScheduleToday,
+  .widgetMiniScheduleTomorrow,
+  .widgetDebtors {
     grid-column: 1;
   }
 }
@@ -38,7 +58,11 @@
   }
 
   .widgetSmall,
-  .widgetLarge {
+  .widgetLarge,
+  .widgetMiniSchedule,
+  .widgetMiniScheduleToday,
+  .widgetMiniScheduleTomorrow,
+  .widgetDebtors {
     grid-column: span 1;
   }
 }

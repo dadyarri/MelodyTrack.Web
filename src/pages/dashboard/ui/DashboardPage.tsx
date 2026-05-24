@@ -15,6 +15,9 @@ export function DashboardPage() {
   const controller = useDashboardPageController();
   const smallWidgetClassName = `${styles.widget} ${styles.widgetSmall}`;
   const largeWidgetClassName = `${styles.widget} ${styles.widgetLarge}`;
+  const todayWidgetClassName = `${largeWidgetClassName} ${styles.widgetMiniSchedule} ${styles.widgetMiniScheduleToday}`;
+  const tomorrowWidgetClassName = `${largeWidgetClassName} ${styles.widgetMiniSchedule} ${styles.widgetMiniScheduleTomorrow}`;
+  const debtorsWidgetClassName = `${largeWidgetClassName} ${styles.widgetDebtors}`;
 
   return (
     <PageLayout title="Обзор">
@@ -36,19 +39,27 @@ export function DashboardPage() {
               />
             </Card>
             <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Всего клиентов"
-                value={controller.statsQuery.data?.totalClients ?? 0}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
               <Statistic title="Должники" value={controller.statsQuery.data?.debtorsCount ?? 0} loading={controller.statsQuery.isLoading} />
             </Card>
             <Card className={smallWidgetClassName}>
               <Statistic
                 title="Общий долг"
                 value={formatMoney(controller.statsQuery.data?.totalDebt)}
+                loading={controller.statsQuery.isLoading}
+              />
+            </Card>
+            <Card className={smallWidgetClassName}>
+              <Statistic
+                title="Всего клиентов"
+                value={controller.statsQuery.data?.totalClients ?? 0}
+                loading={controller.statsQuery.isLoading}
+              />
+            </Card>
+            
+            <Card className={smallWidgetClassName}>
+              <Statistic
+                title="Весь резерв"
+                value={formatMoney(controller.statsQuery.data?.totalPositiveBalance)}
                 loading={controller.statsQuery.isLoading}
               />
             </Card>
@@ -77,7 +88,7 @@ export function DashboardPage() {
         ) : null}
 
         <Card
-          className={largeWidgetClassName}
+          className={todayWidgetClassName}
           title={`Записи на сегодня, ${formatDateTitle(controller.today)}`}
           loading={controller.miniQuery.isLoading}
         >
@@ -85,7 +96,7 @@ export function DashboardPage() {
         </Card>
 
         <Card
-          className={largeWidgetClassName}
+          className={tomorrowWidgetClassName}
           title={`Записи на завтра, ${formatDateTitle(controller.tomorrow)}`}
           loading={controller.miniQuery.isLoading}
         >
@@ -95,7 +106,7 @@ export function DashboardPage() {
         {controller.canSeeFinancialOverview ? (
           <Card
             data-onboarding-id="dashboard-debtors"
-            className={largeWidgetClassName}
+            className={debtorsWidgetClassName}
             title="Клиенты с отрицательным балансом"
             extra={
               <ShortcutButton

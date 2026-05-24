@@ -229,6 +229,7 @@ export interface DashboardStats {
   totalClients: number;
   debtorsCount: number;
   totalDebt: number;
+  totalPositiveBalance: number;
   appointmentsToday: number;
   appointmentsTomorrow: number;
   monthIncome: number;
