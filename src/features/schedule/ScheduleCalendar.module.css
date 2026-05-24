@@ -186,6 +186,19 @@
   z-index: 1;
 }
 
+.hourSlotGhostTime {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(72px * 0.32);
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in srgb, var(--text-main) 12%, transparent);
+  pointer-events: none;
+  user-select: none;
+}
+
 .hourSlotButton:hover,
 .hourSlotButton:focus-visible {
   background: color-mix(in srgb, var(--accent) 8%, transparent);

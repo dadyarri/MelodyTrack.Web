@@ -276,7 +276,11 @@ export function AppointmentsCalendar({
                   onClick={() => {
                     onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
                   }}
-                />
+                >
+                  <span aria-hidden="true" className={styles.hourSlotGhostTime}>
+                    {hour.toString().padStart(2, "0")}:00
+                  </span>
+                </button>
               ))}
               {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
                 <AppointmentStack
