@@ -2,7 +2,7 @@ import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig 
 import { authStore } from "../features/auth/authStore";
 import type { StaleEntityConflict } from "./types";
 
-const baseURL = import.meta.env.DEV ? "http://localhost:5000" : "https://mt.dadyarri.ru/api";
+const baseURL = import.meta.env.DEV ? "http://localhost:5000" : "https://mt.dadyarri.dev/api";
 export const authExpiredEventName = "melodytrack:auth-expired";
 
 export const http = axios.create({
