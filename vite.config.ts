@@ -23,6 +23,22 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
             },
             {
+              name: "router",
+              test: /[\\/]node_modules[\\/](react-router|@remix-run[\\/]router)[\\/]/,
+            },
+            {
+              name: "query",
+              test: /[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/,
+            },
+            {
+              name: "network",
+              test: /[\\/]node_modules[\\/]axios[\\/]/,
+            },
+            {
+              name: "date-utils",
+              test: /[\\/]node_modules[\\/](dayjs|libphonenumber-js)[\\/]/,
+            },
+            {
               name: "antd-icons",
               test: /[\\/]node_modules[\\/](@ant-design|rc-[^\\/]+)[\\/]/,
             },
