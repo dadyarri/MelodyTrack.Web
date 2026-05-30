@@ -9,14 +9,14 @@ import {
   LinkOutlined,
   PhoneOutlined,
   SendOutlined,
-} from "@ant-design/icons";
+} from "@/components/icons";
 import type { FormInstance } from "antd";
 import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
-import { getPhoneUri } from "@/entities/client";
+import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import type { Appointment, AppointmentStatus, RecurrenceType } from "../../api/types";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
@@ -551,7 +551,7 @@ export function AppointmentDetailsModal({
                 <Button
                   shape="circle"
                   icon={<SendOutlined />}
-                  href={appointment.client.contacts.telegram}
+                  href={getSocialLinkHref(appointment.client.contacts.telegram, "telegram")}
                   target="_blank"
                   rel="noreferrer"
                   title="Telegram"
@@ -782,7 +782,10 @@ function formatRemainingWeeklyPattern(pattern: number | null | undefined, select
   return remainingLabels.length ? remainingLabels.join(", ") : "другие дни не выбраны";
 }
 
-const appointmentStatusOptions: { value: AppointmentStatus; label: ReactNode }[] = [
+const appointmentStatusOptions: {
+  value: AppointmentStatus;
+  label: ReactNode;
+}[] = [
   {
     value: "planned",
     label: (

@@ -50,6 +50,9 @@ export interface Client {
   lastName: string;
   patronymic?: string | null;
   contacts?: ClientContacts | null;
+  telegram?: string | null;
+  vk?: string | null;
+  phone?: string | null;
   sourceId?: Ulid | null;
   sourceName?: string | null;
   balance: number;
@@ -104,7 +107,7 @@ export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
   recentPayments: ClientHistoryPayment[];
-  recentAppointments: ClientHistoryAppointment[];
+  appointments: PaginatedResponse<ClientHistoryAppointment>;
 }
 
 export interface LookupClient {
@@ -122,6 +125,7 @@ export interface Service {
   name: string;
   description?: string | null;
   price: number;
+  lastActivity?: RecordActivity | null;
 }
 
 export interface LookupService {

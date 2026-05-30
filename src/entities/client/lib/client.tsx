@@ -1,12 +1,8 @@
 import type { Client, ClientHistory } from "@/api/types";
 import { getAppointmentStatusLabel } from "@/features/schedule/appointmentStatus";
-import { formatPhone, getPhoneUri, normalizeSocialLink } from "./contact";
+import { formatPhone, getPhoneUri, getSocialHandle, getSocialLinkHref } from "./contact";
 
-export type ClientWithOptionalContacts = Client & {
-  telegram?: string | null;
-  vk?: string | null;
-  phone?: string | null;
-};
+export type ClientWithOptionalContacts = Client;
 
 export function formatClientName(client: Pick<Client, "firstName" | "lastName" | "patronymic">) {
   return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
@@ -26,27 +22,19 @@ export function renderClientPhoneLink(value?: string | null) {
 }
 
 export function renderClientSocialLink(value: string | null | undefined, type: "telegram" | "vk") {
-  const normalized = normalizeSocialLink(value, type);
-  if (!normalized) {
+  const href = getSocialLinkHref(value, type);
+  const handle = getSocialHandle(value, type);
+  if (!href || !handle) {
     return null;
   }
 
   return (
-    <a href={normalized} target="_blank" rel="noreferrer">
-      @{getSocialHandle(normalized)}
+    <a href={href} target="_blank" rel="noreferrer">
+      @{handle}
     </a>
   );
 }
 
-export function renderClientHistoryAppointmentStatus(appointment: ClientHistory["recentAppointments"][number]) {
+export function renderClientHistoryAppointmentStatus(appointment: ClientHistory["appointments"]["data"][number]) {
   return getAppointmentStatusLabel(appointment.status);
-}
-
-function getSocialHandle(value: string) {
-  return (
-    value
-      .replace(/^https?:\/\//i, "")
-      .replace(/^www\./i, "")
-      .split(/[/?#]/)[1] ?? ""
-  );
 }

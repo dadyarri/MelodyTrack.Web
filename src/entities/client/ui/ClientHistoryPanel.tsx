@@ -1,19 +1,20 @@
-import { CalendarOutlined, CreditCardOutlined } from "@ant-design/icons";
-import { Button, Card, Descriptions, Empty, List, Space, Tag, Typography } from "antd";
+import { CalendarOutlined, CreditCardOutlined } from "@/components/icons";
+import { Button, Card, Descriptions, Empty, List, Pagination, Space, Tag, Typography } from "antd";
 import type { ClientHistory } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
-import { renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
+import { getClientContactValue, renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
 import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onAppointmentsPageChange?: (page: number) => void;
 };
 
-export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment }: ClientHistoryPanelProps) {
+export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment, onAppointmentsPageChange }: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
       {onCreateAppointment || onCreatePayment ? (
@@ -44,11 +45,15 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
       <div className={styles.detailGrid}>
         <Card size="small">
           <Descriptions size="small" title="Контакты" column={1}>
-            <Descriptions.Item label="Телефон">{renderClientPhoneLink(data.client.contacts?.phone) || "Не указан"}</Descriptions.Item>
-            <Descriptions.Item label="Telegram">
-              {renderClientSocialLink(data.client.contacts?.telegram, "telegram") || "Не указан"}
+            <Descriptions.Item label="Телефон">
+              {renderClientPhoneLink(getClientContactValue(data.client, "phone")) || "Не указан"}
             </Descriptions.Item>
-            <Descriptions.Item label="VK">{renderClientSocialLink(data.client.contacts?.vk, "vk") || "Не указан"}</Descriptions.Item>
+            <Descriptions.Item label="Telegram">
+              {renderClientSocialLink(getClientContactValue(data.client, "telegram"), "telegram") || "Не указан"}
+            </Descriptions.Item>
+            <Descriptions.Item label="VK">
+              {renderClientSocialLink(getClientContactValue(data.client, "vk"), "vk") || "Не указан"}
+            </Descriptions.Item>
           </Descriptions>
         </Card>
         <Card size="small">
@@ -93,29 +98,41 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment 
         )}
       </Card>
 
-      <Card size="small" title="Последние записи">
-        {data.recentAppointments.length > 0 ? (
-          <List
-            dataSource={data.recentAppointments}
-            renderItem={(appointment) => (
-              <List.Item>
-                <div className="wide">
-                  <Space className={`wide ${styles.listJustify}`} wrap>
-                    <Typography.Text strong>{appointment.serviceName}</Typography.Text>
-                    <Space wrap size={8}>
-                      <Tag color={getAppointmentStatusTagColor(appointment.status)}>
-                        {renderClientHistoryAppointmentStatus(appointment)}
-                      </Tag>
-                      <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
+      <Card size="small" title="История записей">
+        {data.appointments.data.length > 0 ? (
+          <Space orientation="vertical" size={16} className="wide">
+            <List
+              dataSource={data.appointments.data}
+              renderItem={(appointment) => (
+                <List.Item>
+                  <div className="wide">
+                    <Space className={`wide ${styles.listJustify}`} wrap>
+                      <Typography.Text strong>{appointment.serviceName}</Typography.Text>
+                      <Space wrap size={8}>
+                        <Tag color={getAppointmentStatusTagColor(appointment.status)}>
+                          {renderClientHistoryAppointmentStatus(appointment)}
+                        </Tag>
+                        <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
+                      </Space>
                     </Space>
-                  </Space>
-                  <Typography.Text type="secondary">
-                    {appointment.providerDisplayName ? `Преподаватель: ${appointment.providerDisplayName}` : "Преподаватель не назначен"}
-                  </Typography.Text>
-                </div>
-              </List.Item>
-            )}
-          />
+                    <Typography.Text type="secondary">
+                      {appointment.providerDisplayName ? `Преподаватель: ${appointment.providerDisplayName}` : "Преподаватель не назначен"}
+                    </Typography.Text>
+                  </div>
+                </List.Item>
+              )}
+            />
+            {data.appointments.info.total > data.appointments.info.pageSize ? (
+              <Pagination
+                align="end"
+                current={data.appointments.info.page}
+                pageSize={data.appointments.info.pageSize}
+                total={data.appointments.info.total}
+                onChange={onAppointmentsPageChange}
+                showSizeChanger={false}
+              />
+            ) : null}
+          </Space>
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Записей пока нет" />
         )}

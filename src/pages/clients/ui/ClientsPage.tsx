@@ -1,4 +1,4 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@ant-design/icons";
+import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@/components/icons";
 import { Button, Input, Space, Tag } from "antd";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import {
@@ -59,11 +59,11 @@ export function ClientsPage() {
           <ListTable
             rowKey="id"
             loading={controller.query.isLoading}
-            dataSource={controller.query.data?.data}
+            dataSource={controller.clients}
             pagination={{
-              current: controller.query.data?.info.page ?? controller.page,
-              pageSize: controller.query.data?.info.pageSize ?? 10,
-              total: controller.query.data?.info.total,
+              current: controller.pagination.current,
+              pageSize: controller.pagination.pageSize,
+              total: controller.pagination.total,
               onChange: controller.setPage,
             }}
             columns={[
@@ -94,10 +94,23 @@ export function ClientsPage() {
                 dataIndex: "balance",
                 render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
               },
-              { title: "Телефон", render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")) },
-              { title: "Telegram", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram") },
-              { title: "VK", render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk") },
-              { title: "Источник", dataIndex: "sourceName", render: (value?: string | null) => value || "Не указан" },
+              {
+                title: "Телефон",
+                render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")),
+              },
+              {
+                title: "Telegram",
+                render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram"),
+              },
+              {
+                title: "VK",
+                render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk"),
+              },
+              {
+                title: "Источник",
+                dataIndex: "sourceName",
+                render: (value?: string | null) => value || "Не указан",
+              },
               {
                 title: "",
                 width: 112,
@@ -157,11 +170,10 @@ export function ClientsPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
-        onClose={() => {
-          controller.setHistoryClient(null);
-        }}
+        onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
+        onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
       />
     </PageLayout>
   );

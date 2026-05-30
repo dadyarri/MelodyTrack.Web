@@ -9,6 +9,7 @@ export {
   formatPhoneInput,
   getPhoneDigits,
   getPhoneUri,
+  getSocialLinkHref,
   hasPhoneDigits,
   isValidPhone,
   normalizePhone,

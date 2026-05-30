@@ -10,13 +10,13 @@ import { getClientHistoryActions } from "@/features/clients/clientHistoryActions
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
+import { createOfflineTempId } from "@/utils/offlineQueue";
+import { getBackgroundRefetchInterval } from "@/utils/refetch";
+import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
-import { createOfflineTempId } from "../../utils/offlineQueue";
-import { getBackgroundRefetchInterval } from "../../utils/refetch";
-import { isShortcutTarget, matchesPlainKey } from "../../utils/shortcuts";
-import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "../../utils/staleEntity";
 import type { ClientFormValues } from "./ClientEditorModal";
 
 type ClientSubmitInput = {
@@ -39,6 +39,8 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
+const clientHistoryAppointmentsPageSize = 8;
+
 export function useClientsPageController() {
   const {
     hasSavedDraft,
@@ -56,6 +58,7 @@ export function useClientsPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
@@ -63,26 +66,38 @@ export function useClientsPageController() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
+
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
       void message.error(errorMessage);
     }
   };
+
   const canCreateClients = hasAdminAccess(auth.user);
 
   const query = useQuery({
     queryKey: queryKeys.clients.list(page, search),
-    queryFn: () => clientsApi.list({ page, page_size: 10, search: search.trim() || undefined }),
+    queryFn: () =>
+      clientsApi.list({
+        page,
+        page_size: 10,
+        search: search.trim() || undefined,
+      }),
     refetchInterval: getBackgroundRefetchInterval(isCreateOpen && Boolean(editing)),
   });
+
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
         throw new Error("History client is not selected.");
       }
-      return clientsApi.history(clientId);
+
+      return clientsApi.history(clientId, {
+        page: historyAppointmentsPage,
+        page_size: clientHistoryAppointmentsPageSize,
+      });
     },
     enabled: Boolean(historyClient),
   });
@@ -102,14 +117,17 @@ export function useClientsPageController() {
       return createOrQueueOffline({
         input,
         replayKey: draftReplayKeyRef.current,
-        create: (createInput) => clientsApi.create(createInput, { replayKey: draftReplayKeyRef.current }),
+        create: (createInput) =>
+          clientsApi.create(createInput, {
+            replayKey: draftReplayKeyRef.current,
+          }),
         buildQueueItem: (createInput, replayKey) => ({
           kind: "clients:create",
           replayKey,
           tempId: createOfflineTempId("client"),
           payload: createInput,
         }),
-      });
+      }).then((result) => ({ offline: result.offline }));
     },
     onSuccess: async (result) => {
       message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
@@ -120,7 +138,9 @@ export function useClientsPageController() {
         form.resetFields();
       });
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.clients.all,
+        });
       }
     },
     onError: async (error, variables) => {
@@ -139,7 +159,10 @@ export function useClientsPageController() {
         okText: "Перезаписать",
         cancelText: "Обновить форму",
         onConfirm: (conflict) => {
-          saveMutation.mutate({ values: variables.values, expectedActivityId: conflict.currentActivity?.id });
+          saveMutation.mutate({
+            values: variables.values,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
         },
         onReload: () => {
           const freshClient =
@@ -183,10 +206,15 @@ export function useClientsPageController() {
         okText: "Удалить все равно",
         cancelText: "Обновить список",
         onConfirm: (conflict) => {
-          deleteMutation.mutate({ id: variables.id, expectedActivityId: conflict.currentActivity?.id });
+          deleteMutation.mutate({
+            id: variables.id,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
         },
         onReload: () => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.clients.all,
+          });
         },
       });
     },
@@ -230,10 +258,15 @@ export function useClientsPageController() {
     mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
     onSuccess: async (result, values) => {
       message.success("Источник создан");
-      createdSourceOptions.addCreatedOption({ id: result.id, label: values.name.trim() });
+      createdSourceOptions.addCreatedOption({
+        id: result.id,
+        label: values.name.trim(),
+      });
       form.setFieldValue("sourceId", result.id);
       setSourceCreateOpen(false);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.sources });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.clients.sources,
+      });
     },
     onError: showErrors,
   });
@@ -243,6 +276,16 @@ export function useClientsPageController() {
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
+  }, []);
+
+  const openHistoryClient = useCallback((client: Client) => {
+    setHistoryAppointmentsPage(1);
+    setHistoryClient(client);
+  }, []);
+
+  const closeHistoryClient = useCallback(() => {
+    setHistoryClient(null);
+    setHistoryAppointmentsPage(1);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -295,9 +338,18 @@ export function useClientsPageController() {
     page,
     setPage,
     query,
+    clients: query.data?.data,
+    pagination: {
+      current: query.data?.info.page ?? page,
+      pageSize: query.data?.info.pageSize ?? 10,
+      total: query.data?.info.total,
+    },
     historyQuery,
     historyClient,
-    setHistoryClient,
+    historyAppointmentsPage,
+    setHistoryAppointmentsPage,
+    setHistoryClient: openHistoryClient,
+    closeHistoryClient,
     editing,
     isCreateOpen,
     hasCreateDraft,
@@ -315,7 +367,10 @@ export function useClientsPageController() {
     handleSearch,
     handleClearCreateDraft,
     onSubmit: (values: ClientFormValues) => {
-      saveMutation.mutate({ values, expectedActivityId: editingBaselineActivityId ?? undefined });
+      saveMutation.mutate({
+        values,
+        expectedActivityId: editingBaselineActivityId ?? undefined,
+      });
     },
     onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => {
       if (editing || isDraftHydratingRef.current) {
@@ -329,7 +384,10 @@ export function useClientsPageController() {
       modal.confirm({
         title: "Удалить клиента?",
         onOk: () => {
-          deleteMutation.mutate({ id: client.id, expectedActivityId: client.lastActivity?.id });
+          deleteMutation.mutate({
+            id: client.id,
+            expectedActivityId: client.lastActivity?.id,
+          });
         },
       });
     },

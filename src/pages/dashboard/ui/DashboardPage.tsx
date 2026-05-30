@@ -1,8 +1,8 @@
-import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@ant-design/icons";
+import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/components/icons";
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { Appointment } from "@/api/types";
-import { ClientHistoryDrawer, getPhoneUri } from "@/entities/client";
+import { ClientHistoryDrawer, getPhoneUri, getSocialLinkHref } from "@/entities/client";
 import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
@@ -141,7 +141,11 @@ export function DashboardPage() {
                     </Button>
                   ),
                 },
-                { title: "Баланс", dataIndex: "balance", render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag> },
+                {
+                  title: "Баланс",
+                  dataIndex: "balance",
+                  render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag>,
+                },
               ]}
             />
           </Card>
@@ -152,11 +156,10 @@ export function DashboardPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
-        onClose={() => {
-          controller.setHistoryClient(null);
-        }}
+        onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
+        onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
       />
     </PageLayout>
   );
@@ -199,7 +202,7 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
                 shape="circle"
                 size="small"
                 icon={<SendOutlined />}
-                href={appointment.client.contacts.telegram}
+                href={getSocialLinkHref(appointment.client.contacts.telegram, "telegram")}
                 target="_blank"
                 rel="noreferrer"
                 title="Telegram"

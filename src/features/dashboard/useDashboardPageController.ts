@@ -11,10 +11,13 @@ import { getClientHistoryActions } from "@/features/clients/clientHistoryActions
 import { downloadBlob } from "@/utils/download";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
+const clientHistoryAppointmentsPageSize = 8;
+
 export function useDashboardPageController() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
+  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const canSeeFinancialOverview = hasAdminAccess(auth.user);
 
@@ -32,13 +35,16 @@ export function useDashboardPageController() {
     queryFn: () => scheduleApi.mini(timezone),
   });
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
         throw new Error("History client is not selected.");
       }
-      return clientsApi.history(clientId);
+      return clientsApi.history(clientId, {
+        page: historyAppointmentsPage,
+        page_size: clientHistoryAppointmentsPageSize,
+      });
     },
     enabled: Boolean(historyClient),
   });
@@ -75,11 +81,24 @@ export function useDashboardPageController() {
   const tomorrowAppointments = miniQuery.data?.[tomorrow.format("YYYY-MM-DD")] ?? [];
   const clientHistoryActions = useMemo(() => getClientHistoryActions(auth.user, navigate), [auth.user, navigate]);
 
+  const openHistoryClient = (client: Client) => {
+    setHistoryAppointmentsPage(1);
+    setHistoryClient(client);
+  };
+
+  const closeHistoryClient = () => {
+    setHistoryClient(null);
+    setHistoryAppointmentsPage(1);
+  };
+
   return {
     auth,
     canSeeFinancialOverview,
     historyClient,
-    setHistoryClient,
+    historyAppointmentsPage,
+    setHistoryAppointmentsPage,
+    setHistoryClient: openHistoryClient,
+    closeHistoryClient,
     statsQuery,
     debtorsQuery,
     miniQuery,

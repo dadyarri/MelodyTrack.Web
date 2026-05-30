@@ -12,6 +12,7 @@ type ClientHistoryDrawerProps = {
   onClose: () => void;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onAppointmentsPageChange?: (page: number) => void;
 };
 
 export function ClientHistoryDrawer({
@@ -22,6 +23,7 @@ export function ClientHistoryDrawer({
   onClose,
   onCreateAppointment,
   onCreatePayment,
+  onAppointmentsPageChange,
 }: ClientHistoryDrawerProps) {
   return (
     <Drawer
@@ -31,7 +33,14 @@ export function ClientHistoryDrawer({
       onClose={onClose}
       destroyOnHidden
     >
-      {data ? <ClientHistoryPanel data={data} onCreateAppointment={onCreateAppointment} onCreatePayment={onCreatePayment} /> : null}
+      {data ? (
+        <ClientHistoryPanel
+          data={data}
+          onCreateAppointment={onCreateAppointment}
+          onCreatePayment={onCreatePayment}
+          onAppointmentsPageChange={onAppointmentsPageChange}
+        />
+      ) : null}
       <QueryStateBlock
         isLoading={isLoading}
         isError={isError}

@@ -37,12 +37,14 @@ export const clientsApi = {
   get(id: Ulid) {
     return http.get<Client>(`/clients/${id}`).then((response) => response.data);
   },
-  history(id: Ulid) {
-    return http.get<ClientHistory>(`/clients/${id}/history`).then((response) => response.data);
+  history(id: Ulid, params?: PaginatedParams) {
+    return http.get<ClientHistory>(`/clients/${id}/history`, { params }).then((response) => response.data);
   },
   lookup(search?: string) {
     return http
-      .get<{ clients: LookupClient[] }>("/clients/lookup", { params: search ? { search } : undefined })
+      .get<{
+        clients: LookupClient[];
+      }>("/clients/lookup", { params: search ? { search } : undefined })
       .then((response) => response.data.clients);
   },
   create(
@@ -61,10 +63,20 @@ export const clientsApi = {
   },
   update(
     id: Ulid,
-    input: Partial<Client> & { telegram?: string; vk?: string; phone?: string; sourceId?: Ulid | null },
+    input: Partial<Client> & {
+      telegram?: string;
+      vk?: string;
+      phone?: string;
+      sourceId?: Ulid | null;
+    },
     options?: { expectedActivityId?: Ulid },
   ) {
-    return http.put<unknown>(`/clients/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
+    return http
+      .put<unknown>(`/clients/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http
@@ -120,20 +132,37 @@ export const servicesApi = {
   },
   lookup(name?: string) {
     return http
-      .get<{ services: LookupService[] }>("/services/lookup", { params: name ? { name } : undefined })
+      .get<{
+        services: LookupService[];
+      }>("/services/lookup", { params: name ? { name } : undefined })
       .then((response) => response.data.services);
   },
   create(input: { name: string; description?: string; price: number }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: { name: string; description?: string }) {
-    return http.put<unknown>(`/services/${id}`, { id, ...input }).then(() => undefined);
+  update(id: Ulid, input: { name: string; description?: string }, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .put<unknown>(`/services/${id}`, {
+        id,
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
-  updatePrice(id: Ulid, price: number) {
-    return http.patch<unknown>(`/services/${id}/price`, { price }).then(() => undefined);
+  updatePrice(id: Ulid, price: number, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .patch<unknown>(`/services/${id}/price`, {
+        price,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
-  remove(id: Ulid) {
-    return http.delete<unknown>(`/services/${id}`).then(() => undefined);
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/services/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
   },
 };
 
@@ -155,7 +184,13 @@ export const paymentsApi = {
     return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
   },
   create(
-    input: { clientId: Ulid; serviceId?: Ulid; amount: number; date: string; description?: string },
+    input: {
+      clientId: Ulid;
+      serviceId?: Ulid;
+      amount: number;
+      date: string;
+      description?: string;
+    },
     options?: { replayKey?: string },
   ) {
     return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
@@ -230,12 +265,16 @@ export const scheduleApi = {
   },
   mini(timezone: string) {
     return http
-      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", { params: { timezone } })
+      .get<{
+        appointments: Record<string, Appointment[]>;
+      }>("/appointments/mini", { params: { timezone } })
       .then((response) => response.data.appointments);
   },
   recurrenceTypes() {
     return http
-      .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
+      .get<{
+        recurrenceTypes: RecurrenceType[];
+      }>("/appointments/recurrenceTypes")
       .then((response) => response.data.recurrenceTypes);
   },
   create(
@@ -313,7 +352,10 @@ export const usersApi = {
     options?: { expectedActivityId?: Ulid },
   ) {
     return http
-      .put<unknown>(`/users/${id}/availability`, { ...input, expectedActivityId: options?.expectedActivityId })
+      .put<unknown>(`/users/${id}/availability`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
       .then(() => undefined);
   },
 };

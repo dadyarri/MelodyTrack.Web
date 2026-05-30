@@ -39,8 +39,10 @@ export const queryKeys = {
   },
   clients: {
     all: ["clients"] as const,
+    reference: ["clients", "reference"] as const,
     list: (page: number, search: string) => ["clients", "list", page, search] as const,
-    history: (clientId?: string | null) => ["clients", "history", formatDateKey(clientId)] as const,
+    history: (clientId?: string | null, page?: number | null, pageSize?: number | null) =>
+      ["clients", "history", formatDateKey(clientId), formatDateKey(page), formatDateKey(pageSize)] as const,
     debtors: ["clients", "debtors"] as const,
     lookup: (search: string) => ["clients", "lookup", search] as const,
     selected: (clientId?: string) => ["clients", "selected", formatDateKey(clientId)] as const,
@@ -48,6 +50,7 @@ export const queryKeys = {
   },
   services: {
     all: ["services"] as const,
+    reference: ["services", "reference"] as const,
     list: (page: number) => ["services", "list", page] as const,
     lookup: (search: string) => ["services", "lookup", search] as const,
     selected: (serviceId?: string) => ["services", "selected", formatDateKey(serviceId)] as const,
