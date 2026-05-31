@@ -1,4 +1,4 @@
-import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@/components/icons";
 import { Button, DatePicker, Form, Input, InputNumber, Space, Typography } from "antd";
 import { ExpenseCategorySelect } from "@/components/RemoteSelect";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
@@ -92,12 +92,29 @@ export function ExpensesPage() {
             rowKey="id"
             loading={controller.query.isLoading}
             dataSource={controller.query.data?.data}
-            pagination={{ current: controller.page, pageSize: 10, total: controller.query.data?.info.total, onChange: controller.setPage }}
+            pagination={{
+              current: controller.page,
+              pageSize: 10,
+              total: controller.query.data?.info.total,
+              onChange: controller.setPage,
+            }}
             columns={[
-              { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
+              {
+                title: "Дата",
+                dataIndex: "date",
+                render: (value: string) => formatDateTime(value),
+              },
               { title: "Описание", dataIndex: "description" },
-              { title: "Категория", dataIndex: "categoryName", render: (value?: string | null) => value || "Без категории" },
-              { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+              {
+                title: "Категория",
+                dataIndex: "categoryName",
+                render: (value?: string | null) => value || "Без категории",
+              },
+              {
+                title: "Сумма",
+                dataIndex: "amount",
+                render: (value: number) => formatMoney(value),
+              },
               {
                 title: "",
                 width: 72,
@@ -109,7 +126,10 @@ export function ExpensesPage() {
                       controller.modal.confirm({
                         title: "Удалить расход?",
                         onOk: () => {
-                          controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
+                          controller.deleteMutation.mutate({
+                            id: row.id,
+                            expectedActivityId: row.lastActivity?.id,
+                          });
                         },
                       })
                     }

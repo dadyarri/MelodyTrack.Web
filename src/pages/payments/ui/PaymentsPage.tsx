@@ -1,4 +1,4 @@
-import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@/components/icons";
 import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
@@ -113,12 +113,28 @@ export function PaymentsPage() {
             rowKey="id"
             loading={controller.query.isLoading}
             dataSource={controller.query.data?.data}
-            pagination={{ current: controller.page, pageSize: 10, total: controller.query.data?.info.total, onChange: controller.setPage }}
+            pagination={{
+              current: controller.page,
+              pageSize: 10,
+              total: controller.query.data?.info.total,
+              onChange: controller.setPage,
+            }}
             columns={[
-              { title: "Дата", dataIndex: "date", render: (value: string) => formatDateTime(value) },
-              { title: "Клиент", render: (_, row) => `${row.client.lastName} ${row.client.firstName}` },
+              {
+                title: "Дата",
+                dataIndex: "date",
+                render: (value: string) => formatDateTime(value),
+              },
+              {
+                title: "Клиент",
+                render: (_, row) => `${row.client.lastName} ${row.client.firstName}`,
+              },
               { title: "Услуга", render: (_, row) => row.service?.name },
-              { title: "Сумма", dataIndex: "amount", render: (value: number) => formatMoney(value) },
+              {
+                title: "Сумма",
+                dataIndex: "amount",
+                render: (value: number) => formatMoney(value),
+              },
               { title: "Описание", dataIndex: "description" },
               {
                 title: "",
@@ -131,7 +147,10 @@ export function PaymentsPage() {
                       modal.confirm({
                         title: "Удалить платеж?",
                         onOk: () => {
-                          controller.deleteMutation.mutate({ id: row.id, expectedActivityId: row.lastActivity?.id });
+                          controller.deleteMutation.mutate({
+                            id: row.id,
+                            expectedActivityId: row.lastActivity?.id,
+                          });
                         },
                       });
                     }}

@@ -1,4 +1,4 @@
-import { KeyOutlined, LockOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { KeyOutlined, LockOutlined, SafetyCertificateOutlined } from "@/components/icons";
 import { Button, Form, Input, Segmented } from "antd";
 import type { ResetPasswordInput } from "@/api/auth";
 import { AuthScreenLayout } from "@/components/AuthScreenLayout";

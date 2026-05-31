@@ -1,4 +1,4 @@
-import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@ant-design/icons";
+import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/components/icons";
 import { Alert, Button, Card, DatePicker, Divider, Form, Input, List, Space, Switch, Tag, TimePicker, Typography } from "antd";
 import type { MeResponse } from "@/api/auth";
 import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
@@ -78,7 +78,16 @@ export function ProfilePage() {
                             <Form.Item
                               name={[field.name, "timeRange"]}
                               className={styles.availabilityTimeRange}
-                              rules={isWorkingDay ? [{ required: true, message: "Укажите рабочее время." }] : []}
+                              rules={
+                                isWorkingDay
+                                  ? [
+                                      {
+                                        required: true,
+                                        message: "Укажите рабочее время.",
+                                      },
+                                    ]
+                                  : []
+                              }
                             >
                               <TimePicker.RangePicker className="wide" format="HH:mm" minuteStep={15} disabled={!isWorkingDay} />
                             </Form.Item>
@@ -109,7 +118,12 @@ export function ProfilePage() {
                       <Form.Item
                         name={[field.name, "period"]}
                         className={styles.vacationRange}
-                        rules={[{ required: true, message: "Укажите период отпуска." }]}
+                        rules={[
+                          {
+                            required: true,
+                            message: "Укажите период отпуска.",
+                          },
+                        ]}
                       >
                         <DatePicker.RangePicker className="wide" format="DD.MM.YYYY" />
                       </Form.Item>

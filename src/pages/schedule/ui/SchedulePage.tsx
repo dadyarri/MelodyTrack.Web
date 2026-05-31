@@ -1,4 +1,4 @@
-import { LeftOutlined, PlusOutlined, RightOutlined } from "@ant-design/icons";
+import { LeftOutlined, PlusOutlined, RightOutlined } from "@/components/icons";
 import { Button, Space, Typography } from "antd";
 import dayjs from "dayjs";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";

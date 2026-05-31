@@ -1,4 +1,4 @@
-import { CheckOutlined, ClockCircleOutlined, CloseOutlined, FireOutlined } from "@ant-design/icons";
+import { CheckOutlined, ClockCircleOutlined, CloseOutlined, FireOutlined } from "@/components/icons";
 import { Tag } from "antd";
 import type { CSSProperties } from "react";
 import type { AppointmentStatus } from "@/api/types";

@@ -1,4 +1,4 @@
-import { CheckOutlined, SyncOutlined } from "@ant-design/icons";
+import { CheckOutlined, SyncOutlined } from "@/components/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
@@ -44,8 +44,14 @@ export function AppointmentsCalendar({
   const hours = getHours(visibleHours?.startHour, visibleHours?.endHour);
   const appointmentsByDay = groupAppointmentsByDay(appointments);
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<string | null>(null);
-  const [dropTarget, setDropTarget] = useState<{ dayKey: string; hour: number } | null>(null);
-  const [hoveredSlot, setHoveredSlot] = useState<{ dayKey: string; hour: number } | null>(null);
+  const [dropTarget, setDropTarget] = useState<{
+    dayKey: string;
+    hour: number;
+  } | null>(null);
+  const [hoveredSlot, setHoveredSlot] = useState<{
+    dayKey: string;
+    hour: number;
+  } | null>(null);
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
   const desktopHeaderRef = useRef<HTMLDivElement | null>(null);
   const desktopGridRef = useRef<HTMLDivElement | null>(null);
@@ -103,7 +109,9 @@ export function AppointmentsCalendar({
     }
 
     updateScrollIndicators();
-    container.addEventListener("scroll", updateScrollIndicators, { passive: true });
+    container.addEventListener("scroll", updateScrollIndicators, {
+      passive: true,
+    });
     window.addEventListener("resize", updateScrollIndicators);
     const resizeObserver = new ResizeObserver(() => {
       updateScrollIndicators();
@@ -121,7 +129,11 @@ export function AppointmentsCalendar({
       updateScrollIndicators();
     });
     if (grid) {
-      mutationObserver.observe(grid, { childList: true, subtree: true, attributes: true });
+      mutationObserver.observe(grid, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+      });
     }
 
     return () => {
@@ -217,7 +229,9 @@ export function AppointmentsCalendar({
         <div
           className={styles.header}
           ref={desktopHeaderRef}
-          style={{ gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))` }}
+          style={{
+            gridTemplateColumns: `72px repeat(${String(days.length)}, minmax(144px, 1fr))`,
+          }}
         >
           <div className={styles.corner} />
           {days.map((day) => (

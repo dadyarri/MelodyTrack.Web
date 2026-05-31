@@ -1,4 +1,4 @@
-import { CopyOutlined } from "@ant-design/icons";
+import { CopyOutlined } from "@/components/icons";
 import { Alert, App as AntdApp, Button, Form, Input, QRCode, Space } from "antd";
 import type { ReactNode } from "react";
 import styles from "./AuthStyles.module.css";

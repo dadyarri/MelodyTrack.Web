@@ -8,7 +8,7 @@ import {
   SettingOutlined,
   SunOutlined,
   UserOutlined,
-} from "@ant-design/icons";
+} from "@/components/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -45,11 +45,18 @@ export function AppLayout({ children }: { children?: ReactNode }) {
   const mobileMenuItems = buildNavMenuItems(availableNavItems, {
     showShortcuts: false,
   });
-  const mobileActionItems = buildShellActionItems({ canViewAudit, isDarkMode: mode === "dark" });
+  const mobileActionItems = buildShellActionItems({
+    canViewAudit,
+    isDarkMode: mode === "dark",
+  });
   const mobileDrawerActionItems = [
     { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
     ...(canViewAudit ? [{ key: "audit", icon: <FileSearchOutlined />, label: "Аудит" }] : []),
-    { key: "theme", icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />, label: mode === "dark" ? "Светлая тема" : "Темная тема" },
+    {
+      key: "theme",
+      icon: mode === "dark" ? <SunOutlined /> : <MoonOutlined />,
+      label: mode === "dark" ? "Светлая тема" : "Темная тема",
+    },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
   ];
   const handleUserAction = (key: ShellActionKey) => {

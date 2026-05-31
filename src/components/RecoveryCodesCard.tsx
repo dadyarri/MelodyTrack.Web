@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined } from "@ant-design/icons";
+import { CopyOutlined, DownloadOutlined } from "@/components/icons";
 import { App as AntdApp, Button, Card, Space, Typography } from "antd";
 import styles from "./AuthStyles.module.css";
 
@@ -39,7 +39,9 @@ export function RecoveryCodesCard({
       return;
     }
 
-    const blob = new Blob([activeCodes.join("\n")], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([activeCodes.join("\n")], {
+      type: "text/plain;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;

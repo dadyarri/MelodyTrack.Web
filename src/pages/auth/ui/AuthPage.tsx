@@ -1,4 +1,4 @@
-import { KeyOutlined, LockOutlined, MailOutlined, SafetyCertificateOutlined, UserOutlined } from "@ant-design/icons";
+import { KeyOutlined, LockOutlined, MailOutlined, SafetyCertificateOutlined, UserOutlined } from "@/components/icons";
 import { Alert, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { Navigate } from "react-router";
 import type { LoginInput, RecoveryCodeItem } from "@/api/auth";
@@ -79,7 +79,10 @@ export function AuthPage() {
         <Form
           form={controller.registerForm}
           layout="vertical"
-          initialValues={{ inviteCode: controller.inviteCode, email: controller.inviteEmail }}
+          initialValues={{
+            inviteCode: controller.inviteCode,
+            email: controller.inviteEmail,
+          }}
           onFinish={controller.onRegisterSubmit}
           requiredMark={false}
         >

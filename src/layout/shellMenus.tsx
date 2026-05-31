@@ -1,4 +1,4 @@
-import { FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@ant-design/icons";
+import { FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@/components/icons";
 import type { ItemType } from "antd/es/menu/interface";
 import type { ReactNode } from "react";
 import { navGroupIcons, navGroupLabels, type AppNavItem } from "./navigation";

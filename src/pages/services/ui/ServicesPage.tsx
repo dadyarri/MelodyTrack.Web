@@ -1,4 +1,4 @@
-import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space } from "antd";
 import { useServicesPageController } from "@/features/services/useServicesPageController";
 import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
@@ -33,11 +33,20 @@ export function ServicesPage() {
             rowKey="id"
             loading={controller.query.isLoading}
             dataSource={controller.query.data?.data}
-            pagination={{ current: controller.page, pageSize: 10, total: controller.query.data?.info.total, onChange: controller.setPage }}
+            pagination={{
+              current: controller.page,
+              pageSize: 10,
+              total: controller.query.data?.info.total,
+              onChange: controller.setPage,
+            }}
             columns={[
               { title: "Название", dataIndex: "name" },
               { title: "Описание", dataIndex: "description" },
-              { title: "Цена", dataIndex: "price", render: (value: number) => formatMoney(value) },
+              {
+                title: "Цена",
+                dataIndex: "price",
+                render: (value: number) => formatMoney(value),
+              },
               {
                 title: "",
                 width: 132,

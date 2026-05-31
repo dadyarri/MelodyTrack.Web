@@ -1,4 +1,4 @@
-import { InfoCircleOutlined } from "@ant-design/icons";
+import { InfoCircleOutlined } from "@/components/icons";
 import { Card, DatePicker, Flex, Space, Table, Tag, Tooltip, Typography } from "antd";
 import type { ReactNode } from "react";
 import { queryKeys } from "@/api/queryKeys";
@@ -136,7 +136,13 @@ export function ClientsStatsPage() {
       </div>
 
       <Space orientation="vertical" size={20} className="wide" data-onboarding-id="clients-stats-main-blocks">
-        <div style={{ display: "grid", gap: 16, gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))" }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(420px, 100%), 1fr))",
+          }}
+        >
           <SectionCard title="Выручка по источникам">
             <StatsDonutChart
               items={query.data?.sources
@@ -263,12 +269,28 @@ export function ClientsStatsPage() {
                 dataIndex: "newClientsShare",
                 render: formatPercent,
               },
-              { title: "Удержание", dataIndex: "retentionRate", render: formatPercent },
+              {
+                title: "Удержание",
+                dataIndex: "retentionRate",
+                render: formatPercent,
+              },
               { title: "Вернулось", dataIndex: "retainedClientsCount" },
               { title: "Потеряно", dataIndex: "lostClientsCount" },
-              { title: "Доля потерянных", dataIndex: "lostShare", render: formatPercent },
-              { title: "LTV", dataIndex: "revenue", render: (value: number) => formatMoney(value) },
-              { title: "Средний LTV", dataIndex: "averageLifetimeValue", render: (value?: number | null) => formatMoney(value) },
+              {
+                title: "Доля потерянных",
+                dataIndex: "lostShare",
+                render: formatPercent,
+              },
+              {
+                title: "LTV",
+                dataIndex: "revenue",
+                render: (value: number) => formatMoney(value),
+              },
+              {
+                title: "Средний LTV",
+                dataIndex: "averageLifetimeValue",
+                render: (value?: number | null) => formatMoney(value),
+              },
             ]}
           />
         </SectionCard>
@@ -284,24 +306,53 @@ export function ClientsStatsPage() {
           columns={[
             { title: "Клиент", dataIndex: "clientDisplayName" },
             { title: "Источник", dataIndex: "sourceName" },
-            { title: "Создан", dataIndex: "createdAtUtc", render: formatUtcDateTime },
-            { title: "LTV", dataIndex: "lifetimeValue", render: (value: number) => formatMoney(value) },
+            {
+              title: "Создан",
+              dataIndex: "createdAtUtc",
+              render: formatUtcDateTime,
+            },
+            {
+              title: "LTV",
+              dataIndex: "lifetimeValue",
+              render: (value: number) => formatMoney(value),
+            },
             {
               title: "Долг",
               dataIndex: "debt",
               render: (value: number) => <Tag color={value > 0 ? "red" : "default"}>{formatMoney(value)}</Tag>,
             },
-            { title: "Выруч. записей", dataIndex: "revenueCountedAppointmentsCount" },
-            { title: "Проведено записей", dataIndex: "completedAppointmentsCount" },
-            { title: "Средний интервал", dataIndex: "averageIntervalDays", render: formatDays },
+            {
+              title: "Выруч. записей",
+              dataIndex: "revenueCountedAppointmentsCount",
+            },
+            {
+              title: "Проведено записей",
+              dataIndex: "completedAppointmentsCount",
+            },
+            {
+              title: "Средний интервал",
+              dataIndex: "averageIntervalDays",
+              render: formatDays,
+            },
             {
               title: "Дней с последней записи",
               dataIndex: "daysSinceLastAppointment",
               render: (value?: number | null) => (value == null ? "—" : `${String(value)} дн.`),
             },
-            { title: "Первая запись", dataIndex: "firstAppointmentAtUtc", render: formatUtcDateTime },
-            { title: "Последняя запись", dataIndex: "lastAppointmentAtUtc", render: formatUtcDateTime },
-            { title: "Сегменты", render: (_, row) => <SegmentTags row={row} /> },
+            {
+              title: "Первая запись",
+              dataIndex: "firstAppointmentAtUtc",
+              render: formatUtcDateTime,
+            },
+            {
+              title: "Последняя запись",
+              dataIndex: "lastAppointmentAtUtc",
+              render: formatUtcDateTime,
+            },
+            {
+              title: "Сегменты",
+              render: (_, row) => <SegmentTags row={row} />,
+            },
           ]}
         />
       </SectionCard>
@@ -344,7 +395,10 @@ export function ClientsStatsPage() {
               dataIndex: "monetary",
               render: (value: number) => formatMoney(value),
             },
-            { title: titleWithInfo("R", "Оценка Recency от 1 до 5. 5 получают самые недавние клиенты."), dataIndex: "recencyScore" },
+            {
+              title: titleWithInfo("R", "Оценка Recency от 1 до 5. 5 получают самые недавние клиенты."),
+              dataIndex: "recencyScore",
+            },
             {
               title: titleWithInfo(
                 "F",
@@ -364,7 +418,11 @@ export function ClientsStatsPage() {
               dataIndex: "rfmScore",
               render: (value: string) => <Tag color="geekblue">{value}</Tag>,
             },
-            { title: "Сегмент", dataIndex: "segment", render: (value: string) => <RfmSegmentTag segment={value} /> },
+            {
+              title: "Сегмент",
+              dataIndex: "segment",
+              render: (value: string) => <RfmSegmentTag segment={value} />,
+            },
           ]}
         />
       </SectionCard>
@@ -492,13 +550,48 @@ function buildSegmentChartItems(data: ClientsAnalyticsResponse | undefined) {
   }
 
   const segments = [
-    { key: "vip", label: "VIP", value: data.vipClientsCount, color: STATS_CHART_COLORS[0] },
-    { key: "regular", label: "Регулярные", value: data.regularClientsCount, color: STATS_CHART_COLORS[1] },
-    { key: "single-time", label: "Разовые", value: data.singleTimeClientsCount, color: STATS_CHART_COLORS[2] },
-    { key: "new", label: "Новые", value: data.newClientsCount, color: STATS_CHART_COLORS[3] },
-    { key: "risk", label: "Под риском", value: data.atRiskClientsCount, color: STATS_CHART_COLORS[4] },
-    { key: "lost", label: "Потерянные", value: data.lostClientsCount, color: STATS_CHART_COLORS[5] },
-    { key: "debtors", label: "Должники", value: data.debtorsCount, color: STATS_CHART_COLORS[6] },
+    {
+      key: "vip",
+      label: "VIP",
+      value: data.vipClientsCount,
+      color: STATS_CHART_COLORS[0],
+    },
+    {
+      key: "regular",
+      label: "Регулярные",
+      value: data.regularClientsCount,
+      color: STATS_CHART_COLORS[1],
+    },
+    {
+      key: "single-time",
+      label: "Разовые",
+      value: data.singleTimeClientsCount,
+      color: STATS_CHART_COLORS[2],
+    },
+    {
+      key: "new",
+      label: "Новые",
+      value: data.newClientsCount,
+      color: STATS_CHART_COLORS[3],
+    },
+    {
+      key: "risk",
+      label: "Под риском",
+      value: data.atRiskClientsCount,
+      color: STATS_CHART_COLORS[4],
+    },
+    {
+      key: "lost",
+      label: "Потерянные",
+      value: data.lostClientsCount,
+      color: STATS_CHART_COLORS[5],
+    },
+    {
+      key: "debtors",
+      label: "Должники",
+      value: data.debtorsCount,
+      color: STATS_CHART_COLORS[6],
+    },
   ];
 
   return segments.map((segment) => ({

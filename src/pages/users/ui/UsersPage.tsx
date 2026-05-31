@@ -1,4 +1,4 @@
-import { CopyOutlined, PlusOutlined } from "@ant-design/icons";
+import { CopyOutlined, PlusOutlined } from "@/components/icons";
 import { Button, Form, Input, Modal, Space } from "antd";
 import { RoleSelect } from "@/components/RemoteSelect";
 import { useUsersPageController } from "@/features/users/useUsersPageController";

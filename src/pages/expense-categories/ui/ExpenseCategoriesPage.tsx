@@ -1,4 +1,4 @@
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusOutlined } from "@/components/icons";
 import { Button } from "antd";
 import { queryKeys } from "@/api/queryKeys";
 import { expenseCategoriesApi } from "@/api/crm";

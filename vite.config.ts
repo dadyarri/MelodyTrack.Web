@@ -39,8 +39,12 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](dayjs|libphonenumber-js)[\\/]/,
             },
             {
-              name: "antd-icons",
+              name: "antd",
               test: /[\\/]node_modules[\\/](@ant-design|rc-[^\\/]+)[\\/]/,
+            },
+            {
+              name: "rc",
+              test: /[\\/]node_modules[\\/](@rc-component[^\\/]+)[\\/]/,
             },
           ],
         },
