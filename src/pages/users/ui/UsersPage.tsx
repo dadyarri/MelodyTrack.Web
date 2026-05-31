@@ -1,8 +1,10 @@
-import { CopyOutlined, PlusOutlined } from "@/components/icons";
+import { CopyOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
 import { Button, Form, Input, Modal, Space } from "antd";
 import { RoleSelect } from "@/components/RemoteSelect";
+import { UserEditorModal } from "@/features/users/UserEditorModal";
 import { useUsersPageController } from "@/features/users/useUsersPageController";
 import { AccessDeniedNotice, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { formatPhone } from "@/entities/client";
 
 export function UsersPage() {
   const controller = useUsersPageController();
@@ -39,9 +41,45 @@ export function UsersPage() {
               { title: "Фамилия", dataIndex: "lastName" },
               { title: "Имя", dataIndex: "firstName" },
               { title: "Роль", dataIndex: "roleDisplayName" },
+              {
+                title: "Телефон",
+                dataIndex: "phone",
+                render: (value?: string | null) => (value ? formatPhone(value) : "—"),
+              },
+              {
+                title: "Telegram",
+                dataIndex: "telegram",
+                render: (value?: string | null) => value || "—",
+              },
+              {
+                title: "VK",
+                dataIndex: "vk",
+                render: (value?: string | null) => value || "—",
+              },
+              {
+                title: "",
+                width: 72,
+                render: (_, row) => (
+                  <Button
+                    icon={<EditOutlined />}
+                    onClick={() => {
+                      controller.openEditor(row);
+                    }}
+                  />
+                ),
+              },
             ]}
           />
         }
+      />
+      <UserEditorModal
+        open={Boolean(controller.editing)}
+        form={controller.editForm}
+        savePending={controller.updateUserMutation.isPending}
+        isStale={controller.isEditingUserStale}
+        staleActivity={controller.currentEditingUser?.lastActivity}
+        onCancel={controller.closeEditor}
+        onSubmit={controller.onEditSubmit}
       />
       <Modal
         open={controller.isInviteOpen}

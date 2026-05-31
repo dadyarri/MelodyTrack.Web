@@ -1,18 +1,9 @@
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { queryKeys } from "@/api/queryKeys";
-import {
-  getClientContactValue,
-  normalizePhone,
-  normalizeSocialLink,
-} from "@/entities/client";
+import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
@@ -22,11 +13,7 @@ import { useCreatedReferenceOptions } from "@/features/reference-books/useCreate
 import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
-import {
-  findItemInQueryData,
-  handleStaleEntityConflict,
-  isActivityStale,
-} from "@/utils/staleEntity";
+import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
@@ -36,6 +23,7 @@ type ClientSubmitInput = {
   firstName: string;
   lastName: string;
   patronymic?: string | null;
+  dateOfBirth?: string | null;
   telegram?: string;
   vk?: string;
   phone?: string;
@@ -46,6 +34,7 @@ type ClientDraftValues = {
   firstName?: string;
   lastName?: string;
   patronymic?: string | null;
+  dateOfBirth?: string | null;
   telegram?: string | null;
   vk?: string | null;
   phone?: string | null;
@@ -67,9 +56,7 @@ export function useClientsPageController() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
-  const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<
-    Ulid | null | undefined
-  >();
+  const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
@@ -98,17 +85,11 @@ export function useClientsPageController() {
         page_size: 10,
         search: search.trim() || undefined,
       }),
-    refetchInterval: getBackgroundRefetchInterval(
-      isCreateOpen && Boolean(editing),
-    ),
+    refetchInterval: getBackgroundRefetchInterval(isCreateOpen && Boolean(editing)),
   });
 
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(
-      historyClient?.id,
-      historyAppointmentsPage,
-      clientHistoryAppointmentsPageSize,
-    ),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -124,27 +105,16 @@ export function useClientsPageController() {
     placeholderData: keepPreviousData,
   });
 
-  const currentEditingClient = editing
-    ? (query.data?.data.find((client) => client.id === editing.id) ?? editing)
-    : null;
+  const currentEditingClient = editing ? (query.data?.data.find((client) => client.id === editing.id) ?? editing) : null;
   const isEditingClientStale = currentEditingClient
-    ? isActivityStale(
-        currentEditingClient.lastActivity?.id,
-        editingBaselineActivityId,
-      )
+    ? isActivityStale(currentEditingClient.lastActivity?.id, editingBaselineActivityId)
     : false;
 
-  const saveMutation = useMutation<
-    { offline: boolean },
-    unknown,
-    { values: ClientFormValues; expectedActivityId?: Ulid }
-  >({
+  const saveMutation = useMutation<{ offline: boolean }, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>({
     mutationFn: ({ values, expectedActivityId }) => {
       const input = prepareClientInput(values);
       if (editing) {
-        return clientsApi
-          .update(editing.id, input, { expectedActivityId })
-          .then(() => ({ offline: false as const, response: null }));
+        return clientsApi.update(editing.id, input, { expectedActivityId }).then(() => ({ offline: false as const, response: null }));
       }
 
       return createOrQueueOffline({
@@ -163,9 +133,7 @@ export function useClientsPageController() {
       }).then((result) => ({ offline: result.offline }));
     },
     onSuccess: async (result) => {
-      message.success(
-        result.offline ? "Клиент сохранен локально" : "Клиент сохранен",
-      );
+      message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
       setCreateOpen(false);
       setEditing(null);
       setEditingBaselineActivityId(undefined);
@@ -201,12 +169,8 @@ export function useClientsPageController() {
         },
         onReload: () => {
           const freshClient =
-            findItemInQueryData(
-              queryClient,
-              queryKeys.clients.all,
-              (data) => (data as { data: Client[] } | undefined)?.data,
-              editing.id,
-            ) ?? currentEditingClient;
+            findItemInQueryData(queryClient, queryKeys.clients.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
+            currentEditingClient;
           if (!freshClient) {
             return;
           }
@@ -227,13 +191,7 @@ export function useClientsPageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({
-      id,
-      expectedActivityId,
-    }: {
-      id: Ulid;
-      expectedActivityId?: Ulid;
-    }) => {
+    mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => {
       return clientsApi.remove(id, { expectedActivityId });
     },
     onSuccess: async () => {
@@ -358,11 +316,7 @@ export function useClientsPageController() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.repeat ||
-        isShortcutTarget(event.target)
-      ) {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
         return;
       }
 
@@ -421,10 +375,7 @@ export function useClientsPageController() {
         expectedActivityId: editingBaselineActivityId ?? undefined,
       });
     },
-    onValuesChange: (
-      _: Partial<ClientFormValues>,
-      values: ClientFormValues,
-    ) => {
+    onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => {
       if (editing || isDraftHydratingRef.current) {
         return;
       }
@@ -465,6 +416,7 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
     firstName: values.firstName,
     lastName: values.lastName,
     patronymic: values.patronymic,
+    dateOfBirth: values.dateOfBirth || undefined,
     phone: normalizePhone(values.phone),
     telegram: normalizeSocialLink(values.telegram, "telegram"),
     vk: normalizeSocialLink(values.vk, "vk"),

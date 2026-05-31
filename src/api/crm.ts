@@ -52,6 +52,7 @@ export const clientsApi = {
       firstName: string;
       lastName: string;
       patronymic?: string | null;
+      dateOfBirth?: string | null;
       telegram?: string;
       vk?: string;
       phone?: string;
@@ -64,6 +65,7 @@ export const clientsApi = {
   update(
     id: Ulid,
     input: Partial<Client> & {
+      dateOfBirth?: string | null;
       telegram?: string;
       vk?: string;
       phone?: string;
@@ -336,6 +338,24 @@ function buildReplayConfig(replayKey?: string) {
 export const usersApi = {
   list() {
     return http.get<{ users: User[] }>("/users").then((response) => response.data.users);
+  },
+  update(
+    id: Ulid,
+    input: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      telegram?: string;
+      vk?: string;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/users/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
   listAvailabilities() {
     return http.get<{ availabilities: UserAvailability[] }>("/users/availability").then((response) => response.data.availabilities);

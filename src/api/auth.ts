@@ -75,12 +75,18 @@ export interface Setup2FaResponse {
   otpUrl: string;
 }
 
+import type { RecordActivity } from "./types";
+
 export interface MeResponse {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   roleDisplayName: string;
+  phone?: string | null;
+  telegram?: string | null;
+  vk?: string | null;
+  lastActivity?: RecordActivity | null;
   isAdmin: boolean;
   isSuperuser: boolean;
   isTwoFactorEnabled: boolean;

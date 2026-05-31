@@ -3,7 +3,12 @@ import { Alert, Button, Card, DatePicker, Divider, Form, Input, List, Space, Swi
 import type { MeResponse } from "@/api/auth";
 import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
 import { TotpSecretPanel } from "@/components/TotpSecretPanel";
-import { type AvailabilityFormValues, useProfilePageController } from "@/features/profile/useProfilePageController";
+import { formatPhoneInput, isValidPhone, normalizeSocialLink } from "@/entities/client";
+import {
+  type AvailabilityFormValues,
+  type PersonalInfoFormValues,
+  useProfilePageController,
+} from "@/features/profile/useProfilePageController";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { weekdayLabels, weekdayOrder } from "@/utils/userAvailability";
 import styles from "./ProfilePage.module.css";
@@ -24,7 +29,73 @@ export function ProfilePage() {
       <div className="profile-grid">
         <div data-onboarding-id="profile-account-card">
           <Card title="Аккаунт">
-            {controller.me ? <ProfileSummary me={controller.me} /> : <Typography.Text type="secondary">Загрузка...</Typography.Text>}
+            {controller.me ? (
+              <Form<PersonalInfoFormValues>
+                form={controller.personalInfoForm}
+                layout="vertical"
+                requiredMark={false}
+                onFinish={controller.onPersonalInfoSubmit}
+              >
+                <Space orientation="vertical" size={16} className="wide">
+                  <ProfileSummary me={controller.me} />
+                  <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
+                    <Input />
+                  </Form.Item>
+                  <Form.Item name="firstName" label="Имя" rules={[{ required: true }]}>
+                    <Input />
+                  </Form.Item>
+                  <Form.Item
+                    name="phone"
+                    label="Телефон"
+                    rules={[
+                      {
+                        validator: (_, value?: string) =>
+                          !value?.trim() || isValidPhone(value)
+                            ? Promise.resolve()
+                            : Promise.reject(new Error("Введите корректный номер телефона")),
+                      },
+                    ]}
+                  >
+                    <PhoneInput />
+                  </Form.Item>
+                  <Form.Item
+                    name="telegram"
+                    label="Telegram"
+                    rules={[
+                      {
+                        validator: (_, value?: string) =>
+                          !value?.trim() || normalizeSocialLink(value, "telegram")
+                            ? Promise.resolve()
+                            : Promise.reject(new Error("Введите Telegram как @nickname, nickname или ссылку t.me")),
+                      },
+                    ]}
+                  >
+                    <Input placeholder="@nickname или https://t.me/nickname" />
+                  </Form.Item>
+                  <Form.Item
+                    name="vk"
+                    label="VK"
+                    rules={[
+                      {
+                        validator: (_, value?: string) =>
+                          !value?.trim() || normalizeSocialLink(value, "vk")
+                            ? Promise.resolve()
+                            : Promise.reject(new Error("Введите VK как nickname или ссылку vk.com/vk.ru")),
+                      },
+                    ]}
+                  >
+                    <Input placeholder="nickname или https://vk.com/nickname" />
+                  </Form.Item>
+                  <div>
+                    <Button type="primary" htmlType="submit" loading={controller.savePersonalInfoMutation.isPending}>
+                      Сохранить профиль
+                    </Button>
+                  </div>
+                </Space>
+              </Form>
+            ) : (
+              <Typography.Text type="secondary">Загрузка...</Typography.Text>
+            )}
           </Card>
         </div>
         <Card
@@ -290,6 +361,20 @@ export function ProfilePage() {
         />
       </Card>
     </PageLayout>
+  );
+}
+
+function PhoneInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
+  return (
+    <Input
+      value={value ?? ""}
+      inputMode="tel"
+      autoComplete="tel"
+      placeholder="+49 1512 3456789"
+      onChange={(event) => {
+        onChange?.(formatPhoneInput(event.target.value) || undefined);
+      }}
+    />
   );
 }
 

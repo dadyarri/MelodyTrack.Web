@@ -1,7 +1,9 @@
-import { Button, Form, Input, Space } from "antd";
+import { Button, DatePicker, Form, Input, Space } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
 import type { DefaultOptionType } from "antd/es/select";
 import { ClientSourceSelect } from "@/components/RemoteSelect";
 import { formatPhone, formatPhoneInput, isValidPhone, normalizePhone, normalizeSocialLink } from "@/entities/client";
+import { DATE_FORMAT } from "@/utils/date";
 
 export function ClientFormFields({
   sourceOptions,
@@ -24,6 +26,9 @@ export function ClientFormFields({
       </Form.Item>
       <Form.Item name="patronymic" label="Отчество">
         <Input />
+      </Form.Item>
+      <Form.Item name="dateOfBirth" label="Дата рождения">
+        <BirthDateInput />
       </Form.Item>
       <Form.Item
         name="phone"
@@ -75,6 +80,24 @@ export function ClientFormFields({
       </Form.Item>
     </>
   );
+
+  function BirthDateInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
+    return (
+      <DatePicker
+        className="wide"
+        format={DATE_FORMAT}
+        value={value ? dayjs(value, "YYYY-MM-DD") : null}
+        onChange={(date: Dayjs | null) => {
+          const nextValue = date ? date.format("YYYY-MM-DD") : undefined;
+          if (onChange) {
+            onChange(nextValue);
+          } else {
+            form.setFieldValue("dateOfBirth", nextValue);
+          }
+        }}
+      />
+    );
+  }
 
   function PhoneInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
     return (

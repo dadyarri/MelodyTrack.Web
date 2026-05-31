@@ -2,7 +2,7 @@ import { CalendarOutlined, CreditCardOutlined } from "@/components/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Space, Tag, Typography } from "antd";
 import type { ClientHistory } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
-import { formatDateTime } from "@/utils/date";
+import { formatDate, formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 import { getClientContactValue, renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
 import styles from "./ClientHistoryPanel.module.css";
@@ -53,6 +53,9 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
             </Descriptions.Item>
             <Descriptions.Item label="VK">
               {renderClientSocialLink(getClientContactValue(data.client, "vk"), "vk") || "Не указан"}
+            </Descriptions.Item>
+            <Descriptions.Item label="Дата рождения">
+              {data.client.dateOfBirth ? formatDate(data.client.dateOfBirth) : "Не указана"}
             </Descriptions.Item>
           </Descriptions>
         </Card>

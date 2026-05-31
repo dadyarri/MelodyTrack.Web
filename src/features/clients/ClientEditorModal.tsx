@@ -6,7 +6,12 @@ import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import { formatRecordActivitySummary } from "@/utils/staleEntity";
 import { ClientFormFields } from "./ClientFormFields";
 
-export type ClientFormValues = Client & { telegram?: string | null; vk?: string | null; phone?: string | null };
+export type ClientFormValues = Client & {
+  dateOfBirth?: string | null;
+  telegram?: string | null;
+  vk?: string | null;
+  phone?: string | null;
+};
 
 export function ClientEditorModal({
   open,

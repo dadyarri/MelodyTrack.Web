@@ -14,7 +14,8 @@ import {
 import { queryKeys } from "@/api/queryKeys";
 import { usersApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
-import type { UserAvailability, WeekdayKey } from "@/api/types";
+import type { Ulid, UserAvailability, WeekdayKey } from "@/api/types";
+import { normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { useAuth } from "@/features/auth/useAuth";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
@@ -36,6 +37,19 @@ export type AvailabilityFormValues = {
 type SaveAvailabilityInput = {
   values: AvailabilityFormValues;
   expectedActivityId?: string;
+};
+
+export type PersonalInfoFormValues = {
+  firstName: string;
+  lastName: string;
+  phone?: string | null;
+  telegram?: string | null;
+  vk?: string | null;
+};
+
+type SavePersonalInfoInput = {
+  values: PersonalInfoFormValues;
+  expectedActivityId?: Ulid;
 };
 
 function hasVacationPeriod(period?: [Dayjs, Dayjs]) {
@@ -70,6 +84,7 @@ export function useProfilePageController() {
   const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
   const [recoveryCodes, setRecoveryCodes] = useState<RecoveryCodeItem[] | null>(null);
+  const [personalInfoForm] = Form.useForm<PersonalInfoFormValues>();
   const [availabilityForm] = Form.useForm<AvailabilityFormValues>();
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
@@ -188,9 +203,63 @@ export function useProfilePageController() {
         return;
       }
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth.sessions });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.auth.sessions,
+      });
     },
     onError: showErrors,
+  });
+
+  const savePersonalInfoMutation = useMutation({
+    mutationFn: ({ values, expectedActivityId }: SavePersonalInfoInput) => {
+      const userId = meQuery.data?.id;
+      if (!userId) {
+        throw new Error("User id is missing.");
+      }
+
+      return usersApi.update(
+        userId,
+        {
+          firstName: values.firstName.trim(),
+          lastName: values.lastName.trim(),
+          phone: normalizePhone(values.phone),
+          telegram: normalizeSocialLink(values.telegram, "telegram"),
+          vk: normalizeSocialLink(values.vk, "vk"),
+        },
+        { expectedActivityId },
+      );
+    },
+    onSuccess: async () => {
+      message.success("Данные профиля сохранены");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.auth.me }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+      ]);
+    },
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: queryKeys.auth.me,
+        showErrors,
+        title: "Профиль уже изменен",
+        okText: "Сохранить все равно",
+        cancelText: "Обновить данные",
+        onConfirm: (conflict) => {
+          savePersonalInfoMutation.mutate({
+            values: variables.values,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
+        },
+        onReload: () => {
+          void Promise.all([
+            queryClient.invalidateQueries({ queryKey: queryKeys.auth.me }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+          ]);
+        },
+      });
+    },
   });
 
   const saveAvailabilityMutation = useMutation({
@@ -221,7 +290,9 @@ export function useProfilePageController() {
     },
     onSuccess: async () => {
       message.success("График работы сохранен");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.users.availability(meQuery.data?.id) });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.users.availability(meQuery.data?.id),
+      });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
@@ -240,7 +311,9 @@ export function useProfilePageController() {
           });
         },
         onReload: () => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.users.availability(meQuery.data?.id) });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.users.availability(meQuery.data?.id),
+          });
         },
       });
     },
@@ -250,7 +323,9 @@ export function useProfilePageController() {
     mutationFn: () => onboardingApi.reset(),
     onSuccess: async () => {
       message.success("Экскурсия сброшена и снова появится в приложении.");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.onboarding.state });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.onboarding.state,
+      });
     },
     onError: showErrors,
   });
@@ -258,6 +333,20 @@ export function useProfilePageController() {
   const me = meQuery.data;
   const isTwoFactorEnabled = me?.isTwoFactorEnabled ?? false;
   const isTwoFactorRequired = me?.isTwoFactorRequired ?? false;
+
+  useEffect(() => {
+    if (!meQuery.data) {
+      return;
+    }
+
+    personalInfoForm.setFieldsValue({
+      firstName: meQuery.data.firstName,
+      lastName: meQuery.data.lastName,
+      phone: meQuery.data.phone ?? undefined,
+      telegram: meQuery.data.telegram ?? undefined,
+      vk: meQuery.data.vk ?? undefined,
+    });
+  }, [meQuery.data, personalInfoForm]);
 
   useEffect(() => {
     if (!availabilityQuery.data) {
@@ -301,6 +390,7 @@ export function useProfilePageController() {
     me,
     setupState,
     recoveryCodes,
+    personalInfoForm,
     availabilityForm,
     meQuery,
     sessionsQuery,
@@ -313,10 +403,17 @@ export function useProfilePageController() {
     remove2FaMutation,
     logoutAllMutation,
     revokeSessionMutation,
+    savePersonalInfoMutation,
     saveAvailabilityMutation,
     resetOnboardingMutation,
     isTwoFactorEnabled,
     isTwoFactorRequired,
+    onPersonalInfoSubmit: (values: PersonalInfoFormValues) => {
+      savePersonalInfoMutation.mutate({
+        values,
+        expectedActivityId: meQuery.data?.lastActivity?.id,
+      });
+    },
     addVacationDraft: () => {
       const vacations = (availabilityForm.getFieldValue("vacations") as AvailabilityFormValues["vacations"] | undefined) ?? [];
       availabilityForm.setFieldValue("vacations", [...vacations, { period: undefined }]);

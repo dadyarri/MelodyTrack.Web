@@ -49,6 +49,7 @@ export interface Client {
   firstName: string;
   lastName: string;
   patronymic?: string | null;
+  dateOfBirth?: string | null;
   contacts?: ClientContacts | null;
   telegram?: string | null;
   vk?: string | null;
@@ -139,6 +140,10 @@ export interface User {
   firstName: string;
   lastName: string;
   roleDisplayName: string;
+  telegram?: string | null;
+  vk?: string | null;
+  phone?: string | null;
+  lastActivity?: RecordActivity | null;
 }
 
 export type WeekdayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
