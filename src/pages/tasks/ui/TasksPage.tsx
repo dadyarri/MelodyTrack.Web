@@ -81,9 +81,12 @@ export function TasksPage() {
                     key={task.deduplicationKey}
                     task={task}
                     completePending={
-                      controller.completeMutation.isPending && controller.completeMutation.variables.deduplicationKey === task.deduplicationKey
+                      controller.completeMutation.isPending &&
+                      controller.completeMutation.variables.deduplicationKey === task.deduplicationKey
                     }
-                    skipPending={controller.skipMutation.isPending && controller.skipMutation.variables.deduplicationKey === task.deduplicationKey}
+                    skipPending={
+                      controller.skipMutation.isPending && controller.skipMutation.variables.deduplicationKey === task.deduplicationKey
+                    }
                     listStatus={controller.status}
                     onComplete={() => {
                       controller.completeTask(task);

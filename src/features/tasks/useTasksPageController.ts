@@ -35,7 +35,9 @@ export function useTasksPageController() {
     queryFn: () => tasksApi.rules(),
   });
   const currentEditingRule = editingRule ? (rulesQuery.data?.find((rule) => rule.id === editingRule.id) ?? editingRule) : null;
-  const isEditingRuleStale = currentEditingRule ? isActivityStale(currentEditingRule.lastActivity?.id, editingRuleBaselineActivityId) : false;
+  const isEditingRuleStale = currentEditingRule
+    ? isActivityStale(currentEditingRule.lastActivity?.id, editingRuleBaselineActivityId)
+    : false;
 
   const completeMutation = useMutation({
     mutationFn: (task: RecurringTask) =>
