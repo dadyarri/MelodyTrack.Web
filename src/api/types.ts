@@ -49,6 +49,7 @@ export interface Client {
   firstName: string;
   lastName: string;
   patronymic?: string | null;
+  dateOfBirth?: string | null;
   contacts?: ClientContacts | null;
   telegram?: string | null;
   vk?: string | null;
@@ -139,6 +140,48 @@ export interface User {
   firstName: string;
   lastName: string;
   roleDisplayName: string;
+  telegram?: string | null;
+  vk?: string | null;
+  phone?: string | null;
+  lastActivity?: RecordActivity | null;
+}
+
+export type RecurringTaskType =
+  | "appointment-reminder"
+  | "birthday-greeting"
+  | "trial-follow-up"
+  | "inactive-client-reminder"
+  | "teacher-daily-schedule";
+
+export type RecurringTaskListStatus = "open" | "completed" | "skipped";
+
+export interface RecurringTask {
+  ruleId: Ulid;
+  type: RecurringTaskType;
+  recipientType: "client" | "teacher";
+  deduplicationKey: string;
+  clientId?: Ulid | null;
+  teacherId?: Ulid | null;
+  appointmentId?: Ulid | null;
+  title: string;
+  relatedPersonDisplayName: string;
+  relevantAtUtc?: string | null;
+  businessDate: string;
+  phone?: string | null;
+  telegram?: string | null;
+  vk?: string | null;
+  preparedMessage: string;
+}
+
+export interface RecurringTaskRule {
+  id: Ulid;
+  name: string;
+  type: RecurringTaskType;
+  isEnabled: boolean;
+  messageTemplate: string;
+  offsetMinutes?: number | null;
+  cooldownDays?: number | null;
+  lastActivity?: RecordActivity | null;
 }
 
 export type WeekdayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";

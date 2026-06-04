@@ -83,7 +83,7 @@ export function buildShellActionItems({ canViewAudit = false, isDarkMode }: Shel
             label: (
               <span className="app-nav-label">
                 <span>Аудит</span>
-                <Shortcut keyb={"7"} />
+                <Shortcut keyb={"I"} />
               </span>
             ),
           } satisfies ItemType,

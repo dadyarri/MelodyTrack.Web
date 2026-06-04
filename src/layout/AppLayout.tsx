@@ -102,6 +102,12 @@ export function AppLayout({ children }: { children?: ReactNode }) {
         return;
       }
 
+      if (canViewAudit && matchesPlainKey(event, "i")) {
+        event.preventDefault();
+        void navigate("/audit");
+        return;
+      }
+
       if (matchesPlainKey(event, "t")) {
         event.preventDefault();
         toggleMode();
@@ -113,7 +119,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [availableNavItems, location.pathname, navigate, toggleMode]);
+  }, [availableNavItems, canViewAudit, location.pathname, navigate, toggleMode]);
 
   return (
     <Layout className={styles.shell}>

@@ -35,11 +35,7 @@ export function useDashboardPageController() {
     queryFn: () => scheduleApi.mini(timezone),
   });
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(
-      historyClient?.id,
-      historyAppointmentsPage,
-      clientHistoryAppointmentsPageSize,
-    ),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -62,11 +58,7 @@ export function useDashboardPageController() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.repeat ||
-        isShortcutTarget(event.target)
-      ) {
+      if (event.defaultPrevented || event.repeat || isShortcutTarget(event.target)) {
         return;
       }
 
@@ -87,12 +79,8 @@ export function useDashboardPageController() {
   const today = dayjs();
   const tomorrow = today.add(1, "day");
   const todayAppointments = miniQuery.data?.[today.format("YYYY-MM-DD")] ?? [];
-  const tomorrowAppointments =
-    miniQuery.data?.[tomorrow.format("YYYY-MM-DD")] ?? [];
-  const clientHistoryActions = useMemo(
-    () => getClientHistoryActions(auth.user, navigate),
-    [auth.user, navigate],
-  );
+  const tomorrowAppointments = miniQuery.data?.[tomorrow.format("YYYY-MM-DD")] ?? [];
+  const clientHistoryActions = useMemo(() => getClientHistoryActions(auth.user, navigate), [auth.user, navigate]);
 
   const openHistoryClient = (client: Client) => {
     setHistoryAppointmentsPage(1);

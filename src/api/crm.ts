@@ -23,6 +23,10 @@ import type {
   RecurrenceType,
   RevenueAnalytics,
   Role,
+  RecurringTask,
+  RecurringTaskListStatus,
+  RecurringTaskRule,
+  RecurringTaskType,
   Service,
   Ulid,
   UserAvailability,
@@ -52,6 +56,7 @@ export const clientsApi = {
       firstName: string;
       lastName: string;
       patronymic?: string | null;
+      dateOfBirth?: string | null;
       telegram?: string;
       vk?: string;
       phone?: string;
@@ -64,6 +69,7 @@ export const clientsApi = {
   update(
     id: Ulid,
     input: Partial<Client> & {
+      dateOfBirth?: string | null;
       telegram?: string;
       vk?: string;
       phone?: string;
@@ -161,6 +167,66 @@ export const servicesApi = {
     return http
       .delete<unknown>(`/services/${id}`, {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
+  },
+};
+
+export const tasksApi = {
+  due(params: { timezone: string; status?: RecurringTaskListStatus; type?: RecurringTaskType | "all" }) {
+    return http
+      .get<{ tasks: RecurringTask[] }>("/tasks/due", {
+        params: {
+          timezone: params.timezone,
+          status: params.status,
+          type: params.type && params.type !== "all" ? params.type : undefined,
+        },
+      })
+      .then((response) => response.data.tasks);
+  },
+  complete(input: {
+    timezone: string;
+    ruleId: Ulid;
+    type: RecurringTaskType;
+    deduplicationKey: string;
+    clientId?: Ulid | null;
+    teacherId?: Ulid | null;
+    appointmentId?: Ulid | null;
+    preparedMessage?: string | null;
+  }) {
+    return http.post<unknown>("/tasks/complete", input).then(() => undefined);
+  },
+  skip(input: {
+    timezone: string;
+    ruleId: Ulid;
+    type: RecurringTaskType;
+    deduplicationKey: string;
+    clientId?: Ulid | null;
+    teacherId?: Ulid | null;
+    appointmentId?: Ulid | null;
+  }) {
+    return http.post<unknown>("/tasks/skip", input).then(() => undefined);
+  },
+  teacherScheduleImage(params: { teacherId: Ulid; date: string; timezone: string }) {
+    return http.get<Blob>("/tasks/teacher-schedule-image", { params, responseType: "blob" }).then((response) => response.data);
+  },
+  rules() {
+    return http.get<{ rules: RecurringTaskRule[] }>("/tasks/rules").then((response) => response.data.rules);
+  },
+  updateRule(
+    id: Ulid,
+    input: {
+      isEnabled: boolean;
+      messageTemplate: string;
+      offsetMinutes?: number | null;
+      cooldownDays?: number | null;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/tasks/rules/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
       })
       .then(() => undefined);
   },
@@ -336,6 +402,24 @@ function buildReplayConfig(replayKey?: string) {
 export const usersApi = {
   list() {
     return http.get<{ users: User[] }>("/users").then((response) => response.data.users);
+  },
+  update(
+    id: Ulid,
+    input: {
+      firstName: string;
+      lastName: string;
+      phone?: string;
+      telegram?: string;
+      vk?: string;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/users/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
   listAvailabilities() {
     return http.get<{ availabilities: UserAvailability[] }>("/users/availability").then((response) => response.data.availabilities);
