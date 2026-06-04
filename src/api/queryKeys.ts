@@ -85,6 +85,7 @@ export const queryKeys = {
     all: ["tasks"] as const,
     due: (timezone: string, status?: string | null, type?: string | null) =>
       ["tasks", "due", timezone, formatDateKey(status), formatDateKey(type)] as const,
+    rules: ["tasks", "rules"] as const,
   },
   schedule: {
     all: ["schedule"] as const,

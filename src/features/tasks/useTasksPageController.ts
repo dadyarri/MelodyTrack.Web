@@ -1,16 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp } from "antd";
+import { App as AntdApp, Form } from "antd";
 import { useMemo, useState } from "react";
 import { tasksApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import { queryKeys } from "@/api/queryKeys";
-import type { RecurringTask, RecurringTaskListStatus, RecurringTaskType } from "@/api/types";
+import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType, Ulid } from "@/api/types";
 import { downloadBlob } from "@/utils/download";
+import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
+
+export type RecurringTaskRuleFormValues = {
+  isEnabled: boolean;
+  messageTemplate: string;
+  offsetMinutes?: number | null;
+  cooldownDays?: number | null;
+};
 
 export function useTasksPageController() {
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const [status, setStatus] = useState<RecurringTaskListStatus>("open");
   const [type, setType] = useState<RecurringTaskType | "all">("all");
+  const [activeTab, setActiveTab] = useState<"tasks" | "rules">("tasks");
+  const [editingRule, setEditingRule] = useState<RecurringTaskRule | null>(null);
+  const [editingRuleBaselineActivityId, setEditingRuleBaselineActivityId] = useState<Ulid | null | undefined>();
+  const [ruleForm] = Form.useForm<RecurringTaskRuleFormValues>();
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
 
@@ -18,6 +30,12 @@ export function useTasksPageController() {
     queryKey: queryKeys.tasks.due(timezone, status, type === "all" ? null : type),
     queryFn: () => tasksApi.due({ timezone, status, type }),
   });
+  const rulesQuery = useQuery({
+    queryKey: queryKeys.tasks.rules,
+    queryFn: () => tasksApi.rules(),
+  });
+  const currentEditingRule = editingRule ? (rulesQuery.data?.find((rule) => rule.id === editingRule.id) ?? editingRule) : null;
+  const isEditingRuleStale = currentEditingRule ? isActivityStale(currentEditingRule.lastActivity?.id, editingRuleBaselineActivityId) : false;
 
   const completeMutation = useMutation({
     mutationFn: (task: RecurringTask) =>
@@ -63,14 +81,83 @@ export function useTasksPageController() {
       }
     },
   });
+  const updateRuleMutation = useMutation({
+    mutationFn: ({ id, values, expectedActivityId }: { id: Ulid; values: RecurringTaskRuleFormValues; expectedActivityId?: Ulid }) =>
+      tasksApi.updateRule(
+        id,
+        {
+          isEnabled: values.isEnabled,
+          messageTemplate: values.messageTemplate.trim(),
+          offsetMinutes: values.offsetMinutes ?? null,
+          cooldownDays: values.cooldownDays ?? null,
+        },
+        { expectedActivityId },
+      ),
+    onSuccess: async () => {
+      void message.success("Правило обновлено");
+      setEditingRule(null);
+      setEditingRuleBaselineActivityId(undefined);
+      ruleForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.rules });
+    },
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: queryKeys.tasks.rules,
+        showErrors: (currentError) => {
+          for (const errorMessage of getApiErrorMessages(currentError)) {
+            void message.error(errorMessage);
+          }
+        },
+        title: "Правило уже изменено",
+        okText: "Сохранить все равно",
+        cancelText: "Обновить данные",
+        onConfirm: (conflict) => {
+          updateRuleMutation.mutate({
+            id: variables.id,
+            values: variables.values,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
+        },
+        onReload: () => {
+          const freshRule =
+            findItemInQueryData(queryClient, queryKeys.tasks.rules, (data) => data as RecurringTaskRule[] | undefined, variables.id) ??
+            currentEditingRule;
+          if (!freshRule) {
+            return;
+          }
+
+          setEditingRule(freshRule);
+          setEditingRuleBaselineActivityId(freshRule.lastActivity?.id ?? null);
+          ruleForm.setFieldsValue({
+            isEnabled: freshRule.isEnabled,
+            messageTemplate: freshRule.messageTemplate,
+            offsetMinutes: freshRule.offsetMinutes ?? undefined,
+            cooldownDays: freshRule.cooldownDays ?? undefined,
+          });
+        },
+      });
+    },
+  });
 
   return {
+    activeTab,
+    setActiveTab,
     status,
     setStatus,
     type,
     setType,
     query,
     tasks: query.data ?? [],
+    rulesQuery,
+    rules: rulesQuery.data ?? [],
+    ruleForm,
+    editingRule,
+    currentEditingRule,
+    isEditingRuleStale,
+    updateRuleMutation,
     completeTask: (task: RecurringTask) => {
       modal.confirm({
         title: "Завершить задачу?",
@@ -152,6 +239,32 @@ export function useTasksPageController() {
           void message.error(errorMessage);
         }
       }
+    },
+    openRuleEditor: (rule: RecurringTaskRule) => {
+      setEditingRule(rule);
+      setEditingRuleBaselineActivityId(rule.lastActivity?.id ?? null);
+      ruleForm.setFieldsValue({
+        isEnabled: rule.isEnabled,
+        messageTemplate: rule.messageTemplate,
+        offsetMinutes: rule.offsetMinutes ?? undefined,
+        cooldownDays: rule.cooldownDays ?? undefined,
+      });
+    },
+    closeRuleEditor: () => {
+      setEditingRule(null);
+      setEditingRuleBaselineActivityId(undefined);
+      ruleForm.resetFields();
+    },
+    submitRuleEditor: (values: RecurringTaskRuleFormValues) => {
+      if (!editingRule) {
+        return;
+      }
+
+      updateRuleMutation.mutate({
+        id: editingRule.id,
+        values,
+        expectedActivityId: editingRuleBaselineActivityId ?? undefined,
+      });
     },
   };
 }

@@ -25,6 +25,7 @@ import type {
   Role,
   RecurringTask,
   RecurringTaskListStatus,
+  RecurringTaskRule,
   RecurringTaskType,
   Service,
   Ulid,
@@ -208,6 +209,26 @@ export const tasksApi = {
   },
   teacherScheduleImage(params: { teacherId: Ulid; date: string; timezone: string }) {
     return http.get<Blob>("/tasks/teacher-schedule-image", { params, responseType: "blob" }).then((response) => response.data);
+  },
+  rules() {
+    return http.get<{ rules: RecurringTaskRule[] }>("/tasks/rules").then((response) => response.data.rules);
+  },
+  updateRule(
+    id: Ulid,
+    input: {
+      isEnabled: boolean;
+      messageTemplate: string;
+      offsetMinutes?: number | null;
+      cooldownDays?: number | null;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/tasks/rules/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
   },
 };
 

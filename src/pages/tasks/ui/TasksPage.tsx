@@ -1,18 +1,22 @@
-import { Button, Card, Empty, Select, Space, Tag, Typography } from "antd";
+import { useRef } from "react";
+import { Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Space, Switch, Tabs, Tag, Typography } from "antd";
 import {
   CalendarCheckOutlined,
   CheckOutlined,
   CloseOutlined,
   CopyOutlined,
   DownloadOutlined,
+  EditOutlined,
   LinkOutlined,
   PhoneOutlined,
   SendOutlined,
 } from "@/components/icons";
 import { getPhoneUri, getSocialHandle } from "@/entities/client";
-import { useTasksPageController } from "@/features/tasks/useTasksPageController";
-import type { RecurringTask, RecurringTaskListStatus, RecurringTaskType } from "@/api/types";
+import { type RecurringTaskRuleFormValues, useTasksPageController } from "@/features/tasks/useTasksPageController";
+import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/api/types";
 import { PageLayout } from "@/shared/ui";
+import { formatRecordActivitySummary } from "@/utils/staleEntity";
+import type { TextAreaRef } from "antd/es/input/TextArea";
 
 const statusOptions: { label: string; value: RecurringTaskListStatus }[] = [
   { label: "Открытые", value: "open" },
@@ -34,58 +38,104 @@ export function TasksPage() {
 
   return (
     <PageLayout title="Задачи">
-      <Space orientation="vertical" size={16} className="wide">
-        <Card>
-          <Space wrap size={12}>
-            <Select
-              value={controller.status}
-              options={statusOptions}
-              style={{ minWidth: 200 }}
-              onChange={(value) => {
-                controller.setStatus(value);
-              }}
-            />
-            <Select
-              value={controller.type}
-              options={typeOptions}
-              style={{ minWidth: 280 }}
-              onChange={(value) => {
-                controller.setType(value);
-              }}
-            />
-          </Space>
-        </Card>
+      <Tabs
+        activeKey={controller.activeTab}
+        onChange={(key) => {
+          controller.setActiveTab(key as "tasks" | "rules");
+        }}
+        items={[
+          {
+            key: "tasks",
+            label: "Задачи",
+            children: (
+              <Space orientation="vertical" size={16} className="wide">
+                <Card>
+                  <Space wrap size={12}>
+                    <Select
+                      value={controller.status}
+                      options={statusOptions}
+                      style={{ minWidth: 200 }}
+                      onChange={(value) => {
+                        controller.setStatus(value);
+                      }}
+                    />
+                    <Select
+                      value={controller.type}
+                      options={typeOptions}
+                      style={{ minWidth: 280 }}
+                      onChange={(value) => {
+                        controller.setType(value);
+                      }}
+                    />
+                  </Space>
+                </Card>
 
-        {controller.tasks.length === 0 && !controller.query.isLoading ? (
-          <Card>
-            <Empty image={<CalendarCheckOutlined size={28} />} description={getEmptyDescription(controller.status)} />
-          </Card>
-        ) : null}
+                {controller.tasks.length === 0 && !controller.query.isLoading ? (
+                  <Card>
+                    <Empty image={<CalendarCheckOutlined size={28} />} description={getEmptyDescription(controller.status)} />
+                  </Card>
+                ) : null}
 
-        {controller.tasks.map((task) => (
-          <TaskCard
-            key={task.deduplicationKey}
-            task={task}
-            completePending={
-              controller.completeMutation.isPending && controller.completeMutation.variables.deduplicationKey === task.deduplicationKey
-            }
-            skipPending={controller.skipMutation.isPending && controller.skipMutation.variables.deduplicationKey === task.deduplicationKey}
-            listStatus={controller.status}
-            onComplete={() => {
-              controller.completeTask(task);
-            }}
-            onSkip={() => {
-              controller.skipTask(task);
-            }}
-            onDownloadSchedule={() => {
-              void controller.downloadTeacherSchedule(task);
-            }}
-            onOpenTeacherScheduleMessenger={(messengerUrl) => {
-              void controller.openTeacherScheduleMessenger(task, messengerUrl);
-            }}
-          />
-        ))}
-      </Space>
+                {controller.tasks.map((task) => (
+                  <TaskCard
+                    key={task.deduplicationKey}
+                    task={task}
+                    completePending={
+                      controller.completeMutation.isPending && controller.completeMutation.variables.deduplicationKey === task.deduplicationKey
+                    }
+                    skipPending={controller.skipMutation.isPending && controller.skipMutation.variables.deduplicationKey === task.deduplicationKey}
+                    listStatus={controller.status}
+                    onComplete={() => {
+                      controller.completeTask(task);
+                    }}
+                    onSkip={() => {
+                      controller.skipTask(task);
+                    }}
+                    onDownloadSchedule={() => {
+                      void controller.downloadTeacherSchedule(task);
+                    }}
+                    onOpenTeacherScheduleMessenger={(messengerUrl) => {
+                      void controller.openTeacherScheduleMessenger(task, messengerUrl);
+                    }}
+                  />
+                ))}
+              </Space>
+            ),
+          },
+          {
+            key: "rules",
+            label: "Правила",
+            children: (
+              <Space orientation="vertical" size={16} className="wide">
+                {controller.rules.length === 0 && !controller.rulesQuery.isLoading ? (
+                  <Card>
+                    <Empty image={<CalendarCheckOutlined size={28} />} description="Правил пока нет" />
+                  </Card>
+                ) : null}
+
+                {controller.rules.map((rule) => (
+                  <RuleCard
+                    key={rule.id}
+                    rule={rule}
+                    onEdit={() => {
+                      controller.openRuleEditor(rule);
+                    }}
+                  />
+                ))}
+              </Space>
+            ),
+          },
+        ]}
+      />
+      <RuleEditorModal
+        open={Boolean(controller.editingRule)}
+        form={controller.ruleForm}
+        rule={controller.currentEditingRule}
+        savePending={controller.updateRuleMutation.isPending}
+        isStale={controller.isEditingRuleStale}
+        onCancel={controller.closeRuleEditor}
+        onSubmit={controller.submitRuleEditor}
+      />
     </PageLayout>
   );
 }
@@ -207,6 +257,141 @@ function TaskCard({
   );
 }
 
+function RuleCard({ rule, onEdit }: { rule: RecurringTaskRule; onEdit: () => void }) {
+  return (
+    <Card
+      extra={
+        <Button icon={<EditOutlined />} onClick={onEdit}>
+          Редактировать
+        </Button>
+      }
+    >
+      <Space orientation="vertical" size={12} className="wide">
+        <Space align="start" className="wide" style={{ justifyContent: "space-between" }} wrap>
+          <div>
+            <Typography.Title level={5} style={{ margin: 0 }}>
+              {rule.name}
+            </Typography.Title>
+            <Typography.Text type="secondary">{getTypeLabel(rule.type)}</Typography.Text>
+          </div>
+          <Space wrap>
+            <Tag color={rule.isEnabled ? "success" : "default"}>{rule.isEnabled ? "Включено" : "Выключено"}</Tag>
+            {rule.offsetMinutes != null ? <Tag>Смещение: {rule.offsetMinutes} мин</Tag> : null}
+            {rule.cooldownDays != null ? <Tag>Повтор: {rule.cooldownDays} дн</Tag> : null}
+          </Space>
+        </Space>
+        <Typography.Paragraph style={{ marginBottom: 0 }}>{rule.messageTemplate}</Typography.Paragraph>
+      </Space>
+    </Card>
+  );
+}
+
+function RuleEditorModal({
+  open,
+  form,
+  rule,
+  savePending,
+  isStale,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  form: ReturnType<typeof Form.useForm<RecurringTaskRuleFormValues>>[0];
+  rule?: RecurringTaskRule | null;
+  savePending: boolean;
+  isStale: boolean;
+  onCancel: () => void;
+  onSubmit: (values: RecurringTaskRuleFormValues) => void;
+}) {
+  const messageTemplateInputRef = useRef<TextAreaRef>(null);
+  const availableTokens = rule ? getAvailableTemplateTokens(rule.type) : [];
+
+  const insertToken = (token: string) => {
+    const textarea = messageTemplateInputRef.current?.resizableTextArea?.textArea;
+    const currentValue = (form.getFieldValue("messageTemplate") as string | undefined) ?? "";
+
+    if (!textarea) {
+      form.setFieldValue("messageTemplate", `${currentValue}${token}`);
+      return;
+    }
+
+    const selectionStart = textarea.selectionStart;
+    const selectionEnd = textarea.selectionEnd;
+    const nextValue = `${currentValue.slice(0, selectionStart)}${token}${currentValue.slice(selectionEnd)}`;
+
+    form.setFieldValue("messageTemplate", nextValue);
+
+    requestAnimationFrame(() => {
+      const nextCursorPosition = selectionStart + token.length;
+      textarea.focus();
+      textarea.setSelectionRange(nextCursorPosition, nextCursorPosition);
+    });
+  };
+
+  return (
+    <Modal
+      open={open}
+      title={rule ? `Правило: ${rule.name}` : "Правило"}
+      onCancel={onCancel}
+      onOk={() => {
+        form.submit();
+      }}
+      confirmLoading={savePending}
+      okText="Сохранить"
+      cancelText="Отмена"
+    >
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+        <Space orientation="vertical" size={12} className="wide">
+          {isStale && rule?.lastActivity ? (
+            <Typography.Text type="warning">{formatRecordActivitySummary(rule.lastActivity)}</Typography.Text>
+          ) : null}
+          <Form.Item name="isEnabled" label="Включено" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="messageTemplate" label="Шаблон сообщения" rules={[{ required: true }]}>
+            <Input.TextArea ref={messageTemplateInputRef} rows={5} />
+          </Form.Item>
+          {availableTokens.length > 0 ? (
+            <Space orientation="vertical" size={8} className="wide">
+              <Typography.Text type="secondary">Доступные шаблоны для быстрой вставки:</Typography.Text>
+              <Space wrap>
+                {availableTokens.map((item) => (
+                  <Button
+                    key={item.token}
+                    size="small"
+                    onClick={() => {
+                      insertToken(item.token);
+                    }}
+                  >
+                    {item.token}
+                  </Button>
+                ))}
+              </Space>
+              <Space orientation="vertical" size={4} className="wide">
+                {availableTokens.map((item) => (
+                  <Typography.Text key={`${item.token}:hint`} type="secondary">
+                    <strong>{item.token}</strong>: {item.description}
+                  </Typography.Text>
+                ))}
+              </Space>
+            </Space>
+          ) : null}
+          {rule && supportsOffsetMinutes(rule.type) ? (
+            <Form.Item name="offsetMinutes" label="Смещение, минут" rules={[{ type: "number", min: 1 }]}>
+              <InputNumber min={1} step={15} className="wide" />
+            </Form.Item>
+          ) : null}
+          {rule && supportsCooldownDays(rule.type) ? (
+            <Form.Item name="cooldownDays" label="Период повтора, дней" rules={[{ type: "number", min: 1 }]}>
+              <InputNumber min={1} className="wide" />
+            </Form.Item>
+          ) : null}
+        </Space>
+      </Form>
+    </Modal>
+  );
+}
+
 function getTypeLabel(type: RecurringTaskType) {
   switch (type) {
     case "appointment-reminder":
@@ -230,6 +415,45 @@ function getStatusLabel(status: RecurringTaskListStatus) {
       return "Пропущена";
     case "open":
       return "Открыта";
+  }
+}
+
+function supportsOffsetMinutes(type: RecurringTaskType) {
+  return type === "appointment-reminder" || type === "trial-follow-up";
+}
+
+function supportsCooldownDays(type: RecurringTaskType) {
+  return type === "birthday-greeting" || type === "inactive-client-reminder" || type === "teacher-daily-schedule";
+}
+
+function getAvailableTemplateTokens(type: RecurringTaskType) {
+  const clientTokens = [
+    { token: "{Client.FirstName}", description: "Имя клиента" },
+    { token: "{Client.LastName}", description: "Фамилия клиента" },
+    { token: "{Client.Patronymic}", description: "Отчество клиента" },
+  ];
+
+  switch (type) {
+    case "appointment-reminder":
+      return [
+        ...clientTokens,
+        { token: "{When}", description: "Слово вроде «сегодня» или «завтра»" },
+        { token: "{Appointment.StartTime}", description: "Время начала записи" },
+        { token: "{Appointment.Date}", description: "Дата записи" },
+        { token: "{Date}", description: "Дата записи" },
+      ];
+    case "birthday-greeting":
+      return [...clientTokens, { token: "{Date}", description: "Текущая бизнес-дата" }];
+    case "trial-follow-up":
+      return [...clientTokens, { token: "{Date}", description: "Дата формирования задачи" }];
+    case "inactive-client-reminder":
+      return [...clientTokens, { token: "{Date}", description: "Дата текущего периода напоминания" }];
+    case "teacher-daily-schedule":
+      return [
+        { token: "{Teacher.FirstName}", description: "Имя преподавателя" },
+        { token: "{Teacher.LastName}", description: "Фамилия преподавателя" },
+        { token: "{Date}", description: "Дата расписания" },
+      ];
   }
 }
 

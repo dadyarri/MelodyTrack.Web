@@ -173,6 +173,17 @@ export interface RecurringTask {
   preparedMessage: string;
 }
 
+export interface RecurringTaskRule {
+  id: Ulid;
+  name: string;
+  type: RecurringTaskType;
+  isEnabled: boolean;
+  messageTemplate: string;
+  offsetMinutes?: number | null;
+  cooldownDays?: number | null;
+  lastActivity?: RecordActivity | null;
+}
+
 export type WeekdayKey = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 
 export interface UserWorkingHoursDay {
