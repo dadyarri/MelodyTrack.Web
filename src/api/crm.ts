@@ -24,6 +24,7 @@ import type {
   RevenueAnalytics,
   Role,
   RecurringTask,
+  RecurringTaskListStatus,
   RecurringTaskType,
   Service,
   Ulid,
@@ -171,11 +172,12 @@ export const servicesApi = {
 };
 
 export const tasksApi = {
-  due(params: { timezone: string; type?: RecurringTaskType | "all" }) {
+  due(params: { timezone: string; status?: RecurringTaskListStatus; type?: RecurringTaskType | "all" }) {
     return http
       .get<{ tasks: RecurringTask[] }>("/tasks/due", {
         params: {
           timezone: params.timezone,
+          status: params.status,
           type: params.type && params.type !== "all" ? params.type : undefined,
         },
       })
@@ -187,6 +189,7 @@ export const tasksApi = {
     type: RecurringTaskType;
     deduplicationKey: string;
     clientId?: Ulid | null;
+    teacherId?: Ulid | null;
     appointmentId?: Ulid | null;
     preparedMessage?: string | null;
   }) {
@@ -198,9 +201,13 @@ export const tasksApi = {
     type: RecurringTaskType;
     deduplicationKey: string;
     clientId?: Ulid | null;
+    teacherId?: Ulid | null;
     appointmentId?: Ulid | null;
   }) {
     return http.post<unknown>("/tasks/skip", input).then(() => undefined);
+  },
+  teacherScheduleImage(params: { teacherId: Ulid; date: string; timezone: string }) {
+    return http.get<Blob>("/tasks/teacher-schedule-image", { params, responseType: "blob" }).then((response) => response.data);
   },
 };
 

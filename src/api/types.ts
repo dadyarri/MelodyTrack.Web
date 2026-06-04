@@ -146,7 +146,14 @@ export interface User {
   lastActivity?: RecordActivity | null;
 }
 
-export type RecurringTaskType = "appointment-reminder" | "birthday-greeting" | "trial-follow-up" | "inactive-client-reminder";
+export type RecurringTaskType =
+  | "appointment-reminder"
+  | "birthday-greeting"
+  | "trial-follow-up"
+  | "inactive-client-reminder"
+  | "teacher-daily-schedule";
+
+export type RecurringTaskListStatus = "open" | "completed" | "skipped";
 
 export interface RecurringTask {
   ruleId: Ulid;
@@ -154,6 +161,7 @@ export interface RecurringTask {
   recipientType: "client" | "teacher";
   deduplicationKey: string;
   clientId?: Ulid | null;
+  teacherId?: Ulid | null;
   appointmentId?: Ulid | null;
   title: string;
   relatedPersonDisplayName: string;
