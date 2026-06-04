@@ -258,6 +258,20 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "tasks",
+        lazy: async () => {
+          const { TasksPage } = await recoverableImport(() => import("@/pages/tasks"));
+
+          return {
+            Component: () => (
+              <AdminRoute>
+                <TasksPage />
+              </AdminRoute>
+            ),
+          };
+        },
+      },
+      {
         path: "users",
         lazy: async () => {
           const { UsersPage } = await recoverableImport(() => import("@/pages/users"));

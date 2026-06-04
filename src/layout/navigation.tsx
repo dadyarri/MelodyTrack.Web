@@ -134,6 +134,13 @@ export const appNavItems: AppNavItem[] = [
     visibility: "admin",
   },
   {
+    key: "/tasks",
+    icon: <CalendarCheckOutlined />,
+    label: "Задачи",
+    shortcut: "7",
+    visibility: "admin",
+  },
+  {
     key: "/users",
     icon: <UserBadgeOutlined />,
     label: "Пользователи",

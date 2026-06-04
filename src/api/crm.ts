@@ -23,6 +23,8 @@ import type {
   RecurrenceType,
   RevenueAnalytics,
   Role,
+  RecurringTask,
+  RecurringTaskType,
   Service,
   Ulid,
   UserAvailability,
@@ -165,6 +167,40 @@ export const servicesApi = {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
       })
       .then(() => undefined);
+  },
+};
+
+export const tasksApi = {
+  due(params: { timezone: string; type?: RecurringTaskType | "all" }) {
+    return http
+      .get<{ tasks: RecurringTask[] }>("/tasks/due", {
+        params: {
+          timezone: params.timezone,
+          type: params.type && params.type !== "all" ? params.type : undefined,
+        },
+      })
+      .then((response) => response.data.tasks);
+  },
+  complete(input: {
+    timezone: string;
+    ruleId: Ulid;
+    type: RecurringTaskType;
+    deduplicationKey: string;
+    clientId?: Ulid | null;
+    appointmentId?: Ulid | null;
+    preparedMessage?: string | null;
+  }) {
+    return http.post<unknown>("/tasks/complete", input).then(() => undefined);
+  },
+  skip(input: {
+    timezone: string;
+    ruleId: Ulid;
+    type: RecurringTaskType;
+    deduplicationKey: string;
+    clientId?: Ulid | null;
+    appointmentId?: Ulid | null;
+  }) {
+    return http.post<unknown>("/tasks/skip", input).then(() => undefined);
   },
 };
 

@@ -81,6 +81,10 @@ export const queryKeys = {
     availabilities: ["users", "availability", "all"] as const,
     roles: ["roles", "lookup"] as const,
   },
+  tasks: {
+    all: ["tasks"] as const,
+    due: (timezone: string, type?: string | null) => ["tasks", "due", timezone, formatDateKey(type)] as const,
+  },
   schedule: {
     all: ["schedule"] as const,
     appointmentsAll: ["schedule", "appointments"] as const,
