@@ -1,5 +1,6 @@
 import { Input, Typography } from "antd";
 import { useAuditPageController } from "@/features/audit/useAuditPageController";
+import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
@@ -13,6 +14,8 @@ const categoryLabels: Record<string, string> = {
   expenses: "Расходы",
   expense_category: "Статьи расходов",
   schedule: "Расписание",
+  users: "Пользователи",
+  recurring_tasks: "Регулярные задачи",
 };
 
 const actionLabels: Record<string, string> = {
@@ -53,6 +56,12 @@ const actionLabels: Record<string, string> = {
   appointments_deleted_all: "Удалена вся серия",
   appointments_deleted_selected_weekday_this_and_following: "Удалены выбранный день и следующие",
   appointments_deleted_selected_weekday_all: "Удален выбранный день серии",
+  user_updated: "Пользователь обновлен",
+  user_availability_updated: "Доступность пользователя обновлена",
+  recurring_task_rule_updated: "Правило регулярной задачи обновлено",
+  task_completed: "Регулярная задача завершена",
+  task_cancelled: "Регулярная задача отменена",
+  task_delayed: "Регулярная задача отложена",
 };
 
 function formatAuditLabel(value: string, labels: Record<string, string>) {
@@ -69,6 +78,23 @@ function formatActorLabel(displayName?: string | null, email?: string | null) {
   }
 
   return "Система";
+}
+
+function formatAuditDetailValue(label: string, value: string) {
+  if (label !== "Тип") {
+    return value;
+  }
+
+  switch (value) {
+    case "appointment-reminder":
+    case "birthday-greeting":
+    case "trial-follow-up":
+    case "inactive-client-reminder":
+    case "teacher-daily-schedule":
+      return getRecurringTaskTypeLabel(value);
+    default:
+      return value;
+  }
 }
 
 type ParsedAuditDetail = {
@@ -196,9 +222,10 @@ function AuditDetails({ value }: { value: string }) {
           <ul className={styles.activityDetailsList}>
             {parsed.changed.map((item, index) => (
               <li key={`${item.label}:changed:${String(index)}`} className={styles.activityDetailsItem}>
-                <Typography.Text strong>{item.label}:</Typography.Text> <span className={styles.activityDetailsBefore}>{item.before}</span>
+                <Typography.Text strong>{item.label}:</Typography.Text>{" "}
+                <span className={styles.activityDetailsBefore}>{formatAuditDetailValue(item.label, item.before ?? "")}</span>
                 <span className={styles.activityDetailsArrow}>→</span>
-                <span>{item.after}</span>
+                <span>{formatAuditDetailValue(item.label, item.after ?? "")}</span>
               </li>
             ))}
           </ul>
@@ -212,7 +239,7 @@ function AuditDetails({ value }: { value: string }) {
           <ul className={styles.activityDetailsList}>
             {parsed.context.map((item, index) => (
               <li key={`${item.label}:context:${String(index)}`} className={styles.activityDetailsItem}>
-                <Typography.Text strong>{item.label}:</Typography.Text> <span>{item.value}</span>
+                <Typography.Text strong>{item.label}:</Typography.Text> <span>{formatAuditDetailValue(item.label, item.value ?? "")}</span>
               </li>
             ))}
           </ul>

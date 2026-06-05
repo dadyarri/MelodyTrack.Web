@@ -15,6 +15,7 @@ import {
 } from "@/components/icons";
 import { getPhoneUri, getSocialHandle } from "@/entities/client";
 import { type RecurringTaskRuleFormValues, useTasksPageController } from "@/features/tasks/useTasksPageController";
+import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
 import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/api/types";
 import { PageLayout } from "@/shared/ui";
 import { formatRecordActivitySummary } from "@/utils/staleEntity";
@@ -474,18 +475,7 @@ function DelayTaskModal({
 }
 
 function getTypeLabel(type: RecurringTaskType) {
-  switch (type) {
-    case "appointment-reminder":
-      return "Напоминание";
-    case "birthday-greeting":
-      return "День рождения";
-    case "trial-follow-up":
-      return "После пробного";
-    case "inactive-client-reminder":
-      return "Вернуть клиента";
-    case "teacher-daily-schedule":
-      return "Расписание";
-  }
+  return getRecurringTaskTypeLabel(type);
 }
 
 function getStatusLabel(status: RecurringTaskListStatus) {
