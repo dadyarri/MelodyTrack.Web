@@ -153,7 +153,7 @@ export type RecurringTaskType =
   | "inactive-client-reminder"
   | "teacher-daily-schedule";
 
-export type RecurringTaskListStatus = "open" | "completed" | "skipped";
+export type RecurringTaskListStatus = "open" | "completed" | "cancelled" | "delayed";
 
 export interface RecurringTask {
   ruleId: Ulid;
@@ -166,6 +166,7 @@ export interface RecurringTask {
   title: string;
   relatedPersonDisplayName: string;
   relevantAtUtc?: string | null;
+  delayedUntilUtc?: string | null;
   businessDate: string;
   phone?: string | null;
   telegram?: string | null;

@@ -1,3 +1,4 @@
+import type { Dayjs } from "dayjs";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useMemo, useState } from "react";
@@ -5,6 +6,7 @@ import { tasksApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import { queryKeys } from "@/api/queryKeys";
 import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType, Ulid } from "@/api/types";
+import { getSocialHandle } from "@/entities/client";
 import { downloadBlob } from "@/utils/download";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 
@@ -15,7 +17,12 @@ export type RecurringTaskRuleFormValues = {
   cooldownDays?: number | null;
 };
 
+type DelayTaskFormValues = {
+  delayUntil: Dayjs;
+};
+
 export function useTasksPageController() {
+  const taskAutoRefreshMs = 30_000;
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
   const [status, setStatus] = useState<RecurringTaskListStatus>("open");
   const [type, setType] = useState<RecurringTaskType | "all">("all");
@@ -23,12 +30,16 @@ export function useTasksPageController() {
   const [editingRule, setEditingRule] = useState<RecurringTaskRule | null>(null);
   const [editingRuleBaselineActivityId, setEditingRuleBaselineActivityId] = useState<Ulid | null | undefined>();
   const [ruleForm] = Form.useForm<RecurringTaskRuleFormValues>();
+  const [delayTaskForm] = Form.useForm<DelayTaskFormValues>();
+  const [delayingTask, setDelayingTask] = useState<RecurringTask | null>(null);
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
 
   const query = useQuery({
     queryKey: queryKeys.tasks.due(timezone, status, type === "all" ? null : type),
     queryFn: () => tasksApi.due({ timezone, status, type }),
+    refetchInterval: activeTab === "tasks" ? taskAutoRefreshMs : false,
+    refetchIntervalInBackground: false,
   });
   const rulesQuery = useQuery({
     queryKey: queryKeys.tasks.rules,
@@ -62,9 +73,9 @@ export function useTasksPageController() {
     },
   });
 
-  const skipMutation = useMutation({
+  const cancelMutation = useMutation({
     mutationFn: (task: RecurringTask) =>
-      tasksApi.skip({
+      tasksApi.cancel({
         timezone,
         ruleId: task.ruleId,
         type: task.type,
@@ -74,7 +85,32 @@ export function useTasksPageController() {
         appointmentId: task.appointmentId,
       }),
     onSuccess: async () => {
-      void message.success("Задача пропущена");
+      void message.success("Задача отменена");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+    onError: (error) => {
+      for (const errorMessage of getApiErrorMessages(error)) {
+        void message.error(errorMessage);
+      }
+    },
+  });
+
+  const delayMutation = useMutation({
+    mutationFn: ({ task, delayUntil }: { task: RecurringTask; delayUntil: Dayjs }) =>
+      tasksApi.delay({
+        timezone,
+        ruleId: task.ruleId,
+        type: task.type,
+        deduplicationKey: task.deduplicationKey,
+        delayUntilUtc: delayUntil.toISOString(),
+        clientId: task.clientId,
+        teacherId: task.teacherId,
+        appointmentId: task.appointmentId,
+      }),
+    onSuccess: async () => {
+      void message.success("Задача отложена");
+      setDelayingTask(null);
+      delayTaskForm.resetFields();
       await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
     },
     onError: (error) => {
@@ -144,6 +180,26 @@ export function useTasksPageController() {
     },
   });
 
+  const getFreshTask = async (task: RecurringTask) => {
+    const refreshedTasks = await queryClient.fetchQuery({
+      queryKey: queryKeys.tasks.due(timezone, status, type === "all" ? null : type),
+      queryFn: () => tasksApi.due({ timezone, status, type }),
+    });
+
+    return (
+      refreshedTasks.find((item) => item.deduplicationKey === task.deduplicationKey) ??
+      refreshedTasks.find(
+        (item) =>
+          item.ruleId === task.ruleId &&
+          item.type === task.type &&
+          item.clientId === task.clientId &&
+          item.teacherId === task.teacherId &&
+          item.appointmentId === task.appointmentId,
+      ) ??
+      null
+    );
+  };
+
   return {
     activeTab,
     setActiveTab,
@@ -171,19 +227,89 @@ export function useTasksPageController() {
         },
       });
     },
-    skipTask: (task: RecurringTask) => {
+    cancelTask: (task: RecurringTask) => {
       modal.confirm({
-        title: "Пропустить задачу?",
-        content: "Задача не будет показываться повторно в этом периоде.",
-        okText: "Пропустить",
+        title: "Отменить задачу?",
+        content: "Задача будет отменена и больше не появится в этом периоде.",
+        okText: "Отменить",
         cancelText: "Отмена",
         onOk: async () => {
-          await skipMutation.mutateAsync(task);
+          await cancelMutation.mutateAsync(task);
         },
       });
     },
+    openDelayTask: (task: RecurringTask) => {
+      setDelayingTask(task);
+      delayTaskForm.setFieldsValue({
+        delayUntil: undefined,
+      });
+    },
+    closeDelayTask: () => {
+      setDelayingTask(null);
+      delayTaskForm.resetFields();
+    },
+    submitDelayTask: async (values: DelayTaskFormValues) => {
+      if (!delayingTask) {
+        return;
+      }
+
+      await delayMutation.mutateAsync({ task: delayingTask, delayUntil: values.delayUntil });
+    },
     completeMutation,
-    skipMutation,
+    cancelMutation,
+    delayMutation,
+    delayTaskForm,
+    delayingTask,
+    copyTaskPreparedMessage: async (task: RecurringTask) => {
+      const freshTask = await getFreshTask(task);
+      if (!freshTask) {
+        void message.error("Задача больше не актуальна.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(freshTask.preparedMessage);
+      void message.success("Текст сообщения обновлён и скопирован.");
+    },
+    openTaskTelegram: async (task: RecurringTask) => {
+      if (!task.telegram) {
+        return;
+      }
+
+      const freshTask = await getFreshTask(task);
+      if (!freshTask) {
+        void message.error("Задача больше не актуальна.");
+        return;
+      }
+
+      const telegramLink = buildTelegramLink(task.telegram, freshTask.preparedMessage);
+      if (!telegramLink) {
+        void message.error("Не удалось сформировать ссылку Telegram.");
+        return;
+      }
+
+      window.location.href = telegramLink;
+    },
+    openTaskVk: async (task: RecurringTask) => {
+      if (!task.vk) {
+        return;
+      }
+
+      const freshTask = await getFreshTask(task);
+      if (!freshTask) {
+        void message.error("Задача больше не актуальна.");
+        return;
+      }
+
+      const vkLink = buildVkLink(task.vk);
+      if (!vkLink) {
+        void message.error("Не удалось сформировать ссылку VK.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(freshTask.preparedMessage);
+      void message.success("Текст сообщения обновлён и скопирован.");
+      window.open(vkLink, "_blank", "noopener,noreferrer");
+    },
     downloadTeacherSchedule: async (task: RecurringTask) => {
       if (!task.teacherId) {
         void message.error("Не указан преподаватель для расписания.");
@@ -269,4 +395,14 @@ export function useTasksPageController() {
       });
     },
   };
+}
+
+function buildTelegramLink(value: string, message: string) {
+  const handle = getSocialHandle(value, "telegram");
+  return handle ? `tg://resolve?domain=${encodeURIComponent(handle)}&text=${encodeURIComponent(message)}` : undefined;
+}
+
+function buildVkLink(value: string) {
+  const handle = getSocialHandle(value, "vk");
+  return handle ? `https://vk.me/${handle}` : undefined;
 }

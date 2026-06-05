@@ -196,7 +196,7 @@ export const tasksApi = {
   }) {
     return http.post<unknown>("/tasks/complete", input).then(() => undefined);
   },
-  skip(input: {
+  cancel(input: {
     timezone: string;
     ruleId: Ulid;
     type: RecurringTaskType;
@@ -205,7 +205,19 @@ export const tasksApi = {
     teacherId?: Ulid | null;
     appointmentId?: Ulid | null;
   }) {
-    return http.post<unknown>("/tasks/skip", input).then(() => undefined);
+    return http.post<unknown>("/tasks/cancel", input).then(() => undefined);
+  },
+  delay(input: {
+    timezone: string;
+    ruleId: Ulid;
+    type: RecurringTaskType;
+    deduplicationKey: string;
+    delayUntilUtc: string;
+    clientId?: Ulid | null;
+    teacherId?: Ulid | null;
+    appointmentId?: Ulid | null;
+  }) {
+    return http.post<unknown>("/tasks/delay", input).then(() => undefined);
   },
   teacherScheduleImage(params: { teacherId: Ulid; date: string; timezone: string }) {
     return http.get<Blob>("/tasks/teacher-schedule-image", { params, responseType: "blob" }).then((response) => response.data);

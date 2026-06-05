@@ -1,7 +1,9 @@
+import type { Dayjs } from "dayjs";
 import { useRef } from "react";
-import { Button, Card, Empty, Form, Input, InputNumber, Modal, Select, Space, Switch, Tabs, Tag, Typography } from "antd";
+import { Button, Card, DatePicker, Empty, Form, Input, InputNumber, Modal, Select, Space, Switch, Tabs, Tag, Typography } from "antd";
 import {
   CalendarCheckOutlined,
+  ClockCircleOutlined,
   CheckOutlined,
   CloseOutlined,
   CopyOutlined,
@@ -21,7 +23,8 @@ import type { TextAreaRef } from "antd/es/input/TextArea";
 const statusOptions: { label: string; value: RecurringTaskListStatus }[] = [
   { label: "Открытые", value: "open" },
   { label: "Завершённые", value: "completed" },
-  { label: "Пропущенные", value: "skipped" },
+  { label: "Отменённые", value: "cancelled" },
+  { label: "Отложенные", value: "delayed" },
 ];
 
 const typeOptions: { label: string; value: RecurringTaskType | "all" }[] = [
@@ -84,15 +87,28 @@ export function TasksPage() {
                       controller.completeMutation.isPending &&
                       controller.completeMutation.variables.deduplicationKey === task.deduplicationKey
                     }
-                    skipPending={
-                      controller.skipMutation.isPending && controller.skipMutation.variables.deduplicationKey === task.deduplicationKey
+                    cancelPending={
+                      controller.cancelMutation.isPending && controller.cancelMutation.variables.deduplicationKey === task.deduplicationKey
                     }
+                    delayPending={controller.delayMutation.isPending && controller.delayingTask?.deduplicationKey === task.deduplicationKey}
                     listStatus={controller.status}
                     onComplete={() => {
                       controller.completeTask(task);
                     }}
-                    onSkip={() => {
-                      controller.skipTask(task);
+                    onCancel={() => {
+                      controller.cancelTask(task);
+                    }}
+                    onDelay={() => {
+                      controller.openDelayTask(task);
+                    }}
+                    onOpenTelegram={() => {
+                      void controller.openTaskTelegram(task);
+                    }}
+                    onOpenVk={() => {
+                      void controller.openTaskVk(task);
+                    }}
+                    onCopyMessage={() => {
+                      void controller.copyTaskPreparedMessage(task);
                     }}
                     onDownloadSchedule={() => {
                       void controller.downloadTeacherSchedule(task);
@@ -139,36 +155,58 @@ export function TasksPage() {
         onCancel={controller.closeRuleEditor}
         onSubmit={controller.submitRuleEditor}
       />
+      <DelayTaskModal
+        open={Boolean(controller.delayingTask)}
+        task={controller.delayingTask}
+        form={controller.delayTaskForm}
+        savePending={controller.delayMutation.isPending}
+        onCancel={controller.closeDelayTask}
+        onSubmit={controller.submitDelayTask}
+      />
     </PageLayout>
   );
 }
 
+type DelayTaskModalValues = {
+  delayUntil: Dayjs;
+};
+
 function TaskCard({
   task,
   completePending,
-  skipPending,
+  cancelPending,
+  delayPending,
   listStatus,
   onComplete,
-  onSkip,
+  onCancel,
+  onDelay,
+  onOpenTelegram,
+  onOpenVk,
+  onCopyMessage,
   onDownloadSchedule,
   onOpenTeacherScheduleMessenger,
 }: {
   task: RecurringTask;
   completePending: boolean;
-  skipPending: boolean;
+  cancelPending: boolean;
+  delayPending: boolean;
   listStatus: RecurringTaskListStatus;
   onComplete: () => void;
-  onSkip: () => void;
+  onCancel: () => void;
+  onDelay: () => void;
+  onOpenTelegram: () => void;
+  onOpenVk: () => void;
+  onCopyMessage: () => void;
   onDownloadSchedule: () => void;
   onOpenTeacherScheduleMessenger: (messengerUrl: string) => void;
 }) {
-  const telegramLink = task.telegram ? buildTelegramLink(task.telegram, task.preparedMessage) : undefined;
-  const vkLink = task.vk ? buildVkLink(task.vk) : undefined;
+  const hasTelegram = Boolean(task.telegram);
+  const hasVk = Boolean(task.vk);
   const isOpenTask = listStatus === "open";
   const isTeacherSchedule = task.type === "teacher-daily-schedule";
 
   return (
-    <Card loading={completePending || skipPending}>
+    <Card loading={completePending || cancelPending || delayPending}>
       <Space orientation="vertical" size={12} className="wide">
         <Space align="start" className="wide" style={{ justifyContent: "space-between" }} wrap>
           <div>
@@ -185,6 +223,7 @@ function TaskCard({
               ) : (
                 <Tag>{formatBusinessDate(task.businessDate)}</Tag>
               )}
+              {task.delayedUntilUtc ? <Tag color="processing">До: {formatRelevantDateTime(task.delayedUntilUtc)}</Tag> : null}
               {isOpenTask ? null : <Tag color={listStatus === "completed" ? "success" : "default"}>{getStatusLabel(listStatus)}</Tag>}
             </Space>
           </Space>
@@ -197,45 +236,40 @@ function TaskCard({
                 Позвонить
               </Button>
             ) : null}
-            {telegramLink ? (
+            {hasTelegram ? (
               <Button
                 icon={<SendOutlined />}
                 onClick={
                   isTeacherSchedule
                     ? () => {
-                        onOpenTeacherScheduleMessenger(telegramLink);
+                        if (task.telegram) {
+                          onOpenTeacherScheduleMessenger(buildTelegramDeepLink(task.telegram));
+                        }
                       }
-                    : () => {
-                        window.location.href = telegramLink;
-                      }
+                    : onOpenTelegram
                 }
               >
                 Telegram
               </Button>
             ) : null}
-            {vkLink ? (
+            {hasVk ? (
               <Button
                 icon={<LinkOutlined />}
                 onClick={() => {
                   if (isTeacherSchedule) {
-                    onOpenTeacherScheduleMessenger(vkLink);
+                    if (task.vk) {
+                      onOpenTeacherScheduleMessenger(buildVkLink(task.vk));
+                    }
                     return;
                   }
 
-                  void copyPreparedMessage(task.preparedMessage).then(() => {
-                    window.open(vkLink, "_blank", "noopener,noreferrer");
-                  });
+                  onOpenVk();
                 }}
               >
                 VK
               </Button>
             ) : null}
-            <Button
-              icon={<CopyOutlined />}
-              onClick={() => {
-                void copyPreparedMessage(task.preparedMessage);
-              }}
-            >
+            <Button icon={<CopyOutlined />} onClick={onCopyMessage}>
               Скопировать текст
             </Button>
             {task.type === "teacher-daily-schedule" && task.teacherId ? (
@@ -249,8 +283,11 @@ function TaskCard({
               <Button type="primary" icon={<CheckOutlined />} loading={completePending} onClick={onComplete}>
                 Завершить
               </Button>
-              <Button icon={<CloseOutlined />} loading={skipPending} onClick={onSkip}>
-                Пропустить
+              <Button icon={<ClockCircleOutlined />} loading={delayPending} onClick={onDelay}>
+                Отложить
+              </Button>
+              <Button icon={<CloseOutlined />} loading={cancelPending} onClick={onCancel}>
+                Отменить
               </Button>
             </Space>
           ) : null}
@@ -395,6 +432,47 @@ function RuleEditorModal({
   );
 }
 
+function DelayTaskModal({
+  open,
+  task,
+  form,
+  savePending,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  task?: RecurringTask | null;
+  form: ReturnType<typeof Form.useForm<DelayTaskModalValues>>[0];
+  savePending: boolean;
+  onCancel: () => void;
+  onSubmit: (values: DelayTaskModalValues) => void | Promise<void>;
+}) {
+  return (
+    <Modal
+      open={open}
+      title={task ? `Отложить: ${task.title}` : "Отложить задачу"}
+      onCancel={onCancel}
+      onOk={() => {
+        form.submit();
+      }}
+      confirmLoading={savePending}
+      okText="Отложить"
+      cancelText="Отмена"
+    >
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+        <Form.Item
+          name="delayUntil"
+          label="Новая дата и время"
+          rules={[{ required: true, message: "Выберите дату и время." }]}
+          extra="Задача снова появится в списке открытых в указанное время."
+        >
+          <DatePicker showTime={{ format: "HH:mm" }} format="DD.MM.YYYY HH:mm" className="wide" />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}
+
 function getTypeLabel(type: RecurringTaskType) {
   switch (type) {
     case "appointment-reminder":
@@ -414,8 +492,10 @@ function getStatusLabel(status: RecurringTaskListStatus) {
   switch (status) {
     case "completed":
       return "Завершена";
-    case "skipped":
-      return "Пропущена";
+    case "cancelled":
+      return "Отменена";
+    case "delayed":
+      return "Отложена";
     case "open":
       return "Открыта";
   }
@@ -464,8 +544,10 @@ function getEmptyDescription(status: RecurringTaskListStatus) {
   switch (status) {
     case "completed":
       return "Завершённых задач пока нет";
-    case "skipped":
-      return "Пропущенных задач пока нет";
+    case "cancelled":
+      return "Отменённых задач пока нет";
+    case "delayed":
+      return "Отложенных задач пока нет";
     case "open":
       return "Открытых задач пока нет";
   }
@@ -482,6 +564,16 @@ function formatRelevantDate(value: string) {
   return formatter.format(new Date(value));
 }
 
+function formatRelevantDateTime(value: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function formatBusinessDate(value: string) {
   const date = new Date(`${value}T12:00:00`);
   return new Intl.DateTimeFormat("ru-RU", {
@@ -491,16 +583,12 @@ function formatBusinessDate(value: string) {
   }).format(date);
 }
 
-function buildTelegramLink(value: string, message: string) {
+function buildTelegramDeepLink(value: string) {
   const handle = getSocialHandle(value, "telegram");
-  return handle ? `tg://resolve?domain=${encodeURIComponent(handle)}&text=${encodeURIComponent(message)}` : undefined;
+  return handle ? `tg://resolve?domain=${encodeURIComponent(handle)}` : "";
 }
 
 function buildVkLink(value: string) {
   const handle = getSocialHandle(value, "vk");
-  return handle ? `https://vk.me/${handle}` : undefined;
-}
-
-async function copyPreparedMessage(message: string) {
-  await navigator.clipboard.writeText(message);
+  return handle ? `https://vk.me/${handle}` : "";
 }
