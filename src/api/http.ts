@@ -87,7 +87,8 @@ function cacheSuccessfulGet(response: AxiosResponse) {
   if (
     (response.config.method ?? "get").toLowerCase() !== "get" ||
     response.config.responseType === "blob" ||
-    response.config.responseType === "arraybuffer"
+    response.config.responseType === "arraybuffer" ||
+    isAuthenticatedRequest(response.config)
   ) {
     return;
   }
@@ -109,7 +110,8 @@ function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
     !config ||
     (config.method ?? "get").toLowerCase() !== "get" ||
     config.responseType === "blob" ||
-    config.responseType === "arraybuffer"
+    config.responseType === "arraybuffer" ||
+    isAuthenticatedRequest(config)
   ) {
     return null;
   }
@@ -148,6 +150,12 @@ function buildCacheKey(config: InternalAxiosRequestConfig) {
 
   const query = params.toString();
   return `${cacheStorageKeyPrefix}${(config.method ?? "get").toLowerCase()}:${url.pathname}${query ? `?${query}` : ""}`;
+}
+
+function isAuthenticatedRequest(config: InternalAxiosRequestConfig) {
+  const headers = config.headers as Record<string, unknown>;
+  const authorizationHeader = headers.Authorization ?? headers.authorization;
+  return typeof authorizationHeader === "string" && authorizationHeader.trim().length > 0;
 }
 
 export async function probeBackendReachable() {

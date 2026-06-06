@@ -7,20 +7,15 @@ import { authExpiredEventName, http } from "../../api/http";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
 import { authStore } from "./authStore";
 
-const cachedMeStorageKey = "melodytrack:auth:me";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [hasSession, setHasSession] = useState(() => authStore.hasSession());
-  const [cachedUser, setCachedUser] = useState<MeResponse | null>(() => loadCachedUser());
+  const [cachedUser, setCachedUser] = useState<MeResponse | null>(null);
 
   const handleSessionExpired = useCallback(() => {
     authStore.clear();
     setHasSession(false);
     setCachedUser(null);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(cachedMeStorageKey);
-    }
     void queryClient.cancelQueries({ queryKey: queryKeys.auth.me });
     queryClient.removeQueries({ queryKey: queryKeys.auth.me });
   }, [queryClient]);
@@ -64,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         staleTime: 0,
       });
       setCachedUser(me);
-      saveCachedUser(me);
     },
     [queryClient],
   );
@@ -97,29 +91,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-function loadCachedUser() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const raw = window.localStorage.getItem(cachedMeStorageKey);
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(raw) as MeResponse;
-  } catch {
-    return null;
-  }
-}
-
-function saveCachedUser(user: MeResponse) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(cachedMeStorageKey, JSON.stringify(user));
 }
