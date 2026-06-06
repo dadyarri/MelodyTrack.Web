@@ -1,6 +1,22 @@
 import type { Dayjs } from "dayjs";
 import { useRef } from "react";
-import { Button, Card, DatePicker, Empty, Form, Input, InputNumber, Modal, Select, Space, Switch, Tabs, Tag, Typography } from "antd";
+import {
+  Button,
+  Card,
+  DatePicker,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Radio,
+  Select,
+  Space,
+  Switch,
+  Tabs,
+  Tag,
+  Typography,
+} from "antd";
 import {
   CalendarCheckOutlined,
   ClockCircleOutlined,
@@ -11,10 +27,16 @@ import {
   EditOutlined,
   LinkOutlined,
   PhoneOutlined,
+  PlusOutlined,
   SendOutlined,
 } from "@/components/icons";
+import { ClientSelect } from "@/components/RemoteSelect";
 import { getPhoneUri, getSocialHandle } from "@/entities/client";
-import { type RecurringTaskRuleFormValues, useTasksPageController } from "@/features/tasks/useTasksPageController";
+import {
+  type CustomTaskFormValues,
+  type RecurringTaskRuleFormValues,
+  useTasksPageController,
+} from "@/features/tasks/useTasksPageController";
 import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
 import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/api/types";
 import { PageLayout } from "@/shared/ui";
@@ -36,13 +58,23 @@ const typeOptions: { label: string; value: RecurringTaskType | "all" }[] = [
   { label: "Вернуть клиента", value: "inactive-client-reminder" },
   { label: "Расписание преподавателя", value: "teacher-daily-schedule" },
   { label: "Напоминания о долге", value: "debtor-reminder" },
+  { label: "Пользовательские задачи", value: "custom-task" },
 ];
 
 export function TasksPage() {
   const controller = useTasksPageController();
 
   return (
-    <PageLayout title="Задачи">
+    <PageLayout
+      title="Задачи"
+      actions={
+        controller.activeTab === "tasks" ? (
+          <Button type="primary" icon={<PlusOutlined />} onClick={controller.openCustomTaskModal}>
+            Добавить задачу
+          </Button>
+        ) : undefined
+      }
+    >
       <Tabs
         activeKey={controller.activeTab}
         onChange={(key) => {
@@ -164,6 +196,13 @@ export function TasksPage() {
         savePending={controller.delayMutation.isPending}
         onCancel={controller.closeDelayTask}
         onSubmit={controller.submitDelayTask}
+      />
+      <CustomTaskModal
+        open={controller.isCustomTaskModalOpen}
+        form={controller.customTaskForm}
+        savePending={controller.createCustomTaskMutation.isPending}
+        onCancel={controller.closeCustomTaskModal}
+        onSubmit={controller.submitCustomTask}
       />
     </PageLayout>
   );
@@ -475,6 +514,81 @@ function DelayTaskModal({
   );
 }
 
+function CustomTaskModal({
+  open,
+  form,
+  savePending,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  form: ReturnType<typeof Form.useForm<CustomTaskFormValues>>[0];
+  savePending: boolean;
+  onCancel: () => void;
+  onSubmit: (values: CustomTaskFormValues) => void | Promise<void>;
+}) {
+  const recipientMode = Form.useWatch("recipientMode", form);
+
+  return (
+    <Modal
+      open={open}
+      title="Новая пользовательская задача"
+      onCancel={onCancel}
+      onOk={() => {
+        form.submit();
+      }}
+      confirmLoading={savePending}
+      okText="Создать"
+      cancelText="Отмена"
+      destroyOnHidden
+    >
+      <Form form={form} layout="vertical" requiredMark={false} initialValues={{ recipientMode: "client" }} onFinish={onSubmit}>
+        <Form.Item name="recipientMode" label="Кому задача" rules={[{ required: true }]}>
+          <Radio.Group
+            optionType="button"
+            buttonStyle="solid"
+            options={[
+              { label: "Существующий клиент", value: "client" },
+              { label: "Не клиент", value: "external" },
+            ]}
+          />
+        </Form.Item>
+
+        {recipientMode !== "external" ? (
+          <Form.Item name="clientId" label="Клиент" rules={[{ required: true, message: "Выберите клиента." }]}>
+            <ClientSelect />
+          </Form.Item>
+        ) : (
+          <>
+            <Form.Item name="recipientName" label="Имя получателя" rules={[{ required: true, message: "Укажите имя получателя." }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="phone" label="Телефон">
+              <Input />
+            </Form.Item>
+            <Form.Item name="telegram" label="Telegram">
+              <Input />
+            </Form.Item>
+            <Form.Item name="vk" label="VK">
+              <Input />
+            </Form.Item>
+          </>
+        )}
+
+        <Form.Item name="title" label="Заголовок" rules={[{ required: true, message: "Укажите заголовок задачи." }]}>
+          <Input />
+        </Form.Item>
+        <Form.Item name="dueAt" label="Когда показать задачу" rules={[{ required: true, message: "Выберите дату и время." }]}>
+          <DatePicker showTime={{ format: "HH:mm" }} format="DD.MM.YYYY HH:mm" className="wide" />
+        </Form.Item>
+        <Form.Item name="messageText" label="Текст задачи" rules={[{ required: true, message: "Укажите текст задачи." }]}>
+          <Input.TextArea rows={5} />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+}
+
 function getTypeLabel(type: RecurringTaskType) {
   return getRecurringTaskTypeLabel(type);
 }
@@ -532,6 +646,8 @@ function getAvailableTemplateTokens(type: RecurringTaskType) {
       ];
     case "debtor-reminder":
       return [...clientTokens, { token: "{Date}", description: "Дата текущего напоминания" }];
+    case "custom-task":
+      return [];
   }
 }
 

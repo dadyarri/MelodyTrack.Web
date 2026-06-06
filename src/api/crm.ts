@@ -8,6 +8,7 @@ import type {
   ClientHistory,
   ClientWithBalance,
   CreateEntityResponse,
+  CreateCustomTaskInput,
   DashboardStats,
   ExpensesResponse,
   ReferenceBookItem,
@@ -241,6 +242,9 @@ export const tasksApi = {
         expectedActivityId: options?.expectedActivityId,
       })
       .then(() => undefined);
+  },
+  createCustom(input: CreateCustomTaskInput) {
+    return http.post<CreateEntityResponse>("/tasks/custom", input).then((response) => response.data);
   },
 };
 

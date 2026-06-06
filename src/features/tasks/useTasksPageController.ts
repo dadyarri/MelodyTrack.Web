@@ -21,6 +21,18 @@ type DelayTaskFormValues = {
   delayUntil: Dayjs;
 };
 
+export type CustomTaskFormValues = {
+  recipientMode: "client" | "external";
+  clientId?: string;
+  recipientName?: string;
+  phone?: string;
+  telegram?: string;
+  vk?: string;
+  title: string;
+  messageText: string;
+  dueAt: Dayjs;
+};
+
 export function useTasksPageController() {
   const taskAutoRefreshMs = 30_000;
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
@@ -30,8 +42,10 @@ export function useTasksPageController() {
   const [editingRule, setEditingRule] = useState<RecurringTaskRule | null>(null);
   const [editingRuleBaselineActivityId, setEditingRuleBaselineActivityId] = useState<Ulid | null | undefined>();
   const [ruleForm] = Form.useForm<RecurringTaskRuleFormValues>();
+  const [customTaskForm] = Form.useForm<CustomTaskFormValues>();
   const [delayTaskForm] = Form.useForm<DelayTaskFormValues>();
   const [delayingTask, setDelayingTask] = useState<RecurringTask | null>(null);
+  const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
 
@@ -179,6 +193,30 @@ export function useTasksPageController() {
       });
     },
   });
+  const createCustomTaskMutation = useMutation({
+    mutationFn: (values: CustomTaskFormValues) =>
+      tasksApi.createCustom({
+        clientId: values.recipientMode === "client" ? (values.clientId ?? null) : null,
+        recipientName: values.recipientMode === "external" ? (values.recipientName?.trim() ?? null) : null,
+        phone: values.recipientMode === "external" ? (values.phone?.trim() ?? null) : null,
+        telegram: values.recipientMode === "external" ? (values.telegram?.trim() ?? null) : null,
+        vk: values.recipientMode === "external" ? (values.vk?.trim() ?? null) : null,
+        title: values.title.trim(),
+        messageText: values.messageText.trim(),
+        dueAtUtc: values.dueAt.toISOString(),
+      }),
+    onSuccess: async () => {
+      void message.success("Пользовательская задача создана");
+      setIsCustomTaskModalOpen(false);
+      customTaskForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all });
+    },
+    onError: (error) => {
+      for (const errorMessage of getApiErrorMessages(error)) {
+        void message.error(errorMessage);
+      }
+    },
+  });
 
   const getFreshTask = async (task: RecurringTask) => {
     const refreshedTasks = await queryClient.fetchQuery({
@@ -212,10 +250,34 @@ export function useTasksPageController() {
     rulesQuery,
     rules: rulesQuery.data ?? [],
     ruleForm,
+    customTaskForm,
     editingRule,
     currentEditingRule,
     isEditingRuleStale,
     updateRuleMutation,
+    createCustomTaskMutation,
+    isCustomTaskModalOpen,
+    openCustomTaskModal: () => {
+      setIsCustomTaskModalOpen(true);
+      customTaskForm.setFieldsValue({
+        recipientMode: "client",
+        clientId: undefined,
+        recipientName: undefined,
+        phone: undefined,
+        telegram: undefined,
+        vk: undefined,
+        title: "",
+        messageText: "",
+        dueAt: undefined,
+      });
+    },
+    closeCustomTaskModal: () => {
+      setIsCustomTaskModalOpen(false);
+      customTaskForm.resetFields();
+    },
+    submitCustomTask: async (values: CustomTaskFormValues) => {
+      await createCustomTaskMutation.mutateAsync(values);
+    },
     completeTask: (task: RecurringTask) => {
       modal.confirm({
         title: "Завершить задачу?",

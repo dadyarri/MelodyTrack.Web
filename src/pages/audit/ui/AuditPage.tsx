@@ -60,6 +60,7 @@ const actionLabels: Record<string, string> = {
   user_updated: "Пользователь обновлен",
   user_availability_updated: "Доступность пользователя обновлена",
   recurring_task_rule_updated: "Правило регулярной задачи обновлено",
+  custom_task_created: "Пользовательская задача создана",
   task_completed: "Регулярная задача завершена",
   task_cancelled: "Регулярная задача отменена",
   task_delayed: "Регулярная задача отложена",
@@ -72,6 +73,7 @@ const recurringTaskAuditTypes = new Set<RecurringTaskType>([
   "inactive-client-reminder",
   "teacher-daily-schedule",
   "debtor-reminder",
+  "custom-task",
 ]);
 
 function formatAuditLabel(value: string, labels: Record<string, string>) {

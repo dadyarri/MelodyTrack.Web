@@ -14,5 +14,7 @@ export function getRecurringTaskTypeLabel(type: RecurringTaskType) {
       return "Расписание преподавателя";
     case "debtor-reminder":
       return "Напомнить о долге";
+    case "custom-task":
+      return "Пользовательская задача";
   }
 }

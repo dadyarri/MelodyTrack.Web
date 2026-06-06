@@ -152,14 +152,15 @@ export type RecurringTaskType =
   | "trial-follow-up"
   | "inactive-client-reminder"
   | "teacher-daily-schedule"
-  | "debtor-reminder";
+  | "debtor-reminder"
+  | "custom-task";
 
 export type RecurringTaskListStatus = "open" | "completed" | "cancelled" | "delayed";
 
 export interface RecurringTask {
   ruleId: Ulid;
   type: RecurringTaskType;
-  recipientType: "client" | "teacher";
+  recipientType: "client" | "teacher" | "external";
   deduplicationKey: string;
   clientId?: Ulid | null;
   teacherId?: Ulid | null;
@@ -173,6 +174,17 @@ export interface RecurringTask {
   telegram?: string | null;
   vk?: string | null;
   preparedMessage: string;
+}
+
+export interface CreateCustomTaskInput {
+  clientId?: Ulid | null;
+  recipientName?: string | null;
+  phone?: string | null;
+  telegram?: string | null;
+  vk?: string | null;
+  title: string;
+  messageText: string;
+  dueAtUtc: string;
 }
 
 export interface RecurringTaskRule {
