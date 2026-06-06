@@ -51,7 +51,6 @@ http.interceptors.response.use(
       "/auth/invite",
       "/auth/2fa/verify",
       "/auth/2fa/recover",
-      "/auth/forgotPassword",
       "/auth/resetPassword",
       "/auth/2fa/enabled",
     ];

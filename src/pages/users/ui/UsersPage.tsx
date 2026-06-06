@@ -1,4 +1,4 @@
-import { CopyOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
+import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/components/icons";
 import { Button, Form, Input, Modal, Space } from "antd";
 import { RoleSelect } from "@/components/RemoteSelect";
 import { UserEditorModal } from "@/features/users/UserEditorModal";
@@ -58,14 +58,22 @@ export function UsersPage() {
               },
               {
                 title: "",
-                width: 72,
+                width: 112,
                 render: (_, row) => (
-                  <Button
-                    icon={<EditOutlined />}
-                    onClick={() => {
-                      controller.openEditor(row);
-                    }}
-                  />
+                  <Space>
+                    <Button
+                      icon={<KeyOutlined />}
+                      onClick={() => {
+                        controller.createPasswordResetLink(row);
+                      }}
+                    />
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        controller.openEditor(row);
+                      }}
+                    />
+                  </Space>
                 ),
               },
             ]}
@@ -105,6 +113,33 @@ export function UsersPage() {
             <Space.Compact className="wide">
               <Input readOnly value={controller.inviteUrl} />
               <Button icon={<CopyOutlined />} disabled={!controller.inviteUrl} onClick={controller.copyInviteUrl} />
+            </Space.Compact>
+          </Form.Item>
+        </Space>
+      </Modal>
+      <Modal
+        open={Boolean(controller.passwordResetUser)}
+        title="Ссылка на восстановление пароля"
+        onCancel={controller.closePasswordResetModal}
+        footer={null}
+      >
+        <Space orientation="vertical" size={16} className="wide">
+          <div>
+            Ссылка создана для пользователя{" "}
+            <strong>
+              {controller.passwordResetUser?.lastName} {controller.passwordResetUser?.firstName}
+            </strong>
+            . Предыдущие неиспользованные ссылки больше не действуют.
+          </div>
+          <Form.Item label="Ссылка восстановления">
+            <Space.Compact className="wide">
+              <Input readOnly value={controller.passwordResetUrl} />
+              <Button
+                icon={<CopyOutlined />}
+                disabled={!controller.passwordResetUrl}
+                loading={controller.createPasswordResetLinkMutation.isPending}
+                onClick={controller.copyPasswordResetUrl}
+              />
             </Space.Compact>
           </Form.Item>
         </Space>

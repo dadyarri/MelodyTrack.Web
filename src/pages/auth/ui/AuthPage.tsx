@@ -156,38 +156,12 @@ export function AuthPage() {
               Войти
             </Button>
           </Form>
-          <Space orientation="vertical" size={10} className="wide">
-            <Button
-              type="link"
-              className={authStyles.authSecondaryAction}
-              onClick={() => {
-                controller.setForgotPasswordOpen((current) => !current);
-              }}
-            >
-              {controller.isForgotPasswordOpen ? "Скрыть восстановление пароля" : "Забыли пароль?"}
-            </Button>
-            {controller.isForgotPasswordOpen ? (
-              <Card size="small">
-                <Form<{ email: string }>
-                  form={controller.forgotPasswordForm}
-                  layout="vertical"
-                  onFinish={controller.onForgotPasswordSubmit}
-                  requiredMark={false}
-                >
-                  <Typography.Text strong>Восстановление пароля</Typography.Text>
-                  <Typography.Paragraph type="secondary" className={authStyles.helperText}>
-                    Укажите email, и система подготовит новую ссылку для восстановления.
-                  </Typography.Paragraph>
-                  <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-                    <Input prefix={<MailOutlined />} autoComplete="email" />
-                  </Form.Item>
-                  <Button block htmlType="submit" loading={controller.forgotPasswordMutation.isPending}>
-                    Запросить ссылку
-                  </Button>
-                </Form>
-              </Card>
-            ) : null}
-          </Space>
+          <Card size="small">
+            <Typography.Text strong>Восстановление пароля</Typography.Text>
+            <Typography.Paragraph type="secondary" className={authStyles.helperText}>
+              Обратитесь к администратору, чтобы получить новую ссылку для восстановления пароля.
+            </Typography.Paragraph>
+          </Card>
         </Space>
       ) : controller.mode === "recover2fa" ? (
         <Card size="small">

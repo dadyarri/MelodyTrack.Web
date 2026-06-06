@@ -17,6 +17,8 @@ export function useUsersPageController() {
   const auth = useAuth();
   const [isInviteOpen, setInviteOpen] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
+  const [passwordResetUser, setPasswordResetUser] = useState<User | null>(null);
+  const [passwordResetUrl, setPasswordResetUrl] = useState("");
   const [editing, setEditing] = useState<User | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const [form] = Form.useForm<CreateInviteInput>();
@@ -41,6 +43,16 @@ export function useUsersPageController() {
     onSuccess: (data) => {
       setInviteUrl(data.url);
       message.success("Приглашение создано");
+    },
+    onError: showErrors,
+  });
+
+  const createPasswordResetLinkMutation = useMutation({
+    mutationFn: (user: User) => authApi.createPasswordResetLink(user.id),
+    onSuccess: (data, user) => {
+      setPasswordResetUser(user);
+      setPasswordResetUrl(data.url);
+      message.success("Ссылка на восстановление создана");
     },
     onError: showErrors,
   });
@@ -137,13 +149,24 @@ export function useUsersPageController() {
     inviteUrl,
     form,
     createInviteMutation,
+    createPasswordResetLinkMutation,
+    passwordResetUser,
+    passwordResetUrl,
     closeInviteModal: () => {
       setInviteOpen(false);
       setInviteUrl("");
       form.resetFields();
     },
+    closePasswordResetModal: () => {
+      setPasswordResetUser(null);
+      setPasswordResetUrl("");
+    },
     copyInviteUrl: async () => {
       await navigator.clipboard.writeText(inviteUrl);
+      message.success("Ссылка скопирована");
+    },
+    copyPasswordResetUrl: async () => {
+      await navigator.clipboard.writeText(passwordResetUrl);
       message.success("Ссылка скопирована");
     },
     onInviteSubmit: (values: CreateInviteInput) => {
@@ -151,6 +174,9 @@ export function useUsersPageController() {
         ...values,
         email: values.email?.trim() || undefined,
       });
+    },
+    createPasswordResetLink: (user: User) => {
+      createPasswordResetLinkMutation.mutate(user);
     },
     openEditor: (user: User) => {
       setEditing(user);

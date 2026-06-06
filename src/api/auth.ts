@@ -48,10 +48,6 @@ export interface Recover2FaResponse {
   allCodes: RecoveryCodeItem[];
 }
 
-export interface ForgotPasswordResponse {
-  message: string;
-}
-
 export interface LoginInput {
   email: string;
   password: string;
@@ -127,12 +123,19 @@ export interface CreateInviteResponse {
   url: string;
 }
 
+export interface CreatePasswordResetLinkResponse {
+  url: string;
+}
+
 export const authApi = {
   getInviteInfo(inviteCode: string) {
     return http.get<InviteInfo>("/auth/invite", { params: { inviteCode } }).then((response) => response.data);
   },
   createInvite(input: CreateInviteInput) {
     return http.post<CreateInviteResponse>("/auth/invite", input).then((response) => response.data);
+  },
+  createPasswordResetLink(userId: string) {
+    return http.post<CreatePasswordResetLinkResponse>(`/users/${userId}/password-reset-link`, {}).then((response) => response.data);
   },
   register(input: RegisterInput) {
     return http.post<RegisterResponse>("/auth/register", input).then((response) => response.data);
@@ -142,9 +145,6 @@ export const authApi = {
   },
   recover2Fa(input: Recover2FaInput) {
     return http.post<Recover2FaResponse>("/auth/2fa/recover", input).then((response) => response.data);
-  },
-  forgotPassword(email: string) {
-    return http.post<ForgotPasswordResponse>("/auth/forgotPassword", { email }).then((response) => response.data);
   },
   resetPassword(input: ResetPasswordInput) {
     return http.post<unknown>("/auth/resetPassword", input).then(() => undefined);

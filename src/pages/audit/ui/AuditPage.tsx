@@ -27,7 +27,7 @@ const actionLabels: Record<string, string> = {
   logout_all_succeeded: "Выход из всех сессий",
   session_revoked: "Сессия завершена",
   password_changed: "Пароль изменен",
-  password_reset_requested: "Запрошено восстановление пароля",
+  password_reset_link_created: "Создана ссылка на восстановление пароля",
   password_reset_completed: "Пароль восстановлен",
   two_factor_removed: "2FA отключена",
   recovery_codes_regenerated: "Коды восстановления обновлены",

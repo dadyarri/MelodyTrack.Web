@@ -37,10 +37,8 @@ export function useAuthPageController() {
   const [recoveryCodeUsername, setRecoveryCodeUsername] = useState<string>("user");
   const [recover2FaState, setRecover2FaState] = useState<Recover2FaState | null>(null);
   const [loginSecondFactorMode, setLoginSecondFactorMode] = useState<SecondFactorMode>("otp");
-  const [isForgotPasswordOpen, setForgotPasswordOpen] = useState(false);
   const [loginForm] = Form.useForm<LoginInput>();
   const [registerForm] = Form.useForm<RegisterInput>();
-  const [forgotPasswordForm] = Form.useForm<{ email: string }>();
   const [recover2FaForm] = Form.useForm<Recover2FaInput>();
   const watchedInviteCode = Form.useWatch("inviteCode", registerForm);
   const registerInviteCode = (watchedInviteCode || inviteCode).trim();
@@ -128,14 +126,6 @@ export function useAuthPageController() {
     onError: showErrors,
   });
 
-  const forgotPasswordMutation = useMutation({
-    mutationFn: (email: string) => authApi.forgotPassword(email),
-    onSuccess: (data) => {
-      message.success(data.message);
-    },
-    onError: showErrors,
-  });
-
   const recover2FaMutation = useMutation({
     mutationFn: ({ email, recoveryCode }: { email: string; recoveryCode: string }) => authApi.recover2Fa({ email, recoveryCode }),
     onSuccess: (data, values) => {
@@ -156,11 +146,8 @@ export function useAuthPageController() {
     recover2FaState,
     loginSecondFactorMode,
     setLoginSecondFactorMode,
-    isForgotPasswordOpen,
-    setForgotPasswordOpen,
     loginForm,
     registerForm,
-    forgotPasswordForm,
     recover2FaForm,
     inviteCode,
     hasInviteCode,
@@ -172,7 +159,6 @@ export function useAuthPageController() {
     loginMutation,
     registerMutation,
     verify2FaMutation,
-    forgotPasswordMutation,
     recover2FaMutation,
     continueAfterRecovered2Fa: async () => {
       if (!recover2FaState) {
@@ -194,9 +180,6 @@ export function useAuthPageController() {
     },
     onVerify2FaSubmit: (values: { otp: string }) => {
       verify2FaMutation.mutate(values);
-    },
-    onForgotPasswordSubmit: (values: { email: string }) => {
-      forgotPasswordMutation.mutate(values.email);
     },
     onRecover2FaSubmit: (values: Recover2FaInput) => {
       recover2FaMutation.mutate(values);
