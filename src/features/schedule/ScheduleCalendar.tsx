@@ -10,8 +10,8 @@ import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;
 const defaultEndHour = 21;
-const hourHeight = 72;
-const stackOffset = 8;
+const hourHeight = 88;
+const stackOffset = 10;
 
 export function AppointmentsCalendar({
   appointments,
@@ -52,6 +52,7 @@ export function AppointmentsCalendar({
     dayKey: string;
     hour: number;
   } | null>(null);
+  const [hoverMotion, setHoverMotion] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const desktopScrollRef = useRef<HTMLDivElement | null>(null);
   const desktopHeaderRef = useRef<HTMLDivElement | null>(null);
   const desktopGridRef = useRef<HTMLDivElement | null>(null);
@@ -60,6 +61,14 @@ export function AppointmentsCalendar({
   const draggedAppointment = draggedAppointmentId
     ? (appointments.find((appointment) => appointment.id === draggedAppointmentId) ?? null)
     : null;
+  const dayIndexByKey = new Map(days.map((day, index) => [day.format("YYYY-MM-DD"), index]));
+
+  const activateHoveredSlot = (nextSlot: { dayKey: string; hour: number }) => {
+    setHoveredSlot((current) => {
+      setHoverMotion(getHoverMotion(current, nextSlot, dayIndexByKey));
+      return current?.dayKey === nextSlot.dayKey && current.hour === nextSlot.hour ? current : nextSlot;
+    });
+  };
 
   const updateScrollIndicators = useEffectEvent(() => {
     const container = desktopScrollRef.current;
@@ -254,7 +263,17 @@ export function AppointmentsCalendar({
         >
           <div className={styles.timeRail}>
             {hours.map((hour) => (
-              <div className={`${styles.timeSlot}${hoveredSlot?.hour === hour ? ` ${styles.timeSlotActive}` : ""}`} key={hour}>
+              <div
+                className={`${styles.timeSlot}${hoveredSlot?.hour === hour ? ` ${styles.timeSlotActive}` : ""}`}
+                key={hour}
+                style={
+                  hoveredSlot?.hour === hour
+                    ? ({
+                        "--hover-enter-y": `${String(hoverMotion.y)}px`,
+                      } as CSSProperties)
+                    : undefined
+                }
+              >
                 {`${hour.toString().padStart(2, "0")}:00`}
               </div>
             ))}
@@ -281,32 +300,45 @@ export function AppointmentsCalendar({
                   style={getBlockedRangeStyle(range.startMinute, range.endMinute, hours[0])}
                 />
               ))}
-              {hours.map((hour) => (
-                <button
-                  type="button"
-                  className={`${styles.hourLine} ${styles.hourSlotButton}${hoveredSlot?.dayKey === day.format("YYYY-MM-DD") && hoveredSlot.hour === hour ? ` ${styles.hourSlotButtonActive}` : ""}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
-                  key={hour}
-                  aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
-                  disabled={!(canCreateAppointments && isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)))}
-                  onBlur={() => {
-                    setHoveredSlot((current) => (current?.dayKey === day.format("YYYY-MM-DD") && current.hour === hour ? null : current));
-                  }}
-                  onClick={() => {
-                    onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
-                  }}
-                  onFocus={() => {
-                    setHoveredSlot({ dayKey: day.format("YYYY-MM-DD"), hour });
-                  }}
-                  onMouseEnter={() => {
-                    setHoveredSlot({ dayKey: day.format("YYYY-MM-DD"), hour });
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredSlot((current) => (current?.dayKey === day.format("YYYY-MM-DD") && current.hour === hour ? null : current));
-                  }}
-                >
-                  <span className={styles.hourSlotHighlight} aria-hidden="true" />
-                </button>
-              ))}
+              {hours.map((hour) => {
+                const dayKey = day.format("YYYY-MM-DD");
+                const isHovered = hoveredSlot?.dayKey === dayKey && hoveredSlot.hour === hour;
+
+                return (
+                  <button
+                    type="button"
+                    className={`${styles.hourLine} ${styles.hourSlotButton}${isHovered ? ` ${styles.hourSlotButtonActive}` : ""}${dropTarget?.dayKey === dayKey && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
+                    key={hour}
+                    style={
+                      isHovered
+                        ? ({
+                            "--hover-enter-x": `${String(hoverMotion.x)}px`,
+                            "--hover-enter-y": `${String(hoverMotion.y)}px`,
+                          } as CSSProperties)
+                        : undefined
+                    }
+                    aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
+                    disabled={!(canCreateAppointments && isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)))}
+                    onBlur={() => {
+                      setHoveredSlot((current) => (current?.dayKey === dayKey && current.hour === hour ? null : current));
+                    }}
+                    onClick={() => {
+                      onCreateAt(day.hour(hour).minute(0).second(0).millisecond(0));
+                    }}
+                    onFocus={() => {
+                      activateHoveredSlot({ dayKey, hour });
+                    }}
+                    onMouseEnter={() => {
+                      activateHoveredSlot({ dayKey, hour });
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredSlot((current) => (current?.dayKey === dayKey && current.hour === hour ? null : current));
+                    }}
+                  >
+                    <span className={styles.hourSlotHighlight} aria-hidden="true" />
+                  </button>
+                );
+              })}
               {groupAppointmentsBySlot(appointmentsByDay.get(day.format("YYYY-MM-DD")) ?? []).map((appointmentsInSlot) => (
                 <AppointmentStack
                   appointments={appointmentsInSlot}
@@ -355,6 +387,30 @@ export function AppointmentsCalendar({
   );
 }
 
+function getHoverMotion(
+  previous: { dayKey: string; hour: number } | null,
+  next: { dayKey: string; hour: number },
+  dayIndexByKey: Map<string, number>,
+) {
+  if (!previous) {
+    return { x: 0, y: 0 };
+  }
+
+  const previousDayIndex = dayIndexByKey.get(previous.dayKey);
+  const nextDayIndex = dayIndexByKey.get(next.dayKey);
+  if (previousDayIndex === undefined || nextDayIndex === undefined) {
+    return { x: 0, y: 0 };
+  }
+
+  const dayDelta = nextDayIndex - previousDayIndex;
+  const hourDelta = next.hour - previous.hour;
+
+  return {
+    x: dayDelta === 0 ? 0 : dayDelta > 0 ? -26 : 26,
+    y: hourDelta === 0 ? 0 : hourDelta > 0 ? -18 : 18,
+  };
+}
+
 function AppointmentStack({
   appointments,
   day,
@@ -383,10 +439,10 @@ function AppointmentStack({
     return currentEnd.isAfter(latest) ? currentEnd : latest;
   }, dayjs(appointment.endDate));
   const top = Math.max(0, (start.diff(day.hour(startHour).minute(0).second(0), "minute") / 60) * hourHeight);
-  const height = Math.max(48, (longestEnd.diff(start, "minute") / 60) * hourHeight);
+  const height = Math.max(60, (longestEnd.diff(start, "minute") / 60) * hourHeight);
   const totalOffset = appointments.length > 1 ? stackOffset * (appointments.length - 1) : 0;
-  const cardHeight = Math.max(48, height - totalOffset);
-  const expandedOffset = 56;
+  const cardHeight = Math.max(60, height - totalOffset);
+  const expandedOffset = 66;
   const slotTop = Math.floor(top / hourHeight) * hourHeight;
 
   return (

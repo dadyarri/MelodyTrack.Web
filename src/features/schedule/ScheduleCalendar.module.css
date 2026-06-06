@@ -76,8 +76,8 @@
 }
 
 .dayHeading {
-  min-height: 72px;
-  padding: 10px 12px;
+  min-height: 80px;
+  padding: 12px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -140,8 +140,9 @@
 }
 
 .timeSlot {
-  height: 72px;
-  padding: 6px 10px 0 0;
+  --hover-enter-y: 0px;
+  height: 88px;
+  padding: 10px 10px 0 0;
   text-align: right;
   color: var(--text-subtle);
   font-size: 12px;
@@ -165,6 +166,7 @@
   inset: 0 auto 0 0;
   width: 3px;
   background: color-mix(in srgb, var(--accent) 76%, white 8%);
+  animation: timeSlotBorderSlideIn 0.5s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 
 .dayColumn {
@@ -203,11 +205,13 @@
 }
 
 .hourLine {
-  height: 72px;
+  height: 88px;
   border-bottom: 1px solid var(--border-soft-alt);
 }
 
 .hourSlotButton {
+  --hover-enter-x: 0px;
+  --hover-enter-y: 0px;
   width: 100%;
   padding: 0;
   display: block;
@@ -235,7 +239,11 @@
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.24s ease;
+  transform: translate3d(var(--hover-enter-x), var(--hover-enter-y), 0);
+  transition:
+    opacity 0.24s ease,
+    transform 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .hourSlotHighlight::before {
@@ -249,6 +257,7 @@
 .hourSlotButton:hover .hourSlotHighlight,
 .hourSlotButton:focus-visible .hourSlotHighlight {
   opacity: 1;
+  transform: translate3d(0, 0, 0);
 }
 
 .hourSlotDropTarget {
@@ -265,8 +274,20 @@
   background: transparent;
 }
 
+@keyframes timeSlotBorderSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--hover-enter-y));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .event {
-  min-height: 48px;
+  min-height: 60px;
   overflow: hidden;
 }
 
@@ -277,11 +298,11 @@
   --schedule-entry-icon-background: rgba(255, 255, 255, 0.68);
   --schedule-entry-icon-color: var(--text-main);
   --schedule-entry-selected-ring: rgba(78, 143, 200, 0.72);
-  padding: 7px;
+  padding: 9px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 6px;
+  gap: 7px;
   box-sizing: border-box;
   border-radius: 6px;
   border: 1px solid var(--schedule-entry-border);
@@ -385,7 +406,7 @@
 
 .stack:hover .eventStacked,
 .stack:focus-within .eventStacked {
-  top: calc(var(--stack-index) * 56px);
+  top: calc(var(--stack-index) * 66px);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
 }
 
@@ -459,7 +480,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .eventContentCompact {
@@ -473,14 +494,14 @@
 .eventText {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .eventIcons {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .eventTime,
@@ -507,8 +528,8 @@
 }
 
 .eventStatusIcon {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -521,8 +542,8 @@
 }
 
 .eventAction {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
@@ -579,14 +600,14 @@
 }
 
 .eventContentCompact .eventStatusIcon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   font-size: 11px;
 }
 
 .eventContentCompact .eventAction {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   font-size: 11px;
 }
 
@@ -618,14 +639,14 @@
 }
 
 .eventContentDense .eventStatusIcon {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   font-size: 10px;
 }
 
 .eventContentDense .eventAction {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   font-size: 10px;
 }
 
@@ -666,8 +687,8 @@
 }
 
 .agendaItem {
-  min-height: 64px;
-  padding: 10px;
+  min-height: 76px;
+  padding: 12px;
   display: block;
   align-items: start;
 }
