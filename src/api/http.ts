@@ -52,7 +52,6 @@ http.interceptors.response.use(
       "/auth/2fa/verify",
       "/auth/2fa/recover",
       "/auth/resetPassword",
-      "/auth/2fa/enabled",
     ];
     const isPublicAuthRequest = Boolean(original?.url && publicAuthUrls.some((url) => original.url?.includes(url)));
 

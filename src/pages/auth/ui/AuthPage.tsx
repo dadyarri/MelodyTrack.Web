@@ -1,5 +1,5 @@
 import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/components/icons";
-import { Alert, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
+import { Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { Navigate } from "react-router";
 import type { LoginInput, RecoveryCodeItem } from "@/api/auth";
 import { AuthScreenLayout } from "@/components/AuthScreenLayout";
@@ -22,7 +22,11 @@ export function AuthPage() {
 
   return (
     <AuthScreenLayout title="MelodyTrack">
-      {controller.totpSetup || controller.recoveryCodes || controller.recover2FaState || controller.hasInviteCode || controller.loginChallenge ? null : (
+      {controller.totpSetup ||
+      controller.recoveryCodes ||
+      controller.recover2FaState ||
+      controller.hasInviteCode ||
+      controller.loginChallenge ? null : (
         <Segmented<AuthMode>
           block
           value={controller.mode}
@@ -145,7 +149,10 @@ export function AuthPage() {
                   <Form.Item
                     name="otp"
                     label="Код 2FA"
-                    rules={[{ required: true, message: "Введите код 2FA" }, { len: 6, message: "Код должен содержать 6 цифр" }]}
+                    rules={[
+                      { required: true, message: "Введите код 2FA" },
+                      { len: 6, message: "Код должен содержать 6 цифр" },
+                    ]}
                   >
                     <CharacterCodeInput length={6} mode="numeric" autoFocus />
                   </Form.Item>

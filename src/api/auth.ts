@@ -61,9 +61,7 @@ export interface LoginChallengeResponse {
   canUseRecoveryCode: boolean;
 }
 
-export type LoginAttemptResult =
-  | ({ kind: "success" } & LoginResponse)
-  | ({ kind: "challenge" } & LoginChallengeResponse);
+export type LoginAttemptResult = ({ kind: "success" } & LoginResponse) | ({ kind: "challenge" } & LoginChallengeResponse);
 
 export interface LoginInput {
   email: string;
