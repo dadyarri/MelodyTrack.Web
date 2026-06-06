@@ -151,7 +151,8 @@ export type RecurringTaskType =
   | "birthday-greeting"
   | "trial-follow-up"
   | "inactive-client-reminder"
-  | "teacher-daily-schedule";
+  | "teacher-daily-schedule"
+  | "debtor-reminder";
 
 export type RecurringTaskListStatus = "open" | "completed" | "cancelled" | "delayed";
 

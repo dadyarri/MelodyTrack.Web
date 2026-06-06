@@ -12,5 +12,7 @@ export function getRecurringTaskTypeLabel(type: RecurringTaskType) {
       return "Вернуть клиента";
     case "teacher-daily-schedule":
       return "Расписание преподавателя";
+    case "debtor-reminder":
+      return "Напомнить о долге";
   }
 }

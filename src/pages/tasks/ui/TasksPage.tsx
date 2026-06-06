@@ -35,6 +35,7 @@ const typeOptions: { label: string; value: RecurringTaskType | "all" }[] = [
   { label: "После пробного занятия", value: "trial-follow-up" },
   { label: "Вернуть клиента", value: "inactive-client-reminder" },
   { label: "Расписание преподавателя", value: "teacher-daily-schedule" },
+  { label: "Напоминания о долге", value: "debtor-reminder" },
 ];
 
 export function TasksPage() {
@@ -492,11 +493,13 @@ function getStatusLabel(status: RecurringTaskListStatus) {
 }
 
 function supportsOffsetMinutes(type: RecurringTaskType) {
-  return type === "appointment-reminder" || type === "trial-follow-up";
+  return type === "appointment-reminder" || type === "trial-follow-up" || type === "debtor-reminder";
 }
 
 function supportsCooldownDays(type: RecurringTaskType) {
-  return type === "birthday-greeting" || type === "inactive-client-reminder" || type === "teacher-daily-schedule";
+  return (
+    type === "birthday-greeting" || type === "inactive-client-reminder" || type === "teacher-daily-schedule" || type === "debtor-reminder"
+  );
 }
 
 function getAvailableTemplateTokens(type: RecurringTaskType) {
@@ -527,6 +530,8 @@ function getAvailableTemplateTokens(type: RecurringTaskType) {
         { token: "{Teacher.LastName}", description: "Фамилия преподавателя" },
         { token: "{Date}", description: "Дата расписания" },
       ];
+    case "debtor-reminder":
+      return [...clientTokens, { token: "{Date}", description: "Дата текущего напоминания" }];
   }
 }
 

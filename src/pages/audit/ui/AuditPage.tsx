@@ -4,6 +4,7 @@ import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { formatDateTime } from "@/utils/date";
+import type { RecurringTaskType } from "@/api/types";
 import styles from "./AuditPage.module.css";
 
 const categoryLabels: Record<string, string> = {
@@ -64,6 +65,15 @@ const actionLabels: Record<string, string> = {
   task_delayed: "Регулярная задача отложена",
 };
 
+const recurringTaskAuditTypes = new Set<RecurringTaskType>([
+  "appointment-reminder",
+  "birthday-greeting",
+  "trial-follow-up",
+  "inactive-client-reminder",
+  "teacher-daily-schedule",
+  "debtor-reminder",
+]);
+
 function formatAuditLabel(value: string, labels: Record<string, string>) {
   return labels[value] ?? value;
 }
@@ -81,20 +91,11 @@ function formatActorLabel(displayName?: string | null, email?: string | null) {
 }
 
 function formatAuditDetailValue(label: string, value: string) {
-  if (label !== "Тип") {
+  if (label !== "Тип" || !recurringTaskAuditTypes.has(value as RecurringTaskType)) {
     return value;
   }
 
-  switch (value) {
-    case "appointment-reminder":
-    case "birthday-greeting":
-    case "trial-follow-up":
-    case "inactive-client-reminder":
-    case "teacher-daily-schedule":
-      return getRecurringTaskTypeLabel(value);
-    default:
-      return value;
-  }
+  return getRecurringTaskTypeLabel(value as RecurringTaskType);
 }
 
 type ParsedAuditDetail = {
