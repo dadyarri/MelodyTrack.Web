@@ -4,7 +4,7 @@ import styles from "./AuthStyles.module.css";
 
 type AuthScreenLayoutProps = {
   title: string;
-  description: string;
+  description?: string;
   children: ReactNode;
 };
 
@@ -15,7 +15,7 @@ export function AuthScreenLayout({ title, description, children }: AuthScreenLay
         <Space orientation="vertical" size={20} className="wide">
           <div>
             <Typography.Title level={1}>{title}</Typography.Title>
-            <Typography.Text type="secondary">{description}</Typography.Text>
+            {description && <Typography.Text type="secondary">{description}</Typography.Text>}
           </div>
           {children}
         </Space>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import {
   authApi,
+  type LoginAttemptResult,
   type LoginInput,
   type Recover2FaInput,
   type Recover2FaResponse,
@@ -23,6 +24,12 @@ export type TotpSetup = {
 };
 export type Recover2FaState = Recover2FaResponse & { email: string };
 export type SecondFactorMode = "otp" | "recoveryCode";
+export type LoginChallengeState = {
+  email: string;
+  password: string;
+  canUseOtp: boolean;
+  canUseRecoveryCode: boolean;
+};
 
 export function useAuthPageController() {
   const auth = useAuth();
@@ -37,7 +44,9 @@ export function useAuthPageController() {
   const [recoveryCodeUsername, setRecoveryCodeUsername] = useState<string>("user");
   const [recover2FaState, setRecover2FaState] = useState<Recover2FaState | null>(null);
   const [loginSecondFactorMode, setLoginSecondFactorMode] = useState<SecondFactorMode>("otp");
-  const [loginForm] = Form.useForm<LoginInput>();
+  const [loginChallenge, setLoginChallenge] = useState<LoginChallengeState | null>(null);
+  const [loginForm] = Form.useForm<Pick<LoginInput, "email" | "password">>();
+  const [secondFactorForm] = Form.useForm<Pick<LoginInput, "otp" | "recoveryCode">>();
   const [registerForm] = Form.useForm<RegisterInput>();
   const [recover2FaForm] = Form.useForm<Recover2FaInput>();
   const watchedInviteCode = Form.useWatch("inviteCode", registerForm);
@@ -72,9 +81,61 @@ export function useAuthPageController() {
     });
   }, [inviteEmail, registerForm, registerInviteCode]);
 
+  const finishLogin = async (result: Extract<LoginAttemptResult, { kind: "success" }>) => {
+    await auth.establishSession(result.accessToken, result.refreshToken);
+    await navigate((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/", { replace: true });
+  };
+
   const loginMutation = useMutation({
-    mutationFn: auth.login,
-    onSuccess: () => navigate((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? "/", { replace: true }),
+    mutationFn: (input: Pick<LoginInput, "email" | "password">) => authApi.login(input),
+    onSuccess: async (result, credentials) => {
+      if (result.kind === "challenge") {
+        if (!result.canUseOtp && !result.canUseRecoveryCode) {
+          message.error("Для этой учетной записи требуется второй фактор, но доступные способы не настроены.");
+          return;
+        }
+
+        setLoginChallenge({
+          email: credentials.email,
+          password: credentials.password,
+          canUseOtp: result.canUseOtp,
+          canUseRecoveryCode: result.canUseRecoveryCode,
+        });
+        const nextMode = result.canUseOtp ? "otp" : "recoveryCode";
+        setLoginSecondFactorMode(nextMode);
+        secondFactorForm.resetFields();
+        return;
+      }
+
+      await finishLogin(result);
+    },
+    onError: showErrors,
+  });
+
+  const loginSecondFactorMutation = useMutation({
+    mutationFn: async (values: Pick<LoginInput, "otp" | "recoveryCode">) => {
+      if (!loginChallenge) {
+        throw new Error("Нет данных для проверки второго фактора");
+      }
+
+      const result = await authApi.login({
+        email: loginChallenge.email,
+        password: loginChallenge.password,
+        otp: values.otp,
+        recoveryCode: values.recoveryCode,
+      });
+
+      if (result.kind !== "success") {
+        throw new Error("Не удалось подтвердить второй фактор. Попробуйте еще раз.");
+      }
+
+      return result;
+    },
+    onSuccess: async (result) => {
+      setLoginChallenge(null);
+      secondFactorForm.resetFields();
+      await finishLogin(result);
+    },
     onError: showErrors,
   });
 
@@ -145,8 +206,10 @@ export function useAuthPageController() {
     recoveryCodeUsername,
     recover2FaState,
     loginSecondFactorMode,
+    loginChallenge,
     setLoginSecondFactorMode,
     loginForm,
+    secondFactorForm,
     registerForm,
     recover2FaForm,
     inviteCode,
@@ -157,6 +220,7 @@ export function useAuthPageController() {
     inviteLookupFinished,
     canSubmitRegistration,
     loginMutation,
+    loginSecondFactorMutation,
     registerMutation,
     verify2FaMutation,
     recover2FaMutation,
@@ -178,6 +242,13 @@ export function useAuthPageController() {
     onLoginSubmit: (values: LoginInput) => {
       loginMutation.mutate(values);
     },
+    onLoginSecondFactorSubmit: (values: Pick<LoginInput, "otp" | "recoveryCode">) => {
+      loginSecondFactorMutation.mutate(values);
+    },
+    resetLoginChallenge: () => {
+      setLoginChallenge(null);
+      secondFactorForm.resetFields();
+    },
     onVerify2FaSubmit: (values: { otp: string }) => {
       verify2FaMutation.mutate(values);
     },
@@ -187,11 +258,11 @@ export function useAuthPageController() {
     onLoginSecondFactorModeChange: (value: SecondFactorMode) => {
       setLoginSecondFactorMode(value);
       if (value === "otp") {
-        loginForm.setFieldValue("recoveryCode", undefined);
+        secondFactorForm.setFieldValue("recoveryCode", undefined);
         return;
       }
 
-      loginForm.setFieldValue("otp", undefined);
+      secondFactorForm.setFieldValue("otp", undefined);
     },
   };
 }

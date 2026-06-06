@@ -48,6 +48,23 @@ export interface Recover2FaResponse {
   allCodes: RecoveryCodeItem[];
 }
 
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface LoginChallengeResponse {
+  requiresTwoFactor: boolean;
+  canUseOtp: boolean;
+  canUseRecoveryCode: boolean;
+}
+
+export type LoginAttemptResult =
+  | ({ kind: "success" } & LoginResponse)
+  | ({ kind: "challenge" } & LoginChallengeResponse);
+
 export interface LoginInput {
   email: string;
   password: string;
@@ -139,6 +156,25 @@ export const authApi = {
   },
   register(input: RegisterInput) {
     return http.post<RegisterResponse>("/auth/register", input).then((response) => response.data);
+  },
+  login(input: LoginInput) {
+    return http
+      .post<LoginResponse | LoginChallengeResponse>("/auth/login", input, {
+        validateStatus: (status) => status === 200 || status === 202,
+      })
+      .then((response): LoginAttemptResult => {
+        if (response.status === 202) {
+          return {
+            kind: "challenge",
+            ...(response.data as LoginChallengeResponse),
+          };
+        }
+
+        return {
+          kind: "success",
+          ...(response.data as LoginResponse),
+        };
+      });
   },
   verify2Fa(input: Verify2FaInput) {
     return http.post<RecoveryCodesResponse>("/auth/2fa/verify", input).then((response) => response.data);

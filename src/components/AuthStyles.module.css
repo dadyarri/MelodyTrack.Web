@@ -23,6 +23,14 @@
   margin-bottom: 12px;
 }
 
+.authSupportNoteText {
+  margin-bottom: 0;
+}
+
+.authSupportNote {
+  padding-top: 4px;
+}
+
 :global(.ant-btn-link).authSecondaryAction {
   padding-inline: 0;
   align-self: flex-start;

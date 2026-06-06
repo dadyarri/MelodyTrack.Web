@@ -1,4 +1,4 @@
-import { KeyOutlined, LockOutlined, MailOutlined, SafetyCertificateOutlined, UserOutlined } from "@/components/icons";
+import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/components/icons";
 import { Alert, Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { Navigate } from "react-router";
 import type { LoginInput, RecoveryCodeItem } from "@/api/auth";
@@ -21,8 +21,8 @@ export function AuthPage() {
   }
 
   return (
-    <AuthScreenLayout title="MelodyTrack" description="Войдите, чтобы открыть рабочее пространство.">
-      {controller.totpSetup || controller.recoveryCodes || controller.recover2FaState || controller.hasInviteCode ? null : (
+    <AuthScreenLayout title="MelodyTrack">
+      {controller.totpSetup || controller.recoveryCodes || controller.recover2FaState || controller.hasInviteCode || controller.loginChallenge ? null : (
         <Segmented<AuthMode>
           block
           value={controller.mode}
@@ -122,65 +122,98 @@ export function AuthPage() {
         </Form>
       ) : controller.mode === "login" ? (
         <Space orientation="vertical" size={16} className="wide">
-          <Alert
-            type="info"
-            showIcon
-            title="Если для вашей роли включен обязательный 2FA, используйте код из приложения-аутентификатора. Если устройство потеряно, переключитесь на код восстановления или выберите «Сброс 2FA»."
-          />
-          <Form<LoginInput> form={controller.loginForm} layout="vertical" onFinish={controller.onLoginSubmit} requiredMark={false}>
-            <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-              <Input prefix={<MailOutlined />} autoComplete="email" />
-            </Form.Item>
-            <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
-              <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
-            </Form.Item>
-            <Segmented<SecondFactorMode>
-              block
-              value={controller.loginSecondFactorMode}
-              onChange={controller.onLoginSecondFactorModeChange}
-              options={[
-                { label: "Код 2FA", value: "otp" },
-                { label: "Код восстановления", value: "recoveryCode" },
-              ]}
-            />
-            {controller.loginSecondFactorMode === "otp" ? (
-              <Form.Item name="otp" label="Код 2FA">
-                <Input prefix={<SafetyCertificateOutlined />} inputMode="numeric" autoComplete="one-time-code" />
-              </Form.Item>
-            ) : (
-              <Form.Item name="recoveryCode" label="Код восстановления">
-                <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
-              </Form.Item>
-            )}
-            <Button block type="primary" htmlType="submit" loading={controller.loginMutation.isPending}>
-              Войти
-            </Button>
-          </Form>
-          <Card size="small">
-            <Typography.Text strong>Восстановление пароля</Typography.Text>
-            <Typography.Paragraph type="secondary" className={authStyles.helperText}>
-              Обратитесь к администратору, чтобы получить новую ссылку для восстановления пароля.
-            </Typography.Paragraph>
-          </Card>
+          {controller.loginChallenge ? (
+            <Space orientation="vertical" size={16} className="wide">
+              {controller.loginChallenge.canUseOtp && controller.loginChallenge.canUseRecoveryCode ? (
+                <Segmented<SecondFactorMode>
+                  block
+                  value={controller.loginSecondFactorMode}
+                  onChange={controller.onLoginSecondFactorModeChange}
+                  options={[
+                    { label: "Код 2FA", value: "otp" },
+                    { label: "Код восстановления", value: "recoveryCode" },
+                  ]}
+                />
+              ) : null}
+              <Form<Pick<LoginInput, "otp" | "recoveryCode">>
+                form={controller.secondFactorForm}
+                layout="vertical"
+                onFinish={controller.onLoginSecondFactorSubmit}
+                requiredMark={false}
+              >
+                {controller.loginSecondFactorMode === "otp" ? (
+                  <Form.Item
+                    name="otp"
+                    label="Код 2FA"
+                    rules={[{ required: true, message: "Введите код 2FA" }, { len: 6, message: "Код должен содержать 6 цифр" }]}
+                  >
+                    <CharacterCodeInput length={6} mode="numeric" autoFocus />
+                  </Form.Item>
+                ) : (
+                  <Form.Item
+                    name="recoveryCode"
+                    label="Код восстановления"
+                    rules={[
+                      { required: true, message: "Введите код восстановления" },
+                      { len: 10, message: "Код должен содержать 10 символов" },
+                    ]}
+                  >
+                    <CharacterCodeInput length={10} mode="alphanumeric" />
+                  </Form.Item>
+                )}
+                <Space orientation="vertical" size={12} className="wide">
+                  <Button block type="primary" htmlType="submit" loading={controller.loginSecondFactorMutation.isPending}>
+                    Подтвердить вход
+                  </Button>
+                  <Button block onClick={controller.resetLoginChallenge}>
+                    Назад
+                  </Button>
+                </Space>
+              </Form>
+            </Space>
+          ) : (
+            <>
+              <Form<Pick<LoginInput, "email" | "password">>
+                form={controller.loginForm}
+                layout="vertical"
+                onFinish={controller.onLoginSubmit}
+                requiredMark={false}
+              >
+                <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+                  <Input prefix={<MailOutlined />} autoComplete="email" />
+                </Form.Item>
+                <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
+                  <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
+                </Form.Item>
+                <Button block type="primary" htmlType="submit" loading={controller.loginMutation.isPending}>
+                  Продолжить
+                </Button>
+              </Form>
+              <div className={authStyles.authSupportNote}>
+                <Typography.Text strong>Нужен сброс пароля?</Typography.Text>
+                <Typography.Paragraph type="secondary" className={authStyles.authSupportNoteText}>
+                  Обратитесь к администратору, чтобы получить ссылку для восстановления пароля.
+                </Typography.Paragraph>
+              </div>
+            </>
+          )}
         </Space>
       ) : controller.mode === "recover2fa" ? (
-        <Card size="small">
-          <Form form={controller.recover2FaForm} layout="vertical" onFinish={controller.onRecover2FaSubmit} requiredMark={false}>
-            <Typography.Text strong>Потеряли доступ к приложению-аутентификатору?</Typography.Text>
-            <Typography.Paragraph type="secondary" className={authStyles.helperText}>
-              Введите email и один из сохраненных кодов восстановления. После этого вы получите новый секрет и новый набор кодов.
-            </Typography.Paragraph>
-            <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
-              <Input prefix={<MailOutlined />} autoComplete="email" />
-            </Form.Item>
-            <Form.Item name="recoveryCode" label="Код восстановления" rules={[{ required: true }]}>
-              <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
-            </Form.Item>
-            <Button block type="primary" htmlType="submit" loading={controller.recover2FaMutation.isPending}>
-              Восстановить доступ
-            </Button>
-          </Form>
-        </Card>
+        <Form form={controller.recover2FaForm} layout="vertical" onFinish={controller.onRecover2FaSubmit} requiredMark={false}>
+          <Typography.Text strong>Потеряли доступ к приложению-аутентификатору?</Typography.Text>
+          <Typography.Paragraph type="secondary" className={authStyles.helperText}>
+            Введите email и один из сохраненных кодов восстановления. После этого вы получите новый секрет и новый набор кодов.
+          </Typography.Paragraph>
+          <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+            <Input prefix={<MailOutlined />} autoComplete="email" />
+          </Form.Item>
+          <Form.Item name="recoveryCode" label="Код восстановления" rules={[{ required: true }]}>
+            <Input prefix={<KeyOutlined />} autoComplete="one-time-code" />
+          </Form.Item>
+          <Button block type="primary" htmlType="submit" loading={controller.recover2FaMutation.isPending}>
+            Восстановить доступ
+          </Button>
+        </Form>
       ) : (
         <Card size="small">
           <Typography.Text type="secondary">Неверное состояние экрана входа.</Typography.Text>
@@ -211,4 +244,32 @@ function toRecoveryFileStem(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, "_");
   return stem || "user";
+}
+
+function CharacterCodeInput({
+  length,
+  mode,
+  value,
+  onChange,
+  autoFocus = false,
+}: {
+  length: number;
+  mode: "numeric" | "alphanumeric";
+  value?: string;
+  onChange?: (value: string) => void;
+  autoFocus?: boolean;
+}) {
+  return (
+    <Input.OTP
+      length={length}
+      value={value}
+      autoFocus={autoFocus}
+      mask={false}
+      inputMode={mode === "numeric" ? "numeric" : "text"}
+      formatter={(next) => (mode === "numeric" ? next.replace(/\D/g, "") : next.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+      onChange={(next) => {
+        onChange?.(mode === "numeric" ? next.replace(/\D/g, "") : next.toUpperCase().replace(/[^A-Z0-9]/g, ""));
+      }}
+    />
+  );
 }
