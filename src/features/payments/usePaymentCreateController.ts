@@ -64,11 +64,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
     ? isActivityStale(currentEditingPayment.lastActivity?.id, editingBaselineActivityId)
     : false;
 
-  const saveMutation = useMutation<
-    { offline: boolean },
-    unknown,
-    { values: PaymentCreateFormValues; expectedActivityId?: Ulid }
-  >({
+  const saveMutation = useMutation<{ offline: boolean }, unknown, { values: PaymentCreateFormValues; expectedActivityId?: Ulid }>({
     mutationFn: ({ values, expectedActivityId }) => {
       const input = {
         clientId: values.clientId,
@@ -128,8 +124,12 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
         },
         onReload: () => {
           const freshPayment =
-            findItemInQueryData(queryClient, queryKeys.payments.all, (data) => (data as { data: Payment[] } | undefined)?.data, editingPayment.id) ??
-            currentEditingPayment;
+            findItemInQueryData(
+              queryClient,
+              queryKeys.payments.all,
+              (data) => (data as { data: Payment[] } | undefined)?.data,
+              editingPayment.id,
+            ) ?? currentEditingPayment;
 
           if (!freshPayment) {
             return;

@@ -1,10 +1,7 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@/components/icons";
 import { Button, Input, Space, Tag } from "antd";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import {
-  ClientHistoryDrawer,
-  formatClientName,
-} from "@/entities/client";
+import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
