@@ -284,7 +284,7 @@ export function AppointmentsCalendar({
               {hours.map((hour) => (
                 <button
                   type="button"
-                  className={`${styles.hourLine} ${styles.hourSlotButton}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
+                  className={`${styles.hourLine} ${styles.hourSlotButton}${hoveredSlot?.dayKey === day.format("YYYY-MM-DD") && hoveredSlot.hour === hour ? ` ${styles.hourSlotButtonActive}` : ""}${dropTarget?.dayKey === day.format("YYYY-MM-DD") && dropTarget.hour === hour ? ` ${styles.hourSlotDropTarget}` : ""}${!isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)) ? ` ${styles.hourSlotBlocked}` : ""}`}
                   key={hour}
                   aria-label={`Создать запись на ${formatDate(day)} ${hour.toString().padStart(2, "0")}:00`}
                   disabled={!(canCreateAppointments && isSlotAvailable(availability, day.hour(hour).minute(0).second(0).millisecond(0)))}

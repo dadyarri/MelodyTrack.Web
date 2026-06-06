@@ -147,15 +147,24 @@
   font-size: 12px;
   border-bottom: 1px solid var(--border-soft-alt);
   background: var(--bg-elevated);
+  position: relative;
   transition:
-    background-color 0.16s ease,
-    color 0.16s ease;
+    background-color 0.24s ease,
+    color 0.24s ease;
 }
 
 .timeSlotActive {
   background: color-mix(in srgb, var(--accent) 10%, var(--bg-elevated));
   color: var(--text-main);
   font-weight: 700;
+}
+
+.timeSlotActive::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: color-mix(in srgb, var(--accent) 76%, white 8%);
 }
 
 .dayColumn {
@@ -207,9 +216,18 @@
   border-top: 0;
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.16s ease;
+  transition:
+    background-color 0.24s ease,
+    box-shadow 0.24s ease;
   position: relative;
   z-index: 1;
+}
+
+.hourSlotButtonActive,
+.hourSlotButton:hover,
+.hourSlotButton:focus-visible {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  outline: none;
 }
 
 .hourSlotHighlight {
@@ -217,7 +235,7 @@
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.16s ease;
+  transition: opacity 0.24s ease;
 }
 
 .hourSlotHighlight::before {
@@ -227,20 +245,7 @@
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 62%);
 }
 
-.hourSlotHighlight::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: color-mix(in srgb, var(--accent) 76%, white 8%);
-}
-
-.hourSlotButton:hover,
-.hourSlotButton:focus-visible {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-  outline: none;
-}
-
+.hourSlotButtonActive .hourSlotHighlight,
 .hourSlotButton:hover .hourSlotHighlight,
 .hourSlotButton:focus-visible .hourSlotHighlight {
   opacity: 1;
