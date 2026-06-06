@@ -273,6 +273,24 @@ export const paymentsApi = {
   ) {
     return http.post<CreateEntityResponse>("/payments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
+  update(
+    id: Ulid,
+    input: {
+      clientId: Ulid;
+      serviceId?: Ulid;
+      amount: number;
+      date: string;
+      description?: string;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/payments/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
+  },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http
       .delete<unknown>(`/payments/${id}`, {

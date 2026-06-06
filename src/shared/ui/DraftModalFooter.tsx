@@ -3,14 +3,15 @@ import type { ComponentType } from "react";
 
 type DraftModalFooterProps = {
   onClearDraft: () => void;
+  showClearDraft?: boolean;
   CancelBtn: ComponentType;
   OkBtn: ComponentType;
 };
 
-export function DraftModalFooter({ onClearDraft, CancelBtn, OkBtn }: DraftModalFooterProps) {
+export function DraftModalFooter({ onClearDraft, showClearDraft = true, CancelBtn, OkBtn }: DraftModalFooterProps) {
   return (
     <>
-      <Button onClick={onClearDraft}>Очистить черновик</Button>
+      {showClearDraft ? <Button onClick={onClearDraft}>Очистить черновик</Button> : null}
       <CancelBtn />
       <OkBtn />
     </>

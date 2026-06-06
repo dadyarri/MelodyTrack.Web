@@ -1,4 +1,4 @@
-import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@/components/icons";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
 import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
@@ -113,6 +113,7 @@ export function PaymentsPage() {
             rowKey="id"
             loading={controller.query.isLoading}
             dataSource={controller.query.data?.data}
+            scroll={{ x: "max-content" }}
             pagination={{
               current: controller.page,
               pageSize: 10,
@@ -135,26 +136,34 @@ export function PaymentsPage() {
                 dataIndex: "amount",
                 render: (value: number) => formatMoney(value),
               },
-              { title: "Описание", dataIndex: "description" },
+              { title: "Описание", dataIndex: "description", render: (value?: string | null) => value?.trim() || "Без описания" },
               {
                 title: "",
-                width: 72,
+                width: 112,
                 render: (_, row) => (
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() => {
-                      modal.confirm({
-                        title: "Удалить платеж?",
-                        onOk: () => {
-                          controller.deleteMutation.mutate({
-                            id: row.id,
-                            expectedActivityId: row.lastActivity?.id,
-                          });
-                        },
-                      });
-                    }}
-                  />
+                  <Space>
+                    <Button
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        controller.openEditModal(row);
+                      }}
+                    />
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => {
+                        modal.confirm({
+                          title: "Удалить платеж?",
+                          onOk: () => {
+                            controller.deleteMutation.mutate({
+                              id: row.id,
+                              expectedActivityId: row.lastActivity?.id,
+                            });
+                          },
+                        });
+                      }}
+                    />
+                  </Space>
                 ),
               },
             ]}
@@ -163,9 +172,10 @@ export function PaymentsPage() {
       />
       <PaymentCreateModal
         open={controller.isCreateModalOpen}
+        editing={Boolean(controller.editingPayment)}
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
         form={controller.form}
-        createPending={controller.createMutation.isPending}
+        createPending={controller.saveMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
         draftHydrationRef={controller.draftHydrationRef}
         selectedCreateServiceId={controller.selectedCreateServiceId}
@@ -173,7 +183,10 @@ export function PaymentsPage() {
         onCancel={controller.closeCreateModal}
         onClearDraft={controller.handleClearCreateDraft}
         onSubmit={(values) => {
-          controller.createMutation.mutate(values);
+          controller.saveMutation.mutate({
+            values,
+            expectedActivityId: controller.editingBaselineActivityId ?? undefined,
+          });
         }}
         onValuesChange={controller.onCreateValuesChange}
         onCreateClient={() => {

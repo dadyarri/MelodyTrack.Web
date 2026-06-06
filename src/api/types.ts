@@ -80,7 +80,7 @@ export interface ClientHistoryPayment {
   id: Ulid;
   amount: number;
   date: string;
-  description: string;
+  description?: string | null;
   serviceName?: string | null;
 }
 
@@ -239,12 +239,14 @@ export interface Appointment {
 }
 
 export interface PaymentClient {
+  id: Ulid;
   firstName: string;
   lastName: string;
   patronymic?: string | null;
 }
 
 export interface PaymentService {
+  id: Ulid;
   name: string;
 }
 
@@ -254,7 +256,7 @@ export interface Payment {
   service?: PaymentService | null;
   amount: number;
   date: string;
-  description: string;
+  description?: string | null;
   lastActivity?: RecordActivity | null;
 }
 

@@ -49,7 +49,11 @@ export function usePaymentsPageController() {
     },
     onSuccess: async () => {
       message.success("Платеж удален");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.payments.all });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.clients.history() }),
+      ]);
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({

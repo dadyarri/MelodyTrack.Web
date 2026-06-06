@@ -4,9 +4,6 @@ import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal"
 import {
   ClientHistoryDrawer,
   formatClientName,
-  getClientContactValue,
-  renderClientPhoneLink,
-  renderClientSocialLink,
 } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
@@ -93,23 +90,6 @@ export function ClientsPage() {
                 title: "Баланс",
                 dataIndex: "balance",
                 render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
-              },
-              {
-                title: "Телефон",
-                render: (_, row) => renderClientPhoneLink(getClientContactValue(row, "phone")),
-              },
-              {
-                title: "Telegram",
-                render: (_, row) => renderClientSocialLink(getClientContactValue(row, "telegram"), "telegram"),
-              },
-              {
-                title: "VK",
-                render: (_, row) => renderClientSocialLink(getClientContactValue(row, "vk"), "vk"),
-              },
-              {
-                title: "Источник",
-                dataIndex: "sourceName",
-                render: (value?: string | null) => value || "Не указан",
               },
               {
                 title: "",

@@ -54,6 +54,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
             <Descriptions.Item label="VK">
               {renderClientSocialLink(getClientContactValue(data.client, "vk"), "vk") || "Не указан"}
             </Descriptions.Item>
+            <Descriptions.Item label="Источник">{data.client.sourceName || "Не указан"}</Descriptions.Item>
             <Descriptions.Item label="Дата рождения">
               {data.client.dateOfBirth ? formatDate(data.client.dateOfBirth) : "Не указана"}
             </Descriptions.Item>
@@ -86,7 +87,7 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
                     <Typography.Text strong>{formatMoney(payment.amount)}</Typography.Text>
                     <Typography.Text type="secondary">{formatDateTime(payment.date)}</Typography.Text>
                   </Space>
-                  <Typography.Text>{payment.description}</Typography.Text>
+                  <Typography.Text>{payment.description?.trim() || "Без описания"}</Typography.Text>
                   {payment.serviceName ? (
                     <div>
                       <Typography.Text type="secondary">Услуга: {payment.serviceName}</Typography.Text>

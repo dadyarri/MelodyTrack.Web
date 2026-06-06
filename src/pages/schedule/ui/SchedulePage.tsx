@@ -287,9 +287,10 @@ export function SchedulePage() {
       />
       <PaymentCreateModal
         open={controller.paymentCreate.isCreateModalOpen}
+        editing={Boolean(controller.paymentCreate.editingPayment)}
         draftRestored={controller.paymentCreate.hasCreateDraft && controller.paymentCreate.isCreateModalOpen}
         form={controller.paymentCreate.form}
-        createPending={controller.paymentCreate.createMutation.isPending}
+        createPending={controller.paymentCreate.saveMutation.isPending}
         createdClientOptions={controller.paymentCreate.createdClientOptions}
         draftHydrationRef={controller.paymentCreate.draftHydrationRef}
         selectedCreateServiceId={controller.paymentCreate.selectedCreateServiceId}
@@ -297,7 +298,10 @@ export function SchedulePage() {
         onCancel={controller.paymentCreate.closeCreateModal}
         onClearDraft={controller.paymentCreate.handleClearCreateDraft}
         onSubmit={(values) => {
-          controller.paymentCreate.createMutation.mutate(values);
+          controller.paymentCreate.saveMutation.mutate({
+            values,
+            expectedActivityId: controller.paymentCreate.editingBaselineActivityId ?? undefined,
+          });
         }}
         onValuesChange={controller.paymentCreate.onCreateValuesChange}
         onCreateClient={() => {

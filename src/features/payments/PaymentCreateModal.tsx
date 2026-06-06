@@ -17,6 +17,7 @@ export type PaymentCreateFormValues = {
 
 export function PaymentCreateModal({
   open,
+  editing,
   draftRestored,
   form,
   createPending,
@@ -34,6 +35,7 @@ export function PaymentCreateModal({
   onServicePriceChange,
 }: {
   open: boolean;
+  editing: boolean;
   draftRestored: boolean;
   form: FormInstance<PaymentCreateFormValues>;
   createPending: boolean;
@@ -53,8 +55,9 @@ export function PaymentCreateModal({
   return (
     <DraftFormModal
       open={open}
-      title="Новый платеж"
-      restored={draftRestored}
+      title={editing ? "Редактировать платеж" : "Новый платеж"}
+      restored={!editing && draftRestored}
+      showClearDraft={!editing}
       onClearDraft={onClearDraft}
       onCancel={onCancel}
       onOk={() => {
