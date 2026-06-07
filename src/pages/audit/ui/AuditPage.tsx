@@ -9,6 +9,7 @@ import styles from "./AuditPage.module.css";
 
 const categoryLabels: Record<string, string> = {
   auth: "Авторизация",
+  security: "Безопасность",
   clients: "Клиенты",
   services: "Услуги",
   payments: "Платежи",
@@ -21,6 +22,7 @@ const categoryLabels: Record<string, string> = {
 
 const actionLabels: Record<string, string> = {
   invite_created: "Создано приглашение",
+  superuser_bootstrap_invite_available: "Доступно bootstrap-приглашение суперпользователя",
   user_registered: "Пользователь зарегистрирован",
   login_succeeded: "Вход выполнен",
   logout_succeeded: "Выход из сессии",
