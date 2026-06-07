@@ -55,6 +55,11 @@ export const queryKeys = {
     lookup: (search: string) => ["services", "lookup", search] as const,
     selected: (serviceId?: string) => ["services", "selected", formatDateKey(serviceId)] as const,
   },
+  courses: {
+    all: ["courses"] as const,
+    list: (search: string) => ["courses", "list", search] as const,
+    selected: (courseId?: string) => ["courses", "selected", formatDateKey(courseId)] as const,
+  },
   payments: {
     all: ["payments"] as const,
     list: (page: number, search: string, clientId?: string, serviceId?: string, startDate?: Dayjs | null, endDate?: Dayjs | null) =>

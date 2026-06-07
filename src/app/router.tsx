@@ -178,6 +178,20 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: "courses",
+        lazy: async () => {
+          const { CoursesPage } = await recoverableImport(() => import("@/pages/courses"));
+
+          return {
+            Component: () => (
+              <AdminRoute>
+                <CoursesPage />
+              </AdminRoute>
+            ),
+          };
+        },
+      },
+      {
         path: "services",
         lazy: async () => {
           const { ServicesPage } = await recoverableImport(() => import("@/pages/services"));

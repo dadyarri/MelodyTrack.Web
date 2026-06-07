@@ -7,6 +7,8 @@ import type {
   Client,
   ClientHistory,
   ClientWithBalance,
+  Course,
+  CourseSummary,
   CreateEntityResponse,
   CreateCustomTaskInput,
   DashboardStats,
@@ -167,6 +169,92 @@ export const servicesApi = {
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http
       .delete<unknown>(`/services/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
+  },
+};
+
+export const coursesApi = {
+  list(search?: string) {
+    return http
+      .get<{ courses: CourseSummary[] }>("/courses", {
+        params: search ? { search } : undefined,
+      })
+      .then((response) => response.data.courses);
+  },
+  get(id: Ulid) {
+    return http.get<{ course: Course }>(`/courses/${id}`).then((response) => response.data.course);
+  },
+  create(input: {
+    name: string;
+    description?: string;
+    blocks?: Array<{
+      title: string;
+      description?: string;
+      order: number;
+      branches?: Array<{
+        title: string;
+        description?: string;
+        order: number;
+        themes?: Array<{
+          key: string;
+          title: string;
+          description?: string;
+          lessonContent?: string;
+          homeworkContent?: string;
+          order: number;
+          unlockCostPoints: number;
+          evolutionPointsReward: number;
+          experiencePointsReward: number;
+          dependencyKeys: string[];
+        }>;
+      }>;
+    }>;
+  }) {
+    return http.post<CreateEntityResponse>("/courses", input).then((response) => response.data);
+  },
+  update(
+    id: Ulid,
+    input: {
+      name: string;
+      description?: string;
+      blocks: Array<{
+        title: string;
+        description?: string;
+        order: number;
+        branches: Array<{
+          title: string;
+          description?: string;
+          order: number;
+          themes: Array<{
+            key: string;
+            title: string;
+            description?: string;
+            lessonContent?: string;
+            homeworkContent?: string;
+            order: number;
+            unlockCostPoints: number;
+            evolutionPointsReward: number;
+            experiencePointsReward: number;
+            dependencyKeys: string[];
+          }>;
+        }>;
+      }>;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/courses/${id}`, {
+        id,
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
+  },
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/courses/${id}`, {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
       })
       .then(() => undefined);

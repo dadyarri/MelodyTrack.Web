@@ -135,6 +135,53 @@ export interface LookupService {
   price?: number;
 }
 
+export interface CourseSummary {
+  id: Ulid;
+  name: string;
+  description?: string | null;
+  blockCount: number;
+  themeCount: number;
+  updatedAtUtc: string;
+}
+
+export interface CourseTheme {
+  id: Ulid;
+  title: string;
+  description?: string | null;
+  lessonContent?: string | null;
+  homeworkContent?: string | null;
+  order: number;
+  unlockCostPoints: number;
+  evolutionPointsReward: number;
+  experiencePointsReward: number;
+  dependencyThemeIds: Ulid[];
+}
+
+export interface CourseBranch {
+  id: Ulid;
+  title: string;
+  description?: string | null;
+  order: number;
+  themes: CourseTheme[];
+}
+
+export interface CourseBlock {
+  id: Ulid;
+  title: string;
+  description?: string | null;
+  order: number;
+  branches: CourseBranch[];
+}
+
+export interface Course {
+  id: Ulid;
+  name: string;
+  description?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  blocks: CourseBlock[];
+}
+
 export interface User {
   id: Ulid;
   firstName: string;
