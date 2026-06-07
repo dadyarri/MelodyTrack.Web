@@ -17,7 +17,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHasSession(false);
     setCachedUser(null);
     void queryClient.cancelQueries({ queryKey: queryKeys.auth.me });
+    void queryClient.cancelQueries({ queryKey: queryKeys.auth.sessions });
     queryClient.removeQueries({ queryKey: queryKeys.auth.me });
+    queryClient.removeQueries({ queryKey: queryKeys.auth.sessions });
+    queryClient.removeQueries({ queryKey: queryKeys.users.availability() });
   }, [queryClient]);
 
   const meQuery = useQuery({
@@ -25,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: () => authApi.getMe(),
     enabled: hasSession,
     retry: false,
+    gcTime: 0,
   });
 
   useEffect(() => {
@@ -57,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         queryKey: queryKeys.auth.me,
         queryFn: () => authApi.getMe(),
         staleTime: 0,
+        gcTime: 0,
       });
       setCachedUser(me);
     },

@@ -95,11 +95,14 @@ export function useProfilePageController() {
   const meQuery = useQuery({
     queryKey: queryKeys.auth.me,
     queryFn: () => authApi.getMe(),
+    gcTime: 0,
   });
 
   const sessionsQuery = useQuery({
     queryKey: queryKeys.auth.sessions,
     queryFn: () => authApi.getSessions(),
+    gcTime: 0,
+    staleTime: 0,
   });
 
   const availabilityQuery = useQuery({
@@ -355,6 +358,12 @@ export function useProfilePageController() {
 
     availabilityForm.setFieldsValue(mapAvailabilityToForm(availabilityQuery.data));
   }, [availabilityForm, availabilityQuery.data]);
+
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: queryKeys.auth.sessions });
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

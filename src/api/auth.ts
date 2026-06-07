@@ -30,7 +30,6 @@ export interface Recover2FaInput {
 }
 
 export interface RecoveryCodesResponse {
-  codes: string[];
   allCodes: RecoveryCodeItem[];
 }
 
@@ -44,7 +43,6 @@ export interface Recover2FaResponse {
   refreshToken: string;
   secret: string;
   otpUrl: string;
-  codes: string[];
   allCodes: RecoveryCodeItem[];
 }
 
