@@ -8,6 +8,7 @@ import {
   FolderOpenOutlined,
   FunnelTargetOutlined,
   LineChartOutlined,
+  ListTodoOutlined,
   PieChartOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -51,7 +52,7 @@ export const appNavItems: AppNavItem[] = [
   },
   {
     key: "/tasks",
-    icon: <CalendarCheckOutlined />,
+    icon: <ListTodoOutlined />,
     label: "Задачи",
     shortcut: "2",
     visibility: "admin",

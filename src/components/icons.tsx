@@ -2,6 +2,7 @@ import type { LucideIcon, LucideProps } from "lucide-react";
 import {
   BadgeInfo,
   BadgeRussianRuble,
+  Blocks,
   Calendar,
   CalendarCheck2,
   ChartLine,
@@ -23,11 +24,11 @@ import {
   FileSearch,
   Flame,
   FolderOpen,
-  Gauge,
   Goal,
   Hourglass,
   IdCard,
   KeyRound,
+  ListTodo,
   Link,
   Lock,
   LogOut,
@@ -89,7 +90,7 @@ export const CloudOutlined = createIcon(Cloud);
 export const CloudSyncOutlined = createIcon(RefreshCw);
 export const CopyOutlined = createIcon(Copy);
 export const CreditCardOutlined = createIcon(CreditCard);
-export const DashboardOutlined = createIcon(Gauge);
+export const DashboardOutlined = createIcon(Blocks);
 export const DeleteOutlined = createIcon(Trash2);
 export const DisconnectOutlined = createIcon(Unplug);
 export const DollarOutlined = createIcon(CircleDollarSign);
@@ -105,6 +106,7 @@ export const KeyOutlined = createIcon(KeyRound);
 export const LeftOutlined = createIcon(ChevronLeft);
 export const LineChartOutlined = createIcon(ChartLine);
 export const LinkOutlined = createIcon(Link);
+export const ListTodoOutlined = createIcon(ListTodo);
 export const LockOutlined = createIcon(Lock);
 export const LogoutOutlined = createIcon(LogOut);
 export const MailOutlined = createIcon(Mail);
