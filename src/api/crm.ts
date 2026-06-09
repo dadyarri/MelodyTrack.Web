@@ -8,6 +8,7 @@ import type {
   ClientHistory,
   ClientWithBalance,
   Course,
+  CourseEnrollment,
   CourseSummary,
   CreateEntityResponse,
   CreateCustomTaskInput,
@@ -258,6 +259,19 @@ export const coursesApi = {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
       })
       .then(() => undefined);
+  },
+};
+
+export const courseEnrollmentsApi = {
+  list(params?: { clientId?: Ulid }) {
+    return http
+      .get<{ enrollments: CourseEnrollment[] }>("/course-enrollments", {
+        params: params?.clientId ? { clientId: params.clientId } : undefined,
+      })
+      .then((response) => response.data.enrollments);
+  },
+  create(input: { clientId: Ulid; courseId: Ulid }) {
+    return http.post<CreateEntityResponse>("/course-enrollments", input).then((response) => response.data);
   },
 };
 

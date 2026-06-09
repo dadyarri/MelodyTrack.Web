@@ -2,7 +2,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { clientsApi, clientSourcesApi, courseEnrollmentsApi, coursesApi } from "@/api/crm";
 import { queryKeys } from "@/api/queryKeys";
+import type { Client, CourseEnrollment, Ulid } from "@/api/types";
 import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
@@ -14,9 +16,7 @@ import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
-import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
-import type { Client, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
 
 type ClientSubmitInput = {
@@ -62,6 +62,7 @@ export function useClientsPageController() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
+  const [isEnrollmentCreateOpen, setEnrollmentCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
   const navigate = useNavigate();
@@ -103,6 +104,26 @@ export function useClientsPageController() {
     },
     enabled: Boolean(historyClient),
     placeholderData: keepPreviousData,
+  });
+
+  const courseEnrollmentsQuery = useQuery({
+    queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+    queryFn: () => {
+      const clientId = historyClient?.id;
+      if (!clientId) {
+        throw new Error("Enrollment client is not selected.");
+      }
+
+      return courseEnrollmentsApi.list({ clientId });
+    },
+    enabled: Boolean(historyClient),
+  });
+
+  const coursesCatalogQuery = useQuery({
+    queryKey: queryKeys.courses.list(""),
+    queryFn: () => coursesApi.list(),
+    enabled: Boolean(historyClient),
+    staleTime: 60_000,
   });
 
   const currentEditingClient = editing ? (query.data?.data.find((client) => client.id === editing.id) ?? editing) : null;
@@ -274,6 +295,28 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const createEnrollmentMutation = useMutation({
+    mutationFn: (courseId: Ulid) => {
+      const clientId = historyClient?.id;
+      if (!clientId) {
+        throw new Error("Клиент не выбран.");
+      }
+
+      return courseEnrollmentsApi.create({
+        clientId,
+        courseId,
+      });
+    },
+    onSuccess: async () => {
+      message.success("Курс назначен");
+      setEnrollmentCreateOpen(false);
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+      });
+    },
+    onError: showErrors,
+  });
+
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
@@ -289,6 +332,7 @@ export function useClientsPageController() {
   const closeHistoryClient = useCallback(() => {
     setHistoryClient(null);
     setHistoryAppointmentsPage(1);
+    setEnrollmentCreateOpen(false);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -350,6 +394,8 @@ export function useClientsPageController() {
     historyQuery,
     historyClient,
     historyAppointmentsPage,
+    courseEnrollmentsQuery,
+    coursesCatalogQuery,
     setHistoryAppointmentsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
@@ -361,9 +407,11 @@ export function useClientsPageController() {
     isEditingClientStale,
     editingBaselineActivityId,
     isSourceCreateOpen,
+    isEnrollmentCreateOpen,
     createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
     createSourceMutation,
+    createEnrollmentMutation,
     deleteMutation,
     openEditor,
     closeEditor,
@@ -404,11 +452,35 @@ export function useClientsPageController() {
     closeSourceCreate: () => {
       setSourceCreateOpen(false);
     },
+    openEnrollmentCreate: () => {
+      if (!historyClient || !canCreateClients) {
+        return;
+      }
+
+      setEnrollmentCreateOpen(true);
+    },
+    closeEnrollmentCreate: () => {
+      setEnrollmentCreateOpen(false);
+    },
+    availableEnrollmentCourses: buildAvailableEnrollmentCourses(coursesCatalogQuery.data ?? [], courseEnrollmentsQuery.data ?? []),
     onCreateSource: (values: { name: string }) => {
       createSourceMutation.mutate(values);
     },
+    onCreateEnrollment: (courseId: Ulid) => {
+      createEnrollmentMutation.mutate(courseId);
+    },
     onSourceLabelChange: (_label?: string) => {},
   };
+}
+
+function buildAvailableEnrollmentCourses(courses: Array<{ id: Ulid; name: string }>, enrollments: CourseEnrollment[]) {
+  const enrolledCourseIds = new Set(enrollments.map((enrollment) => enrollment.courseId));
+  return courses
+    .filter((course) => !enrolledCourseIds.has(course.id))
+    .map((course) => ({
+      value: course.id,
+      label: course.name,
+    }));
 }
 
 function prepareClientInput(values: ClientFormValues): ClientSubmitInput {

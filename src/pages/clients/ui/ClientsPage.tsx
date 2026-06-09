@@ -2,6 +2,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@/c
 import { Button, Input, Space, Tag } from "antd";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
+import { CourseEnrollmentCreateModal } from "@/features/clients/CourseEnrollmentCreateModal";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
@@ -147,10 +148,22 @@ export function ClientsPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
+        courseEnrollments={controller.courseEnrollmentsQuery.data}
+        isCourseEnrollmentsLoading={controller.courseEnrollmentsQuery.isLoading}
+        isCourseEnrollmentsError={controller.courseEnrollmentsQuery.isError}
         onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
+        onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
         onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
+      />
+      <CourseEnrollmentCreateModal
+        open={controller.isEnrollmentCreateOpen}
+        clientName={controller.historyClient ? formatClientName(controller.historyClient) : undefined}
+        options={controller.availableEnrollmentCourses}
+        confirmLoading={controller.createEnrollmentMutation.isPending}
+        onCancel={controller.closeEnrollmentCreate}
+        onSubmit={controller.onCreateEnrollment}
       />
     </PageLayout>
   );

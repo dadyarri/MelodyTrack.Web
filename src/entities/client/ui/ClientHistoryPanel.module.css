@@ -1,6 +1,7 @@
 .listJustify {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .detailGrid {
@@ -9,8 +10,33 @@
   gap: 16px;
 }
 
+.enrollmentCard {
+  border-style: dashed;
+}
+
+.enrollmentHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.enrollmentProgress {
+  min-width: 220px;
+  flex: 1;
+}
+
 @media (max-width: 720px) {
   .detailGrid {
     grid-template-columns: 1fr;
+  }
+
+  .enrollmentHeader {
+    flex-direction: column;
+  }
+
+  .enrollmentProgress {
+    min-width: 0;
+    width: 100%;
   }
 }

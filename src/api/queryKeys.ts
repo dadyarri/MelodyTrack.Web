@@ -60,6 +60,10 @@ export const queryKeys = {
     list: (search: string) => ["courses", "list", search] as const,
     selected: (courseId?: string) => ["courses", "selected", formatDateKey(courseId)] as const,
   },
+  courseEnrollments: {
+    all: ["course-enrollments"] as const,
+    list: (clientId?: string | null) => ["course-enrollments", "list", formatDateKey(clientId)] as const,
+  },
   payments: {
     all: ["payments"] as const,
     list: (page: number, search: string, clientId?: string, serviceId?: string, startDate?: Dayjs | null, endDate?: Dayjs | null) =>

@@ -182,6 +182,35 @@ export interface Course {
   blocks: CourseBlock[];
 }
 
+export type CourseThemeProgressState = 0 | 1 | 2 | 3 | 4 | 5;
+
+export interface CourseEnrollmentTheme {
+  id: Ulid;
+  courseThemeId: Ulid;
+  themeTitle: string;
+  state: CourseThemeProgressState;
+  unlockedAtUtc?: string | null;
+  startedAtUtc?: string | null;
+  waitingForHomeworkAtUtc?: string | null;
+  completedAtUtc?: string | null;
+  spentEvolutionPoints: number;
+  earnedEvolutionPoints: number;
+  earnedExperiencePoints: number;
+}
+
+export interface CourseEnrollment {
+  id: Ulid;
+  clientId: Ulid;
+  clientDisplayName: string;
+  courseId: Ulid;
+  courseName: string;
+  createdAtUtc: string;
+  earnedEvolutionPoints: number;
+  spentEvolutionPoints: number;
+  earnedExperiencePoints: number;
+  themes: CourseEnrollmentTheme[];
+}
+
 export interface User {
   id: Ulid;
   firstName: string;

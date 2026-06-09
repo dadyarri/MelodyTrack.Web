@@ -1,6 +1,6 @@
-import { CalendarOutlined, CreditCardOutlined } from "@/components/icons";
-import { Button, Card, Descriptions, Empty, List, Pagination, Space, Tag, Typography } from "antd";
-import type { ClientHistory } from "@/api/types";
+import { BookOutlined, CalendarOutlined, CreditCardOutlined, PlusOutlined } from "@/components/icons";
+import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
+import type { ClientHistory, CourseEnrollment, CourseEnrollmentTheme, CourseThemeProgressState } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatDate, formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
@@ -9,15 +9,28 @@ import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
+  courseEnrollments?: CourseEnrollment[];
+  isCourseEnrollmentsLoading?: boolean;
+  isCourseEnrollmentsError?: boolean;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onCreateCourseEnrollment?: () => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
 
-export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment, onAppointmentsPageChange }: ClientHistoryPanelProps) {
+export function ClientHistoryPanel({
+  data,
+  courseEnrollments,
+  isCourseEnrollmentsLoading = false,
+  isCourseEnrollmentsError = false,
+  onCreateAppointment,
+  onCreatePayment,
+  onCreateCourseEnrollment,
+  onAppointmentsPageChange,
+}: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment ? (
+      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment ? (
         <Space>
           {onCreateAppointment ? (
             <Button
@@ -38,6 +51,11 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
               }}
             >
               Добавить платеж
+            </Button>
+          ) : null}
+          {onCreateCourseEnrollment ? (
+            <Button icon={<PlusOutlined />} onClick={onCreateCourseEnrollment}>
+              Назначить курс
             </Button>
           ) : null}
         </Space>
@@ -102,6 +120,79 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
         )}
       </Card>
 
+      <Card
+        size="small"
+        title={
+          <Space size={8}>
+            <BookOutlined />
+            <span>Курсы и прогресс</span>
+          </Space>
+        }
+      >
+        {isCourseEnrollmentsLoading ? <Typography.Text type="secondary">Загрузка прогресса...</Typography.Text> : null}
+        {isCourseEnrollmentsError ? <Typography.Text type="danger">Не удалось загрузить прогресс по курсам.</Typography.Text> : null}
+        {!isCourseEnrollmentsLoading && !isCourseEnrollmentsError && (courseEnrollments?.length ?? 0) === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Курсы пока не назначены" />
+        ) : null}
+        {!isCourseEnrollmentsLoading && !isCourseEnrollmentsError && (courseEnrollments?.length ?? 0) > 0 ? (
+          <Space orientation="vertical" size={12} className="wide">
+            {courseEnrollments?.map((enrollment) => {
+              const completionPercent =
+                enrollment.themes.length === 0
+                  ? 0
+                  : Math.round((countThemesByState(enrollment.themes, 5) / enrollment.themes.length) * 100);
+
+              return (
+                <Card
+                  key={enrollment.id}
+                  size="small"
+                  className={styles.enrollmentCard}
+                  title={enrollment.courseName}
+                  extra={<Typography.Text type="secondary">Назначен {formatDateTime(enrollment.createdAtUtc)}</Typography.Text>}
+                >
+                  <Space orientation="vertical" size={12} className="wide">
+                    <div className={styles.enrollmentHeader}>
+                      <div className={styles.enrollmentProgress}>
+                        <Typography.Text strong>{completionPercent}% завершено</Typography.Text>
+                        <Progress percent={completionPercent} size="small" />
+                      </div>
+                      <Space wrap>
+                        <Tag color="cyan">Эволюция +{enrollment.earnedEvolutionPoints}</Tag>
+                        <Tag color="gold">Потрачено {enrollment.spentEvolutionPoints}</Tag>
+                        <Tag color="purple">Опыт +{enrollment.earnedExperiencePoints}</Tag>
+                      </Space>
+                    </div>
+                    <Space wrap>
+                      {buildStateSummaryTags(enrollment.themes).map((item) => (
+                        <Tag key={item.label} color={item.color}>
+                          {item.label}: {item.count}
+                        </Tag>
+                      ))}
+                    </Space>
+                    <List
+                      size="small"
+                      dataSource={enrollment.themes}
+                      renderItem={(theme) => {
+                        const stateMeta = getCourseThemeProgressStateMeta(theme.state);
+
+                        return (
+                          <List.Item>
+                            <div className={`wide ${styles.listJustify}`}>
+                              <Typography.Text>{theme.themeTitle}</Typography.Text>
+                              <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
+                            </div>
+                          </List.Item>
+                        );
+                      }}
+                    />
+                  </Space>
+                </Card>
+              );
+            })}
+          </Space>
+        ) : null}
+      </Card>
+
       <Card size="small" title="История записей">
         {data.appointments.data.length > 0 ? (
           <Space orientation="vertical" size={16} className="wide">
@@ -143,6 +234,45 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
       </Card>
     </Space>
   );
+}
+
+function buildStateSummaryTags(themes: CourseEnrollmentTheme[]) {
+  return [0, 1, 2, 3, 4, 5]
+    .map((state) => {
+      const count = countThemesByState(themes, state as CourseThemeProgressState);
+      if (count === 0) {
+        return null;
+      }
+
+      const meta = getCourseThemeProgressStateMeta(state as CourseThemeProgressState);
+      return {
+        count,
+        color: meta.color,
+        label: meta.label,
+      };
+    })
+    .filter((item): item is { count: number; color: string; label: string } => item !== null);
+}
+
+function countThemesByState(themes: CourseEnrollmentTheme[], state: CourseThemeProgressState) {
+  return themes.filter((theme) => theme.state === state).length;
+}
+
+function getCourseThemeProgressStateMeta(state: CourseThemeProgressState) {
+  switch (state) {
+    case 0:
+      return { label: "Заблокировано", color: "default" };
+    case 1:
+      return { label: "Можно открыть", color: "gold" };
+    case 2:
+      return { label: "Открыто", color: "blue" };
+    case 3:
+      return { label: "В процессе", color: "processing" };
+    case 4:
+      return { label: "Ждет ДЗ", color: "orange" };
+    case 5:
+      return { label: "Завершено", color: "green" };
+  }
 }
 
 function formatOptionalDateTime(value?: string | null) {

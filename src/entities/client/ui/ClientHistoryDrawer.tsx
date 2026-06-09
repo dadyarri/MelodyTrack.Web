@@ -1,5 +1,5 @@
 import { Drawer } from "antd";
-import type { Client, ClientHistory } from "@/api/types";
+import type { Client, ClientHistory, CourseEnrollment } from "@/api/types";
 import { QueryStateBlock } from "@/shared/ui";
 import { formatClientName } from "../lib/client";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
@@ -9,9 +9,13 @@ type ClientHistoryDrawerProps = {
   data?: ClientHistory;
   isLoading: boolean;
   isError: boolean;
+  courseEnrollments?: CourseEnrollment[];
+  isCourseEnrollmentsLoading?: boolean;
+  isCourseEnrollmentsError?: boolean;
   onClose: () => void;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onCreateCourseEnrollment?: () => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
 
@@ -20,9 +24,13 @@ export function ClientHistoryDrawer({
   data,
   isLoading,
   isError,
+  courseEnrollments,
+  isCourseEnrollmentsLoading = false,
+  isCourseEnrollmentsError = false,
   onClose,
   onCreateAppointment,
   onCreatePayment,
+  onCreateCourseEnrollment,
   onAppointmentsPageChange,
 }: ClientHistoryDrawerProps) {
   return (
@@ -36,8 +44,12 @@ export function ClientHistoryDrawer({
       {data ? (
         <ClientHistoryPanel
           data={data}
+          courseEnrollments={courseEnrollments}
+          isCourseEnrollmentsLoading={isCourseEnrollmentsLoading}
+          isCourseEnrollmentsError={isCourseEnrollmentsError}
           onCreateAppointment={onCreateAppointment}
           onCreatePayment={onCreatePayment}
+          onCreateCourseEnrollment={onCreateCourseEnrollment}
           onAppointmentsPageChange={onAppointmentsPageChange}
         />
       ) : null}
