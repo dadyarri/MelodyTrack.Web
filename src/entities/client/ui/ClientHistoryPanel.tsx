@@ -177,9 +177,51 @@ export function ClientHistoryPanel({
 
                         return (
                           <List.Item>
-                            <div className={`wide ${styles.listJustify}`}>
-                              <Typography.Text>{theme.themeTitle}</Typography.Text>
-                              <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
+                            <div className={`wide ${styles.themeItem}`}>
+                              <div className={styles.listJustify}>
+                                <Typography.Text>{theme.themeTitle}</Typography.Text>
+                                <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
+                              </div>
+                              {theme.themeDescription ? <Typography.Text type="secondary">{theme.themeDescription}</Typography.Text> : null}
+                              {theme.homeworkContent ? (
+                                <div>
+                                  <Typography.Text strong>Домашнее задание</Typography.Text>
+                                  <Typography.Paragraph className={styles.themeContent}>{theme.homeworkContent}</Typography.Paragraph>
+                                </div>
+                              ) : null}
+                              {theme.recentAppointments.length > 0 ? (
+                                <div className={styles.themeHistory}>
+                                  <Typography.Text strong>Недавние занятия по теме</Typography.Text>
+                                  <List
+                                    size="small"
+                                    dataSource={theme.recentAppointments}
+                                    renderItem={(lesson) => (
+                                      <List.Item>
+                                        <div className="wide">
+                                          <Space className={`wide ${styles.listJustify}`} wrap>
+                                            <Typography.Text>{formatDateTime(lesson.startDateUtc)}</Typography.Text>
+                                            <Tag color={getAppointmentStatusTagColor(lesson.status)}>
+                                              {renderClientHistoryAppointmentStatus({
+                                                status: lesson.status,
+                                              } as ClientHistory["appointments"]["data"][number])}
+                                            </Tag>
+                                          </Space>
+                                          <Typography.Text type="secondary">
+                                            {lesson.providerDisplayName
+                                              ? `Преподаватель: ${lesson.providerDisplayName}`
+                                              : "Преподаватель не назначен"}
+                                          </Typography.Text>
+                                          {lesson.lessonNotes ? (
+                                            <Typography.Paragraph className={styles.themeContent}>
+                                              {lesson.lessonNotes}
+                                            </Typography.Paragraph>
+                                          ) : null}
+                                        </div>
+                                      </List.Item>
+                                    )}
+                                  />
+                                </div>
+                              ) : null}
                             </div>
                           </List.Item>
                         );
@@ -213,6 +255,14 @@ export function ClientHistoryPanel({
                     <Typography.Text type="secondary">
                       {appointment.providerDisplayName ? `Преподаватель: ${appointment.providerDisplayName}` : "Преподаватель не назначен"}
                     </Typography.Text>
+                    {appointment.courseThemeTitle ? (
+                      <div>
+                        <Typography.Text type="secondary">Тема: {appointment.courseThemeTitle}</Typography.Text>
+                      </div>
+                    ) : null}
+                    {appointment.lessonNotes ? (
+                      <Typography.Paragraph className={styles.themeContent}>{appointment.lessonNotes}</Typography.Paragraph>
+                    ) : null}
                   </div>
                 </List.Item>
               )}

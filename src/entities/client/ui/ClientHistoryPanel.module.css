@@ -26,6 +26,21 @@
   flex: 1;
 }
 
+.themeItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.themeHistory {
+  margin-top: 4px;
+}
+
+.themeContent {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 720px) {
   .detailGrid {
     grid-template-columns: 1fr;

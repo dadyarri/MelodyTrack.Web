@@ -250,6 +250,8 @@ export function SchedulePage() {
         onClearDraft={controller.handleClearCreateDraft}
         recurrenceTypes={controller.recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={controller.recurrenceTypesQuery.isLoading}
+        courseThemeOptions={controller.createCourseThemeOptions}
+        courseThemesLoading={controller.createCourseEnrollmentsQuery.isLoading}
       />
       <AppointmentEditModal
         appointment={controller.currentEditingAppointment}
@@ -259,6 +261,8 @@ export function SchedulePage() {
         form={controller.editForm}
         isStale={controller.isEditingAppointmentStale}
         lockedProviderId={controller.lockedProviderId}
+        courseThemeOptions={controller.editCourseThemeOptions}
+        courseThemesLoading={controller.editCourseEnrollmentsQuery.isLoading}
         onCreateClient={() => {
           controller.setQuickClientCreateOpen(true);
         }}

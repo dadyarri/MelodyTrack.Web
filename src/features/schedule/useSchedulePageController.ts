@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
+import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
-import { scheduleApi, usersApi } from "@/api/crm";
+import { courseEnrollmentsApi, scheduleApi, usersApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
-import type { Appointment, AppointmentStatus, RecurrenceType, Ulid } from "@/api/types";
+import type { Appointment, AppointmentStatus, CourseEnrollment, CourseThemeProgressState, RecurrenceType, Ulid } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
@@ -31,6 +32,8 @@ export type AppointmentDraftValues = {
   clientId?: string;
   serviceId?: string;
   providerId?: string;
+  courseThemeId?: string;
+  lessonNotes?: string;
   startDate?: string;
   recurrenceTypeId?: string;
   patternEndDate?: string;
@@ -69,6 +72,8 @@ export function useSchedulePageController() {
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
+  const createSelectedClientId = Form.useWatch("clientId", form);
+  const editSelectedClientId = Form.useWatch("clientId", editForm);
   const createRouteIntent = useOpenCreateRouteIntent();
   const paymentCreate = usePaymentCreateController();
   const queryClient = useQueryClient();
@@ -197,6 +202,30 @@ export function useSchedulePageController() {
       return false;
     }
     return true;
+  });
+
+  const createCourseEnrollmentsQuery = useQuery({
+    queryKey: queryKeys.courseEnrollments.list(createSelectedClientId),
+    queryFn: () => {
+      if (!createSelectedClientId) {
+        throw new Error("Client is not selected.");
+      }
+
+      return courseEnrollmentsApi.list({ clientId: createSelectedClientId });
+    },
+    enabled: Boolean(isCreateModalOpen && createSelectedClientId),
+  });
+
+  const editCourseEnrollmentsQuery = useQuery({
+    queryKey: queryKeys.courseEnrollments.list(editSelectedClientId),
+    queryFn: () => {
+      if (!editSelectedClientId) {
+        throw new Error("Client is not selected.");
+      }
+
+      return courseEnrollmentsApi.list({ clientId: editSelectedClientId });
+    },
+    enabled: Boolean(appointmentToEdit && editSelectedClientId),
   });
 
   const currentSelectedAppointment = selectedAppointment
@@ -363,6 +392,10 @@ export function useSchedulePageController() {
         clientId: input.clientId,
         serviceId: input.serviceId,
         providerId: input.providerId,
+        courseThemeId: input.courseThemeId ?? null,
+        hasCourseThemeSelection: true,
+        lessonNotes: input.lessonNotes?.trim() || null,
+        hasLessonNotes: true,
         startDate: input.startDate.toISOString(),
         timezone,
         expectedActivityId,
@@ -410,6 +443,8 @@ export function useSchedulePageController() {
             clientId: freshAppointment.client.id,
             serviceId: freshAppointment.service.id,
             providerId: lockedProviderId ?? freshAppointment.provider?.id,
+            courseThemeId: freshAppointment.courseTheme?.id,
+            lessonNotes: freshAppointment.lessonNotes ?? undefined,
             startDate: dayjs(freshAppointment.startDate),
           });
         },
@@ -594,6 +629,8 @@ export function useSchedulePageController() {
         clientId: draftValues?.clientId ?? createPrefillClientId,
         serviceId: draftValues?.serviceId,
         providerId,
+        courseThemeId: draftValues?.courseThemeId,
+        lessonNotes: draftValues?.lessonNotes,
         startDate,
         recurrenceTypeId: draftValues?.recurrenceTypeId,
         patternEndDate: draftValues?.patternEndDate ? dayjs(draftValues.patternEndDate) : undefined,
@@ -627,6 +664,8 @@ export function useSchedulePageController() {
         clientId: createPrefillClientId,
         serviceId: undefined,
         providerId: pendingCreateProviderId ?? lockedProviderId,
+        courseThemeId: undefined,
+        lessonNotes: undefined,
         startDate: pendingCreateStartDate ?? dayjs(),
         recurrenceTypeId: undefined,
         patternEndDate: undefined,
@@ -642,6 +681,8 @@ export function useSchedulePageController() {
     setWeekStart,
     query,
     recurrenceTypesQuery,
+    createCourseEnrollmentsQuery,
+    editCourseEnrollmentsQuery,
     providerAvailabilityQuery,
     allProvidersAvailabilityQuery,
     visibleHours,
@@ -715,6 +756,8 @@ export function useSchedulePageController() {
 
       setQuickClientCreateOpen(false);
     },
+    createCourseThemeOptions: buildCourseThemeOptions(createCourseEnrollmentsQuery.data ?? []),
+    editCourseThemeOptions: buildCourseThemeOptions(editCourseEnrollmentsQuery.data ?? []),
     modal,
   };
 }
@@ -726,6 +769,8 @@ function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrence
     clientId: values.clientId,
     serviceId: values.serviceId,
     providerId: values.providerId,
+    courseThemeId: values.courseThemeId,
+    lessonNotes: values.lessonNotes?.trim() || undefined,
     startDate: values.startDate.toISOString(),
     timezone,
     recurrenceTypeId: recurrenceType?.id,
@@ -751,6 +796,8 @@ function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDr
     clientId: values.clientId,
     serviceId: values.serviceId,
     providerId: values.providerId,
+    courseThemeId: values.courseThemeId,
+    lessonNotes: values.lessonNotes,
     startDate: values.startDate.toISOString(),
     recurrenceTypeId: values.recurrenceTypeId,
     patternEndDate: values.patternEndDate?.toISOString(),
@@ -792,6 +839,15 @@ function buildOptimisticOfflineAppointment(
           roleDisplayName: "",
         }
       : undefined,
+    courseTheme: input.courseThemeId
+      ? {
+          id: input.courseThemeId,
+          title: input.courseThemeId,
+          courseId: "offline-course",
+          courseName: "Курс",
+        }
+      : null,
+    lessonNotes: input.lessonNotes ?? null,
     startDate: input.startDate,
     endDate: endDate.toISOString(),
     status: "planned",
@@ -806,4 +862,31 @@ function buildOptimisticOfflineAppointment(
       : null,
     lastActivity: null,
   };
+}
+
+function buildCourseThemeOptions(enrollments: CourseEnrollment[]): DefaultOptionType[] {
+  return enrollments.map((enrollment) => ({
+    label: enrollment.courseName,
+    options: enrollment.themes.map((theme) => ({
+      value: theme.courseThemeId,
+      label: `${theme.themeTitle} · ${getCourseThemeProgressStateLabel(theme.state)}`,
+    })),
+  }));
+}
+
+function getCourseThemeProgressStateLabel(state: CourseThemeProgressState) {
+  switch (state) {
+    case 0:
+      return "заблокировано";
+    case 1:
+      return "можно открыть";
+    case 2:
+      return "открыто";
+    case 3:
+      return "в процессе";
+    case 4:
+      return "ждет ДЗ";
+    case 5:
+      return "завершено";
+  }
 }

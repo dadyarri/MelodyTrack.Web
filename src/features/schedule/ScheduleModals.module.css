@@ -21,6 +21,11 @@
   font-weight: 650;
 }
 
+.notesBlock {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
 .contactLinks {
   flex: 0 0 auto;
 }

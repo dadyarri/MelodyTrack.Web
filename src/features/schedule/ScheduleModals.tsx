@@ -11,7 +11,7 @@ import {
   SendOutlined,
 } from "@/components/icons";
 import type { FormInstance } from "antd";
-import { Button, Checkbox, DatePicker, Form, Modal, Select, Space, Typography } from "antd";
+import { Button, Checkbox, DatePicker, Form, Input, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
@@ -38,6 +38,8 @@ export type AppointmentFormValues = {
   clientId: string;
   serviceId: string;
   providerId?: string;
+  courseThemeId?: string;
+  lessonNotes?: string;
   startDate: Dayjs;
   recurrenceTypeId?: string;
   patternEndDate?: Dayjs;
@@ -48,6 +50,8 @@ export type AppointmentEditFormValues = {
   clientId: string;
   serviceId: string;
   providerId?: string;
+  courseThemeId?: string;
+  lessonNotes?: string;
   startDate: Dayjs;
 };
 
@@ -69,6 +73,8 @@ export function AppointmentEditModal({
   form,
   isStale,
   lockedProviderId,
+  courseThemeOptions,
+  courseThemesLoading,
   canCreateClient = true,
   onCreateClient,
   onCancel,
@@ -80,6 +86,8 @@ export function AppointmentEditModal({
   form: FormInstance<AppointmentEditFormValues>;
   isStale: boolean;
   lockedProviderId?: string;
+  courseThemeOptions: DefaultOptionType[];
+  courseThemesLoading: boolean;
   canCreateClient?: boolean;
   onCreateClient: () => void;
   onCancel: () => void;
@@ -95,6 +103,8 @@ export function AppointmentEditModal({
       clientId: appointment.client.id,
       serviceId: appointment.service.id,
       providerId: lockedProviderId ?? appointment.provider?.id,
+      courseThemeId: appointment.courseTheme?.id,
+      lessonNotes: appointment.lessonNotes ?? undefined,
       startDate: dayjs(appointment.startDate),
     });
   }, [appointment, form, lockedProviderId]);
@@ -133,6 +143,26 @@ export function AppointmentEditModal({
           <Form.Item name="providerId" label="Преподаватель">
             <UserSelect disabled={Boolean(lockedProviderId)} />
           </Form.Item>
+          <Form.Item name="courseThemeId" label="Тема занятия">
+            <Select
+              allowClear
+              loading={courseThemesLoading}
+              options={courseThemeOptions}
+              placeholder="Не выбрана"
+              disabled={courseThemeOptions.length === 0}
+              showSearch={{
+                filterOption: (input, option) =>
+                  (typeof option?.label === "string" ? option.label : "").toLowerCase().includes(input.trim().toLowerCase()),
+              }}
+            />
+          </Form.Item>
+          <Form.Item name="lessonNotes" label="Заметки по уроку">
+            <Input.TextArea
+              autoSize={{ minRows: 3, maxRows: 6 }}
+              placeholder="Что именно проходили, на чем остановились, что задать дальше"
+              maxLength={4000}
+            />
+          </Form.Item>
           <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
             <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
           </Form.Item>
@@ -165,6 +195,8 @@ export function AppointmentCreateModal({
   onClearDraft,
   recurrenceTypes,
   recurrenceTypesLoading,
+  courseThemeOptions,
+  courseThemesLoading,
 }: {
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
@@ -183,6 +215,8 @@ export function AppointmentCreateModal({
   onClearDraft: () => void;
   recurrenceTypes: RecurrenceType[];
   recurrenceTypesLoading: boolean;
+  courseThemeOptions: DefaultOptionType[];
+  courseThemesLoading: boolean;
 }) {
   const recurrenceTypeId = Form.useWatch("recurrenceTypeId", form);
   const startDate = Form.useWatch("startDate", form);
@@ -261,6 +295,22 @@ export function AppointmentCreateModal({
         </Form.Item>
         <Form.Item name="providerId" label="Преподаватель">
           <UserSelect disabled={Boolean(lockedProviderId)} onResolvedLabelChange={onProviderLabelChange} />
+        </Form.Item>
+        <Form.Item name="courseThemeId" label="Тема занятия">
+          <Select
+            allowClear
+            loading={courseThemesLoading}
+            options={courseThemeOptions}
+            placeholder="Не выбрана"
+            disabled={courseThemeOptions.length === 0}
+            showSearch={{
+              filterOption: (input, option) =>
+                (typeof option?.label === "string" ? option.label : "").toLowerCase().includes(input.trim().toLowerCase()),
+            }}
+          />
+        </Form.Item>
+        <Form.Item name="lessonNotes" label="Заметки по уроку">
+          <Input.TextArea autoSize={{ minRows: 3, maxRows: 6 }} placeholder="Кратко зафиксируйте, что было на уроке" maxLength={4000} />
         </Form.Item>
         <Form.Item name="startDate" label="Начало" rules={[{ required: true }]}>
           <DatePicker showTime={{ format: TIME_FORMAT }} format={DATE_TIME_FORMAT} className="wide" />
@@ -583,6 +633,14 @@ export function AppointmentDetailsModal({
               <Typography.Text type="secondary">Преподаватель</Typography.Text>
             </div>
           ) : null}
+          {appointment.courseTheme ? (
+            <div>
+              <div className={styles.detailValue}>
+                {appointment.courseTheme.courseName}: {appointment.courseTheme.title}
+              </div>
+              <Typography.Text type="secondary">Тема занятия</Typography.Text>
+            </div>
+          ) : null}
           <div>
             <div className={styles.detailValue}>
               <Select
@@ -605,6 +663,12 @@ export function AppointmentDetailsModal({
             </div>
           ) : null}
         </div>
+        {appointment.lessonNotes ? (
+          <div>
+            <Typography.Text strong>Заметки по уроку</Typography.Text>
+            <Typography.Paragraph className={styles.notesBlock}>{appointment.lessonNotes}</Typography.Paragraph>
+          </div>
+        ) : null}
         <Space wrap>
           <Button
             icon={<EditOutlined />}

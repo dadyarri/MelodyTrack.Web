@@ -72,7 +72,7 @@ export function CourseEnrollmentCreateModal({
           />
         </Form.Item>
         {options.length === 0 ? (
-          <Typography.Text type="secondary">Для этого клиента уже назначены все доступные курсы.</Typography.Text>
+          <Typography.Text type="secondary">Этот клиент уже записан на все доступные курсы.</Typography.Text>
         ) : null}
       </Form>
     </Modal>

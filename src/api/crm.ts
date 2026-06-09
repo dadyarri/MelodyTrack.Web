@@ -484,7 +484,9 @@ export const scheduleApi = {
       clientId: Ulid;
       serviceId: Ulid;
       providerId?: Ulid;
+      courseThemeId?: Ulid;
       recurrenceTypeId?: Ulid;
+      lessonNotes?: string;
       startDate: string;
       timezone: string;
       patternEndDate?: string;
@@ -500,6 +502,10 @@ export const scheduleApi = {
       clientId: Ulid;
       serviceId: Ulid;
       providerId: Ulid;
+      courseThemeId: Ulid | null;
+      hasCourseThemeSelection: boolean;
+      lessonNotes: string | null;
+      hasLessonNotes: boolean;
       startDate: string;
       timezone: string;
       status: "planned" | "completed" | "cancelled" | "burned";

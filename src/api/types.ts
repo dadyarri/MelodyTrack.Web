@@ -91,6 +91,9 @@ export interface ClientHistoryAppointment {
   serviceName: string;
   providerDisplayName?: string | null;
   status: AppointmentStatus;
+  courseThemeId?: Ulid | null;
+  courseThemeTitle?: string | null;
+  lessonNotes?: string | null;
 }
 
 export interface RecordActivity {
@@ -188,6 +191,9 @@ export interface CourseEnrollmentTheme {
   id: Ulid;
   courseThemeId: Ulid;
   themeTitle: string;
+  themeDescription?: string | null;
+  lessonContent?: string | null;
+  homeworkContent?: string | null;
   state: CourseThemeProgressState;
   unlockedAtUtc?: string | null;
   startedAtUtc?: string | null;
@@ -196,6 +202,7 @@ export interface CourseEnrollmentTheme {
   spentEvolutionPoints: number;
   earnedEvolutionPoints: number;
   earnedExperiencePoints: number;
+  recentAppointments: CourseEnrollmentThemeAppointment[];
 }
 
 export interface CourseEnrollment {
@@ -209,6 +216,14 @@ export interface CourseEnrollment {
   spentEvolutionPoints: number;
   earnedExperiencePoints: number;
   themes: CourseEnrollmentTheme[];
+}
+
+export interface CourseEnrollmentThemeAppointment {
+  id: Ulid;
+  startDateUtc: string;
+  providerDisplayName?: string | null;
+  status: AppointmentStatus;
+  lessonNotes?: string | null;
 }
 
 export interface User {
@@ -320,11 +335,20 @@ export interface Appointment {
   client: LookupClient;
   service: LookupService;
   provider?: User | null;
+  courseTheme?: AppointmentCourseTheme | null;
+  lessonNotes?: string | null;
   startDate: string;
   endDate: string;
   status: AppointmentStatus;
   recurringRule?: AppointmentRecurrenceRule | null;
   lastActivity?: RecordActivity | null;
+}
+
+export interface AppointmentCourseTheme {
+  id: Ulid;
+  title: string;
+  courseId: Ulid;
+  courseName: string;
 }
 
 export interface PaymentClient {
