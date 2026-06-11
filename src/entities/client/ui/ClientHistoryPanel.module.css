@@ -36,6 +36,12 @@
   margin-top: 4px;
 }
 
+.themeMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .themeContent {
   margin-bottom: 0;
   white-space: pre-wrap;

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { clientsApi, clientSourcesApi, courseEnrollmentsApi, coursesApi } from "@/api/crm";
 import { queryKeys } from "@/api/queryKeys";
-import type { Client, CourseEnrollment, Ulid } from "@/api/types";
+import type { Client, CourseEnrollment, CourseEnrollmentThemeProgressAction, Ulid } from "@/api/types";
 import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
@@ -328,6 +328,18 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const updateThemeProgressMutation = useMutation({
+    mutationFn: ({ themeId, action }: { themeId: Ulid; action: CourseEnrollmentThemeProgressAction }) =>
+      courseEnrollmentsApi.updateThemeProgress(themeId, action),
+    onSuccess: async (_, variables) => {
+      message.success(getThemeProgressSuccessMessage(variables.action));
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+      });
+    },
+    onError: showErrors,
+  });
+
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
@@ -424,6 +436,7 @@ export function useClientsPageController() {
     createSourceMutation,
     createEnrollmentMutation,
     deleteEnrollmentMutation,
+    updateThemeProgressMutation,
     deleteMutation,
     openEditor,
     closeEditor,
@@ -489,8 +502,42 @@ export function useClientsPageController() {
         },
       });
     },
+    onUpdateThemeProgress: (themeId: Ulid, action: CourseEnrollmentThemeProgressAction) => {
+      if (action === "pass-homework") {
+        modal.confirm({
+          title: "Принять домашнее задание и завершить тему?",
+          onOk: () => {
+            updateThemeProgressMutation.mutate({
+              themeId,
+              action,
+            });
+          },
+        });
+        return;
+      }
+
+      updateThemeProgressMutation.mutate({
+        themeId,
+        action,
+      });
+    },
     onSourceLabelChange: (_label?: string) => {},
   };
+}
+
+function getThemeProgressSuccessMessage(action: CourseEnrollmentThemeProgressAction) {
+  switch (action) {
+    case "unlock":
+      return "Тема открыта";
+    case "start":
+      return "Тема переведена в работу";
+    case "send-to-homework":
+      return "Тема отправлена на домашнее задание";
+    case "pass-homework":
+      return "Домашнее задание принято, тема завершена";
+    case "return-to-progress":
+      return "Тема возвращена в работу";
+  }
 }
 
 function buildAvailableEnrollmentCourses(courses: Array<{ id: Ulid; name: string }>, enrollments: CourseEnrollment[]) {

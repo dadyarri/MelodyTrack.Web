@@ -194,6 +194,9 @@ export interface CourseEnrollmentTheme {
   themeDescription?: string | null;
   lessonContent?: string | null;
   homeworkContent?: string | null;
+  unlockCostPoints: number;
+  evolutionPointsReward: number;
+  experiencePointsReward: number;
   state: CourseThemeProgressState;
   unlockedAtUtc?: string | null;
   startedAtUtc?: string | null;
@@ -214,9 +217,12 @@ export interface CourseEnrollment {
   createdAtUtc: string;
   earnedEvolutionPoints: number;
   spentEvolutionPoints: number;
+  availableEvolutionPoints: number;
   earnedExperiencePoints: number;
   themes: CourseEnrollmentTheme[];
 }
+
+export type CourseEnrollmentThemeProgressAction = "unlock" | "start" | "send-to-homework" | "pass-homework" | "return-to-progress";
 
 export interface CourseEnrollmentThemeAppointment {
   id: Ulid;

@@ -1,6 +1,22 @@
-import { BookOutlined, CalendarOutlined, CreditCardOutlined, DeleteOutlined, PlusOutlined } from "@/components/icons";
+import {
+  BookOutlined,
+  CalendarOutlined,
+  CheckOutlined,
+  CreditCardOutlined,
+  DeleteOutlined,
+  HourglassOutlined,
+  LockOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from "@/components/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
-import type { ClientHistory, CourseEnrollment, CourseEnrollmentTheme, CourseThemeProgressState } from "@/api/types";
+import type {
+  ClientHistory,
+  CourseEnrollment,
+  CourseEnrollmentTheme,
+  CourseEnrollmentThemeProgressAction,
+  CourseThemeProgressState,
+} from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatDate, formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
@@ -16,6 +32,7 @@ type ClientHistoryPanelProps = {
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
 
@@ -28,6 +45,7 @@ export function ClientHistoryPanel({
   onCreatePayment,
   onCreateCourseEnrollment,
   onDeleteCourseEnrollment,
+  onUpdateThemeProgress,
   onAppointmentsPageChange,
 }: ClientHistoryPanelProps) {
   return (
@@ -175,6 +193,9 @@ export function ClientHistoryPanel({
                         <Progress percent={completionPercent} size="small" />
                       </div>
                       <Space wrap>
+                        <Tag color={enrollment.availableEvolutionPoints > 0 ? "green" : "default"}>
+                          Доступно {enrollment.availableEvolutionPoints}
+                        </Tag>
                         <Tag color="cyan">Эволюция +{enrollment.earnedEvolutionPoints}</Tag>
                         <Tag color="gold">Потрачено {enrollment.spentEvolutionPoints}</Tag>
                         <Tag color="purple">Опыт +{enrollment.earnedExperiencePoints}</Tag>
@@ -200,7 +221,19 @@ export function ClientHistoryPanel({
                                 <Typography.Text>{theme.themeTitle}</Typography.Text>
                                 <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
                               </div>
+                              <Space wrap size={[8, 8]} className={styles.themeMeta}>
+                                <Tag>Открытие: {theme.unlockCostPoints}</Tag>
+                                <Tag color="cyan">Эво: +{theme.evolutionPointsReward}</Tag>
+                                <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
+                                {theme.spentEvolutionPoints > 0 ? <Tag color="gold">Потрачено: {theme.spentEvolutionPoints}</Tag> : null}
+                                {theme.earnedEvolutionPoints > 0 ? <Tag color="cyan">Получено: +{theme.earnedEvolutionPoints}</Tag> : null}
+                              </Space>
                               {theme.themeDescription ? <Typography.Text type="secondary">{theme.themeDescription}</Typography.Text> : null}
+                              {onUpdateThemeProgress ? (
+                                <Space wrap size={[8, 8]}>
+                                  {buildThemeActionButtons(theme, enrollment.availableEvolutionPoints, onUpdateThemeProgress)}
+                                </Space>
+                              ) : null}
                               {theme.homeworkContent ? (
                                 <div>
                                   <Typography.Text strong>Домашнее задание</Typography.Text>
@@ -302,6 +335,90 @@ export function ClientHistoryPanel({
       </Card>
     </Space>
   );
+}
+
+function buildThemeActionButtons(
+  theme: CourseEnrollmentTheme,
+  availableEvolutionPoints: number,
+  onUpdateThemeProgress: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void,
+) {
+  switch (theme.state) {
+    case 1:
+      return [
+        <Button
+          key="unlock"
+          size="small"
+          icon={<LockOutlined />}
+          disabled={availableEvolutionPoints < theme.unlockCostPoints}
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "unlock");
+          }}
+        >
+          Открыть
+        </Button>,
+      ];
+    case 2:
+      return [
+        <Button
+          key="start"
+          size="small"
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "start");
+          }}
+        >
+          В работу
+        </Button>,
+        <Button
+          key="homework"
+          size="small"
+          icon={<HourglassOutlined />}
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "send-to-homework");
+          }}
+        >
+          На ДЗ
+        </Button>,
+      ];
+    case 3:
+      return [
+        <Button
+          key="homework"
+          size="small"
+          icon={<HourglassOutlined />}
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "send-to-homework");
+          }}
+        >
+          На ДЗ
+        </Button>,
+      ];
+    case 4:
+      return [
+        <Button
+          key="retry"
+          size="small"
+          icon={<ReloadOutlined />}
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "return-to-progress");
+          }}
+        >
+          Вернуть
+        </Button>,
+        <Button
+          key="pass"
+          type="primary"
+          size="small"
+          icon={<CheckOutlined />}
+          onClick={() => {
+            onUpdateThemeProgress(theme.id, "pass-homework");
+          }}
+        >
+          Принять ДЗ
+        </Button>,
+      ];
+    default:
+      return [];
+  }
 }
 
 function buildStateSummaryTags(themes: CourseEnrollmentTheme[]) {

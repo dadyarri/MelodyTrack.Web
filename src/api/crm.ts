@@ -9,6 +9,7 @@ import type {
   ClientWithBalance,
   Course,
   CourseEnrollment,
+  CourseEnrollmentThemeProgressAction,
   CourseSummary,
   CreateEntityResponse,
   CreateCustomTaskInput,
@@ -275,6 +276,14 @@ export const courseEnrollmentsApi = {
   },
   remove(id: Ulid) {
     return http.delete<unknown>(`/course-enrollments/${id}`).then(() => undefined);
+  },
+  updateThemeProgress(themeId: Ulid, action: CourseEnrollmentThemeProgressAction) {
+    return http
+      .post<unknown>(`/course-enrollment-themes/${themeId}/actions`, {
+        id: themeId,
+        action,
+      })
+      .then(() => undefined);
   },
 };
 

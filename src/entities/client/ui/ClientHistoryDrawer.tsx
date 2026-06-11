@@ -1,5 +1,5 @@
 import { Drawer } from "antd";
-import type { Client, ClientHistory, CourseEnrollment } from "@/api/types";
+import type { Client, ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
 import { QueryStateBlock } from "@/shared/ui";
 import { formatClientName } from "../lib/client";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
@@ -17,6 +17,7 @@ type ClientHistoryDrawerProps = {
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
 
@@ -33,6 +34,7 @@ export function ClientHistoryDrawer({
   onCreatePayment,
   onCreateCourseEnrollment,
   onDeleteCourseEnrollment,
+  onUpdateThemeProgress,
   onAppointmentsPageChange,
 }: ClientHistoryDrawerProps) {
   return (
@@ -53,6 +55,7 @@ export function ClientHistoryDrawer({
           onCreatePayment={onCreatePayment}
           onCreateCourseEnrollment={onCreateCourseEnrollment}
           onDeleteCourseEnrollment={onDeleteCourseEnrollment}
+          onUpdateThemeProgress={onUpdateThemeProgress}
           onAppointmentsPageChange={onAppointmentsPageChange}
         />
       ) : null}

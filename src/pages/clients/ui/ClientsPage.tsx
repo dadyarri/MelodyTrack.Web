@@ -156,6 +156,7 @@ export function ClientsPage() {
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
         onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
         onDeleteCourseEnrollment={controller.canCreateClients ? controller.onDeleteEnrollment : undefined}
+        onUpdateThemeProgress={controller.canCreateClients ? controller.onUpdateThemeProgress : undefined}
         onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
       />
       <CourseEnrollmentCreateModal
