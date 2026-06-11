@@ -317,6 +317,17 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: (enrollmentId: Ulid) => courseEnrollmentsApi.remove(enrollmentId),
+    onSuccess: async () => {
+      message.success("Курс снят с клиента");
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+      });
+    },
+    onError: showErrors,
+  });
+
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
@@ -412,6 +423,7 @@ export function useClientsPageController() {
     saveMutation,
     createSourceMutation,
     createEnrollmentMutation,
+    deleteEnrollmentMutation,
     deleteMutation,
     openEditor,
     closeEditor,
@@ -468,6 +480,14 @@ export function useClientsPageController() {
     },
     onCreateEnrollment: (courseId: Ulid) => {
       createEnrollmentMutation.mutate(courseId);
+    },
+    onDeleteEnrollment: (enrollmentId: Ulid) => {
+      modal.confirm({
+        title: "Снять клиента с курса?",
+        onOk: () => {
+          deleteEnrollmentMutation.mutate(enrollmentId);
+        },
+      });
     },
     onSourceLabelChange: (_label?: string) => {},
   };

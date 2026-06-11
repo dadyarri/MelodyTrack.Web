@@ -273,6 +273,9 @@ export const courseEnrollmentsApi = {
   create(input: { clientId: Ulid; courseId: Ulid }) {
     return http.post<CreateEntityResponse>("/course-enrollments", input).then((response) => response.data);
   },
+  remove(id: Ulid) {
+    return http.delete<unknown>(`/course-enrollments/${id}`).then(() => undefined);
+  },
 };
 
 export const tasksApi = {

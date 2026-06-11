@@ -1,4 +1,4 @@
-import { BookOutlined, CalendarOutlined, CreditCardOutlined, PlusOutlined } from "@/components/icons";
+import { BookOutlined, CalendarOutlined, CreditCardOutlined, DeleteOutlined, PlusOutlined } from "@/components/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
 import type { ClientHistory, CourseEnrollment, CourseEnrollmentTheme, CourseThemeProgressState } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
@@ -15,6 +15,7 @@ type ClientHistoryPanelProps = {
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
+  onDeleteCourseEnrollment?: (enrollmentId: string) => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
 
@@ -26,6 +27,7 @@ export function ClientHistoryPanel({
   onCreateAppointment,
   onCreatePayment,
   onCreateCourseEnrollment,
+  onDeleteCourseEnrollment,
   onAppointmentsPageChange,
 }: ClientHistoryPanelProps) {
   return (
@@ -148,7 +150,23 @@ export function ClientHistoryPanel({
                   size="small"
                   className={styles.enrollmentCard}
                   title={enrollment.courseName}
-                  extra={<Typography.Text type="secondary">Назначен {formatDateTime(enrollment.createdAtUtc)}</Typography.Text>}
+                  extra={
+                    <Space size={8} wrap>
+                      <Typography.Text type="secondary">Назначен {formatDateTime(enrollment.createdAtUtc)}</Typography.Text>
+                      {onDeleteCourseEnrollment ? (
+                        <Button
+                          size="small"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={() => {
+                            onDeleteCourseEnrollment(enrollment.id);
+                          }}
+                        >
+                          Снять
+                        </Button>
+                      ) : null}
+                    </Space>
+                  }
                 >
                   <Space orientation="vertical" size={12} className="wide">
                     <div className={styles.enrollmentHeader}>
