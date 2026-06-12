@@ -515,7 +515,7 @@ function CourseEditorFlow({
         }}
         onPaneClick={onCloseContextMenu}
       >
-        <Background variant={BackgroundVariant.Dots} gap={18} size={1.1} />
+        <Background variant={BackgroundVariant.Dots} gap={18} size={1.1} color="var(--course-diagram-gold-border)" />
         <Controls showInteractive={false} position="top-left" />
       </ReactFlow>
       <DiagramLegend />
@@ -1430,13 +1430,13 @@ function layoutEditorCourse(
             source: `theme:${dependency.themeId}`,
             target: `theme:${theme.localId}`,
             type: "dependency",
-            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ant-color-text-secondary)" },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--course-diagram-dependency-line)" },
             data: {
               points: dependencyPoints,
               bridges: dependencyBridges,
             } satisfies DiagramEdgeData,
             style: {
-              stroke: "var(--ant-color-text-secondary)",
+              stroke: "var(--course-diagram-dependency-line)",
               strokeWidth: 1.35,
               strokeDasharray: "6 5",
             },
@@ -1455,12 +1455,12 @@ function createSequenceEdge(source: string, target: string, points: DiagramPoint
     source,
     target,
     type: "sequence",
-    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ant-color-primary)" },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--course-diagram-gold-line)" },
     data: {
       points,
     } satisfies DiagramEdgeData,
     style: {
-      stroke: "var(--ant-color-primary)",
+      stroke: "var(--course-diagram-gold-line)",
       strokeWidth: 1.8,
     },
   };

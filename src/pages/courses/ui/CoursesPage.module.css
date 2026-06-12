@@ -131,11 +131,33 @@
 }
 
 .flowShell {
+  --course-diagram-gold: #b67812;
+  --course-diagram-gold-soft: #fff1c7;
+  --course-diagram-gold-panel: #fff9ec;
+  --course-diagram-gold-border: #e4bd62;
+  --course-diagram-gold-line: #bd8121;
+  --course-diagram-dependency-line: #8e7143;
+  --course-diagram-canvas-bottom: #f1dba5;
+  --course-diagram-shadow: color-mix(in srgb, var(--course-diagram-gold-line) 15%, transparent);
   position: relative;
   height: 720px;
   overflow: hidden;
-  border: 1px solid var(--border-main);
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 72%, var(--ant-color-border));
   border-radius: 8px;
+  background:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--course-diagram-gold-soft) 82%, transparent), transparent 36%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--course-diagram-gold-soft) 82%, var(--ant-color-bg-container)),
+      color-mix(in srgb, var(--course-diagram-gold-soft) 64%, var(--course-diagram-canvas-bottom))
+    );
+}
+
+:global([data-theme="dark"]) .flowShell {
+  --course-diagram-gold-border: var(--ant-color-border);
+  --course-diagram-gold-line: var(--ant-color-primary);
+  --course-diagram-dependency-line: var(--ant-color-text-secondary);
+  border: 1px solid var(--border-main);
   background: linear-gradient(180deg, color-mix(in srgb, var(--ant-color-fill-tertiary) 56%, transparent), transparent), var(--bg-card);
 }
 
@@ -229,10 +251,10 @@
   align-items: center;
   justify-content: center;
   padding: 18px;
-  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  border: 2px solid color-mix(in srgb, var(--course-diagram-gold-line) 52%, var(--ant-color-border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ant-color-primary-bg) 82%, var(--ant-color-bg-container));
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--ant-color-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 74%, var(--ant-color-bg-container));
+  box-shadow: 0 12px 28px var(--course-diagram-shadow);
   text-align: center;
 }
 
@@ -242,6 +264,12 @@
   line-height: 1.2;
 }
 
+:global([data-theme="dark"]) .blockNode {
+  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 82%, var(--ant-color-bg-container));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ant-color-primary) 10%, transparent);
+}
+
 .branchNode {
   display: flex;
   width: 100%;
@@ -249,12 +277,17 @@
   align-items: center;
   justify-content: center;
   padding: 6px 14px;
-  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-line) 36%, var(--ant-color-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 58%, var(--ant-color-bg-container));
   text-align: center;
   line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+:global([data-theme="dark"]) .branchNode {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
 }
 
 .topicNode {
@@ -263,8 +296,14 @@
   height: 100%;
   align-items: center;
   padding: 13px 15px;
-  border: 1px solid var(--ant-color-border);
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 52%, var(--ant-color-border));
   border-radius: 8px;
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 78%, var(--ant-color-bg-container));
+  box-shadow: 0 10px 22px var(--course-diagram-shadow);
+}
+
+:global([data-theme="dark"]) .topicNode {
+  border: 1px solid var(--ant-color-border);
   background: var(--ant-color-bg-container);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
 }
@@ -299,6 +338,12 @@
 }
 
 .progressBlocked {
+  border-color: color-mix(in srgb, var(--course-diagram-gold-border) 42%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 60%, var(--ant-color-fill-tertiary));
+}
+
+:global([data-theme="dark"]) .progressBlocked {
+  border-color: var(--ant-color-border);
   background: color-mix(in srgb, var(--ant-color-fill-tertiary) 75%, var(--ant-color-bg-container));
 }
 
@@ -369,7 +414,7 @@
   width: 9px;
   height: 9px;
   border: 2px solid var(--ant-color-bg-container);
-  background: var(--ant-color-primary);
+  background: var(--course-diagram-gold-line);
 }
 
 .dependencyTargetHandle,
@@ -377,7 +422,7 @@
   width: 8px;
   height: 8px;
   border: 2px solid var(--ant-color-bg-container);
-  background: var(--ant-color-text-secondary);
+  background: var(--course-diagram-dependency-line);
 }
 
 .dependencyTargetHandle {
@@ -395,13 +440,19 @@
   z-index: 4;
   min-width: 250px;
   padding: 12px 14px;
-  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 16%, var(--ant-color-border));
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 54%, var(--ant-color-border));
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 82%, var(--ant-color-bg-elevated));
+  box-shadow: 0 12px 28px var(--course-diagram-shadow);
   display: flex;
   flex-direction: column;
   gap: 9px;
+}
+
+:global([data-theme="dark"]) .flowLegend {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 16%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
 }
 
 .legendTitle {
@@ -420,17 +471,22 @@
 .legendStageSample {
   width: 25px;
   height: 34px;
-  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  border: 2px solid color-mix(in srgb, var(--course-diagram-gold-line) 52%, var(--ant-color-border));
   border-radius: 8px;
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 74%, var(--ant-color-bg-container));
+}
+
+:global([data-theme="dark"]) .legendStageSample {
+  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
   background: color-mix(in srgb, var(--ant-color-primary-bg) 82%, var(--ant-color-bg-container));
 }
 
 .legendBranchSample {
   min-width: 54px;
   height: 24px;
-  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-line) 36%, var(--ant-color-border));
   border-radius: 999px;
-  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 58%, var(--ant-color-bg-container));
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -439,12 +495,17 @@
   font-weight: 600;
 }
 
+:global([data-theme="dark"]) .legendBranchSample {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
+}
+
 .legendLine {
   position: relative;
   width: 42px;
   height: 0;
   border-top: 2px solid currentColor;
-  color: var(--ant-color-primary);
+  color: var(--course-diagram-gold-line);
 }
 
 .legendLine::after {
@@ -459,14 +520,14 @@
 
 .legendLineDashed {
   border-top-style: dashed;
-  color: var(--ant-color-text-secondary);
+  color: var(--course-diagram-dependency-line);
 }
 
 .legendBridge {
   position: relative;
   width: 42px;
   height: 14px;
-  border-bottom: 2px solid var(--ant-color-text-secondary);
+  border-bottom: 2px solid var(--course-diagram-dependency-line);
 }
 
 .legendBridge::after {
@@ -476,9 +537,13 @@
   bottom: -2px;
   width: 10px;
   height: 8px;
-  border: 2px solid var(--ant-color-text-secondary);
+  border: 2px solid var(--course-diagram-dependency-line);
   border-bottom: 0;
   border-radius: 10px 10px 0 0;
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 82%, var(--ant-color-bg-elevated));
+}
+
+:global([data-theme="dark"]) .legendBridge::after {
   background: var(--ant-color-bg-elevated);
 }
 
@@ -497,19 +562,29 @@
 }
 
 :global(.react-flow__controls) {
-  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 18%, var(--ant-color-border));
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 54%, var(--ant-color-border));
   border-radius: 8px;
   overflow: hidden;
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 82%, var(--ant-color-bg-elevated));
+  box-shadow: 0 12px 28px var(--course-diagram-shadow);
+}
+
+:global([data-theme="dark"]) :global(.react-flow__controls) {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 18%, var(--ant-color-border));
   background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
 }
 
 :global(.react-flow__controls-button) {
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--ant-color-border) 72%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 42%, transparent);
   color: var(--ant-color-text);
   background: transparent;
   box-shadow: none;
+}
+
+:global([data-theme="dark"]) :global(.react-flow__controls-button) {
+  border-bottom: 1px solid color-mix(in srgb, var(--ant-color-border) 72%, transparent);
 }
 
 :global(.react-flow__controls-button:last-child) {
@@ -517,6 +592,10 @@
 }
 
 :global(.react-flow__controls-button:hover) {
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 58%, transparent);
+}
+
+:global([data-theme="dark"]) :global(.react-flow__controls-button:hover) {
   background: color-mix(in srgb, var(--ant-color-primary-bg) 65%, transparent);
 }
 
