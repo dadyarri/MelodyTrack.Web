@@ -21,6 +21,8 @@ type EditorTheme = {
   dependencyKeys: string[];
 };
 
+type EditorThemePatch = Partial<Omit<EditorTheme, "localId" | "key">>;
+
 type EditorBranch = {
   localId: string;
   title: string;
@@ -60,18 +62,18 @@ function createLocalId() {
   return `local-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createEmptyTheme(index: number, patch?: Partial<Pick<EditorTheme, "title" | "description">>): EditorTheme {
+function createEmptyTheme(index: number, patch?: EditorThemePatch): EditorTheme {
   return {
     localId: createLocalId(),
     title: patch?.title ?? "",
     key: `theme-${String(index + 1)}`,
     description: patch?.description ?? "",
-    lessonContent: "",
-    homeworkContent: "",
-    unlockCostPoints: 0,
-    evolutionPointsReward: 0,
-    experiencePointsReward: 0,
-    dependencyKeys: [],
+    lessonContent: patch?.lessonContent ?? "",
+    homeworkContent: patch?.homeworkContent ?? "",
+    unlockCostPoints: patch?.unlockCostPoints ?? 0,
+    evolutionPointsReward: patch?.evolutionPointsReward ?? 0,
+    experiencePointsReward: patch?.experiencePointsReward ?? 0,
+    dependencyKeys: patch?.dependencyKeys ?? [],
   };
 }
 
@@ -465,7 +467,7 @@ export function useCoursesPageController() {
         };
       });
     },
-    addTheme: (blockId: string, branchId: string, patch?: Partial<Pick<EditorTheme, "title" | "description">>, insertIndex?: number) => {
+    addTheme: (blockId: string, branchId: string, patch?: EditorThemePatch, insertIndex?: number) => {
       applyDraft((current) => ({
         ...current,
         blocks: current.blocks.map((block) =>
@@ -555,7 +557,7 @@ export function useCoursesPageController() {
   };
 }
 
-function insertTheme(themes: EditorTheme[], patch?: Partial<Pick<EditorTheme, "title" | "description">>, insertIndex?: number) {
+function insertTheme(themes: EditorTheme[], patch?: EditorThemePatch, insertIndex?: number) {
   const nextThemes = [...themes];
   const safeIndex = insertIndex == null ? nextThemes.length : Math.max(0, Math.min(insertIndex, nextThemes.length));
 

@@ -110,8 +110,14 @@ type DiagramRect = DiagramPoint & {
   id: string;
 };
 
-type DependencyEdgeData = {
+type DiagramBridge = {
+  point: DiagramPoint;
+  orientation: "horizontal" | "vertical";
+};
+
+type DiagramEdgeData = {
   points: DiagramPoint[];
+  bridges?: DiagramBridge[];
 };
 
 const nodeTypes: NodeTypes = {
@@ -121,7 +127,8 @@ const nodeTypes: NodeTypes = {
 };
 
 const edgeTypes: EdgeTypes = {
-  dependency: DependencyEdge,
+  dependency: DiagramEdge,
+  sequence: DiagramEdge,
 };
 
 export function CoursesPage() {
@@ -1169,21 +1176,24 @@ function ThemeProgressDetails({
 function AddNodeModal({ controller, intent, onClose }: { controller: Controller; intent: AddNodeIntent | null; onClose: () => void }) {
   const [form] = Form.useForm();
 
-  useEffect(() => {
-    form.resetFields();
-  }, [form]);
-
   if (intent == null || controller.draftCourse == null) {
     return null;
   }
 
   const title = intent.kind === "block" ? "Добавить блок" : intent.kind === "branch" ? "Добавить ветку в блок" : "Добавить тему в ветку";
+  const targetBlock = intent.kind === "theme" ? controller.draftCourse.blocks.find((block) => block.localId === intent.blockId) : null;
 
   return (
     <Modal
       open
+      width={intent.kind === "theme" ? 760 : 560}
       title={title}
       onCancel={onClose}
+      afterOpenChange={(open) => {
+        if (open) {
+          form.resetFields();
+        }
+      }}
       onOk={() => {
         form.submit();
       }}
@@ -1192,16 +1202,78 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
         form={form}
         layout="vertical"
         onFinish={(values) => {
-          addEditorNode(controller, intent, values as { title: string; description?: string });
+          addEditorNode(controller, intent, values as Record<string, unknown>);
           onClose();
         }}
       >
-        <Form.Item name="title" label="Название" rules={[{ required: true, message: "Укажите название" }]}>
-          <Input />
-        </Form.Item>
-        <Form.Item name="description" label="Описание">
-          <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
-        </Form.Item>
+        {intent.kind === "block" ? (
+          <>
+            <Form.Item name="title" label="Название блока" rules={[{ required: true, message: "Укажите название блока" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="description" label="Описание">
+              <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
+            </Form.Item>
+          </>
+        ) : null}
+
+        {intent.kind === "branch" ? (
+          <>
+            <Form.Item name="title" label="Название ветки" rules={[{ required: true, message: "Укажите название ветки" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="description" label="Описание">
+              <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
+            </Form.Item>
+          </>
+        ) : null}
+
+        {intent.kind === "theme" ? (
+          <>
+            <Form.Item name="title" label="Название темы" rules={[{ required: true, message: "Укажите название темы" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="description" label="Описание">
+              <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
+            </Form.Item>
+            <Form.Item name="dependencyKeys" label="Зависимости">
+              <Select mode="multiple" options={targetBlock ? buildDependencyOptions(targetBlock, "") : []} />
+            </Form.Item>
+            <div className={styles.numberGrid}>
+              <Form.Item name="unlockCostPoints" label="Стоимость разблокировки">
+                <InputNumber min={0} className="wide" />
+              </Form.Item>
+              <Form.Item name="evolutionPointsReward" label="Очки эволюции">
+                <InputNumber min={0} className="wide" />
+              </Form.Item>
+              <Form.Item name="experiencePointsReward" label="Очки опыта">
+                <InputNumber min={0} className="wide" />
+              </Form.Item>
+            </div>
+            <Form.Item noStyle shouldUpdate>
+              {() => (
+                <Space orientation="vertical" size={16} className="wide">
+                  <BbcodeEditor
+                    label="Текст занятия"
+                    value={readFormString(form.getFieldValue("lessonContent"))}
+                    onChange={(value) => {
+                      form.setFieldValue("lessonContent", value);
+                    }}
+                    helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
+                  />
+                  <BbcodeEditor
+                    label="Домашнее задание"
+                    value={readFormString(form.getFieldValue("homeworkContent"))}
+                    onChange={(value) => {
+                      form.setFieldValue("homeworkContent", value);
+                    }}
+                    helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
+                  />
+                </Space>
+              )}
+            </Form.Item>
+          </>
+        ) : null}
       </Form>
     </Modal>
   );
@@ -1321,10 +1393,11 @@ function layoutEditorCourse(
 
         if (themeIndex > 0) {
           const previousTheme = branch.themes[themeIndex - 1];
-          edges.push(createSequenceEdge(`theme:${previousTheme.localId}`, `theme:${theme.localId}`));
           const previousThemeRect = themeRectById.get(previousTheme.localId);
           if (previousThemeRect) {
-            protectedSegments.push([getAnchorPoint(previousThemeRect, "right"), getAnchorPoint(themeRect, "left")]);
+            const sequencePoints = [getAnchorPoint(previousThemeRect, "right"), getAnchorPoint(themeRect, "left")];
+            edges.push(createSequenceEdge(`theme:${previousTheme.localId}`, `theme:${theme.localId}`, sequencePoints));
+            protectedSegments.push([sequencePoints[0], sequencePoints[1]]);
           }
         }
       }
@@ -1349,6 +1422,7 @@ function layoutEditorCourse(
           }
 
           const dependencyPoints = routeDependencyEdge(dependency.rect, target.rect, nodeRects, protectedSegments);
+          const dependencyBridges = getRouteBridges(dependencyPoints, protectedSegments);
           protectedSegments.push(...pointsToSegments(dependencyPoints));
 
           edges.push({
@@ -1356,10 +1430,11 @@ function layoutEditorCourse(
             source: `theme:${dependency.themeId}`,
             target: `theme:${theme.localId}`,
             type: "dependency",
-            markerEnd: { type: MarkerType.ArrowClosed },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ant-color-text-secondary)" },
             data: {
               points: dependencyPoints,
-            } satisfies DependencyEdgeData,
+              bridges: dependencyBridges,
+            } satisfies DiagramEdgeData,
             style: {
               stroke: "var(--ant-color-text-secondary)",
               strokeWidth: 1.35,
@@ -1374,14 +1449,16 @@ function layoutEditorCourse(
   return { nodes, edges };
 }
 
-function createSequenceEdge(source: string, target: string, targetHandle?: string): Edge {
+function createSequenceEdge(source: string, target: string, points: DiagramPoint[]): Edge {
   return {
     id: `sequence-${source}-${target}`,
     source,
     target,
-    targetHandle,
-    type: "smoothstep",
-    markerEnd: { type: MarkerType.ArrowClosed },
+    type: "sequence",
+    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ant-color-primary)" },
+    data: {
+      points,
+    } satisfies DiagramEdgeData,
     style: {
       stroke: "var(--ant-color-primary)",
       strokeWidth: 1.8,
@@ -1594,15 +1671,144 @@ function segmentsIntersect(firstFrom: DiagramPoint, firstTo: DiagramPoint, secon
   return true;
 }
 
-function DependencyEdge({ markerEnd, style, data }: EdgeProps<Edge<DependencyEdgeData>>) {
-  const points = data?.points ?? [];
-  const path = points.length > 0 ? pointsToSvgPath(points) : "";
-  return <BaseEdge path={path} markerEnd={markerEnd} style={style} />;
+function getRouteBridges(points: DiagramPoint[], protectedSegments: Array<[DiagramPoint, DiagramPoint]>): DiagramBridge[] {
+  const bridges: DiagramBridge[] = [];
+
+  for (const [from, to] of pointsToSegments(points)) {
+    const orientation = from.y === to.y ? "horizontal" : from.x === to.x ? "vertical" : null;
+    if (orientation == null) {
+      continue;
+    }
+
+    for (const [protectedFrom, protectedTo] of protectedSegments) {
+      const crossing = getPerpendicularCrossing(from, to, protectedFrom, protectedTo);
+      if (crossing == null || isNearSegmentEndpoint(crossing, from, to) || isNearSegmentEndpoint(crossing, protectedFrom, protectedTo)) {
+        continue;
+      }
+
+      bridges.push({ point: crossing, orientation });
+    }
+  }
+
+  return bridges;
 }
 
-function pointsToSvgPath(points: DiagramPoint[]) {
-  const [firstPoint, ...rest] = points;
-  return [`M ${String(firstPoint.x)},${String(firstPoint.y)}`, ...rest.map((point) => `L ${String(point.x)},${String(point.y)}`)].join(" ");
+function getPerpendicularCrossing(
+  firstFrom: DiagramPoint,
+  firstTo: DiagramPoint,
+  secondFrom: DiagramPoint,
+  secondTo: DiagramPoint,
+): DiagramPoint | null {
+  const firstHorizontal = firstFrom.y === firstTo.y;
+  const secondHorizontal = secondFrom.y === secondTo.y;
+
+  if (firstHorizontal === secondHorizontal) {
+    return null;
+  }
+
+  const horizontalFrom = firstHorizontal ? firstFrom : secondFrom;
+  const horizontalTo = firstHorizontal ? firstTo : secondTo;
+  const verticalFrom = firstHorizontal ? secondFrom : firstFrom;
+  const verticalTo = firstHorizontal ? secondTo : firstTo;
+  const x = verticalFrom.x;
+  const y = horizontalFrom.y;
+
+  if (
+    x < Math.min(horizontalFrom.x, horizontalTo.x) ||
+    x > Math.max(horizontalFrom.x, horizontalTo.x) ||
+    y < Math.min(verticalFrom.y, verticalTo.y) ||
+    y > Math.max(verticalFrom.y, verticalTo.y)
+  ) {
+    return null;
+  }
+
+  return { x, y };
+}
+
+function isNearSegmentEndpoint(point: DiagramPoint, from: DiagramPoint, to: DiagramPoint) {
+  const endpointPadding = 12;
+
+  return (
+    (Math.abs(point.x - from.x) <= endpointPadding && Math.abs(point.y - from.y) <= endpointPadding) ||
+    (Math.abs(point.x - to.x) <= endpointPadding && Math.abs(point.y - to.y) <= endpointPadding)
+  );
+}
+
+function DiagramEdge({ markerEnd, style, data }: EdgeProps<Edge<DiagramEdgeData>>) {
+  const points = data?.points ?? [];
+  const path = points.length > 0 ? pointsToSvgPath(points, data?.bridges ?? []) : "";
+  return <BaseEdge path={path} markerEnd={markerEnd} style={{ ...style, stroke: style?.stroke }} />;
+}
+
+function pointsToSvgPath(points: DiagramPoint[], bridges: DiagramBridge[] = []) {
+  const [firstPoint] = points;
+  const commands = [`M ${String(firstPoint.x)},${String(firstPoint.y)}`];
+
+  for (const [from, to] of pointsToSegments(points)) {
+    const segmentBridges = getSegmentBridges(from, to, bridges);
+
+    if (segmentBridges.length === 0) {
+      commands.push(`L ${String(to.x)},${String(to.y)}`);
+      continue;
+    }
+
+    for (const bridge of segmentBridges) {
+      appendBridgeCommands(commands, from, to, bridge);
+    }
+
+    commands.push(`L ${String(to.x)},${String(to.y)}`);
+  }
+
+  return commands.join(" ");
+}
+
+function getSegmentBridges(from: DiagramPoint, to: DiagramPoint, bridges: DiagramBridge[]) {
+  const orientation = from.y === to.y ? "horizontal" : from.x === to.x ? "vertical" : null;
+  if (orientation == null) {
+    return [];
+  }
+
+  return bridges
+    .filter((bridge) => {
+      if (bridge.orientation !== orientation) {
+        return false;
+      }
+
+      if (orientation === "horizontal") {
+        return bridge.point.y === from.y && bridge.point.x >= Math.min(from.x, to.x) && bridge.point.x <= Math.max(from.x, to.x);
+      }
+
+      return bridge.point.x === from.x && bridge.point.y >= Math.min(from.y, to.y) && bridge.point.y <= Math.max(from.y, to.y);
+    })
+    .sort((left, right) => {
+      if (orientation === "horizontal") {
+        return from.x <= to.x ? left.point.x - right.point.x : right.point.x - left.point.x;
+      }
+
+      return from.y <= to.y ? left.point.y - right.point.y : right.point.y - left.point.y;
+    });
+}
+
+function appendBridgeCommands(commands: string[], from: DiagramPoint, to: DiagramPoint, bridge: DiagramBridge) {
+  const radius = 8;
+  const height = 9;
+
+  if (bridge.orientation === "horizontal") {
+    const direction = from.x <= to.x ? 1 : -1;
+    const startX = bridge.point.x - radius * direction;
+    const endX = bridge.point.x + radius * direction;
+
+    commands.push(`L ${String(startX)},${String(bridge.point.y)}`);
+    commands.push(`Q ${String(bridge.point.x)},${String(bridge.point.y - height)} ${String(endX)},${String(bridge.point.y)}`);
+    return;
+  }
+
+  const direction = from.y <= to.y ? 1 : -1;
+  const startY = bridge.point.y - radius * direction;
+  const endY = bridge.point.y + radius * direction;
+
+  commands.push(`L ${String(bridge.point.x)},${String(startY)}`);
+  commands.push(`Q ${String(bridge.point.x + height)},${String(bridge.point.y)} ${String(bridge.point.x)},${String(endY)}`);
 }
 
 type SelectedEditorNode =
@@ -1731,18 +1937,32 @@ function readFormNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function addEditorNode(controller: Controller, intent: AddNodeIntent, values: { title: string; description?: string }) {
+function addEditorNode(controller: Controller, intent: AddNodeIntent, values: Record<string, unknown>) {
   if (intent.kind === "block") {
-    controller.addBlock({ title: values.title, description: values.description ?? "" });
+    controller.addBlock({ title: readFormString(values.title), description: readFormString(values.description) });
     return;
   }
 
   if (intent.kind === "branch") {
-    controller.addBranch(intent.blockId, { title: values.title, description: values.description ?? "" });
+    controller.addBranch(intent.blockId, { title: readFormString(values.title), description: readFormString(values.description) });
     return;
   }
 
-  controller.addTheme(intent.blockId, intent.branchId, { title: values.title, description: values.description ?? "" }, intent.insertIndex);
+  controller.addTheme(
+    intent.blockId,
+    intent.branchId,
+    {
+      title: readFormString(values.title),
+      description: readFormString(values.description),
+      dependencyKeys: readFormStringArray(values.dependencyKeys),
+      unlockCostPoints: readFormNumber(values.unlockCostPoints),
+      evolutionPointsReward: readFormNumber(values.evolutionPointsReward),
+      experiencePointsReward: readFormNumber(values.experiencePointsReward),
+      lessonContent: readFormString(values.lessonContent),
+      homeworkContent: readFormString(values.homeworkContent),
+    },
+    intent.insertIndex,
+  );
 }
 
 function isThemeEligibleForCompletion(
