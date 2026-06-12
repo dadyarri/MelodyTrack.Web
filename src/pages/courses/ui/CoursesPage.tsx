@@ -32,6 +32,7 @@ import type {
   CourseThemeProgressState,
   Ulid,
 } from "@/api/types";
+import { BbcodeContent } from "@/components/editors/BbcodeContent";
 import { BbcodeEditor } from "@/components/editors/BbcodeEditor";
 import {
   BookOutlined,
@@ -251,9 +252,6 @@ export function CoursesPage() {
             <>
               <div className={styles.editorHeader}>
                 <div className={styles.headerTitle}>
-                  <Typography.Text type="secondary">
-                    {isProgressMode ? "Просмотр прогресса клиента" : "Редактирование курса"}
-                  </Typography.Text>
                   <Typography.Title level={3}>{controller.draftCourse.name || "Курс без названия"}</Typography.Title>
                 </div>
                 <div className={styles.editorActions}>
@@ -792,6 +790,7 @@ function CourseNodeModal({
     <Modal
       open
       width={selected.kind === "theme" ? 760 : 560}
+      className={selected.kind === "theme" ? styles.themeEditorModal : undefined}
       title={title}
       onCancel={onClose}
       onOk={() => {
@@ -844,8 +843,8 @@ function CourseNodeModal({
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => {
-          applySelectionValues(controller, selected, values as Record<string, unknown>);
+        onFinish={() => {
+          applySelectionValues(controller, selected, form.getFieldsValue(true) as Record<string, unknown>);
           onClose();
         }}
       >
@@ -1155,7 +1154,7 @@ function ThemeProgressDetails({
       <div className={styles.detailSection}>
         <Typography.Text strong>Материал урока</Typography.Text>
         {theme.lessonContent ? (
-          <Typography.Paragraph className={styles.contentText}>{theme.lessonContent}</Typography.Paragraph>
+          <BbcodeContent value={theme.lessonContent} />
         ) : (
           <Typography.Text type="secondary">Материал урока пока не заполнен.</Typography.Text>
         )}
@@ -1164,7 +1163,7 @@ function ThemeProgressDetails({
       <div className={styles.detailSection}>
         <Typography.Text strong>Домашнее задание</Typography.Text>
         {theme.homeworkContent ? (
-          <Typography.Paragraph className={styles.contentText}>{theme.homeworkContent}</Typography.Paragraph>
+          <BbcodeContent value={theme.homeworkContent} />
         ) : (
           <Typography.Text type="secondary">Домашнее задание пока не заполнено.</Typography.Text>
         )}
@@ -1187,6 +1186,7 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
     <Modal
       open
       width={intent.kind === "theme" ? 760 : 560}
+      className={intent.kind === "theme" ? styles.themeEditorModal : undefined}
       title={title}
       onCancel={onClose}
       afterOpenChange={(open) => {
@@ -1201,8 +1201,8 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => {
-          addEditorNode(controller, intent, values as Record<string, unknown>);
+        onFinish={() => {
+          addEditorNode(controller, intent, form.getFieldsValue(true) as Record<string, unknown>);
           onClose();
         }}
       >

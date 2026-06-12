@@ -103,6 +103,12 @@
   justify-content: space-between;
 }
 
+.themeEditorModal :global(.ant-modal-body) {
+  max-height: min(720px, calc(100vh - 220px));
+  overflow-y: auto;
+  padding-right: 18px;
+}
+
 .numberGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -499,8 +505,15 @@
 }
 
 :global(.react-flow__controls-button) {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ant-color-border) 72%, transparent);
   color: var(--ant-color-text);
   background: transparent;
+  box-shadow: none;
+}
+
+:global(.react-flow__controls-button:last-child) {
+  border-bottom: 0;
 }
 
 :global(.react-flow__controls-button:hover) {

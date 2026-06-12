@@ -5,6 +5,7 @@ import "sceditor/minified/sceditor.min.js";
 import "sceditor/minified/formats/bbcode.js";
 import "sceditor/minified/icons/material.js";
 import "sceditor/languages/ru.js";
+import { getBbcodeContentCss } from "./bbcodeContentTheme";
 import styles from "./BbcodeEditor.module.css";
 
 type EditorInstance = {
@@ -14,18 +15,27 @@ type EditorInstance = {
   destroy: () => void;
   execCommand: (command: string, param?: string) => void;
   focus: () => void;
+  getSourceEditorValue: (filter?: boolean) => string;
   inSourceMode: () => boolean;
   currentNode: () => Node | null;
+  setSourceEditorValue: (value: string) => void;
+  sourceEditorCaret: {
+    (): { end: number; start: number };
+    (range: { end: number; start: number }): EditorInstance;
+  };
   sourceEditorInsertText: (start: string, end?: string) => void;
   wysiwygEditorInsertHtml: (start: string, end?: string | null) => void;
   val: {
     (): string;
     (value: string): void;
   };
+  melodyTrackCommitValue?: () => void;
 };
 
 type EditorCommandDefinition = {
   exec?: (this: EditorInstance, caller: HTMLElement) => void;
+  state?: (this: EditorInstance) => number;
+  txtExec?: (this: EditorInstance, caller: HTMLElement, selectedText: string) => void;
   tooltip?: string;
 };
 
@@ -96,6 +106,259 @@ function unwrapElement(element: Element | null) {
   parent.removeChild(element);
 }
 
+type SourceSelection = {
+  caret: { end: number; start: number };
+  selectedText: string;
+  source: string;
+};
+
+type SourceTagRange = {
+  closeEnd: number;
+  closeStart: number;
+  contentEnd: number;
+  contentStart: number;
+  openEnd: number;
+  openStart: number;
+};
+
+function getSourceSelection(editor: EditorInstance): SourceSelection {
+  const caret = editor.sourceEditorCaret();
+  const source = editor.getSourceEditorValue(false);
+
+  return {
+    caret,
+    source,
+    selectedText: source.slice(caret.start, caret.end),
+  };
+}
+
+function getLineRange(source: string, caret: { end: number; start: number }) {
+  return {
+    start: source.lastIndexOf("\n", Math.max(caret.start - 1, 0)) + 1,
+    end: source.indexOf("\n", caret.end) === -1 ? source.length : source.indexOf("\n", caret.end),
+  };
+}
+
+function normalizeSourceSelection(selection: SourceSelection, mode: "block" | "inline") {
+  if (selection.caret.start !== selection.caret.end || mode === "inline") {
+    return selection;
+  }
+
+  const lineRange = getLineRange(selection.source, selection.caret);
+
+  return {
+    ...selection,
+    caret: lineRange,
+    selectedText: selection.source.slice(lineRange.start, lineRange.end),
+  };
+}
+
+function createSourceTags(tag: string, attr?: string) {
+  return {
+    openTag: attr ? `[${tag}=${attr}]` : `[${tag}]`,
+    closeTag: `[/${tag}]`,
+  };
+}
+
+function findContainingSourceTag(source: string, start: number, end: number, tag: string): SourceTagRange | null {
+  const openTag = `[${tag}]`;
+  const closeTag = `[/${tag}]`;
+
+  for (let openStart = source.lastIndexOf(openTag, start); openStart >= 0; openStart = source.lastIndexOf(openTag, openStart - 1)) {
+    const openEnd = openStart + openTag.length;
+    const closeStart = source.indexOf(closeTag, openEnd);
+
+    if (closeStart === -1) {
+      continue;
+    }
+
+    const closeEnd = closeStart + closeTag.length;
+
+    if (openEnd <= start && closeStart >= end) {
+      return { openStart, openEnd, contentStart: openEnd, contentEnd: closeStart, closeStart, closeEnd };
+    }
+  }
+
+  return null;
+}
+
+function replaceSourceRange(
+  editor: EditorInstance,
+  source: string,
+  range: { end: number; start: number },
+  replacement: string,
+  nextSelection: { end: number; start: number },
+) {
+  editor.setSourceEditorValue(source.slice(0, range.start) + replacement + source.slice(range.end));
+  editor.sourceEditorCaret(nextSelection);
+  editor.melodyTrackCommitValue?.();
+}
+
+function toggleSourceBbcodeTag(editor: EditorInstance, tag: string, mode: "block" | "inline") {
+  const selection = normalizeSourceSelection(getSourceSelection(editor), mode);
+  const { openTag, closeTag } = createSourceTags(tag);
+  const selectedTextHasTags = selection.selectedText.startsWith(openTag) && selection.selectedText.endsWith(closeTag);
+  const hasSurroundingTags =
+    selection.source.slice(selection.caret.start - openTag.length, selection.caret.start) === openTag &&
+    selection.source.slice(selection.caret.end, selection.caret.end + closeTag.length) === closeTag;
+  const containingTag = findContainingSourceTag(selection.source, selection.caret.start, selection.caret.end, tag);
+
+  if (selectedTextHasTags) {
+    const nextText = selection.selectedText.slice(openTag.length, selection.selectedText.length - closeTag.length);
+    replaceSourceRange(editor, selection.source, selection.caret, nextText, {
+      start: selection.caret.start,
+      end: selection.caret.start + nextText.length,
+    });
+    return;
+  }
+
+  if (hasSurroundingTags) {
+    const nextStart = selection.caret.start - openTag.length;
+    replaceSourceRange(editor, selection.source, { start: nextStart, end: selection.caret.end + closeTag.length }, selection.selectedText, {
+      start: nextStart,
+      end: nextStart + selection.selectedText.length,
+    });
+    return;
+  }
+
+  if (containingTag) {
+    const nextText = selection.source.slice(containingTag.contentStart, containingTag.contentEnd);
+    const nextStart = containingTag.openStart;
+    replaceSourceRange(editor, selection.source, { start: containingTag.openStart, end: containingTag.closeEnd }, nextText, {
+      start: Math.max(selection.caret.start - openTag.length, nextStart),
+      end: Math.max(selection.caret.end - openTag.length, nextStart),
+    });
+    return;
+  }
+
+  const wrappedText = `${openTag}${selection.selectedText}${closeTag}`;
+  replaceSourceRange(editor, selection.source, selection.caret, wrappedText, {
+    start: selection.caret.start + openTag.length,
+    end: selection.caret.start + openTag.length + selection.selectedText.length,
+  });
+}
+
+function toggleSourceList(editor: EditorInstance, ordered: boolean) {
+  const selection = normalizeSourceSelection(getSourceSelection(editor), "block");
+  const listTag = ordered ? "list=1" : "list";
+  const containingList = findContainingSourceList(selection.source, selection.caret.start, selection.caret.end, ordered);
+
+  if (containingList) {
+    const innerText = selection.source.slice(containingList.contentStart, containingList.contentEnd);
+    const unwrappedText = innerText
+      .split("\n")
+      .map((line) => line.replace(/^\s*\[\*\]\s?/, ""))
+      .join("\n")
+      .replace(/^\n|\n$/g, "");
+
+    replaceSourceRange(editor, selection.source, { start: containingList.openStart, end: containingList.closeEnd }, unwrappedText, {
+      start: containingList.openStart,
+      end: containingList.openStart + unwrappedText.length,
+    });
+    return;
+  }
+
+  const lines = selection.selectedText.split("\n").filter((line) => line.length > 0);
+  const listItems = lines.length > 0 ? lines.map((line) => `[*]${line}`).join("\n") : "[*]";
+  const wrappedText = `[${listTag}]\n${listItems}\n[/list]`;
+
+  replaceSourceRange(editor, selection.source, selection.caret, wrappedText, {
+    start: selection.caret.start + `[${listTag}]\n`.length,
+    end: selection.caret.start + `[${listTag}]\n`.length + listItems.length,
+  });
+}
+
+function findContainingSourceList(source: string, start: number, end: number, ordered: boolean): SourceTagRange | null {
+  const openTag = ordered ? "[list=1]" : "[list]";
+  const closeTag = "[/list]";
+
+  for (let openStart = source.lastIndexOf(openTag, start); openStart >= 0; openStart = source.lastIndexOf(openTag, openStart - 1)) {
+    const openEnd = openStart + openTag.length;
+    const closeStart = source.indexOf(closeTag, openEnd);
+
+    if (closeStart === -1) {
+      continue;
+    }
+
+    const closeEnd = closeStart + closeTag.length;
+
+    if (openEnd <= start && closeStart >= end) {
+      return { openStart, openEnd, contentStart: openEnd, contentEnd: closeStart, closeStart, closeEnd };
+    }
+  }
+
+  return null;
+}
+
+function isSourceTagActive(editor: EditorInstance, tag: string, mode: "block" | "inline") {
+  const selection = normalizeSourceSelection(getSourceSelection(editor), mode);
+  return findContainingSourceTag(selection.source, selection.caret.start, selection.caret.end, tag) ? 1 : 0;
+}
+
+function isSourceListActive(editor: EditorInstance, ordered: boolean) {
+  const selection = normalizeSourceSelection(getSourceSelection(editor), "block");
+  return findContainingSourceList(selection.source, selection.caret.start, selection.caret.end, ordered) ? 1 : 0;
+}
+
+function isWysiwygTagActive(editor: EditorInstance, selector: string) {
+  const currentElement = getCurrentElement(editor);
+  return currentElement?.closest(selector) ? 1 : 0;
+}
+
+function isEditorInCodeContext(editor: EditorInstance) {
+  if (!editor.inSourceMode()) {
+    return Boolean(getCurrentElement(editor)?.closest("pre,code"));
+  }
+
+  const selection = getSourceSelection(editor);
+  return Boolean(findContainingSourceTag(selection.source, selection.caret.start, selection.caret.end, "code"));
+}
+
+function setSourceToggleCommand(
+  editorApi: EditorApi,
+  commandName: string,
+  tag: string,
+  selector: string,
+  mode: "block" | "inline",
+  { disabledInCode = true }: { disabledInCode?: boolean } = {},
+) {
+  editorApi.command?.set(commandName, {
+    txtExec(this: EditorInstance) {
+      if (disabledInCode && isEditorInCodeContext(this)) {
+        return;
+      }
+
+      toggleSourceBbcodeTag(this, tag, mode);
+    },
+    state(this: EditorInstance) {
+      if (disabledInCode && isEditorInCodeContext(this)) {
+        return -1;
+      }
+
+      return this.inSourceMode() ? isSourceTagActive(this, tag, mode) : isWysiwygTagActive(this, selector);
+    },
+  });
+}
+
+function setSourceListCommand(editorApi: EditorApi, commandName: string, ordered: boolean) {
+  editorApi.command?.set(commandName, {
+    txtExec(this: EditorInstance) {
+      if (isEditorInCodeContext(this)) {
+        return;
+      }
+
+      toggleSourceList(this, ordered);
+    },
+    state(this: EditorInstance) {
+      if (isEditorInCodeContext(this)) {
+        return -1;
+      }
+
+      return this.inSourceMode() ? isSourceListActive(this, ordered) : isWysiwygTagActive(this, ordered ? "ol" : "ul");
+    },
+  });
+}
+
 export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorProps) {
   const textareaId = useId();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -119,8 +382,21 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
     ruLocale["Insert a link"] = "Вставить ссылку";
     ruLocale["Remove Formatting"] = "Очистить форматирование";
 
+    setSourceToggleCommand(editorApi, "bold", "b", "b,strong", "inline");
+    setSourceToggleCommand(editorApi, "italic", "i", "i,em", "inline");
+    setSourceToggleCommand(editorApi, "underline", "u", "u", "inline");
+    setSourceToggleCommand(editorApi, "strike", "s", "s,strike", "inline");
+    setSourceToggleCommand(editorApi, "quote", "quote", "blockquote", "block");
+    setSourceToggleCommand(editorApi, "code", "code", "pre,code", "block", { disabledInCode: false });
+    setSourceListCommand(editorApi, "bulletlist", false);
+    setSourceListCommand(editorApi, "orderedlist", true);
+
     editorApi.command?.set("removeformat", {
       exec(this: EditorInstance) {
+        if (isEditorInCodeContext(this)) {
+          return;
+        }
+
         this.execCommand("removeformat");
 
         if (this.inSourceMode()) {
@@ -133,11 +409,18 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
         unwrapElement(currentElement?.closest("pre") ?? null);
         unwrapElement(currentElement?.closest("code") ?? null);
       },
+      state(this: EditorInstance) {
+        return isEditorInCodeContext(this) ? -1 : 0;
+      },
       tooltip: "Remove Formatting",
     });
 
     editorApi.command?.set("link", {
       exec(this: EditorInstance, caller: HTMLElement) {
+        if (isEditorInCodeContext(this)) {
+          return;
+        }
+
         const content = document.createElement("div");
         const urlLabel = document.createElement("label");
         const urlInput = document.createElement("input");
@@ -169,6 +452,7 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
 
           if (this.inSourceMode()) {
             this.sourceEditorInsertText(`[url=${url}]${text}[/url]`);
+            this.melodyTrackCommitValue?.();
           } else {
             this.wysiwygEditorInsertHtml(`<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`);
           }
@@ -189,7 +473,16 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
           urlInput.focus();
         });
       },
+      state(this: EditorInstance) {
+        return isEditorInCodeContext(this) ? -1 : 0;
+      },
       tooltip: "Insert a link",
+    });
+
+    editorApi.command?.set("unlink", {
+      state(this: EditorInstance) {
+        return isEditorInCodeContext(this) ? -1 : 0;
+      },
     });
   }, []);
 
@@ -210,20 +503,20 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
     themeStyle.id = themeStyleId;
     themeStyle.textContent = `
       :root {
-        --mt-editor-bg: ${rootStyles.getPropertyValue("--bg-elevated").trim()};
-        --mt-editor-text: ${rootStyles.getPropertyValue("--text-main").trim()};
-        --mt-editor-muted: ${rootStyles.getPropertyValue("--text-muted").trim()};
-        --mt-editor-border-strong: ${rootStyles.getPropertyValue("--border-strong").trim()};
-        --mt-editor-card: ${rootStyles.getPropertyValue("--bg-card").trim()};
-        --mt-editor-accent: ${rootStyles.getPropertyValue("--accent").trim()};
+        --mt-bbcode-bg: ${rootStyles.getPropertyValue("--bg-elevated").trim()};
+        --mt-bbcode-text: ${rootStyles.getPropertyValue("--text-main").trim()};
+        --mt-bbcode-muted: ${rootStyles.getPropertyValue("--text-muted").trim()};
+        --mt-bbcode-border-strong: ${rootStyles.getPropertyValue("--border-strong").trim()};
+        --mt-bbcode-card: ${rootStyles.getPropertyValue("--bg-card").trim()};
+        --mt-bbcode-accent: ${rootStyles.getPropertyValue("--accent").trim()};
       }
 
       html,
       body {
         margin: 0;
         padding: 0;
-        background: var(--mt-editor-bg);
-        color: var(--mt-editor-text);
+        background: var(--mt-bbcode-bg);
+        color: var(--mt-bbcode-text);
       }
 
       body {
@@ -234,38 +527,7 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
         padding: 14px 16px;
       }
 
-      p,
-      ul,
-      ol,
-      blockquote,
-      pre {
-        margin: 0 0 12px;
-      }
-
-      blockquote {
-        border-left: 3px solid var(--mt-editor-border-strong);
-        margin: 0 0 12px;
-        margin-inline: 0;
-        padding-left: 10px;
-        color: var(--mt-editor-muted);
-      }
-
-      code,
-      pre {
-        font-family: "JetBrainsMono Nerd Font Mono", "JetBrains Mono", "Fira Code", monospace;
-      }
-
-      pre {
-        margin: 0 0 12px;
-        background: var(--mt-editor-card);
-        border-radius: 12px;
-        padding: 12px;
-        white-space: pre-wrap;
-      }
-
-      a {
-        color: var(--mt-editor-accent);
-      }
+      ${getBbcodeContentCss("body", { includeShell: false })}
     `;
 
     if (!existingStyle) {
@@ -309,12 +571,14 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
     editor.val(lastEditorValueRef.current);
 
     const syncValue = () => {
-      const nextValue = editor.val();
+      const nextValue = editor.inSourceMode() ? editor.getSourceEditorValue(false) : editor.val();
       lastEditorValueRef.current = nextValue;
       onChangeRef.current(nextValue);
     };
 
+    editor.melodyTrackCommitValue = syncValue;
     editor.bind("valuechanged", syncValue);
+    editor.bind("blur", syncValue);
     syncContentTheme();
 
     const iframe = editorShellRef.current?.querySelector("iframe");
@@ -331,6 +595,7 @@ export function BbcodeEditor({ helper, label, onChange, value }: BbcodeEditorPro
     return () => {
       themeObserver.disconnect();
       iframe?.removeEventListener("load", syncContentTheme);
+      editor.melodyTrackCommitValue = undefined;
       editor.destroy();
       editorRef.current = null;
     };
