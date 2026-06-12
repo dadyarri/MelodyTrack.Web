@@ -20,7 +20,7 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import { Alert, App as AntdApp, Button, Empty, Form, Input, InputNumber, Modal, Select, Space, Tag, Typography } from "antd";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { courseEnrollmentsApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
@@ -93,9 +93,14 @@ type BranchNodeData = {
 };
 
 type TopicNodeData = {
+  themeId: string;
   title: string;
   dependencyCount: number;
+  dependencyThemeIds: string[];
   progressState?: CourseThemeProgressState | null;
+  isDependencyHighlighted?: boolean;
+  isDependencySourceHighlighted?: boolean;
+  onHighlightDependencies?: (themeId: string, dependencyThemeIds: string[]) => void;
 };
 
 type NodeData = BlockNodeData | BranchNodeData | TopicNodeData;
@@ -119,6 +124,12 @@ type DiagramBridge = {
 type DiagramEdgeData = {
   points: DiagramPoint[];
   bridges?: DiagramBridge[];
+  isHighlighted?: boolean;
+};
+
+type DependencyHighlight = {
+  sourceThemeId: string;
+  dependencyThemeIds: string[];
 };
 
 const nodeTypes: NodeTypes = {
@@ -476,6 +487,103 @@ function CourseEditorFlow({
 }) {
   const reactFlow = useReactFlow();
   const { nodes, edges } = useMemo(() => layoutEditorCourse(course, enrollment), [course, enrollment]);
+  const [dependencyHighlight, setDependencyHighlight] = useState<DependencyHighlight | null>(null);
+  const highlightTimeoutRef = useRef<number | null>(null);
+  const restartTimeoutRef = useRef<number | null>(null);
+
+  const clearHighlightTimers = useCallback(() => {
+    if (highlightTimeoutRef.current != null) {
+      window.clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+
+    if (restartTimeoutRef.current != null) {
+      window.clearTimeout(restartTimeoutRef.current);
+      restartTimeoutRef.current = null;
+    }
+  }, []);
+
+  const clearDependencyHighlight = useCallback(() => {
+    clearHighlightTimers();
+    setDependencyHighlight(null);
+  }, [clearHighlightTimers]);
+
+  const highlightDependencies = useCallback(
+    (sourceThemeId: string, dependencyThemeIds: string[]) => {
+      clearHighlightTimers();
+      setDependencyHighlight(null);
+
+      restartTimeoutRef.current = window.setTimeout(() => {
+        setDependencyHighlight({ sourceThemeId, dependencyThemeIds });
+        highlightTimeoutRef.current = window.setTimeout(() => {
+          setDependencyHighlight(null);
+          highlightTimeoutRef.current = null;
+        }, 2200);
+        restartTimeoutRef.current = null;
+      }, 0);
+    },
+    [clearHighlightTimers],
+  );
+
+  useEffect(() => clearDependencyHighlight, [clearDependencyHighlight]);
+
+  const highlightedDependencyIds = useMemo(() => new Set(dependencyHighlight?.dependencyThemeIds ?? []), [dependencyHighlight]);
+  const highlightedDependencyEdgeIds = useMemo(
+    () =>
+      new Set(
+        dependencyHighlight?.dependencyThemeIds.map(
+          (dependencyThemeId) => `dependency-${dependencyThemeId}-${dependencyHighlight.sourceThemeId}`,
+        ) ?? [],
+      ),
+    [dependencyHighlight],
+  );
+  const flowNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        if (node.type !== "topic") {
+          return node;
+        }
+
+        const data = node.data;
+        if (!("themeId" in data)) {
+          return node;
+        }
+
+        return {
+          ...node,
+          data: {
+            ...data,
+            isDependencyHighlighted: highlightedDependencyIds.has(data.themeId),
+            isDependencySourceHighlighted: dependencyHighlight?.sourceThemeId === data.themeId,
+            onHighlightDependencies: highlightDependencies,
+          },
+        };
+      }),
+    [dependencyHighlight, highlightDependencies, highlightedDependencyIds, nodes],
+  );
+  const flowEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        if (!highlightedDependencyEdgeIds.has(edge.id)) {
+          return edge;
+        }
+
+        return {
+          ...edge,
+          data: {
+            ...edge.data,
+            isHighlighted: true,
+          },
+          markerEnd: { type: MarkerType.ArrowClosed, color: "var(--ant-color-warning)" },
+          style: {
+            ...edge.style,
+            stroke: "var(--ant-color-warning)",
+            strokeWidth: 2.6,
+          },
+        };
+      }),
+    [edges, highlightedDependencyEdgeIds],
+  );
 
   useEffect(() => {
     requestAnimationFrame(() => {
@@ -486,8 +594,8 @@ function CourseEditorFlow({
   return (
     <div className={styles.flowShell}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={flowNodes}
+        edges={flowEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesDraggable={false}
@@ -544,7 +652,9 @@ function BranchNode({ data }: NodeProps<Node<BranchNodeData>>) {
 
 function TopicNode({ data }: NodeProps<Node<TopicNodeData>>) {
   return (
-    <div className={styles.topicNode}>
+    <div
+      className={`${styles.topicNode} ${data.isDependencyHighlighted ? styles.topicNodeDependencyHighlighted : ""} ${data.isDependencySourceHighlighted ? styles.topicNodeDependencySourceHighlighted : ""}`}
+    >
       <Handle type="target" position={Position.Left} className={styles.topicHandle} />
       <Handle id="dependency-target" type="target" position={Position.Left} className={styles.dependencyTargetHandle} />
       <div className={styles.topicNodeText}>
@@ -556,9 +666,20 @@ function TopicNode({ data }: NodeProps<Node<TopicNodeData>>) {
             </span>
           ) : null}
           {data.dependencyCount > 0 ? (
-            <span className={styles.dependencyBadge}>
+            <button
+              type="button"
+              className={styles.dependencyBadge}
+              aria-label="Подсветить зависимости темы"
+              onClick={(event) => {
+                event.stopPropagation();
+                data.onHighlightDependencies?.(data.themeId, data.dependencyThemeIds);
+              }}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+              }}
+            >
               <LinkOutlined /> {data.dependencyCount}
-            </span>
+            </button>
           ) : null}
         </span>
       </div>
@@ -906,7 +1027,7 @@ function CourseNodeModal({
               <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
             </Form.Item>
             <Form.Item name="dependencyKeys" label="Зависимости">
-              <Select mode="multiple" options={buildDependencyOptions(selected.block, selected.theme.key)} />
+              <Select mode="multiple" options={buildDependencyOptions(selected.block, selected.theme.localId)} />
             </Form.Item>
             <div className={styles.numberGrid}>
               <Form.Item name="unlockCostPoints" label="Стоимость разблокировки">
@@ -1301,7 +1422,7 @@ function layoutEditorCourse(
 } {
   const nodes: Array<Node<NodeData & { selection: DiagramNodeSelection }>> = [];
   const edges: Edge[] = [];
-  const themePositionByKey = new Map<string, { blockId: string; themeId: string; rect: DiagramRect }>();
+  const themePositionById = new Map<string, { blockId: string; themeId: string; rect: DiagramRect }>();
   const themeRectById = new Map<string, DiagramRect>();
   const nodeRects: DiagramRect[] = [];
   const protectedSegments: Array<[DiagramPoint, DiagramPoint]> = [];
@@ -1373,7 +1494,7 @@ function layoutEditorCourse(
           width: topicNodeWidth,
           height: topicNodeHeight,
         };
-        themePositionByKey.set(theme.key, { blockId: block.localId, themeId: theme.localId, rect: themeRect });
+        themePositionById.set(theme.localId, { blockId: block.localId, themeId: theme.localId, rect: themeRect });
         themeRectById.set(theme.localId, themeRect);
         nodeRects.push(themeRect);
         nodes.push({
@@ -1384,8 +1505,10 @@ function layoutEditorCourse(
           draggable: false,
           style: { width: topicNodeWidth, height: topicNodeHeight },
           data: {
+            themeId: theme.localId,
             title: theme.title,
             dependencyCount: theme.dependencyKeys.length,
+            dependencyThemeIds: theme.dependencyKeys,
             progressState: resolveEffectiveProgressState(course, block, branch, theme, enrollmentThemesByCourseThemeId),
             selection: { kind: "theme", blockId: block.localId, branchId: branch.localId, themeId: theme.localId },
           },
@@ -1410,13 +1533,13 @@ function layoutEditorCourse(
     const blockThemeIds = new Set(block.branches.flatMap((branch) => branch.themes.map((theme) => theme.localId)));
     for (const branch of block.branches) {
       for (const theme of branch.themes) {
-        for (const dependencyKey of theme.dependencyKeys) {
-          const dependency = themePositionByKey.get(dependencyKey);
+        for (const dependencyThemeId of theme.dependencyKeys) {
+          const dependency = themePositionById.get(dependencyThemeId);
           if (dependency == null || dependency.blockId !== block.localId || !blockThemeIds.has(dependency.themeId)) {
             continue;
           }
 
-          const target = themePositionByKey.get(theme.key);
+          const target = themePositionById.get(theme.localId);
           if (!target) {
             continue;
           }
@@ -1737,7 +1860,14 @@ function isNearSegmentEndpoint(point: DiagramPoint, from: DiagramPoint, to: Diag
 function DiagramEdge({ markerEnd, style, data }: EdgeProps<Edge<DiagramEdgeData>>) {
   const points = data?.points ?? [];
   const path = points.length > 0 ? pointsToSvgPath(points, data?.bridges ?? []) : "";
-  return <BaseEdge path={path} markerEnd={markerEnd} style={{ ...style, stroke: style?.stroke }} />;
+  return (
+    <BaseEdge
+      path={path}
+      markerEnd={markerEnd}
+      style={{ ...style, stroke: style?.stroke }}
+      className={data?.isHighlighted ? styles.dependencyEdgeHighlighted : undefined}
+    />
+  );
 }
 
 function pointsToSvgPath(points: DiagramPoint[], bridges: DiagramBridge[] = []) {
@@ -1866,12 +1996,12 @@ function getSelectionFormValues(selected: SelectedEditorNode) {
   }
 }
 
-function buildDependencyOptions(block: EditorBlock, selectedThemeKey: string) {
+function buildDependencyOptions(block: EditorBlock, selectedThemeId: string) {
   return block.branches.flatMap((branch) =>
     branch.themes
-      .filter((theme) => theme.key !== selectedThemeKey)
+      .filter((theme) => theme.localId !== selectedThemeId)
       .map((theme) => ({
-        value: theme.key,
+        value: theme.localId,
         label: `${branch.title.trim() || "Ветка без названия"} / ${theme.title.trim() || theme.key}`,
       })),
   );
@@ -1978,9 +2108,11 @@ function isThemeEligibleForCompletion(
     return false;
   }
 
-  const themesByKey = new Map(block.branches.flatMap((item) => item.themes.map((branchTheme) => [branchTheme.key, branchTheme] as const)));
-  for (const dependencyKey of theme.dependencyKeys) {
-    const dependencyTheme = themesByKey.get(dependencyKey);
+  const themesById = new Map(
+    block.branches.flatMap((item) => item.themes.map((branchTheme) => [branchTheme.localId, branchTheme] as const)),
+  );
+  for (const dependencyThemeId of theme.dependencyKeys) {
+    const dependencyTheme = themesById.get(dependencyThemeId);
     if (dependencyTheme == null || enrollmentThemesByCourseThemeId.get(dependencyTheme.localId)?.state !== 5) {
       return false;
     }

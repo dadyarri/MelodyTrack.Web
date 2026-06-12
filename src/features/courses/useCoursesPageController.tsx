@@ -79,14 +79,11 @@ function createEmptyTheme(index: number, patch?: EditorThemePatch): EditorTheme 
 
 function buildGeneratedThemeKeys(course: EditorCourse) {
   const generatedKeyByLocalId = new Map<string, string>();
-  const originalKeyByLocalId = new Map<string, string>();
   const usedKeys = new Set<string>();
 
   for (const block of course.blocks) {
     for (const branch of block.branches) {
       for (const theme of branch.themes) {
-        originalKeyByLocalId.set(theme.localId, theme.key);
-
         const baseKey = slugify(theme.title) || theme.key || theme.localId;
         let finalKey = baseKey;
         let suffix = 2;
@@ -104,7 +101,6 @@ function buildGeneratedThemeKeys(course: EditorCourse) {
 
   return {
     generatedKeyByLocalId,
-    originalKeyByLocalId,
   };
 }
 
@@ -167,9 +163,7 @@ function mapCourseToEditor(course: Course): EditorCourse {
                 unlockCostPoints: theme.unlockCostPoints,
                 evolutionPointsReward: theme.evolutionPointsReward,
                 experiencePointsReward: theme.experiencePointsReward,
-                dependencyKeys: theme.dependencyThemeIds
-                  .map((dependencyId) => keysByThemeId.get(dependencyId))
-                  .filter((value): value is string => Boolean(value)),
+                dependencyKeys: theme.dependencyThemeIds,
               })),
           })),
       })),
@@ -274,15 +268,7 @@ export function useCoursesPageController() {
 
   const updateMutation = useMutation({
     mutationFn: (course: EditorCourse) => {
-      const { generatedKeyByLocalId, originalKeyByLocalId } = buildGeneratedThemeKeys(course);
-      const remappedDependencyKey = new Map<string, string>();
-
-      for (const [localId, originalKey] of originalKeyByLocalId.entries()) {
-        const generatedKey = generatedKeyByLocalId.get(localId);
-        if (generatedKey) {
-          remappedDependencyKey.set(originalKey, generatedKey);
-        }
-      }
+      const { generatedKeyByLocalId } = buildGeneratedThemeKeys(course);
 
       return coursesApi.update(course.id, {
         name: course.name,
@@ -305,7 +291,9 @@ export function useCoursesPageController() {
               unlockCostPoints: theme.unlockCostPoints,
               evolutionPointsReward: theme.evolutionPointsReward,
               experiencePointsReward: theme.experiencePointsReward,
-              dependencyKeys: theme.dependencyKeys.map((key) => remappedDependencyKey.get(key) ?? key),
+              dependencyKeys: theme.dependencyKeys.map(
+                (dependencyThemeId) => generatedKeyByLocalId.get(dependencyThemeId) ?? dependencyThemeId,
+              ),
             })),
           })),
         })),
@@ -514,16 +502,13 @@ export function useCoursesPageController() {
                     return branch;
                   }
 
-                  const removedThemeKey = branch.themes.find((item) => item.localId === themeId)?.key;
                   return {
                     ...branch,
                     themes: branch.themes
                       .filter((theme) => theme.localId !== themeId)
                       .map((theme) => ({
                         ...theme,
-                        dependencyKeys: removedThemeKey
-                          ? theme.dependencyKeys.filter((key) => key !== removedThemeKey)
-                          : theme.dependencyKeys,
+                        dependencyKeys: theme.dependencyKeys.filter((dependencyThemeId) => dependencyThemeId !== themeId),
                       })),
                   };
                 }),
