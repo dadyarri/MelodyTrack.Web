@@ -32,6 +32,7 @@ type ClientHistoryPanelProps = {
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onOpenCourseProgress?: (enrollmentId?: string) => void;
   onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
@@ -45,6 +46,7 @@ export function ClientHistoryPanel({
   onCreatePayment,
   onCreateCourseEnrollment,
   onDeleteCourseEnrollment,
+  onOpenCourseProgress,
   onUpdateThemeProgress,
   onAppointmentsPageChange,
 }: ClientHistoryPanelProps) {
@@ -171,6 +173,16 @@ export function ClientHistoryPanel({
                   extra={
                     <Space size={8} wrap>
                       <Typography.Text type="secondary">Назначен {formatDateTime(enrollment.createdAtUtc)}</Typography.Text>
+                      {onOpenCourseProgress ? (
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            onOpenCourseProgress(enrollment.id);
+                          }}
+                        >
+                          Прогресс
+                        </Button>
+                      ) : null}
                       {onDeleteCourseEnrollment ? (
                         <Button
                           size="small"

@@ -60,12 +60,12 @@ function createLocalId() {
   return `local-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function createEmptyTheme(index: number): EditorTheme {
+function createEmptyTheme(index: number, patch?: Partial<Pick<EditorTheme, "title" | "description">>): EditorTheme {
   return {
     localId: createLocalId(),
-    title: "",
+    title: patch?.title ?? "",
     key: `theme-${String(index + 1)}`,
-    description: "",
+    description: patch?.description ?? "",
     lessonContent: "",
     homeworkContent: "",
     unlockCostPoints: 0,
@@ -106,40 +106,30 @@ function buildGeneratedThemeKeys(course: EditorCourse) {
   };
 }
 
-function createEmptyBranch(): EditorBranch {
+function createEmptyBranch(patch?: Partial<Pick<EditorBranch, "title" | "description">>): EditorBranch {
   return {
     localId: createLocalId(),
-    title: "",
-    description: "",
+    title: patch?.title ?? "",
+    description: patch?.description ?? "",
     themes: [],
   };
 }
 
-function createEmptyBlock(): EditorBlock {
+function createEmptyBlock(patch?: Partial<Pick<EditorBlock, "title" | "description">>): EditorBlock {
   return {
     localId: createLocalId(),
-    title: "",
-    description: "",
+    title: patch?.title ?? "",
+    description: patch?.description ?? "",
     branches: [],
   };
 }
 
 function mapCourseToEditor(course: Course): EditorCourse {
   const keysByThemeId = new Map<Ulid, string>();
-  const seenKeys = new Set<string>();
   for (const block of course.blocks) {
     for (const branch of block.branches) {
       for (const theme of branch.themes) {
-        const baseKey = slugify(theme.title) || theme.id;
-        let finalKey = baseKey;
-        let suffix = 2;
-        while (seenKeys.has(finalKey)) {
-          finalKey = `${baseKey}-${String(suffix)}`;
-          suffix += 1;
-        }
-
-        seenKeys.add(finalKey);
-        keysByThemeId.set(theme.id, finalKey);
+        keysByThemeId.set(theme.id, theme.key);
       }
     }
   }
@@ -168,7 +158,7 @@ function mapCourseToEditor(course: Course): EditorCourse {
               .map((theme) => ({
                 localId: theme.id,
                 title: theme.title,
-                key: keysByThemeId.get(theme.id) || slugify(theme.title) || theme.id,
+                key: keysByThemeId.get(theme.id) || theme.key,
                 description: theme.description ?? "",
                 lessonContent: theme.lessonContent ?? "",
                 homeworkContent: theme.homeworkContent ?? "",
@@ -321,6 +311,7 @@ export function useCoursesPageController() {
     },
     onSuccess: async () => {
       void message.success("Курс сохранен");
+      setDraftCourseState(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.courses.all });
       await queryClient.invalidateQueries({ queryKey: queryKeys.courses.selected(selectedCourseId ?? undefined) });
     },
@@ -366,6 +357,7 @@ export function useCoursesPageController() {
     selectedCourseId,
     selectedCourseSummary,
     draftCourse,
+    hasUnsavedChanges: draftCourseState != null && draftCourseState.id === selectedCourseId,
     search,
     setSearch,
     isCreateOpen,
@@ -405,10 +397,10 @@ export function useCoursesPageController() {
     updateCourseMeta: (patch: Partial<Pick<EditorCourse, "name" | "description">>) => {
       applyDraft((current) => ({ ...current, ...patch }));
     },
-    addBlock: () => {
+    addBlock: (patch?: Partial<Pick<EditorBlock, "title" | "description">>) => {
       applyDraft((current) => ({
         ...current,
-        blocks: [...current.blocks, createEmptyBlock()],
+        blocks: [...current.blocks, createEmptyBlock(patch)],
       }));
     },
     updateBlock: (blockId: string, patch: Partial<Pick<EditorBlock, "title" | "description">>) => {
@@ -429,11 +421,11 @@ export function useCoursesPageController() {
         return index === -1 ? current : { ...current, blocks: moveItem(current.blocks, index, direction) };
       });
     },
-    addBranch: (blockId: string) => {
+    addBranch: (blockId: string, patch?: Partial<Pick<EditorBranch, "title" | "description">>) => {
       applyDraft((current) => ({
         ...current,
         blocks: current.blocks.map((block) =>
-          block.localId === blockId ? { ...block, branches: [...block.branches, createEmptyBranch()] } : block,
+          block.localId === blockId ? { ...block, branches: [...block.branches, createEmptyBranch(patch)] } : block,
         ),
       }));
     },
@@ -473,7 +465,7 @@ export function useCoursesPageController() {
         };
       });
     },
-    addTheme: (blockId: string, branchId: string) => {
+    addTheme: (blockId: string, branchId: string, patch?: Partial<Pick<EditorTheme, "title" | "description">>, insertIndex?: number) => {
       applyDraft((current) => ({
         ...current,
         blocks: current.blocks.map((block) =>
@@ -481,7 +473,7 @@ export function useCoursesPageController() {
             ? {
                 ...block,
                 branches: block.branches.map((branch) =>
-                  branch.localId === branchId ? { ...branch, themes: [...branch.themes, createEmptyTheme(branch.themes.length)] } : branch,
+                  branch.localId === branchId ? { ...branch, themes: insertTheme(branch.themes, patch, insertIndex) } : branch,
                 ),
               }
             : block,
@@ -561,4 +553,13 @@ export function useCoursesPageController() {
       });
     },
   };
+}
+
+function insertTheme(themes: EditorTheme[], patch?: Partial<Pick<EditorTheme, "title" | "description">>, insertIndex?: number) {
+  const nextThemes = [...themes];
+  const safeIndex = insertIndex == null ? nextThemes.length : Math.max(0, Math.min(insertIndex, nextThemes.length));
+
+  nextThemes.splice(safeIndex, 0, createEmptyTheme(nextThemes.length, patch));
+
+  return nextThemes;
 }

@@ -149,6 +149,7 @@ export interface CourseSummary {
 
 export interface CourseTheme {
   id: Ulid;
+  key: string;
   title: string;
   description?: string | null;
   lessonContent?: string | null;

@@ -5,10 +5,17 @@
   align-items: start;
 }
 
-.sidebarCard,
-.editorCard {
-  border-radius: 24px;
-  box-shadow: var(--shadow-soft);
+.sidebarPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editorPanel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .listHeader {
@@ -23,7 +30,14 @@
 }
 
 .listCount {
-  margin-bottom: 15px;
+  margin-bottom: 4px;
+}
+
+.courseList,
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .courseButton {
@@ -32,29 +46,23 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--border-main);
-  border-radius: 18px;
-  background: linear-gradient(180deg, var(--bg-elevated), var(--bg-card));
+  border-radius: 8px;
+  background: var(--bg-card);
   color: var(--text-main);
   cursor: pointer;
+  text-align: left;
   transition:
     border-color 0.2s ease,
-    transform 0.2s ease,
     box-shadow 0.2s ease;
 }
 
 .courseButton:hover,
-.courseButton:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 18%, transparent);
-  transform: translateY(-1px);
-}
-
+.courseButton:focus-visible,
 .courseButtonActive {
-  background: linear-gradient(180deg, var(--bg-hover), var(--bg-card));
   border-color: var(--accent);
-  box-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .courseButtonTitle {
@@ -69,53 +77,459 @@
   flex-wrap: wrap;
 }
 
-.editorActions {
+.headerTitle {
+  min-width: 220px;
+}
+
+.headerTitle h3 {
+  margin: 2px 0 0;
+}
+
+.editorActions,
+.modalFooter,
+.modalFooterSecondary,
+.moveButtons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.stack {
+.enrollmentSelect {
+  min-width: 240px;
+}
+
+.modalFooter {
+  width: 100%;
+  justify-content: space-between;
+}
+
+.numberGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.emptyDiagram {
+  display: grid;
+  min-height: 520px;
+  place-items: center;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.unsavedWarning {
+  border-color: color-mix(in srgb, var(--ant-color-warning) 48%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-warning-bg) 78%, var(--ant-color-bg-container));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ant-color-warning) 15%, transparent);
+}
+
+.flowShell {
+  position: relative;
+  height: 720px;
+  overflow: hidden;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ant-color-fill-tertiary) 56%, transparent), transparent), var(--bg-card);
+}
+
+.contextMenu {
+  position: fixed;
+  z-index: 30;
+  min-width: 220px;
+  max-width: min(280px, calc(100vw - 24px));
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 98%, var(--ant-color-primary-bg));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.14);
+}
+
+.contextMenuTitle {
+  padding: 7px 9px 9px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ant-color-border) 72%, transparent);
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.contextMenuItem {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  min-height: 34px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ant-color-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.contextMenuItem:hover,
+.contextMenuItem:focus-visible {
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 68%, transparent);
+  outline: none;
+}
+
+.contextMenuItemDanger {
+  color: var(--ant-color-error);
+}
+
+.contextMenuItemDanger:hover,
+.contextMenuItemDanger:focus-visible {
+  background: color-mix(in srgb, var(--ant-color-error-bg) 76%, transparent);
+}
+
+.contextMenuClose {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ant-color-text-secondary) 14%, transparent);
+  cursor: pointer;
+}
+
+.contextMenuClose::before,
+.contextMenuClose::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 8px;
+  width: 8px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: var(--ant-color-text-secondary);
+}
+
+.contextMenuClose::before {
+  transform: rotate(45deg);
+}
+
+.contextMenuClose::after {
+  transform: rotate(-45deg);
+}
+
+.blockNode {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 82%, var(--ant-color-bg-container));
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ant-color-primary) 10%, transparent);
+  text-align: center;
+}
+
+.blockNodeTitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.branchNode {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
+  text-align: center;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.topicNode {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  padding: 13px 15px;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.08);
+}
+
+.topicNodeText {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+.topicBadges {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.progressBadge {
+  border-radius: 999px;
+  border: 1px solid var(--ant-color-border);
+  padding: 4px 7px;
+  background: var(--ant-color-fill-tertiary);
+  color: var(--ant-color-text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.progressBlocked {
+  background: color-mix(in srgb, var(--ant-color-fill-tertiary) 75%, var(--ant-color-bg-container));
+}
+
+.progressAvailable {
+  border-color: color-mix(in srgb, var(--ant-color-warning) 40%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-warning-bg) 70%, var(--ant-color-bg-container));
+}
+
+.progressUnlocked {
+  border-color: color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 70%, var(--ant-color-bg-container));
+}
+
+.progressInProgress {
+  border-color: color-mix(in srgb, var(--ant-color-info) 34%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-info-bg) 70%, var(--ant-color-bg-container));
+}
+
+.progressHomework {
+  border-color: color-mix(in srgb, var(--ant-color-warning) 44%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-warning-bg) 78%, var(--ant-color-bg-container));
+}
+
+.progressCompleted {
+  border-color: color-mix(in srgb, var(--ant-color-success) 38%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-success-bg) 78%, var(--ant-color-bg-container));
+}
+
+.dependencyBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 3px;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
+.detailSection {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
 }
 
-.nestedCard {
-  border-radius: 20px;
-  border: 1px solid var(--border-main);
-  box-shadow: var(--shadow-soft);
+.contentText {
+  margin-bottom: 0;
+  white-space: pre-wrap;
 }
 
-.branchCard {
-  margin-left: 16px;
-}
-
-.themeCard {
-  margin-left: 32px;
-}
-
-.cardToolbar {
+.progressThemeList {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
-.cardTitleRow {
+.progressThemeRow {
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ant-color-border);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+}
+
+.topicHandle,
+.blockHandle {
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ant-color-bg-container);
+  background: var(--ant-color-primary);
+}
+
+.dependencyTargetHandle,
+.dependencySourceHandle {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--ant-color-bg-container);
+  background: var(--ant-color-text-secondary);
+}
+
+.dependencyTargetHandle {
+  top: 28%;
+}
+
+.dependencySourceHandle {
+  top: 72%;
+}
+
+.flowLegend {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 4;
+  min-width: 250px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 16%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.legendTitle {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.legendStageSample {
+  width: 25px;
+  height: 34px;
+  border: 2px solid color-mix(in srgb, var(--ant-color-primary) 34%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 82%, var(--ant-color-bg-container));
+}
+
+.legendBranchSample {
+  min-width: 54px;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 24%, var(--ant-color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ant-color-primary-bg-hover) 72%, var(--ant-color-bg-container));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.legendLine {
+  position: relative;
+  width: 42px;
+  height: 0;
+  border-top: 2px solid currentColor;
+  color: var(--ant-color-primary);
+}
+
+.legendLine::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: -1px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid currentColor;
+}
+
+.legendLineDashed {
+  border-top-style: dashed;
+  color: var(--ant-color-text-secondary);
+}
+
+.legendBridge {
+  position: relative;
+  width: 42px;
+  height: 14px;
+  border-bottom: 2px solid var(--ant-color-text-secondary);
+}
+
+.legendBridge::after {
+  content: "";
+  position: absolute;
+  left: 17px;
+  bottom: -2px;
+  width: 10px;
+  height: 8px;
+  border: 2px solid var(--ant-color-text-secondary);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--ant-color-bg-elevated);
+}
+
+:global(.react-flow__node) {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+:global(.react-flow__handle) {
+  opacity: 0;
+}
+
+:global(.react-flow__node.selected) {
+  box-shadow: none;
+}
+
+:global(.react-flow__controls) {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 18%, var(--ant-color-border));
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+}
+
+:global(.react-flow__controls-button) {
+  color: var(--ant-color-text);
+  background: transparent;
+}
+
+:global(.react-flow__controls-button:hover) {
+  background: color-mix(in srgb, var(--ant-color-primary-bg) 65%, transparent);
+}
+
+:global(.react-flow__controls-button svg) {
+  fill: var(--ant-color-text);
 }
 
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: 1fr;
   }
+}
 
-  .branchCard,
-  .themeCard {
-    margin-left: 0;
+@media (max-width: 760px) {
+  .numberGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .flowShell {
+    height: 580px;
+  }
+
+  .flowLegend {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    min-width: 0;
   }
 }

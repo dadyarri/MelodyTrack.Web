@@ -205,7 +205,7 @@ export function useSchedulePageController() {
   });
 
   const createCourseEnrollmentsQuery = useQuery({
-    queryKey: queryKeys.courseEnrollments.list(createSelectedClientId),
+    queryKey: queryKeys.courseEnrollments.list({ clientId: createSelectedClientId }),
     queryFn: () => {
       if (!createSelectedClientId) {
         throw new Error("Client is not selected.");
@@ -217,7 +217,7 @@ export function useSchedulePageController() {
   });
 
   const editCourseEnrollmentsQuery = useQuery({
-    queryKey: queryKeys.courseEnrollments.list(editSelectedClientId),
+    queryKey: queryKeys.courseEnrollments.list({ clientId: editSelectedClientId }),
     queryFn: () => {
       if (!editSelectedClientId) {
         throw new Error("Client is not selected.");

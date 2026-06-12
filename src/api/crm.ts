@@ -264,10 +264,10 @@ export const coursesApi = {
 };
 
 export const courseEnrollmentsApi = {
-  list(params?: { clientId?: Ulid }) {
+  list(params?: { clientId?: Ulid; courseId?: Ulid }) {
     return http
       .get<{ enrollments: CourseEnrollment[] }>("/course-enrollments", {
-        params: params?.clientId ? { clientId: params.clientId } : undefined,
+        params: params && (params.clientId || params.courseId) ? { clientId: params.clientId, courseId: params.courseId } : undefined,
       })
       .then((response) => response.data.enrollments);
   },

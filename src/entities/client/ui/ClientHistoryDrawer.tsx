@@ -17,6 +17,7 @@ type ClientHistoryDrawerProps = {
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onOpenCourseProgress?: (enrollmentId?: string) => void;
   onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onAppointmentsPageChange?: (page: number) => void;
 };
@@ -34,6 +35,7 @@ export function ClientHistoryDrawer({
   onCreatePayment,
   onCreateCourseEnrollment,
   onDeleteCourseEnrollment,
+  onOpenCourseProgress,
   onUpdateThemeProgress,
   onAppointmentsPageChange,
 }: ClientHistoryDrawerProps) {
@@ -55,6 +57,7 @@ export function ClientHistoryDrawer({
           onCreatePayment={onCreatePayment}
           onCreateCourseEnrollment={onCreateCourseEnrollment}
           onDeleteCourseEnrollment={onDeleteCourseEnrollment}
+          onOpenCourseProgress={onOpenCourseProgress}
           onUpdateThemeProgress={onUpdateThemeProgress}
           onAppointmentsPageChange={onAppointmentsPageChange}
         />

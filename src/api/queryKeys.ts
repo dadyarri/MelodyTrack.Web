@@ -62,7 +62,8 @@ export const queryKeys = {
   },
   courseEnrollments: {
     all: ["course-enrollments"] as const,
-    list: (clientId?: string | null) => ["course-enrollments", "list", formatDateKey(clientId)] as const,
+    list: (params?: { clientId?: string | null; courseId?: string | null }) =>
+      ["course-enrollments", "list", formatDateKey(params?.clientId), formatDateKey(params?.courseId)] as const,
   },
   payments: {
     all: ["payments"] as const,

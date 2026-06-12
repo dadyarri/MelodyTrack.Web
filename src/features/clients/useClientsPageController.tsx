@@ -107,7 +107,7 @@ export function useClientsPageController() {
   });
 
   const courseEnrollmentsQuery = useQuery({
-    queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+    queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -311,7 +311,7 @@ export function useClientsPageController() {
       message.success("Курс назначен");
       setEnrollmentCreateOpen(false);
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
       });
     },
     onError: showErrors,
@@ -322,7 +322,7 @@ export function useClientsPageController() {
     onSuccess: async () => {
       message.success("Курс снят с клиента");
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
       });
     },
     onError: showErrors,
@@ -334,7 +334,7 @@ export function useClientsPageController() {
     onSuccess: async (_, variables) => {
       message.success(getThemeProgressSuccessMessage(variables.action));
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list(historyClient?.id),
+        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
       });
     },
     onError: showErrors,
@@ -501,6 +501,24 @@ export function useClientsPageController() {
           deleteEnrollmentMutation.mutate(enrollmentId);
         },
       });
+    },
+    openCourseProgress: (enrollmentId?: Ulid) => {
+      if (!historyClient) {
+        return;
+      }
+
+      const enrollments = courseEnrollmentsQuery.data ?? [];
+      if (enrollments.length === 0) {
+        return;
+      }
+
+      const firstEnrollment = enrollments[0];
+      const selectedEnrollment = enrollments.find((item) => item.id === enrollmentId) ?? firstEnrollment;
+
+      const nextParams = new URLSearchParams();
+      nextParams.set("course", selectedEnrollment.courseId);
+      nextParams.set("enrollment", enrollmentId ?? selectedEnrollment.id);
+      void navigate(`/courses?${nextParams.toString()}`);
     },
     onUpdateThemeProgress: (themeId: Ulid, action: CourseEnrollmentThemeProgressAction) => {
       if (action === "pass-homework") {
