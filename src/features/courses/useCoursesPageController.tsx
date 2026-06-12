@@ -15,8 +15,6 @@ type EditorTheme = {
   description?: string;
   lessonContent?: string;
   homeworkContent?: string;
-  unlockCostPoints: number;
-  evolutionPointsReward: number;
   experiencePointsReward: number;
   dependencyKeys: string[];
 };
@@ -37,10 +35,17 @@ type EditorBlock = {
   branches: EditorBranch[];
 };
 
+type EditorLevel = {
+  localId: string;
+  title: string;
+  requiredExperiencePoints: number;
+};
+
 type EditorCourse = {
   id: Ulid;
   name: string;
   description?: string;
+  levels: EditorLevel[];
   blocks: EditorBlock[];
 };
 
@@ -70,8 +75,6 @@ function createEmptyTheme(index: number, patch?: EditorThemePatch): EditorTheme 
     description: patch?.description ?? "",
     lessonContent: patch?.lessonContent ?? "",
     homeworkContent: patch?.homeworkContent ?? "",
-    unlockCostPoints: patch?.unlockCostPoints ?? 0,
-    evolutionPointsReward: patch?.evolutionPointsReward ?? 0,
     experiencePointsReward: patch?.experiencePointsReward ?? 0,
     dependencyKeys: patch?.dependencyKeys ?? [],
   };
@@ -122,6 +125,14 @@ function createEmptyBlock(patch?: Partial<Pick<EditorBlock, "title" | "descripti
   };
 }
 
+function createEmptyLevel(patch?: Partial<Omit<EditorLevel, "localId">>): EditorLevel {
+  return {
+    localId: createLocalId(),
+    title: patch?.title ?? "",
+    requiredExperiencePoints: patch?.requiredExperiencePoints ?? 0,
+  };
+}
+
 function mapCourseToEditor(course: Course): EditorCourse {
   const keysByThemeId = new Map<Ulid, string>();
   for (const block of course.blocks) {
@@ -136,6 +147,14 @@ function mapCourseToEditor(course: Course): EditorCourse {
     id: course.id,
     name: course.name,
     description: course.description ?? "",
+    levels: course.levels
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .map((level) => ({
+        localId: level.id,
+        title: level.title,
+        requiredExperiencePoints: level.requiredExperiencePoints,
+      })),
     blocks: course.blocks
       .slice()
       .sort((a, b) => a.order - b.order)
@@ -160,8 +179,6 @@ function mapCourseToEditor(course: Course): EditorCourse {
                 description: theme.description ?? "",
                 lessonContent: theme.lessonContent ?? "",
                 homeworkContent: theme.homeworkContent ?? "",
-                unlockCostPoints: theme.unlockCostPoints,
-                evolutionPointsReward: theme.evolutionPointsReward,
                 experiencePointsReward: theme.experiencePointsReward,
                 dependencyKeys: theme.dependencyThemeIds,
               })),
@@ -273,6 +290,11 @@ export function useCoursesPageController() {
       return coursesApi.update(course.id, {
         name: course.name,
         description: course.description,
+        levels: course.levels.map((level, index) => ({
+          title: level.title,
+          order: index + 1,
+          requiredExperiencePoints: level.requiredExperiencePoints,
+        })),
         blocks: course.blocks.map((block, blockIndex) => ({
           title: block.title,
           description: block.description,
@@ -288,8 +310,6 @@ export function useCoursesPageController() {
               lessonContent: theme.lessonContent,
               homeworkContent: theme.homeworkContent,
               order: themeIndex + 1,
-              unlockCostPoints: theme.unlockCostPoints,
-              evolutionPointsReward: theme.evolutionPointsReward,
               experiencePointsReward: theme.experiencePointsReward,
               dependencyKeys: theme.dependencyKeys.map(
                 (dependencyThemeId) => generatedKeyByLocalId.get(dependencyThemeId) ?? dependencyThemeId,
@@ -386,6 +406,30 @@ export function useCoursesPageController() {
     },
     updateCourseMeta: (patch: Partial<Pick<EditorCourse, "name" | "description">>) => {
       applyDraft((current) => ({ ...current, ...patch }));
+    },
+    addLevel: (patch?: Partial<Omit<EditorLevel, "localId">>) => {
+      applyDraft((current) => ({
+        ...current,
+        levels: [...current.levels, createEmptyLevel(patch)],
+      }));
+    },
+    updateLevel: (levelId: string, patch: Partial<Omit<EditorLevel, "localId">>) => {
+      applyDraft((current) => ({
+        ...current,
+        levels: current.levels.map((level) => (level.localId === levelId ? { ...level, ...patch } : level)),
+      }));
+    },
+    removeLevel: (levelId: string) => {
+      applyDraft((current) => ({
+        ...current,
+        levels: current.levels.filter((level) => level.localId !== levelId),
+      }));
+    },
+    moveLevel: (levelId: string, direction: "up" | "down") => {
+      applyDraft((current) => {
+        const index = current.levels.findIndex((level) => level.localId === levelId);
+        return index === -1 ? current : { ...current, levels: moveItem(current.levels, index, direction) };
+      });
     },
     addBlock: (patch?: Partial<Pick<EditorBlock, "title" | "description">>) => {
       applyDraft((current) => ({

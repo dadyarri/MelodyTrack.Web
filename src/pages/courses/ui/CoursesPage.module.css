@@ -115,6 +115,40 @@
   gap: 12px;
 }
 
+.numberGridSingle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.listJustify {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.levelList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.levelRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 140px auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.levelThresholdInput {
+  width: 100%;
+}
+
 .emptyDiagram {
   display: grid;
   min-height: 520px;
@@ -515,6 +549,215 @@
   gap: 9px;
 }
 
+.progressOverlayCard {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  min-width: 280px;
+  max-width: min(360px, calc(100% - 88px));
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 54%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--course-diagram-gold-panel) 88%, var(--ant-color-bg-elevated));
+  box-shadow: 0 12px 28px var(--course-diagram-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:global([data-theme="dark"]) .progressOverlayCard {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 16%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
+}
+
+.progressOverlayEyebrow {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.progressOverlayTitle {
+  margin: 0 !important;
+}
+
+.progressHero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressLevelBadge {
+  flex-shrink: 0;
+  width: 68px;
+  height: 68px;
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 42%, var(--ant-color-border));
+  border-radius: 18px 18px 22px 22px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--course-diagram-gold-soft) 92%, white), color-mix(in srgb, var(--course-diagram-gold-panel) 84%, var(--ant-color-bg-container))),
+    var(--ant-color-bg-container);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 72%, transparent),
+    0 10px 20px color-mix(in srgb, var(--course-diagram-gold-line) 14%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+:global([data-theme="dark"]) .progressLevelBadge {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 22%, var(--ant-color-border));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ant-color-primary-bg) 88%, white), color-mix(in srgb, var(--ant-color-bg-container) 96%, white)),
+    var(--ant-color-bg-container);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
+    0 10px 20px rgba(0, 0, 0, 0.14);
+}
+
+.progressLevelBadgeLabel {
+  color: var(--ant-color-text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.progressLevelBadge strong {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.progressHeroBody {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progressBarPanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 36%, var(--ant-color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--course-diagram-gold-soft) 52%, var(--ant-color-bg-container));
+}
+
+:global([data-theme="dark"]) .progressBarPanel {
+  border: 1px solid color-mix(in srgb, var(--ant-color-primary) 18%, var(--ant-color-border));
+  background: color-mix(in srgb, var(--ant-color-bg-container) 96%, white);
+}
+
+.progressBarHeader,
+.progressBarFooter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.progressBarHeader {
+  font-size: 13px;
+}
+
+.progressBarFooter {
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+}
+
+.progressBarTrack {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--course-diagram-gold-line) 12%, var(--ant-color-fill-tertiary));
+  box-shadow: inset 0 1px 2px color-mix(in srgb, black 10%, transparent);
+}
+
+.progressBarFill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  transition:
+    width 0.45s ease,
+    filter 0.35s ease,
+    transform 0.35s ease;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--course-diagram-gold-line) 84%, #9c5f09), color-mix(in srgb, var(--ant-color-warning) 82%, #ffe082)),
+    var(--course-diagram-gold-line);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 44%, transparent),
+    0 0 16px color-mix(in srgb, var(--ant-color-warning) 22%, transparent);
+}
+
+:global([data-theme="dark"]) .progressBarFill {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--ant-color-primary) 76%, #6aa4ff), color-mix(in srgb, var(--ant-color-warning) 68%, #f4d35e)),
+    var(--ant-color-primary);
+}
+
+.progressBarFillAnimated {
+  animation: xp-bar-pulse 0.95s ease;
+}
+
+.xpGainBurst {
+  position: absolute;
+  right: 12px;
+  top: 56px;
+  color: var(--ant-color-success);
+  font-size: 14px;
+  font-weight: 700;
+  pointer-events: none;
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--ant-color-bg-container) 82%, transparent);
+  animation: xp-gain-float 1.9s ease forwards;
+}
+
+@keyframes xp-bar-pulse {
+  0%,
+  100% {
+    filter: saturate(1);
+    transform: scaleY(1);
+  }
+
+  30% {
+    filter: saturate(1.18) brightness(1.06);
+    transform: scaleY(1.12);
+  }
+
+  65% {
+    filter: saturate(1.12) brightness(1.03);
+    transform: scaleY(1.05);
+  }
+}
+
+@keyframes xp-gain-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  78% {
+    opacity: 1;
+    transform: translateY(-18px) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-28px) scale(0.98);
+  }
+}
+
 :global([data-theme="dark"]) .flowLegend {
   border: 1px solid color-mix(in srgb, var(--ant-color-primary) 16%, var(--ant-color-border));
   background: color-mix(in srgb, var(--ant-color-bg-elevated) 96%, white);
@@ -678,6 +921,28 @@
 @media (max-width: 760px) {
   .numberGrid {
     grid-template-columns: 1fr;
+  }
+
+  .progressOverlayCard {
+    left: 14px;
+    right: 14px;
+    top: 14px;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .progressHero {
+    align-items: flex-start;
+  }
+
+  .levelRow {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .listJustify {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .flowShell {

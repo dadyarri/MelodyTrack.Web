@@ -155,10 +155,15 @@ export interface CourseTheme {
   lessonContent?: string | null;
   homeworkContent?: string | null;
   order: number;
-  unlockCostPoints: number;
-  evolutionPointsReward: number;
   experiencePointsReward: number;
   dependencyThemeIds: Ulid[];
+}
+
+export interface CourseLevel {
+  id: Ulid;
+  title: string;
+  order: number;
+  requiredExperiencePoints: number;
 }
 
 export interface CourseBranch {
@@ -183,6 +188,7 @@ export interface Course {
   description?: string | null;
   createdAtUtc: string;
   updatedAtUtc: string;
+  levels: CourseLevel[];
   blocks: CourseBlock[];
 }
 
@@ -195,18 +201,21 @@ export interface CourseEnrollmentTheme {
   themeDescription?: string | null;
   lessonContent?: string | null;
   homeworkContent?: string | null;
-  unlockCostPoints: number;
-  evolutionPointsReward: number;
   experiencePointsReward: number;
   state: CourseThemeProgressState;
   unlockedAtUtc?: string | null;
   startedAtUtc?: string | null;
   waitingForHomeworkAtUtc?: string | null;
   completedAtUtc?: string | null;
-  spentEvolutionPoints: number;
-  earnedEvolutionPoints: number;
   earnedExperiencePoints: number;
   recentAppointments: CourseEnrollmentThemeAppointment[];
+}
+
+export interface CourseEnrollmentLevel {
+  id: Ulid;
+  title: string;
+  order: number;
+  requiredExperiencePoints: number;
 }
 
 export interface CourseEnrollment {
@@ -216,9 +225,7 @@ export interface CourseEnrollment {
   courseId: Ulid;
   courseName: string;
   createdAtUtc: string;
-  earnedEvolutionPoints: number;
-  spentEvolutionPoints: number;
-  availableEvolutionPoints: number;
+  currentLevel?: CourseEnrollmentLevel | null;
   earnedExperiencePoints: number;
   themes: CourseEnrollmentTheme[];
 }

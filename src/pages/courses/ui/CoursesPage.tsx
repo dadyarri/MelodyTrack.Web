@@ -66,6 +66,7 @@ type EditorCourse = NonNullable<Controller["draftCourse"]>;
 type EditorBlock = EditorCourse["blocks"][number];
 type EditorBranch = EditorBlock["branches"][number];
 type EditorTheme = EditorBranch["themes"][number];
+type EditorLevel = EditorCourse["levels"][number];
 
 type DiagramNodeSelection =
   | { kind: "course" }
@@ -333,7 +334,7 @@ export function CoursesPage() {
                   className={styles.unsavedWarning}
                   type="warning"
                   showIcon
-                  title="Есть несохраненные изменения"
+                  message="Есть несохраненные изменения"
                   description="Сохраните курс, чтобы изменения структуры и зависимостей попали в прогресс клиентов."
                 />
               ) : null}
@@ -626,7 +627,98 @@ function CourseEditorFlow({
         <Background variant={BackgroundVariant.Dots} gap={18} size={1.1} color="var(--course-diagram-gold-border)" />
         <Controls showInteractive={false} position="top-left" />
       </ReactFlow>
+      {enrollment ? <ProgressOverlayCard course={course} enrollment={enrollment} /> : null}
       <DiagramLegend />
+    </div>
+  );
+}
+
+function ProgressOverlayCard({ course, enrollment }: { course: EditorCourse; enrollment: CourseEnrollment }) {
+  const previousXpRef = useRef(enrollment.earnedExperiencePoints);
+  const xpGainTimeoutRef = useRef<number | null>(null);
+  const [xpGain, setXpGain] = useState<number | null>(null);
+  const [isXpAnimating, setXpAnimating] = useState(false);
+  const sortedLevels = useMemo(
+    () => course.levels.slice().sort((left, right) => left.requiredExperiencePoints - right.requiredExperiencePoints || course.levels.indexOf(left) - course.levels.indexOf(right)),
+    [course.levels],
+  );
+  const currentLevel = enrollment.currentLevel ?? sortedLevels.filter((level) => level.requiredExperiencePoints <= enrollment.earnedExperiencePoints).at(-1) ?? null;
+  const nextLevel = sortedLevels.find((level) => level.requiredExperiencePoints > enrollment.earnedExperiencePoints) ?? null;
+  const currentLevelTitle = currentLevel?.title ?? "Не задан";
+  const currentLevelGoal = currentLevel?.requiredExperiencePoints ?? 0;
+  const nextLevelGoal = nextLevel?.requiredExperiencePoints ?? currentLevelGoal;
+  const progressWithinLevel = nextLevel
+    ? Math.max(enrollment.earnedExperiencePoints - currentLevelGoal, 0)
+    : Math.max(enrollment.earnedExperiencePoints - currentLevelGoal, 0);
+  const levelSpan = nextLevel ? Math.max(nextLevel.requiredExperiencePoints - currentLevelGoal, 1) : Math.max(progressWithinLevel, 1);
+  const progressPercent = nextLevel ? Math.min(100, Math.max(0, (progressWithinLevel / levelSpan) * 100)) : 100;
+  const currentLevelIndex = currentLevel
+    ? sortedLevels.findIndex(
+        (level) =>
+          ("id" in currentLevel && level.localId === currentLevel.id) || ("localId" in currentLevel && level.localId === currentLevel.localId),
+      ) + 1
+    : 0;
+
+  useEffect(() => {
+    const previousXp = previousXpRef.current;
+    const gainedXp = enrollment.earnedExperiencePoints - previousXp;
+
+    if (gainedXp > 0) {
+      if (xpGainTimeoutRef.current != null) {
+        window.clearTimeout(xpGainTimeoutRef.current);
+      }
+
+      setXpGain(gainedXp);
+      setXpAnimating(true);
+
+      xpGainTimeoutRef.current = window.setTimeout(() => {
+        setXpAnimating(false);
+        setXpGain(null);
+        xpGainTimeoutRef.current = null;
+      }, 1900);
+    }
+
+    previousXpRef.current = enrollment.earnedExperiencePoints;
+
+    return () => {
+      if (xpGainTimeoutRef.current != null) {
+        window.clearTimeout(xpGainTimeoutRef.current);
+        xpGainTimeoutRef.current = null;
+      }
+    };
+  }, [enrollment.earnedExperiencePoints]);
+
+  return (
+    <div className={styles.progressOverlayCard}>
+      <Typography.Text className={styles.progressOverlayEyebrow}>Прогресс по курсу</Typography.Text>
+      <div className={styles.progressHero}>
+        <div className={styles.progressLevelBadge}>
+          <span className={styles.progressLevelBadgeLabel}>LVL</span>
+          <strong>{currentLevelIndex > 0 ? currentLevelIndex : "?"}</strong>
+        </div>
+        <div className={styles.progressHeroBody}>
+          <Typography.Title level={5} className={styles.progressOverlayTitle}>
+            {currentLevelTitle}
+          </Typography.Title>
+          <Typography.Text type="secondary">{enrollment.clientDisplayName}</Typography.Text>
+        </div>
+      </div>
+      <div className={styles.progressBarPanel}>
+        <div className={styles.progressBarHeader}>
+          <strong>{enrollment.earnedExperiencePoints} XP</strong>
+          <span>{nextLevel ? `${nextLevel.requiredExperiencePoints} XP` : "Максимум"}</span>
+        </div>
+        <div className={styles.progressBarTrack} aria-hidden="true">
+          <div
+            className={`${styles.progressBarFill} ${isXpAnimating ? styles.progressBarFillAnimated : ""}`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+        {xpGain ? <div className={styles.xpGainBurst}>+{xpGain} XP</div> : null}
+        <div className={styles.progressBarFooter}>
+          {nextLevel ? <strong>{Math.max(nextLevelGoal - enrollment.earnedExperiencePoints, 0)} XP осталось</strong> : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -910,8 +1002,8 @@ function CourseNodeModal({
   return (
     <Modal
       open
-      width={selected.kind === "theme" ? 760 : 560}
-      className={selected.kind === "theme" ? styles.themeEditorModal : undefined}
+      width={selected.kind === "theme" || selected.kind === "course" ? 760 : 560}
+      className={selected.kind === "theme" || selected.kind === "course" ? styles.themeEditorModal : undefined}
       title={title}
       onCancel={onClose}
       onOk={() => {
@@ -977,6 +1069,7 @@ function CourseNodeModal({
             <Form.Item name="description" label="Описание">
               <Input.TextArea autoSize={{ minRows: 2, maxRows: 5 }} />
             </Form.Item>
+            <CourseLevelsEditor course={selected.course} controller={controller} />
           </>
         ) : null}
 
@@ -1029,13 +1122,7 @@ function CourseNodeModal({
             <Form.Item name="dependencyKeys" label="Зависимости">
               <Select mode="multiple" options={buildDependencyOptions(selected.block, selected.theme.localId)} />
             </Form.Item>
-            <div className={styles.numberGrid}>
-              <Form.Item name="unlockCostPoints" label="Стоимость разблокировки">
-                <InputNumber min={0} className="wide" />
-              </Form.Item>
-              <Form.Item name="evolutionPointsReward" label="Очки эволюции">
-                <InputNumber min={0} className="wide" />
-              </Form.Item>
+            <div className={styles.numberGridSingle}>
               <Form.Item name="experiencePointsReward" label="Очки опыта">
                 <InputNumber min={0} className="wide" />
               </Form.Item>
@@ -1242,8 +1329,6 @@ function ThemeProgressDetails({
           ) : (
             <Tag>Нет прогресса</Tag>
           )}
-          <Tag>Открытие: {theme.unlockCostPoints}</Tag>
-          <Tag color="cyan">Эволюция: +{theme.evolutionPointsReward}</Tag>
           <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
         </Space>
         {theme.description ? <Typography.Paragraph className={styles.contentText}>{theme.description}</Typography.Paragraph> : null}
@@ -1360,13 +1445,7 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
             <Form.Item name="dependencyKeys" label="Зависимости">
               <Select mode="multiple" options={targetBlock ? buildDependencyOptions(targetBlock, "") : []} />
             </Form.Item>
-            <div className={styles.numberGrid}>
-              <Form.Item name="unlockCostPoints" label="Стоимость разблокировки">
-                <InputNumber min={0} className="wide" />
-              </Form.Item>
-              <Form.Item name="evolutionPointsReward" label="Очки эволюции">
-                <InputNumber min={0} className="wide" />
-              </Form.Item>
+            <div className={styles.numberGridSingle}>
               <Form.Item name="experiencePointsReward" label="Очки опыта">
                 <InputNumber min={0} className="wide" />
               </Form.Item>
@@ -1409,6 +1488,106 @@ function MoveButtons({ onUp, onDown }: { onUp: () => void; onDown: () => void })
       <Button icon={<DownOutlined />} onClick={onDown}>
         Ниже
       </Button>
+    </div>
+  );
+}
+
+function CourseLevelsEditor({ course, controller }: { course: EditorCourse; controller: Controller }) {
+  return (
+    <div className={styles.detailSection}>
+      <div className={styles.listJustify}>
+        <Typography.Text strong>Уровни курса</Typography.Text>
+        <Button
+          icon={<PlusOutlined />}
+          onClick={() => {
+            controller.addLevel({
+              title: "",
+              requiredExperiencePoints: getNextLevelThreshold(course.levels),
+            });
+          }}
+        >
+          Уровень
+        </Button>
+      </div>
+      <Typography.Text type="secondary">
+        Уровень определяется автоматически по сумме опыта. Настройте названия уровней и пороги опыта для этого курса.
+      </Typography.Text>
+      {course.levels.length === 0 ? (
+        <Alert
+          type="info"
+          showIcon
+          message="Уровни пока не настроены"
+          description="Клиенты будут получать опыт, но название уровня определяться не будет."
+        />
+      ) : (
+        <div className={styles.levelList}>
+          {course.levels.map((level, index) => (
+            <CourseLevelRow
+              key={level.localId}
+              level={level}
+              index={index}
+              canMoveUp={index > 0}
+              canMoveDown={index < course.levels.length - 1}
+              onChange={(patch) => {
+                controller.updateLevel(level.localId, patch);
+              }}
+              onMove={(direction) => {
+                controller.moveLevel(level.localId, direction);
+              }}
+              onRemove={() => {
+                controller.removeLevel(level.localId);
+              }}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CourseLevelRow({
+  level,
+  index,
+  canMoveUp,
+  canMoveDown,
+  onChange,
+  onMove,
+  onRemove,
+}: {
+  level: EditorLevel;
+  index: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onChange: (patch: Partial<Omit<EditorLevel, "localId">>) => void;
+  onMove: (direction: "up" | "down") => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className={styles.levelRow}>
+      <Tag bordered={false} color="gold">
+        {index + 1}
+      </Tag>
+      <Input
+        value={level.title}
+        placeholder="Название уровня"
+        onChange={(event) => {
+          onChange({ title: event.target.value });
+        }}
+      />
+      <InputNumber
+        min={0}
+        value={level.requiredExperiencePoints}
+        className={styles.levelThresholdInput}
+        addonBefore="XP"
+        onChange={(value) => {
+          onChange({ requiredExperiencePoints: typeof value === "number" ? value : 0 });
+        }}
+      />
+      <Space>
+        <Button icon={<UpOutlined />} disabled={!canMoveUp} onClick={() => onMove("up")} />
+        <Button icon={<DownOutlined />} disabled={!canMoveDown} onClick={() => onMove("down")} />
+        <Button danger icon={<DeleteOutlined />} onClick={onRemove} />
+      </Space>
     </div>
   );
 }
@@ -1987,8 +2166,6 @@ function getSelectionFormValues(selected: SelectedEditorNode) {
         title: selected.theme.title,
         description: selected.theme.description,
         dependencyKeys: selected.theme.dependencyKeys,
-        unlockCostPoints: selected.theme.unlockCostPoints,
-        evolutionPointsReward: selected.theme.evolutionPointsReward,
         experiencePointsReward: selected.theme.experiencePointsReward,
         lessonContent: selected.theme.lessonContent,
         homeworkContent: selected.theme.homeworkContent,
@@ -2045,8 +2222,6 @@ function applySelectionValues(controller: Controller, selected: SelectedEditorNo
         title: readFormString(values.title),
         description: readFormString(values.description),
         dependencyKeys: readFormStringArray(values.dependencyKeys),
-        unlockCostPoints: readFormNumber(values.unlockCostPoints),
-        evolutionPointsReward: readFormNumber(values.evolutionPointsReward),
         experiencePointsReward: readFormNumber(values.experiencePointsReward),
         lessonContent: readFormString(values.lessonContent),
         homeworkContent: readFormString(values.homeworkContent),
@@ -2067,6 +2242,11 @@ function readFormNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function getNextLevelThreshold(levels: EditorLevel[]) {
+  const highestThreshold = levels.reduce((max, level) => Math.max(max, level.requiredExperiencePoints), 0);
+  return highestThreshold === 0 ? 10 : highestThreshold + 10;
+}
+
 function addEditorNode(controller: Controller, intent: AddNodeIntent, values: Record<string, unknown>) {
   if (intent.kind === "block") {
     controller.addBlock({ title: readFormString(values.title), description: readFormString(values.description) });
@@ -2085,8 +2265,6 @@ function addEditorNode(controller: Controller, intent: AddNodeIntent, values: Re
       title: readFormString(values.title),
       description: readFormString(values.description),
       dependencyKeys: readFormStringArray(values.dependencyKeys),
-      unlockCostPoints: readFormNumber(values.unlockCostPoints),
-      evolutionPointsReward: readFormNumber(values.evolutionPointsReward),
       experiencePointsReward: readFormNumber(values.experiencePointsReward),
       lessonContent: readFormString(values.lessonContent),
       homeworkContent: readFormString(values.homeworkContent),
@@ -2146,10 +2324,6 @@ function resolveEffectiveProgressState(
 
   if (!isThemeEligibleForCompletion(course, block, branch, theme, enrollmentThemesByCourseThemeId)) {
     return 0;
-  }
-
-  if (theme.unlockCostPoints > 0 && enrollmentTheme.state !== 2) {
-    return 1;
   }
 
   return 2;

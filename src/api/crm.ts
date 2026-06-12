@@ -191,6 +191,11 @@ export const coursesApi = {
   create(input: {
     name: string;
     description?: string;
+    levels?: Array<{
+      title: string;
+      order: number;
+      requiredExperiencePoints: number;
+    }>;
     blocks?: Array<{
       title: string;
       description?: string;
@@ -206,8 +211,6 @@ export const coursesApi = {
           lessonContent?: string;
           homeworkContent?: string;
           order: number;
-          unlockCostPoints: number;
-          evolutionPointsReward: number;
           experiencePointsReward: number;
           dependencyKeys: string[];
         }>;
@@ -221,6 +224,11 @@ export const coursesApi = {
     input: {
       name: string;
       description?: string;
+      levels: Array<{
+        title: string;
+        order: number;
+        requiredExperiencePoints: number;
+      }>;
       blocks: Array<{
         title: string;
         description?: string;
@@ -236,8 +244,6 @@ export const coursesApi = {
             lessonContent?: string;
             homeworkContent?: string;
             order: number;
-            unlockCostPoints: number;
-            evolutionPointsReward: number;
             experiencePointsReward: number;
             dependencyKeys: string[];
           }>;

@@ -205,11 +205,7 @@ export function ClientHistoryPanel({
                         <Progress percent={completionPercent} size="small" />
                       </div>
                       <Space wrap>
-                        <Tag color={enrollment.availableEvolutionPoints > 0 ? "green" : "default"}>
-                          Доступно {enrollment.availableEvolutionPoints}
-                        </Tag>
-                        <Tag color="cyan">Эволюция +{enrollment.earnedEvolutionPoints}</Tag>
-                        <Tag color="gold">Потрачено {enrollment.spentEvolutionPoints}</Tag>
+                        <Tag color="gold">{enrollment.currentLevel ? `Уровень: ${enrollment.currentLevel.title}` : "Уровень не задан"}</Tag>
                         <Tag color="purple">Опыт +{enrollment.earnedExperiencePoints}</Tag>
                       </Space>
                     </div>
@@ -234,16 +230,12 @@ export function ClientHistoryPanel({
                                 <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
                               </div>
                               <Space wrap size={[8, 8]} className={styles.themeMeta}>
-                                <Tag>Открытие: {theme.unlockCostPoints}</Tag>
-                                <Tag color="cyan">Эво: +{theme.evolutionPointsReward}</Tag>
                                 <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
-                                {theme.spentEvolutionPoints > 0 ? <Tag color="gold">Потрачено: {theme.spentEvolutionPoints}</Tag> : null}
-                                {theme.earnedEvolutionPoints > 0 ? <Tag color="cyan">Получено: +{theme.earnedEvolutionPoints}</Tag> : null}
                               </Space>
                               {theme.themeDescription ? <Typography.Text type="secondary">{theme.themeDescription}</Typography.Text> : null}
                               {onUpdateThemeProgress ? (
                                 <Space wrap size={[8, 8]}>
-                                  {buildThemeActionButtons(theme, enrollment.availableEvolutionPoints, onUpdateThemeProgress)}
+                                  {buildThemeActionButtons(theme, onUpdateThemeProgress)}
                                 </Space>
                               ) : null}
                               {theme.homeworkContent ? (
@@ -351,7 +343,6 @@ export function ClientHistoryPanel({
 
 function buildThemeActionButtons(
   theme: CourseEnrollmentTheme,
-  availableEvolutionPoints: number,
   onUpdateThemeProgress: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void,
 ) {
   switch (theme.state) {
@@ -361,7 +352,6 @@ function buildThemeActionButtons(
           key="unlock"
           size="small"
           icon={<LockOutlined />}
-          disabled={availableEvolutionPoints < theme.unlockCostPoints}
           onClick={() => {
             onUpdateThemeProgress(theme.id, "unlock");
           }}
