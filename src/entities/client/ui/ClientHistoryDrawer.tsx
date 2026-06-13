@@ -16,6 +16,10 @@ type ClientHistoryDrawerProps = {
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
+  onCreatePortalLink?: () => void;
+  isCreatingPortalLink?: boolean;
+  onResetPortalPin?: () => void;
+  isResettingPortalPin?: boolean;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
   onOpenCourseProgress?: (enrollmentId?: string) => void;
   onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
@@ -34,6 +38,10 @@ export function ClientHistoryDrawer({
   onCreateAppointment,
   onCreatePayment,
   onCreateCourseEnrollment,
+  onCreatePortalLink,
+  isCreatingPortalLink,
+  onResetPortalPin,
+  isResettingPortalPin,
   onDeleteCourseEnrollment,
   onOpenCourseProgress,
   onUpdateThemeProgress,
@@ -56,6 +64,10 @@ export function ClientHistoryDrawer({
           onCreateAppointment={onCreateAppointment}
           onCreatePayment={onCreatePayment}
           onCreateCourseEnrollment={onCreateCourseEnrollment}
+          onCreatePortalLink={onCreatePortalLink}
+          isCreatingPortalLink={isCreatingPortalLink}
+          onResetPortalPin={onResetPortalPin}
+          isResettingPortalPin={isResettingPortalPin}
           onDeleteCourseEnrollment={onDeleteCourseEnrollment}
           onOpenCourseProgress={onOpenCourseProgress}
           onUpdateThemeProgress={onUpdateThemeProgress}

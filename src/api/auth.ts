@@ -53,6 +53,17 @@ export interface LoginResponse {
   lastName: string;
 }
 
+export interface ClientPortalLinkStatusResponse {
+  firstName: string;
+  hasPin: boolean;
+}
+
+export interface ClientPortalPinAuthInput {
+  token: string;
+  pin: string;
+  pinConfirmation?: string;
+}
+
 export interface LoginChallengeResponse {
   requiresTwoFactor: boolean;
   canUseOtp: boolean;
@@ -98,6 +109,8 @@ export interface MeResponse {
   lastActivity?: RecordActivity | null;
   isAdmin: boolean;
   isSuperuser: boolean;
+  isClientPortal: boolean;
+  linkedClientId?: string | null;
   isTwoFactorEnabled: boolean;
   isTwoFactorRequired: boolean;
 }
@@ -171,6 +184,12 @@ export const authApi = {
           ...(response.data as LoginResponse),
         };
       });
+  },
+  getClientPortalLinkStatus(token: string) {
+    return http.get<ClientPortalLinkStatusResponse>("/client-portal/auth/link", { params: { token } }).then((response) => response.data);
+  },
+  authenticateClientPortalLink(input: ClientPortalPinAuthInput) {
+    return http.post<LoginResponse>("/client-portal/auth/link", input).then((response) => response.data);
   },
   verify2Fa(input: Verify2FaInput) {
     return http.post<RecoveryCodesResponse>("/auth/2fa/verify", input).then((response) => response.data);

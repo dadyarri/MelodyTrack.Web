@@ -102,6 +102,12 @@ export const clientsApi = {
   exportDebtors() {
     return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
   },
+  createPortalLink(id: Ulid) {
+    return http.post<{ url: string }>(`/clients/${id}/portal-link`, {}).then((response) => response.data);
+  },
+  resetPortalPin(id: Ulid) {
+    return http.post<unknown>(`/clients/${id}/portal-pin/reset`, {}).then(() => undefined);
+  },
 };
 
 export const dashboardApi = {
@@ -290,6 +296,23 @@ export const courseEnrollmentsApi = {
         action,
       })
       .then(() => undefined);
+  },
+};
+
+export const clientPortalApi = {
+  schedule(params: { timezone: string; startDate: string; endDate: string }) {
+    return http
+      .get<{ appointments: Appointment[] }>("/client-portal/schedule", {
+        params: {
+          timezone: params.timezone,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        },
+      })
+      .then((response) => response.data.appointments);
+  },
+  courseEnrollments() {
+    return http.get<{ enrollments: CourseEnrollment[] }>("/client-portal/course-enrollments").then((response) => response.data.enrollments);
   },
 };
 

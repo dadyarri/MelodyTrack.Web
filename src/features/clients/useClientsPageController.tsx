@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Form } from "antd";
+import { App as AntdApp, Form, Typography } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { clientsApi, clientSourcesApi, courseEnrollmentsApi, coursesApi } from "@/api/crm";
@@ -244,6 +244,30 @@ export function useClientsPageController() {
     },
   });
 
+  const createPortalLinkMutation = useMutation({
+    mutationFn: (clientId: Ulid) => clientsApi.createPortalLink(clientId),
+    onSuccess: (payload) => {
+      void navigator.clipboard?.writeText(payload.url).catch(() => undefined);
+      modal.info({
+        title: "Ссылка в клиентский кабинет готова",
+        content: (
+          <Typography.Paragraph copyable={{ text: payload.url }} style={{ marginBottom: 0 }}>
+            {payload.url}
+          </Typography.Paragraph>
+        ),
+      });
+    },
+    onError: showErrors,
+  });
+
+  const resetPortalPinMutation = useMutation({
+    mutationFn: (clientId: Ulid) => clientsApi.resetPortalPin(clientId),
+    onSuccess: () => {
+      message.success("PIN клиентского кабинета сброшен");
+    },
+    onError: showErrors,
+  });
+
   const openEditor = useCallback(
     (client?: Client) => {
       if (client) {
@@ -461,6 +485,8 @@ export function useClientsPageController() {
     deleteEnrollmentMutation,
     updateThemeProgressMutation,
     deleteMutation,
+    createPortalLinkMutation,
+    resetPortalPinMutation,
     openEditor,
     closeEditor,
     handleSearch,
@@ -516,6 +542,28 @@ export function useClientsPageController() {
     },
     onCreateEnrollment: (values: { courseId: Ulid; openProgress: boolean }) => {
       createEnrollmentMutation.mutate(values);
+    },
+    onCreatePortalLink: () => {
+      if (!historyClient) {
+        return;
+      }
+
+      createPortalLinkMutation.mutate(historyClient.id);
+    },
+    onResetPortalPin: () => {
+      if (!historyClient) {
+        return;
+      }
+
+      modal.confirm({
+        title: "Сбросить PIN клиентского кабинета?",
+        content: "Текущий PIN перестанет работать, а активные сессии клиента будут завершены.",
+        okText: "Сбросить PIN",
+        okButtonProps: { danger: true },
+        onOk: () => {
+          resetPortalPinMutation.mutate(historyClient.id);
+        },
+      });
     },
     onDeleteEnrollment: (enrollmentId: Ulid) => {
       modal.confirm({

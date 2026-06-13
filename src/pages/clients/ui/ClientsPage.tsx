@@ -155,6 +155,10 @@ export function ClientsPage() {
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
         onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
+        onCreatePortalLink={controller.canCreateClients ? controller.onCreatePortalLink : undefined}
+        isCreatingPortalLink={controller.createPortalLinkMutation.isPending}
+        onResetPortalPin={controller.canCreateClients ? controller.onResetPortalPin : undefined}
+        isResettingPortalPin={controller.resetPortalPinMutation.isPending}
         onDeleteCourseEnrollment={controller.canCreateClients ? controller.onDeleteEnrollment : undefined}
         onOpenCourseProgress={controller.openCourseProgress}
         onUpdateThemeProgress={controller.canCreateClients ? controller.onUpdateThemeProgress : undefined}

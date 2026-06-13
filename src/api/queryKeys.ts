@@ -105,4 +105,10 @@ export const queryKeys = {
     availability: (userId?: string) => ["schedule", "availability", formatDateKey(userId)] as const,
     mini: (timezone: string) => ["schedule", "mini", timezone] as const,
   },
+  portal: {
+    all: ["portal"] as const,
+    schedule: (startDateIso: string, endDateIso: string, timezone: string) =>
+      ["portal", "schedule", startDateIso, endDateIso, timezone] as const,
+    enrollments: ["portal", "course-enrollments"] as const,
+  },
 };

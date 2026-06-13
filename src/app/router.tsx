@@ -3,6 +3,7 @@ import { recoverableImport } from "./chunkLoadRecovery";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
 import { AdminRoute } from "../layout/AdminRoute";
+import { ClientPortalRoute } from "../layout/ClientPortalRoute";
 import { StatsRoute } from "../layout/StatsRoute";
 import { SuperuserRoute } from "../layout/SuperuserRoute";
 
@@ -15,6 +16,17 @@ export const router = createBrowserRouter([
 
       return {
         Component: InviteRedirect,
+      };
+    },
+  },
+  {
+    path: "/portal/access/:token",
+    errorElement: <RouteErrorBoundary />,
+    lazy: async () => {
+      const { PortalAccessPage } = await recoverableImport(() => import("@/pages/portal-access"));
+
+      return {
+        Component: PortalAccessPage,
       };
     },
   },
@@ -39,6 +51,47 @@ export const router = createBrowserRouter([
         Component: RestorePasswordPage,
       };
     },
+  },
+  {
+    path: "/portal",
+    errorElement: <RouteErrorBoundary />,
+    lazy: async () => {
+      const { ClientPortalLayout } = await recoverableImport(() => import("@/layout/ClientPortalLayout"));
+
+      return {
+        Component: () => (
+          <ClientPortalRoute>
+            <ClientPortalLayout />
+          </ClientPortalRoute>
+        ),
+      };
+    },
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/portal/schedule" replace />,
+      },
+      {
+        path: "schedule",
+        lazy: async () => {
+          const { ClientPortalSchedulePage } = await recoverableImport(() => import("@/pages/client-portal-schedule"));
+
+          return {
+            Component: ClientPortalSchedulePage,
+          };
+        },
+      },
+      {
+        path: "progress",
+        lazy: async () => {
+          const { ClientPortalProgressPage } = await recoverableImport(() => import("@/pages/client-portal-progress"));
+
+          return {
+            Component: ClientPortalProgressPage,
+          };
+        },
+      },
+    ],
   },
   {
     path: "/",

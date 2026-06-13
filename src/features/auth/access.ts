@@ -11,6 +11,10 @@ export function hasSuperuserAccess(user: AppUser) {
   return Boolean(user?.isSuperuser);
 }
 
+export function hasClientPortalAccess(user: AppUser) {
+  return Boolean(user?.isClientPortal);
+}
+
 export function hasStatsAccess(user: AppUser) {
   return hasAdminAccess(user) || hasSuperuserAccess(user);
 }

@@ -6,6 +6,7 @@ import {
   CreditCardOutlined,
   DeleteOutlined,
   HourglassOutlined,
+  LinkOutlined,
   LockOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -34,6 +35,10 @@ type ClientHistoryPanelProps = {
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onCreateCourseEnrollment?: () => void;
+  onCreatePortalLink?: () => void;
+  isCreatingPortalLink?: boolean;
+  onResetPortalPin?: () => void;
+  isResettingPortalPin?: boolean;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
   onOpenCourseProgress?: (enrollmentId?: string) => void;
   onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
@@ -48,6 +53,10 @@ export function ClientHistoryPanel({
   onCreateAppointment,
   onCreatePayment,
   onCreateCourseEnrollment,
+  onCreatePortalLink,
+  isCreatingPortalLink = false,
+  onResetPortalPin,
+  isResettingPortalPin = false,
   onDeleteCourseEnrollment,
   onOpenCourseProgress,
   onUpdateThemeProgress,
@@ -57,7 +66,7 @@ export function ClientHistoryPanel({
 
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment ? (
+      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onCreatePortalLink || onResetPortalPin ? (
         <Space>
           {onCreateAppointment ? (
             <Button
@@ -83,6 +92,16 @@ export function ClientHistoryPanel({
           {onCreateCourseEnrollment ? (
             <Button icon={<PlusOutlined />} onClick={onCreateCourseEnrollment}>
               Назначить курс
+            </Button>
+          ) : null}
+          {onCreatePortalLink ? (
+            <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
+              Ссылка в кабинет
+            </Button>
+          ) : null}
+          {onResetPortalPin ? (
+            <Button icon={<ReloadOutlined />} loading={isResettingPortalPin} onClick={onResetPortalPin}>
+              Сбросить PIN
             </Button>
           ) : null}
         </Space>

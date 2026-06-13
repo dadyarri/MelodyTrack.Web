@@ -17,7 +17,7 @@ export function AuthPage() {
   }
 
   if (controller.auth.isAuthenticated && !controller.recover2FaState) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={controller.auth.user?.isClientPortal ? "/portal" : "/"} replace />;
   }
 
   return (
