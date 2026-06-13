@@ -12,6 +12,7 @@
 }
 
 .editorPanel {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -98,6 +99,13 @@
   min-width: 240px;
 }
 
+.saveButtonLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
 .modalFooter {
   width: 100%;
   justify-content: space-between;
@@ -159,6 +167,13 @@
 }
 
 .unsavedWarning {
+  position: absolute;
+  right: 18px;
+  bottom: 250px;
+  left: auto;
+  z-index: 7;
+  width: min(295px, calc(100% - 36px));
+  transform: none;
   border-color: color-mix(in srgb, var(--ant-color-warning) 48%, var(--ant-color-border));
   background: color-mix(in srgb, var(--ant-color-warning-bg) 78%, var(--ant-color-bg-container));
   box-shadow: 0 12px 28px color-mix(in srgb, var(--ant-color-warning) 15%, transparent);
@@ -919,6 +934,13 @@
 }
 
 @media (max-width: 760px) {
+  .unsavedWarning {
+    right: 14px;
+    bottom: 154px;
+    left: 14px;
+    width: auto;
+  }
+
   .numberGrid {
     grid-template-columns: 1fr;
   }

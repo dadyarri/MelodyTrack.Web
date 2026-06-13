@@ -26,6 +26,47 @@
   flex: 1;
 }
 
+.enrollmentXpSummary {
+  margin-top: 8px;
+}
+
+.enrollmentXpLine {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.actionSummary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  background: var(--bg-card);
+}
+
+.actionThemeList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.actionThemeRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.actionThemeInfo {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .themeItem {
   display: flex;
   flex-direction: column;
@@ -59,5 +100,10 @@
   .enrollmentProgress {
     min-width: 0;
     width: 100%;
+  }
+
+  .actionThemeRow,
+  .enrollmentXpLine {
+    flex-direction: column;
   }
 }

@@ -296,7 +296,7 @@ export function useClientsPageController() {
   });
 
   const createEnrollmentMutation = useMutation({
-    mutationFn: (courseId: Ulid) => {
+    mutationFn: ({ courseId }: { courseId: Ulid; openProgress: boolean }) => {
       const clientId = historyClient?.id;
       if (!clientId) {
         throw new Error("Клиент не выбран.");
@@ -307,12 +307,35 @@ export function useClientsPageController() {
         courseId,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (result, variables) => {
       message.success("Курс назначен");
       setEnrollmentCreateOpen(false);
       await queryClient.invalidateQueries({
         queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
       });
+
+      if (variables.openProgress) {
+        const createdEnrollment =
+          (await queryClient.fetchQuery({
+            queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
+            queryFn: () => {
+              const clientId = historyClient?.id;
+              if (!clientId) {
+                throw new Error("Клиент не выбран.");
+              }
+
+              return courseEnrollmentsApi.list({ clientId });
+            },
+          })).find((item) => item.id === result.id) ?? null;
+
+        if (createdEnrollment) {
+          const nextParams = new URLSearchParams();
+          nextParams.set("course", createdEnrollment.courseId);
+          nextParams.set("enrollment", createdEnrollment.id);
+          void navigate(`/courses?${nextParams.toString()}`);
+          return;
+        }
+      }
     },
     onError: showErrors,
   });
@@ -491,8 +514,8 @@ export function useClientsPageController() {
     onCreateSource: (values: { name: string }) => {
       createSourceMutation.mutate(values);
     },
-    onCreateEnrollment: (courseId: Ulid) => {
-      createEnrollmentMutation.mutate(courseId);
+    onCreateEnrollment: (values: { courseId: Ulid; openProgress: boolean }) => {
+      createEnrollmentMutation.mutate(values);
     },
     onDeleteEnrollment: (enrollmentId: Ulid) => {
       modal.confirm({
@@ -558,13 +581,19 @@ function getThemeProgressSuccessMessage(action: CourseEnrollmentThemeProgressAct
   }
 }
 
-function buildAvailableEnrollmentCourses(courses: Array<{ id: Ulid; name: string }>, enrollments: CourseEnrollment[]) {
+function buildAvailableEnrollmentCourses(
+  courses: Array<{ id: Ulid; name: string; description?: string | null; blockCount: number; themeCount: number }>,
+  enrollments: CourseEnrollment[],
+) {
   const enrolledCourseIds = new Set(enrollments.map((enrollment) => enrollment.courseId));
   return courses
     .filter((course) => !enrolledCourseIds.has(course.id))
     .map((course) => ({
       value: course.id,
       label: course.name,
+      description: course.description,
+      blockCount: course.blockCount,
+      themeCount: course.themeCount,
     }));
 }
 

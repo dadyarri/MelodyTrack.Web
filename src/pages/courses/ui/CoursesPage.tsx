@@ -193,6 +193,30 @@ export function CoursesPage() {
     },
   });
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey || event.repeat) {
+        return;
+      }
+
+      if (event.key.toLowerCase() !== "s") {
+        return;
+      }
+
+      if (isProgressMode || !controller.hasUnsavedChanges || controller.updateMutation.isPending) {
+        return;
+      }
+
+      event.preventDefault();
+      controller.saveCourse();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [controller, isProgressMode]);
+
   return (
     <PageLayout
       title="Курсы"
@@ -301,43 +325,19 @@ export function CoursesPage() {
                         Свойства курса
                       </Button>
                       <Button
-                        icon={<PlusOutlined />}
-                        onClick={() => {
-                          setAddIntent({ kind: "block" });
-                        }}
-                      >
-                        Блок
-                      </Button>
-                      <Button
-                        type="primary"
+                        type={controller.hasUnsavedChanges && !isProgressMode ? "primary" : "dashed"}
                         icon={<SaveOutlined />}
                         loading={controller.updateMutation.isPending}
                         onClick={controller.saveCourse}
                       >
-                        Сохранить
-                      </Button>
-                      <Button
-                        danger
-                        icon={<DeleteOutlined />}
-                        loading={controller.deleteMutation.isPending}
-                        onClick={controller.confirmDelete}
-                      >
-                        Удалить курс
+                        <span className={styles.saveButtonLabel}>
+                          Сохранить
+                        </span>
                       </Button>
                     </>
                   ) : null}
                 </div>
               </div>
-
-              {controller.hasUnsavedChanges && !isProgressMode ? (
-                <Alert
-                  className={styles.unsavedWarning}
-                  type="warning"
-                  showIcon
-                  message="Есть несохраненные изменения"
-                  description="Сохраните курс, чтобы изменения структуры и зависимостей попали в прогресс клиентов."
-                />
-              ) : null}
 
               {controller.draftCourse.blocks.length === 0 ? (
                 <div className={styles.emptyDiagram}>
@@ -360,6 +360,7 @@ export function CoursesPage() {
                   <CourseEditorFlow
                     course={controller.draftCourse}
                     enrollment={selectedEnrollment}
+                    hasUnsavedChanges={controller.hasUnsavedChanges && !isProgressMode}
                     onSelectNode={setSelectedNode}
                     onContextMenu={
                       isProgressMode
@@ -476,12 +477,14 @@ export function CoursesPage() {
 function CourseEditorFlow({
   course,
   enrollment,
+  hasUnsavedChanges,
   onSelectNode,
   onContextMenu,
   onCloseContextMenu,
 }: {
   course: EditorCourse;
   enrollment: CourseEnrollment | null;
+  hasUnsavedChanges: boolean;
   onSelectNode: (selection: DiagramNodeSelection) => void;
   onContextMenu?: (menu: DiagramContextMenuState) => void;
   onCloseContextMenu: () => void;
@@ -628,6 +631,7 @@ function CourseEditorFlow({
         <Controls showInteractive={false} position="top-left" />
       </ReactFlow>
       {enrollment ? <ProgressOverlayCard course={course} enrollment={enrollment} /> : null}
+      {hasUnsavedChanges ? <Alert className={styles.unsavedWarning} type="warning" showIcon message="Есть несохраненные изменения" /> : null}
       <DiagramLegend />
     </div>
   );
@@ -1043,6 +1047,16 @@ function CourseNodeModal({
                 }}
               >
                 Удалить
+              </Button>
+            ) : null}
+            {selected.kind === "course" ? (
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                loading={controller.deleteMutation.isPending}
+                onClick={controller.confirmDelete}
+              >
+                Удалить курс
               </Button>
             ) : null}
           </div>

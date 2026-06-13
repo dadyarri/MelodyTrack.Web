@@ -2,14 +2,17 @@ import {
   BookOutlined,
   CalendarOutlined,
   CheckOutlined,
+  DownOutlined,
   CreditCardOutlined,
   DeleteOutlined,
   HourglassOutlined,
   LockOutlined,
   PlusOutlined,
   ReloadOutlined,
+  UpOutlined,
 } from "@/components/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
+import { useState } from "react";
 import type {
   ClientHistory,
   CourseEnrollment,
@@ -50,6 +53,8 @@ export function ClientHistoryPanel({
   onUpdateThemeProgress,
   onAppointmentsPageChange,
 }: ClientHistoryPanelProps) {
+  const [expandedEnrollmentIds, setExpandedEnrollmentIds] = useState<string[]>([]);
+
   return (
     <Space orientation="vertical" size={16} className="wide">
       {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment ? (
@@ -163,6 +168,8 @@ export function ClientHistoryPanel({
                 enrollment.themes.length === 0
                   ? 0
                   : Math.round((countThemesByState(enrollment.themes, 5) / enrollment.themes.length) * 100);
+              const actionableThemes = getActionableThemes(enrollment.themes);
+              const isExpanded = expandedEnrollmentIds.includes(enrollment.id);
 
               return (
                 <Card
@@ -203,10 +210,21 @@ export function ClientHistoryPanel({
                       <div className={styles.enrollmentProgress}>
                         <Typography.Text strong>{completionPercent}% завершено</Typography.Text>
                         <Progress percent={completionPercent} size="small" />
+                        <div className={styles.enrollmentXpSummary}>
+                          <div className={styles.enrollmentXpLine}>
+                            <Typography.Text strong>{enrollment.earnedExperiencePoints} XP</Typography.Text>
+                            <Typography.Text type="secondary">
+                              {actionableThemes.length > 0 ? `${actionableThemes.length} тем с действиями` : "Нет срочных действий"}
+                            </Typography.Text>
+                          </div>
+                        </div>
                       </div>
                       <Space wrap>
                         <Tag color="gold">{enrollment.currentLevel ? `Уровень: ${enrollment.currentLevel.title}` : "Уровень не задан"}</Tag>
                         <Tag color="purple">Опыт +{enrollment.earnedExperiencePoints}</Tag>
+                        <Tag color={actionableThemes.length > 0 ? "processing" : "default"}>
+                          {actionableThemes.length > 0 ? `Действий сейчас: ${actionableThemes.length}` : "Все тихо"}
+                        </Tag>
                       </Space>
                     </div>
                     <Space wrap>
@@ -216,72 +234,29 @@ export function ClientHistoryPanel({
                         </Tag>
                       ))}
                     </Space>
-                    <List
+                    <EnrollmentActionSummary themes={actionableThemes} onUpdateThemeProgress={onUpdateThemeProgress} />
+                    <Button
                       size="small"
-                      dataSource={enrollment.themes}
-                      renderItem={(theme) => {
-                        const stateMeta = getCourseThemeProgressStateMeta(theme.state);
-
-                        return (
-                          <List.Item>
-                            <div className={`wide ${styles.themeItem}`}>
-                              <div className={styles.listJustify}>
-                                <Typography.Text>{theme.themeTitle}</Typography.Text>
-                                <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
-                              </div>
-                              <Space wrap size={[8, 8]} className={styles.themeMeta}>
-                                <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
-                              </Space>
-                              {theme.themeDescription ? <Typography.Text type="secondary">{theme.themeDescription}</Typography.Text> : null}
-                              {onUpdateThemeProgress ? (
-                                <Space wrap size={[8, 8]}>
-                                  {buildThemeActionButtons(theme, onUpdateThemeProgress)}
-                                </Space>
-                              ) : null}
-                              {theme.homeworkContent ? (
-                                <div>
-                                  <Typography.Text strong>Домашнее задание</Typography.Text>
-                                  <Typography.Paragraph className={styles.themeContent}>{theme.homeworkContent}</Typography.Paragraph>
-                                </div>
-                              ) : null}
-                              {theme.recentAppointments.length > 0 ? (
-                                <div className={styles.themeHistory}>
-                                  <Typography.Text strong>Недавние занятия по теме</Typography.Text>
-                                  <List
-                                    size="small"
-                                    dataSource={theme.recentAppointments}
-                                    renderItem={(lesson) => (
-                                      <List.Item>
-                                        <div className="wide">
-                                          <Space className={`wide ${styles.listJustify}`} wrap>
-                                            <Typography.Text>{formatDateTime(lesson.startDateUtc)}</Typography.Text>
-                                            <Tag color={getAppointmentStatusTagColor(lesson.status)}>
-                                              {renderClientHistoryAppointmentStatus({
-                                                status: lesson.status,
-                                              } as ClientHistory["appointments"]["data"][number])}
-                                            </Tag>
-                                          </Space>
-                                          <Typography.Text type="secondary">
-                                            {lesson.providerDisplayName
-                                              ? `Преподаватель: ${lesson.providerDisplayName}`
-                                              : "Преподаватель не назначен"}
-                                          </Typography.Text>
-                                          {lesson.lessonNotes ? (
-                                            <Typography.Paragraph className={styles.themeContent}>
-                                              {lesson.lessonNotes}
-                                            </Typography.Paragraph>
-                                          ) : null}
-                                        </div>
-                                      </List.Item>
-                                    )}
-                                  />
-                                </div>
-                              ) : null}
-                            </div>
-                          </List.Item>
+                      icon={isExpanded ? <UpOutlined /> : <DownOutlined />}
+                      onClick={() => {
+                        setExpandedEnrollmentIds((current) =>
+                          current.includes(enrollment.id) ? current.filter((item) => item !== enrollment.id) : [...current, enrollment.id],
                         );
                       }}
-                    />
+                    >
+                      {isExpanded ? "Скрыть темы" : `Показать все темы (${enrollment.themes.length})`}
+                    </Button>
+                    {isExpanded ? (
+                      <List
+                        size="small"
+                        dataSource={enrollment.themes}
+                        renderItem={(theme) => (
+                          <List.Item>
+                            <EnrollmentThemeDetails theme={theme} />
+                          </List.Item>
+                        )}
+                      />
+                    ) : null}
                   </Space>
                 </Card>
               );
@@ -338,6 +313,95 @@ export function ClientHistoryPanel({
         )}
       </Card>
     </Space>
+  );
+}
+
+function EnrollmentActionSummary({
+  themes,
+  onUpdateThemeProgress,
+}: {
+  themes: CourseEnrollmentTheme[];
+  onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
+}) {
+  if (themes.length === 0) {
+    return (
+      <div className={styles.actionSummary}>
+        <Typography.Text type="secondary">Сейчас нет тем, по которым нужно действие.</Typography.Text>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.actionSummary}>
+      <Typography.Text strong>Сейчас доступны действия</Typography.Text>
+      <div className={styles.actionThemeList}>
+        {themes.map((theme) => {
+          const stateMeta = getCourseThemeProgressStateMeta(theme.state);
+          return (
+            <div key={theme.id} className={styles.actionThemeRow}>
+              <div className={styles.actionThemeInfo}>
+                <Typography.Text>{theme.themeTitle}</Typography.Text>
+                <Space wrap size={[8, 8]}>
+                  <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
+                  <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
+                </Space>
+              </div>
+              {onUpdateThemeProgress ? <Space wrap size={[8, 8]}>{buildThemeActionButtons(theme, onUpdateThemeProgress)}</Space> : null}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EnrollmentThemeDetails({ theme }: { theme: CourseEnrollmentTheme }) {
+  const stateMeta = getCourseThemeProgressStateMeta(theme.state);
+
+  return (
+    <div className={`wide ${styles.themeItem}`}>
+      <div className={styles.listJustify}>
+        <Typography.Text>{theme.themeTitle}</Typography.Text>
+        <Tag color={stateMeta.color}>{stateMeta.label}</Tag>
+      </div>
+      <Space wrap size={[8, 8]} className={styles.themeMeta}>
+        <Tag color="purple">Опыт: +{theme.experiencePointsReward}</Tag>
+      </Space>
+      {theme.themeDescription ? <Typography.Text type="secondary">{theme.themeDescription}</Typography.Text> : null}
+      {theme.homeworkContent ? (
+        <div>
+          <Typography.Text strong>Домашнее задание</Typography.Text>
+          <Typography.Paragraph className={styles.themeContent}>{theme.homeworkContent}</Typography.Paragraph>
+        </div>
+      ) : null}
+      {theme.recentAppointments.length > 0 ? (
+        <div className={styles.themeHistory}>
+          <Typography.Text strong>Недавние занятия по теме</Typography.Text>
+          <List
+            size="small"
+            dataSource={theme.recentAppointments}
+            renderItem={(lesson) => (
+              <List.Item>
+                <div className="wide">
+                  <Space className={`wide ${styles.listJustify}`} wrap>
+                    <Typography.Text>{formatDateTime(lesson.startDateUtc)}</Typography.Text>
+                    <Tag color={getAppointmentStatusTagColor(lesson.status)}>
+                      {renderClientHistoryAppointmentStatus({
+                        status: lesson.status,
+                      } as ClientHistory["appointments"]["data"][number])}
+                    </Tag>
+                  </Space>
+                  <Typography.Text type="secondary">
+                    {lesson.providerDisplayName ? `Преподаватель: ${lesson.providerDisplayName}` : "Преподаватель не назначен"}
+                  </Typography.Text>
+                  {lesson.lessonNotes ? <Typography.Paragraph className={styles.themeContent}>{lesson.lessonNotes}</Typography.Paragraph> : null}
+                </div>
+              </List.Item>
+            )}
+          />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -421,6 +485,10 @@ function buildThemeActionButtons(
     default:
       return [];
   }
+}
+
+function getActionableThemes(themes: CourseEnrollmentTheme[]) {
+  return themes.filter((theme) => theme.state === 2 || theme.state === 3 || theme.state === 4);
 }
 
 function buildStateSummaryTags(themes: CourseEnrollmentTheme[]) {
