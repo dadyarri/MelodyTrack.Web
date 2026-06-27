@@ -39,6 +39,17 @@ import type {
   User,
 } from "./types";
 
+export interface ClientPortalAppointment {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: Appointment["status"];
+  courseTheme?: {
+    id: string;
+    title: string;
+  } | null;
+}
+
 export const clientsApi = {
   list(params: PaginatedParams & Partial<Client> & { search?: string }) {
     return http.get<PaginatedResponse<Client>>("/clients", { params }).then((response) => response.data);
@@ -302,7 +313,7 @@ export const courseEnrollmentsApi = {
 export const clientPortalApi = {
   schedule(params: { timezone: string; startDate: string; endDate: string }) {
     return http
-      .get<{ appointments: Appointment[] }>("/client-portal/schedule", {
+      .get<{ appointments: ClientPortalAppointment[] }>("/client-portal/schedule", {
         params: {
           timezone: params.timezone,
           startDate: params.startDate,

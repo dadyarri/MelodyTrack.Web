@@ -20,6 +20,17 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: "/portal/access",
+    errorElement: <RouteErrorBoundary />,
+    lazy: async () => {
+      const { PortalAccessPage } = await recoverableImport(() => import("@/pages/portal-access"));
+
+      return {
+        Component: PortalAccessPage,
+      };
+    },
+  },
+  {
     path: "/portal/access/:token",
     errorElement: <RouteErrorBoundary />,
     lazy: async () => {

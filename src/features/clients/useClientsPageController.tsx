@@ -247,15 +247,11 @@ export function useClientsPageController() {
   const createPortalLinkMutation = useMutation({
     mutationFn: (clientId: Ulid) => clientsApi.createPortalLink(clientId),
     onSuccess: (payload) => {
-      void navigator.clipboard?.writeText(payload.url).catch(() => undefined);
-      modal.info({
-        title: "Ссылка в клиентский кабинет готова",
-        content: (
-          <Typography.Paragraph copyable={{ text: payload.url }} style={{ marginBottom: 0 }}>
-            {payload.url}
-          </Typography.Paragraph>
-        ),
-      });
+      void navigator.clipboard?.writeText(payload.url)
+        .then(() => undefined)
+        .catch(() => {
+          void message.error("Не удалось скопировать ссылку автоматически");
+        });
     },
     onError: showErrors,
   });

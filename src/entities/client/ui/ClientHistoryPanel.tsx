@@ -67,7 +67,7 @@ export function ClientHistoryPanel({
   return (
     <Space orientation="vertical" size={16} className="wide">
       {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onCreatePortalLink || onResetPortalPin ? (
-        <Space>
+        <Space wrap size={[8, 8]}>
           {onCreateAppointment ? (
             <Button
               icon={<CalendarOutlined />}
@@ -96,7 +96,7 @@ export function ClientHistoryPanel({
           ) : null}
           {onCreatePortalLink ? (
             <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
-              Ссылка в кабинет
+              Копировать ссылку
             </Button>
           ) : null}
           {onResetPortalPin ? (

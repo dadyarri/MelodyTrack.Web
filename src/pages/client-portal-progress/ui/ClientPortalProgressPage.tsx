@@ -3,13 +3,18 @@ import { Card, Collapse, Result, Space, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import { clientPortalApi } from "@/api/crm";
 import { queryKeys } from "@/api/queryKeys";
+import { useAuth } from "@/features/auth/useAuth";
 import type { CourseEnrollmentTheme, CourseThemeProgressState } from "@/api/types";
 import styles from "./ClientPortalProgressPage.module.css";
 
 export function ClientPortalProgressPage() {
+  const auth = useAuth();
+  const linkedClientId = auth.user?.linkedClientId ?? null;
+
   const query = useQuery({
-    queryKey: queryKeys.portal.enrollments,
+    queryKey: queryKeys.portal.enrollments(linkedClientId),
     queryFn: () => clientPortalApi.courseEnrollments(),
+    enabled: Boolean(linkedClientId),
   });
 
   const enrollments = query.data ?? [];

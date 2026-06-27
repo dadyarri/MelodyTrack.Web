@@ -111,6 +111,7 @@ export interface MeResponse {
   isSuperuser: boolean;
   isClientPortal: boolean;
   linkedClientId?: string | null;
+  balance?: number | null;
   isTwoFactorEnabled: boolean;
   isTwoFactorRequired: boolean;
 }

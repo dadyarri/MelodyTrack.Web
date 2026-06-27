@@ -107,8 +107,8 @@ export const queryKeys = {
   },
   portal: {
     all: ["portal"] as const,
-    schedule: (startDateIso: string, endDateIso: string, timezone: string) =>
-      ["portal", "schedule", startDateIso, endDateIso, timezone] as const,
-    enrollments: ["portal", "course-enrollments"] as const,
+    schedule: (clientId: string | null | undefined, startDateIso: string, endDateIso: string, timezone: string) =>
+      ["portal", "schedule", formatDateKey(clientId), startDateIso, endDateIso, timezone] as const,
+    enrollments: (clientId: string | null | undefined) => ["portal", "course-enrollments", formatDateKey(clientId)] as const,
   },
 };
