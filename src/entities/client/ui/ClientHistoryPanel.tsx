@@ -63,48 +63,69 @@ export function ClientHistoryPanel({
   onAppointmentsPageChange,
 }: ClientHistoryPanelProps) {
   const [expandedEnrollmentIds, setExpandedEnrollmentIds] = useState<string[]>([]);
+  const hasPrimaryActions = Boolean(onCreateAppointment || onCreatePayment || onCreateCourseEnrollment);
+  const hasPortalActions = Boolean(onCreatePortalLink || onResetPortalPin);
 
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onCreatePortalLink || onResetPortalPin ? (
-        <Space wrap size={[8, 8]}>
-          {onCreateAppointment ? (
-            <Button
-              icon={<CalendarOutlined />}
-              onClick={() => {
-                onCreateAppointment(data.client);
-              }}
-            >
-              Записать
-            </Button>
+      {hasPrimaryActions || hasPortalActions ? (
+        <div className={styles.actionToolbar}>
+          {hasPrimaryActions ? (
+            <div className={styles.actionGroup}>
+              <Typography.Text type="secondary" className={styles.actionGroupLabel}>
+                Основное
+              </Typography.Text>
+              <Space wrap size={[8, 8]}>
+                {onCreatePayment ? (
+                  <Button
+                    type="primary"
+                    icon={<CreditCardOutlined />}
+                    onClick={() => {
+                      onCreatePayment(data.client);
+                    }}
+                  >
+                    Добавить платеж
+                  </Button>
+                ) : null}
+                {onCreateAppointment ? (
+                  <Button
+                    icon={<CalendarOutlined />}
+                    onClick={() => {
+                      onCreateAppointment(data.client);
+                    }}
+                  >
+                    Записать
+                  </Button>
+                ) : null}
+                {onCreateCourseEnrollment ? (
+                  <Button icon={<PlusOutlined />} onClick={onCreateCourseEnrollment}>
+                    Назначить курс
+                  </Button>
+                ) : null}
+              </Space>
+            </div>
           ) : null}
-          {onCreatePayment ? (
-            <Button
-              type="primary"
-              icon={<CreditCardOutlined />}
-              onClick={() => {
-                onCreatePayment(data.client);
-              }}
-            >
-              Добавить платеж
-            </Button>
+
+          {hasPortalActions ? (
+            <div className={`${styles.actionGroup} ${styles.portalActionGroup}`}>
+              <Typography.Text type="secondary" className={styles.actionGroupLabel}>
+                Клиентский портал
+              </Typography.Text>
+              <Space wrap size={[8, 8]}>
+                {onCreatePortalLink ? (
+                  <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
+                    Копировать ссылку
+                  </Button>
+                ) : null}
+                {onResetPortalPin ? (
+                  <Button icon={<ReloadOutlined />} loading={isResettingPortalPin} onClick={onResetPortalPin}>
+                    Сбросить PIN
+                  </Button>
+                ) : null}
+              </Space>
+            </div>
           ) : null}
-          {onCreateCourseEnrollment ? (
-            <Button icon={<PlusOutlined />} onClick={onCreateCourseEnrollment}>
-              Назначить курс
-            </Button>
-          ) : null}
-          {onCreatePortalLink ? (
-            <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
-              Копировать ссылку
-            </Button>
-          ) : null}
-          {onResetPortalPin ? (
-            <Button icon={<ReloadOutlined />} loading={isResettingPortalPin} onClick={onResetPortalPin}>
-              Сбросить PIN
-            </Button>
-          ) : null}
-        </Space>
+        </div>
       ) : null}
       <div className={styles.detailGrid}>
         <Card size="small">
