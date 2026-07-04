@@ -225,6 +225,7 @@ export interface CourseEnrollment {
   courseId: Ulid;
   courseName: string;
   createdAtUtc: string;
+  course: Course;
   currentLevel?: CourseEnrollmentLevel | null;
   earnedExperiencePoints: number;
   themes: CourseEnrollmentTheme[];
