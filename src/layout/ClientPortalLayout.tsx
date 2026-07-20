@@ -1,4 +1,4 @@
-import { BookOutlined, CalendarOutlined, LogoutOutlined } from "@/components/icons";
+import { CalendarOutlined, LogoutOutlined } from "@/components/icons";
 import { Button, Space, Typography } from "antd";
 import { NavLink, Outlet } from "react-router";
 import { useAuth } from "@/features/auth/useAuth";
@@ -27,7 +27,6 @@ export function ClientPortalLayout() {
 
         <nav className={styles.nav}>
           <NavItem to="/portal/schedule" icon={<CalendarOutlined />} label="Расписание" />
-          <NavItem to="/portal/progress" icon={<BookOutlined />} label="Прогресс" />
         </nav>
 
         <main className={styles.content}>

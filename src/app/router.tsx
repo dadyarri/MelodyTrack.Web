@@ -92,16 +92,6 @@ export const router = createBrowserRouter([
           };
         },
       },
-      {
-        path: "progress",
-        lazy: async () => {
-          const { ClientPortalProgressPage } = await recoverableImport(() => import("@/pages/client-portal-progress"));
-
-          return {
-            Component: ClientPortalProgressPage,
-          };
-        },
-      },
     ],
   },
   {
