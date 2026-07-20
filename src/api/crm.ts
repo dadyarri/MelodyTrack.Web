@@ -69,12 +69,16 @@ export const clientsApi = {
   },
   update(
     id: Ulid,
-    input: Partial<Client> & {
+    input: {
+      firstName?: string;
+      lastName?: string;
+      patronymic?: string | null;
       dateOfBirth?: string | null;
       telegram?: string;
       vk?: string;
       phone?: string;
       sourceId?: Ulid | null;
+      vacations?: Array<{ startDate: string; endDate: string }>;
     },
     options?: { expectedActivityId?: Ulid },
   ) {

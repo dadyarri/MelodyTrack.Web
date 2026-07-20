@@ -44,6 +44,12 @@ export interface ClientContacts {
   phone?: string | null;
 }
 
+export interface ClientVacation {
+  id: Ulid;
+  startDate: string;
+  endDate: string;
+}
+
 export interface Client {
   id: Ulid;
   firstName: string;
@@ -56,6 +62,7 @@ export interface Client {
   phone?: string | null;
   sourceId?: Ulid | null;
   sourceName?: string | null;
+  vacations: ClientVacation[];
   balance: number;
   lastAppointmentAtUtc?: string | null;
   nextAppointmentAtUtc?: string | null;

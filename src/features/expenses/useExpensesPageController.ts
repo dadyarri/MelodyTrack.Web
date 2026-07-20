@@ -94,11 +94,7 @@ export function useExpensesPageController() {
 
   const editMutation = useMutation({
     mutationFn: ({ id, expectedActivityId, values }: { id: string; expectedActivityId?: string; values: ExpenseFormValues }) =>
-      expensesApi.update(
-        id,
-        toExpenseRequest(values),
-        { expectedActivityId },
-      ),
+      expensesApi.update(id, toExpenseRequest(values), { expectedActivityId }),
     onSuccess: async () => {
       message.success("Расход изменен");
       setEditingExpense(null);

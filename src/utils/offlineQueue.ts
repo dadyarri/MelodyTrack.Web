@@ -57,6 +57,7 @@ export type OfflineQueuedCreate =
       payload: {
         description: string;
         amount: number;
+        date: string;
         categoryId?: string;
       };
     }

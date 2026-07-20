@@ -12,12 +12,13 @@ type ClientHistoryPanelProps = {
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
   onAppointmentsPageChange?: (page: number) => void;
+  onEditVacations?: (client: ClientHistory["client"]) => void;
 };
 
-export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment, onAppointmentsPageChange }: ClientHistoryPanelProps) {
+export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment, onAppointmentsPageChange, onEditVacations }: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment ? (
+      {onCreateAppointment || onCreatePayment || onEditVacations ? (
         <Space>
           {onCreateAppointment ? (
             <Button
@@ -38,6 +39,16 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
               }}
             >
               Добавить платеж
+            </Button>
+          ) : null}
+          {onEditVacations ? (
+            <Button
+              icon={<CalendarOutlined />}
+              onClick={() => {
+                onEditVacations(data.client);
+              }}
+            >
+              Отпуск
             </Button>
           ) : null}
         </Space>

@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import dayjs from "dayjs";
 import { queryKeys } from "@/api/queryKeys";
 import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
@@ -18,6 +19,7 @@ import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
+import type { ClientVacationsFormValues } from "./ClientVacationsModal";
 
 type ClientSubmitInput = {
   firstName: string;
@@ -28,6 +30,7 @@ type ClientSubmitInput = {
   vk?: string;
   phone?: string;
   sourceId?: string;
+  vacations?: Array<{ startDate: string; endDate: string }>;
 };
 
 type ClientDraftValues = {
@@ -64,6 +67,8 @@ export function useClientsPageController() {
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
+  const [vacationsForm] = Form.useForm<ClientVacationsFormValues>();
+  const [vacationsClient, setVacationsClient] = useState<Client | null>(null);
   const navigate = useNavigate();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -188,6 +193,18 @@ export function useClientsPageController() {
         },
       });
     },
+  });
+
+  const vacationsMutation = useMutation({
+    mutationFn: ({ client, values }: { client: Client; values: ClientVacationsFormValues }) =>
+      clientsApi.update(client.id, prepareClientVacationUpdate(client, values), { expectedActivityId: client.lastActivity?.id }),
+    onSuccess: async () => {
+      message.success("Периоды отсутствия сохранены");
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+    onError: showErrors,
   });
 
   const deleteMutation = useMutation({
@@ -353,6 +370,8 @@ export function useClientsPageController() {
     setHistoryAppointmentsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
+    vacationsForm,
+    vacationsClient,
     editing,
     isCreateOpen,
     hasCreateDraft,
@@ -363,6 +382,7 @@ export function useClientsPageController() {
     isSourceCreateOpen,
     createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
+    vacationsMutation,
     createSourceMutation,
     deleteMutation,
     openEditor,
@@ -383,6 +403,19 @@ export function useClientsPageController() {
       saveDraftFormValues(values);
     },
     clientHistoryActions,
+    openVacationsEditor: (client: Client) => {
+      vacationsForm.setFieldsValue({ vacations: client.vacations.map((vacation) => ({ period: [dayjs(vacation.startDate), dayjs(vacation.endDate)] })) });
+      setVacationsClient(client);
+    },
+    closeVacationsEditor: () => {
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+    },
+    saveVacations: (values: ClientVacationsFormValues) => {
+      if (vacationsClient) {
+        vacationsMutation.mutate({ client: vacationsClient, values });
+      }
+    },
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",
@@ -424,6 +457,22 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
   };
 
   return omitEmptyContacts(input);
+}
+
+function prepareClientVacationUpdate(client: Client, values: ClientVacationsFormValues) {
+  return {
+    firstName: client.firstName,
+    lastName: client.lastName,
+    patronymic: client.patronymic,
+    dateOfBirth: client.dateOfBirth,
+    phone: getClientContactValue(client, "phone"),
+    telegram: getClientContactValue(client, "telegram"),
+    vk: getClientContactValue(client, "vk"),
+    sourceId: client.sourceId,
+    vacations: (values.vacations ?? []).flatMap((vacation) => vacation.period
+      ? [{ startDate: vacation.period[0].format("YYYY-MM-DD"), endDate: vacation.period[1].format("YYYY-MM-DD") }]
+      : []),
+  };
 }
 
 function omitEmptyContacts(input: ClientSubmitInput) {

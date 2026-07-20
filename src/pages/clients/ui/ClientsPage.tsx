@@ -3,6 +3,7 @@ import { Button, Input, Space, Tag } from "antd";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
+import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -151,6 +152,14 @@ export function ClientsPage() {
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
         onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
+        onEditVacations={controller.canCreateClients ? controller.openVacationsEditor : undefined}
+      />
+      <ClientVacationsModal
+        client={controller.vacationsClient}
+        form={controller.vacationsForm}
+        saving={controller.vacationsMutation.isPending}
+        onCancel={controller.closeVacationsEditor}
+        onSubmit={controller.saveVacations}
       />
     </PageLayout>
   );
