@@ -6,17 +6,22 @@ import { queryKeys } from "@/api/queryKeys";
 import { expenseCategoriesApi, expensesApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
+import { hasSuperuserAccess } from "@/features/auth/access";
+import { useAuth } from "@/features/auth/useAuth";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { downloadBlob } from "@/utils/download";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
 
-export type ExpenseDraftValues = {
+export type ExpenseFormValues = {
   description?: string;
   amount?: number;
+  date?: Dayjs;
   categoryId?: string;
 };
+
+type ExpenseDraftValues = Omit<ExpenseFormValues, "date"> & { date?: string };
 
 const EXPENSE_CREATE_DRAFT_KEY = "draft:expenses:create";
 const getDefaultExpensesDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
@@ -35,11 +40,15 @@ export function useExpensesPageController() {
   const [isOpen, setOpen] = useState(() => hasCreateDraft);
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultExpensesDateRange());
-  const [form] = Form.useForm<ExpenseDraftValues>();
+  const [form] = Form.useForm<ExpenseFormValues>();
+  const [editForm] = Form.useForm<ExpenseFormValues>();
+  const [editingExpense, setEditingExpense] = useState<{ id: string; expectedActivityId?: string } | null>(null);
   const [isCategoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const createdCategoryOptions = useCreatedReferenceOptions("expense-category");
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
+  const auth = useAuth();
+  const canEditExpenses = hasSuperuserAccess(auth.user);
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
       void message.error(errorMessage);
@@ -59,9 +68,9 @@ export function useExpensesPageController() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: ExpenseDraftValues) =>
+    mutationFn: (values: ExpenseFormValues) =>
       createOrQueueOffline({
-        input: values as { description: string; amount: number; categoryId?: string },
+        input: toExpenseRequest(values),
         replayKey: replayKeyRef.current,
         create: (input) => expensesApi.create(input, { replayKey: replayKeyRef.current }),
         buildQueueItem: (input, replayKey) => ({
@@ -81,6 +90,39 @@ export function useExpensesPageController() {
       }
     },
     onError: showErrors,
+  });
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, expectedActivityId, values }: { id: string; expectedActivityId?: string; values: ExpenseFormValues }) =>
+      expensesApi.update(
+        id,
+        toExpenseRequest(values),
+        { expectedActivityId },
+      ),
+    onSuccess: async () => {
+      message.success("Расход изменен");
+      setEditingExpense(null);
+      editForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
+    },
+    onError: async (error, variables) => {
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: queryKeys.expenses.all,
+        showErrors,
+        title: "Расход уже изменен",
+        okText: "Сохранить все равно",
+        cancelText: "Обновить список",
+        onConfirm: (conflict) => {
+          editMutation.mutate({ ...variables, expectedActivityId: conflict.currentActivity?.id });
+        },
+        onReload: () => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all });
+        },
+      });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -142,7 +184,10 @@ export function useExpensesPageController() {
 
     const draftValues = loadDraftValues();
     withHydration(() => {
-      form.setFieldsValue(draftValues ?? {});
+      form.setFieldsValue({
+        ...draftValues,
+        date: draftValues?.date ? dayjs(draftValues.date) : dayjs(),
+      });
     });
   }, [form, isOpen, loadDraftValues, withHydration]);
 
@@ -181,11 +226,15 @@ export function useExpensesPageController() {
     isOpen,
     setOpen,
     form,
+    editForm,
     query,
     modal,
     exportMutation,
     deleteMutation,
     createMutation,
+    editMutation,
+    canEditExpenses,
+    editingExpense,
     isCategoryCreateOpen,
     setCategoryCreateOpen,
     createCategoryMutation,
@@ -200,14 +249,55 @@ export function useExpensesPageController() {
         form.resetFields();
       });
     },
-    onCreateSubmit: (values: ExpenseDraftValues) => {
+    openEdit: (expense: {
+      id: string;
+      description: string;
+      amount: number;
+      date: string;
+      categoryId?: string | null;
+      lastActivity?: { id: string } | null;
+    }) => {
+      editForm.setFieldsValue({
+        description: expense.description,
+        amount: expense.amount,
+        date: dayjs(expense.date),
+        categoryId: expense.categoryId ?? undefined,
+      });
+      setEditingExpense({ id: expense.id, expectedActivityId: expense.lastActivity?.id });
+    },
+    closeEdit: () => {
+      setEditingExpense(null);
+      editForm.resetFields();
+    },
+    onCreateSubmit: (values: ExpenseFormValues) => {
       createMutation.mutate(values);
     },
-    onCreateValuesChange: (_: Partial<ExpenseDraftValues>, values: ExpenseDraftValues) => {
-      saveDraftFormValues(values);
+    onEditSubmit: (values: ExpenseFormValues) => {
+      if (editingExpense) {
+        editMutation.mutate({ ...editingExpense, values });
+      }
+    },
+    onCreateValuesChange: (_: Partial<ExpenseFormValues>, values: ExpenseFormValues) => {
+      saveDraftFormValues({
+        ...values,
+        date: values.date?.toISOString(),
+      });
     },
     onCreateCategory: (values: { name: string }) => {
       createCategoryMutation.mutate(values);
     },
+  };
+}
+
+function toExpenseRequest(values: ExpenseFormValues) {
+  if (!values.description || values.amount == null || !values.date) {
+    throw new Error("Заполните обязательные поля расхода.");
+  }
+
+  return {
+    description: values.description,
+    amount: values.amount,
+    date: values.date.startOf("day").toISOString(),
+    categoryId: values.categoryId,
   };
 }

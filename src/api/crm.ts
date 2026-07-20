@@ -347,8 +347,15 @@ export const expensesApi = {
   export(params: { start?: string; end?: string; search?: string }) {
     return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: { description: string; amount: number; categoryId?: Ulid }, options?: { replayKey?: string }) {
+  create(input: { description: string; amount: number; date: string; categoryId?: Ulid }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/expenses", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  },
+  update(
+    id: Ulid,
+    input: { description: string; amount: number; date: string; categoryId?: Ulid },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http.put<unknown>(`/expenses/${id}`, { id, ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http
