@@ -9,6 +9,7 @@ import {
   Input,
   InputNumber,
   Modal,
+  Popconfirm,
   Radio,
   Select,
   Space,
@@ -126,12 +127,8 @@ export function TasksPage() {
                     }
                     delayPending={controller.delayMutation.isPending && controller.delayingTask?.deduplicationKey === task.deduplicationKey}
                     listStatus={controller.status}
-                    onComplete={() => {
-                      controller.completeTask(task);
-                    }}
-                    onCancel={() => {
-                      controller.cancelTask(task);
-                    }}
+                    onComplete={() => controller.completeTask(task)}
+                    onCancel={() => controller.cancelTask(task)}
                     onDelay={() => {
                       controller.openDelayTask(task);
                     }}
@@ -232,8 +229,8 @@ function TaskCard({
   cancelPending: boolean;
   delayPending: boolean;
   listStatus: RecurringTaskListStatus;
-  onComplete: () => void;
-  onCancel: () => void;
+  onComplete: () => Promise<unknown>;
+  onCancel: () => Promise<unknown>;
   onDelay: () => void;
   onOpenTelegram: () => void;
   onOpenVk: () => void;
@@ -321,15 +318,33 @@ function TaskCard({
           </Space>
           {isOpenTask ? (
             <Space wrap>
-              <Button type="primary" icon={<CheckOutlined />} loading={completePending} onClick={onComplete}>
-                Завершить
-              </Button>
+              <Popconfirm
+                title="Завершить задачу?"
+                description="Задача будет отмечена как выполненная и больше не появится в этом периоде."
+                okText="Завершить"
+                cancelText="Отмена"
+                okButtonProps={{ loading: completePending }}
+                onConfirm={onComplete}
+              >
+                <Button type="primary" icon={<CheckOutlined />} loading={completePending}>
+                  Завершить
+                </Button>
+              </Popconfirm>
               <Button icon={<ClockCircleOutlined />} loading={delayPending} onClick={onDelay}>
                 Отложить
               </Button>
-              <Button icon={<CloseOutlined />} loading={cancelPending} onClick={onCancel}>
-                Отменить
-              </Button>
+              <Popconfirm
+                title="Отменить задачу?"
+                description="Задача будет отменена и больше не появится в этом периоде."
+                okText="Отменить"
+                cancelText="Отмена"
+                okButtonProps={{ danger: true, loading: cancelPending }}
+                onConfirm={onCancel}
+              >
+                <Button icon={<CloseOutlined />} loading={cancelPending}>
+                  Отменить
+                </Button>
+              </Popconfirm>
             </Space>
           ) : null}
         </div>
