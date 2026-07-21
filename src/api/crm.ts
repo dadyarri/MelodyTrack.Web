@@ -96,6 +96,9 @@ export const clientsApi = {
       })
       .then(() => undefined);
   },
+  setLeadClosed(id: Ulid, isClosed: boolean) {
+    return http.patch<unknown>(`/clients/${id}/lead-status`, { isClosed }).then(() => undefined);
+  },
   debtors() {
     return http.get<{ debtors: ClientWithBalance[] }>("/clients/inDebt").then((response) => response.data.debtors);
   },
@@ -148,10 +151,10 @@ export const servicesApi = {
       }>("/services/lookup", { params: name ? { name } : undefined })
       .then((response) => response.data.services);
   },
-  create(input: { name: string; description?: string; price: number }, options?: { replayKey?: string }) {
+  create(input: { name: string; description?: string; isConsultation: boolean; price: number }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: { name: string; description?: string }, options?: { expectedActivityId?: Ulid }) {
+  update(id: Ulid, input: { name: string; description?: string; isConsultation: boolean }, options?: { expectedActivityId?: Ulid }) {
     return http
       .put<unknown>(`/services/${id}`, {
         id,

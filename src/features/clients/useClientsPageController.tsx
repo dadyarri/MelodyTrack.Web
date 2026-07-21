@@ -240,6 +240,15 @@ export function useClientsPageController() {
     },
   });
 
+  const leadStatusMutation = useMutation({
+    mutationFn: ({ id, isClosed }: { id: Ulid; isClosed: boolean }) => clientsApi.setLeadClosed(id, isClosed),
+    onSuccess: async (_result, variables) => {
+      message.success(variables.isClosed ? "Лид закрыт" : "Лид возвращен в работу");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+    onError: showErrors,
+  });
+
   const openEditor = useCallback(
     (client?: Client) => {
       if (client) {
@@ -385,6 +394,7 @@ export function useClientsPageController() {
     vacationsMutation,
     createSourceMutation,
     deleteMutation,
+    leadStatusMutation,
     openEditor,
     closeEditor,
     handleSearch,
@@ -426,6 +436,9 @@ export function useClientsPageController() {
           });
         },
       });
+    },
+    setLeadClosed: (client: Client, isClosed: boolean) => {
+      leadStatusMutation.mutate({ id: client.id, isClosed });
     },
     openSourceCreate: () => {
       if (!canCreateClients) {

@@ -31,6 +31,8 @@ export interface CreateEntityResponse {
 
 export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
 
+export type ClientLifecycleStatus = 0 | 1 | 2 | 3;
+
 export interface ReferenceBookItem {
   id: Ulid;
   name: string;
@@ -66,6 +68,7 @@ export interface Client {
   balance: number;
   lastAppointmentAtUtc?: string | null;
   nextAppointmentAtUtc?: string | null;
+  lifecycleStatus: ClientLifecycleStatus;
   lastActivity?: RecordActivity | null;
 }
 
@@ -132,6 +135,7 @@ export interface Service {
   id: Ulid;
   name: string;
   description?: string | null;
+  isConsultation: boolean;
   price: number;
   lastActivity?: RecordActivity | null;
 }

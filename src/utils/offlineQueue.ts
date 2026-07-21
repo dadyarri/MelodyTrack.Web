@@ -31,6 +31,7 @@ export type OfflineQueuedCreate =
       payload: {
         name: string;
         description?: string;
+        isConsultation?: boolean;
         price: number;
       };
     }
