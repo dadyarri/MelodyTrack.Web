@@ -44,7 +44,7 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
-const clientHistoryAppointmentsPageSize = 8;
+const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
   const {
@@ -63,7 +63,7 @@ export function useClientsPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
+  const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
@@ -94,7 +94,7 @@ export function useClientsPageController() {
   });
 
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -102,8 +102,8 @@ export function useClientsPageController() {
       }
 
       return clientsApi.history(clientId, {
-        page: historyAppointmentsPage,
-        page_size: clientHistoryAppointmentsPageSize,
+        page: historyEventsPage,
+        page_size: clientHistoryEventsPageSize,
       });
     },
     enabled: Boolean(historyClient),
@@ -308,13 +308,13 @@ export function useClientsPageController() {
   }, []);
 
   const openHistoryClient = useCallback((client: Client) => {
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
     setHistoryClient(client);
   }, []);
 
   const closeHistoryClient = useCallback(() => {
     setHistoryClient(null);
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -375,8 +375,8 @@ export function useClientsPageController() {
     },
     historyQuery,
     historyClient,
-    historyAppointmentsPage,
-    setHistoryAppointmentsPage,
+    historyEventsPage,
+    setHistoryEventsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
     vacationsForm,

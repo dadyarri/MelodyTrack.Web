@@ -12,7 +12,7 @@ type ClientHistoryDrawerProps = {
   onClose: () => void;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
-  onAppointmentsPageChange?: (page: number) => void;
+  onEventsPageChange?: (page: number) => void;
   onEditVacations?: (client: Client) => void;
 };
 
@@ -24,7 +24,7 @@ export function ClientHistoryDrawer({
   onClose,
   onCreateAppointment,
   onCreatePayment,
-  onAppointmentsPageChange,
+  onEventsPageChange,
   onEditVacations,
 }: ClientHistoryDrawerProps) {
   return (
@@ -40,7 +40,7 @@ export function ClientHistoryDrawer({
           data={data}
           onCreateAppointment={onCreateAppointment}
           onCreatePayment={onCreatePayment}
-          onAppointmentsPageChange={onAppointmentsPageChange}
+          onEventsPageChange={onEventsPageChange}
           onEditVacations={onEditVacations}
         />
       ) : null}

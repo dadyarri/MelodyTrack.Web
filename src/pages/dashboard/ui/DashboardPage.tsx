@@ -159,7 +159,7 @@ export function DashboardPage() {
         onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
-        onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
+        onEventsPageChange={controller.setHistoryEventsPage}
       />
     </PageLayout>
   );

@@ -86,21 +86,17 @@ export interface ClientHistorySummary {
   nextAppointmentAtUtc?: string | null;
 }
 
-export interface ClientHistoryPayment {
+export type ClientFinancialHistoryEventType = "top_up" | "appointment";
+
+export interface ClientFinancialHistoryEvent {
   id: Ulid;
+  type: ClientFinancialHistoryEventType;
   amount: number;
   date: string;
   description?: string | null;
   serviceName?: string | null;
-}
-
-export interface ClientHistoryAppointment {
-  id: Ulid;
-  startDate: string;
-  endDate: string;
-  serviceName: string;
   providerDisplayName?: string | null;
-  status: AppointmentStatus;
+  appointmentStatus?: AppointmentStatus | null;
 }
 
 export interface RecordActivity {
@@ -117,8 +113,7 @@ export interface RecordActivity {
 export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
-  recentPayments: ClientHistoryPayment[];
-  appointments: PaginatedResponse<ClientHistoryAppointment>;
+  events: PaginatedResponse<ClientFinancialHistoryEvent>;
 }
 
 export interface LookupClient {
