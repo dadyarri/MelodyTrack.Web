@@ -15,9 +15,9 @@ import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
-import { clientSourcesApi, clientsApi } from "../../api/crm";
+import { clientSourcesApi, clientsApi, courseEnrollmentsApi, coursesApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
-import type { Client, Ulid } from "../../api/types";
+import type { Client, CourseEnrollment, CourseEnrollmentThemeProgressAction, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
 import type { ClientVacationsFormValues } from "./ClientVacationsModal";
 
@@ -65,6 +65,7 @@ export function useClientsPageController() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
+  const [isEnrollmentCreateOpen, setEnrollmentCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
   const [vacationsForm] = Form.useForm<ClientVacationsFormValues>();
@@ -108,6 +109,25 @@ export function useClientsPageController() {
     },
     enabled: Boolean(historyClient),
     placeholderData: keepPreviousData,
+  });
+
+  const courseEnrollmentsQuery = useQuery({
+    queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
+    queryFn: () => {
+      if (!historyClient) {
+        throw new Error("History client is not selected.");
+      }
+
+      return courseEnrollmentsApi.list({ clientId: historyClient.id });
+    },
+    enabled: Boolean(historyClient),
+  });
+
+  const coursesCatalogQuery = useQuery({
+    queryKey: queryKeys.courses.list(""),
+    queryFn: () => coursesApi.list(),
+    enabled: Boolean(historyClient),
+    staleTime: 60_000,
   });
 
   const currentEditingClient = editing ? (query.data?.data.find((client) => client.id === editing.id) ?? editing) : null;
@@ -249,6 +269,24 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const createPortalLinkMutation = useMutation({
+    mutationFn: (clientId: Ulid) => clientsApi.createPortalLink(clientId),
+    onSuccess: (payload) => {
+      void navigator.clipboard.writeText(payload.url).catch(() => {
+        void message.error("Не удалось скопировать ссылку автоматически");
+      });
+    },
+    onError: showErrors,
+  });
+
+  const resetPortalPinMutation = useMutation({
+    mutationFn: (clientId: Ulid) => clientsApi.resetPortalPin(clientId),
+    onSuccess: () => {
+      message.success("PIN клиентского кабинета сброшен");
+    },
+    onError: showErrors,
+  });
+
   const openEditor = useCallback(
     (client?: Client) => {
       if (client) {
@@ -300,6 +338,40 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const createEnrollmentMutation = useMutation({
+    mutationFn: ({ courseId }: { courseId: Ulid; openProgress: boolean }) => {
+      if (!historyClient) {
+        throw new Error("Клиент не выбран.");
+      }
+
+      return courseEnrollmentsApi.create({ clientId: historyClient.id, courseId });
+    },
+    onSuccess: async () => {
+      message.success("Курс назначен");
+      setEnrollmentCreateOpen(false);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.courseEnrollments.all });
+    },
+    onError: showErrors,
+  });
+
+  const deleteEnrollmentMutation = useMutation({
+    mutationFn: (enrollmentId: Ulid) => courseEnrollmentsApi.remove(enrollmentId),
+    onSuccess: async () => {
+      message.success("Курс снят с клиента");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.courseEnrollments.all });
+    },
+    onError: showErrors,
+  });
+
+  const updateThemeProgressMutation = useMutation({
+    mutationFn: ({ themeId, action }: { themeId: Ulid; action: CourseEnrollmentThemeProgressAction }) =>
+      courseEnrollmentsApi.updateThemeProgress(themeId, action),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.courseEnrollments.all });
+    },
+    onError: showErrors,
+  });
+
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
@@ -315,6 +387,7 @@ export function useClientsPageController() {
   const closeHistoryClient = useCallback(() => {
     setHistoryClient(null);
     setHistoryEventsPage(1);
+    setEnrollmentCreateOpen(false);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -376,6 +449,8 @@ export function useClientsPageController() {
     historyQuery,
     historyClient,
     historyEventsPage,
+    courseEnrollmentsQuery,
+    coursesCatalogQuery,
     setHistoryEventsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
@@ -389,12 +464,18 @@ export function useClientsPageController() {
     isEditingClientStale,
     editingBaselineActivityId,
     isSourceCreateOpen,
+    isEnrollmentCreateOpen,
     createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
     vacationsMutation,
     createSourceMutation,
+    createEnrollmentMutation,
+    deleteEnrollmentMutation,
+    updateThemeProgressMutation,
     deleteMutation,
     leadStatusMutation,
+    createPortalLinkMutation,
+    resetPortalPinMutation,
     openEditor,
     closeEditor,
     handleSearch,
@@ -452,11 +533,76 @@ export function useClientsPageController() {
     closeSourceCreate: () => {
       setSourceCreateOpen(false);
     },
+    openEnrollmentCreate: () => {
+      if (historyClient && canCreateClients) {
+        setEnrollmentCreateOpen(true);
+      }
+    },
+    closeEnrollmentCreate: () => {
+      setEnrollmentCreateOpen(false);
+    },
+    availableEnrollmentCourses: buildAvailableEnrollmentCourses(coursesCatalogQuery.data ?? [], courseEnrollmentsQuery.data ?? []),
     onCreateSource: (values: { name: string }) => {
       createSourceMutation.mutate(values);
     },
+    onCreateEnrollment: (values: { courseId: Ulid; openProgress: boolean }) => {
+      createEnrollmentMutation.mutate(values);
+    },
+    onCreatePortalLink: () => {
+      if (historyClient) {
+        createPortalLinkMutation.mutate(historyClient.id);
+      }
+    },
+    onResetPortalPin: () => {
+      if (!historyClient) {
+        return;
+      }
+
+      modal.confirm({
+        title: "Сбросить PIN клиентского кабинета?",
+        content: "Текущий PIN перестанет работать, а активные сессии клиента будут завершены.",
+        okText: "Сбросить PIN",
+        okButtonProps: { danger: true },
+        onOk: () => {
+          resetPortalPinMutation.mutate(historyClient.id);
+        },
+      });
+    },
+    onDeleteEnrollment: (enrollmentId: Ulid) => {
+      modal.confirm({
+        title: "Снять клиента с курса?",
+        onOk: () => {
+          deleteEnrollmentMutation.mutate(enrollmentId);
+        },
+      });
+    },
+    openCourseProgress: (enrollmentId?: Ulid) => {
+      const enrollment = (courseEnrollmentsQuery.data ?? []).find((item) => item.id === enrollmentId) ?? courseEnrollmentsQuery.data?.[0];
+      if (enrollment) {
+        void navigate(`/courses?${new URLSearchParams({ course: enrollment.courseId, enrollment: enrollment.id }).toString()}`);
+      }
+    },
+    onUpdateThemeProgress: (themeId: Ulid, action: CourseEnrollmentThemeProgressAction) => {
+      updateThemeProgressMutation.mutate({ themeId, action });
+    },
     onSourceLabelChange: (_label?: string) => {},
   };
+}
+
+function buildAvailableEnrollmentCourses(
+  courses: Array<{ id: Ulid; name: string; description?: string | null; blockCount: number; themeCount: number }>,
+  enrollments: CourseEnrollment[],
+) {
+  const enrolledCourseIds = new Set(enrollments.map((enrollment) => enrollment.courseId));
+  return courses
+    .filter((course) => !enrolledCourseIds.has(course.id))
+    .map((course) => ({
+      value: course.id,
+      label: course.name,
+      description: course.description,
+      blockCount: course.blockCount,
+      themeCount: course.themeCount,
+    }));
 }
 
 function prepareClientInput(values: ClientFormValues): ClientSubmitInput {

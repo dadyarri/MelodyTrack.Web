@@ -47,12 +47,7 @@ export function PortalAccessPage() {
       await navigate("/portal", { replace: true });
     },
     onError: (error) => {
-      const fieldErrors = getPortalPinFieldErrors(
-        error,
-        statusQuery.data?.hasPin ?? false,
-        pinSetupStep,
-        getApiErrorMessage(error),
-      );
+      const fieldErrors = getPortalPinFieldErrors(error, statusQuery.data?.hasPin ?? false, pinSetupStep, getApiErrorMessage(error));
       setPinError(fieldErrors.pin);
       setPinConfirmationError(fieldErrors.pinConfirmation);
     },
@@ -77,7 +72,11 @@ export function PortalAccessPage() {
   if (!token && savedClients.length === 0) {
     return (
       <AuthScreenLayout title="Вход на портал ученика">
-        <Result status="info" title="Пока нет сохраненных пользователей" subTitle="Откройте ссылку для входа один раз, и кабинет появится здесь для быстрого входа по PIN." />
+        <Result
+          status="info"
+          title="Пока нет сохраненных пользователей"
+          subTitle="Откройте ссылку для входа один раз, и кабинет появится здесь для быстрого входа по PIN."
+        />
       </AuthScreenLayout>
     );
   }
@@ -100,17 +99,9 @@ export function PortalAccessPage() {
   return (
     <AuthScreenLayout title="Вход на портал ученика">
       {statusQuery.isLoading ? (
-        <Result
-          status="info"
-          title="Проверяем ссылку"
-          icon={<Spin size="large" />}
-        />
+        <Result status="info" title="Проверяем ссылку" icon={<Spin size="large" />} />
       ) : statusQuery.isError ? (
-        <Result
-          status="warning"
-          title="Ссылка входа недействительна"
-          subTitle={getApiErrorMessage(statusQuery.error)}
-        />
+        <Result status="warning" title="Ссылка входа недействительна" subTitle={getApiErrorMessage(statusQuery.error)} />
       ) : statusQuery.data ? (
         <Space direction="vertical" size={16} className="wide">
           <Form<PortalPinFormValues>
@@ -144,11 +135,7 @@ export function PortalAccessPage() {
           >
             <Typography.Title level={4}>
               {statusQuery.data.firstName},{" "}
-              {statusQuery.data.hasPin
-                ? "введите PIN-код"
-                : pinSetupStep === "entry"
-                  ? "придумайте PIN-код"
-                  : "подтвердите PIN-код"}
+              {statusQuery.data.hasPin ? "введите PIN-код" : pinSetupStep === "entry" ? "придумайте PIN-код" : "подтвердите PIN-код"}
             </Typography.Title>
             <Typography.Paragraph type="secondary">
               {statusQuery.data.hasPin
@@ -226,15 +213,7 @@ export function PortalAccessPage() {
   );
 }
 
-function PinCodeInput({
-  autoFocus = false,
-  value,
-  onChange,
-}: {
-  autoFocus?: boolean;
-  value?: string;
-  onChange?: (value: string) => void;
-}) {
+function PinCodeInput({ autoFocus = false, value, onChange }: { autoFocus?: boolean; value?: string; onChange?: (value: string) => void }) {
   return (
     <Input.OTP
       length={4}
@@ -339,9 +318,7 @@ function SavedClientsList({
         {clients.map((client) => (
           <Space key={client.token} className="wide" style={{ justifyContent: "space-between" }}>
             <div>
-              <Typography.Text strong>
-                {[client.firstName, client.lastName].filter(Boolean).join(" ")}
-              </Typography.Text>
+              <Typography.Text strong>{[client.firstName, client.lastName].filter(Boolean).join(" ")}</Typography.Text>
             </div>
             <Space>
               <Button onClick={() => onOpen(client.token)}>Открыть</Button>

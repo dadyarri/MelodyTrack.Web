@@ -1,5 +1,5 @@
 import { Drawer } from "antd";
-import type { Client, ClientHistory } from "@/api/types";
+import type { Client, ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
 import { QueryStateBlock } from "@/shared/ui";
 import { formatClientName } from "../lib/client";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
@@ -9,9 +9,20 @@ type ClientHistoryDrawerProps = {
   data?: ClientHistory;
   isLoading: boolean;
   isError: boolean;
+  courseEnrollments?: CourseEnrollment[];
+  isCourseEnrollmentsLoading?: boolean;
+  isCourseEnrollmentsError?: boolean;
   onClose: () => void;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onCreateCourseEnrollment?: () => void;
+  onCreatePortalLink?: () => void;
+  isCreatingPortalLink?: boolean;
+  onResetPortalPin?: () => void;
+  isResettingPortalPin?: boolean;
+  onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onOpenCourseProgress?: (enrollmentId?: string) => void;
+  onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onEventsPageChange?: (page: number) => void;
   onEditVacations?: (client: Client) => void;
 };
@@ -21,9 +32,20 @@ export function ClientHistoryDrawer({
   data,
   isLoading,
   isError,
+  courseEnrollments,
+  isCourseEnrollmentsLoading = false,
+  isCourseEnrollmentsError = false,
   onClose,
   onCreateAppointment,
   onCreatePayment,
+  onCreateCourseEnrollment,
+  onCreatePortalLink,
+  isCreatingPortalLink,
+  onResetPortalPin,
+  isResettingPortalPin,
+  onDeleteCourseEnrollment,
+  onOpenCourseProgress,
+  onUpdateThemeProgress,
   onEventsPageChange,
   onEditVacations,
 }: ClientHistoryDrawerProps) {
@@ -38,8 +60,19 @@ export function ClientHistoryDrawer({
       {data ? (
         <ClientHistoryPanel
           data={data}
+          courseEnrollments={courseEnrollments}
+          isCourseEnrollmentsLoading={isCourseEnrollmentsLoading}
+          isCourseEnrollmentsError={isCourseEnrollmentsError}
           onCreateAppointment={onCreateAppointment}
           onCreatePayment={onCreatePayment}
+          onCreateCourseEnrollment={onCreateCourseEnrollment}
+          onCreatePortalLink={onCreatePortalLink}
+          isCreatingPortalLink={isCreatingPortalLink}
+          onResetPortalPin={onResetPortalPin}
+          isResettingPortalPin={isResettingPortalPin}
+          onDeleteCourseEnrollment={onDeleteCourseEnrollment}
+          onOpenCourseProgress={onOpenCourseProgress}
+          onUpdateThemeProgress={onUpdateThemeProgress}
           onEventsPageChange={onEventsPageChange}
           onEditVacations={onEditVacations}
         />

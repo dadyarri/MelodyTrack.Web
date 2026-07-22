@@ -1,6 +1,15 @@
-import { CalendarOutlined, CreditCardOutlined } from "@/components/icons";
-import { Button, Card, Descriptions, Empty, List, Pagination, Space, Tag, Typography } from "antd";
-import type { ClientHistory } from "@/api/types";
+import {
+  BookOutlined,
+  CalendarOutlined,
+  CheckOutlined,
+  CreditCardOutlined,
+  DeleteOutlined,
+  LinkOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from "@/components/icons";
+import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
+import type { ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatDate, formatDateTime } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
@@ -9,55 +18,110 @@ import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {
   data: ClientHistory;
+  courseEnrollments?: CourseEnrollment[];
+  isCourseEnrollmentsLoading?: boolean;
+  isCourseEnrollmentsError?: boolean;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
+  onCreateCourseEnrollment?: () => void;
+  onCreatePortalLink?: () => void;
+  isCreatingPortalLink?: boolean;
+  onResetPortalPin?: () => void;
+  isResettingPortalPin?: boolean;
+  onDeleteCourseEnrollment?: (enrollmentId: string) => void;
+  onOpenCourseProgress?: (enrollmentId?: string) => void;
+  onUpdateThemeProgress?: (themeId: string, action: CourseEnrollmentThemeProgressAction) => void;
   onEventsPageChange?: (page: number) => void;
   onEditVacations?: (client: ClientHistory["client"]) => void;
 };
 
 export function ClientHistoryPanel({
   data,
+  courseEnrollments,
+  isCourseEnrollmentsLoading = false,
+  isCourseEnrollmentsError = false,
   onCreateAppointment,
   onCreatePayment,
+  onCreateCourseEnrollment,
+  onCreatePortalLink,
+  isCreatingPortalLink = false,
+  onResetPortalPin,
+  isResettingPortalPin = false,
+  onDeleteCourseEnrollment,
+  onOpenCourseProgress,
+  onUpdateThemeProgress,
   onEventsPageChange,
   onEditVacations,
 }: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment || onEditVacations ? (
-        <Space>
-          {onCreateAppointment ? (
-            <Button
-              icon={<CalendarOutlined />}
-              onClick={() => {
-                onCreateAppointment(data.client);
-              }}
-            >
-              Записать
-            </Button>
+      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onCreatePortalLink || onResetPortalPin || onEditVacations ? (
+        <div className={styles.actionToolbar}>
+          {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onEditVacations ? (
+            <div className={styles.actionGroup}>
+              <Typography.Text type="secondary" className={styles.actionGroupLabel}>
+                Основное
+              </Typography.Text>
+              <Space wrap size={[8, 8]}>
+                {onCreatePayment ? (
+                  <Button
+                    type="primary"
+                    icon={<CreditCardOutlined />}
+                    onClick={() => {
+                      onCreatePayment(data.client);
+                    }}
+                  >
+                    Добавить платеж
+                  </Button>
+                ) : null}
+                {onCreateAppointment ? (
+                  <Button
+                    icon={<CalendarOutlined />}
+                    onClick={() => {
+                      onCreateAppointment(data.client);
+                    }}
+                  >
+                    Записать
+                  </Button>
+                ) : null}
+                {onCreateCourseEnrollment ? (
+                  <Button icon={<PlusOutlined />} onClick={onCreateCourseEnrollment}>
+                    Назначить курс
+                  </Button>
+                ) : null}
+                {onEditVacations ? (
+                  <Button
+                    icon={<CalendarOutlined />}
+                    onClick={() => {
+                      onEditVacations(data.client);
+                    }}
+                  >
+                    Отпуск
+                  </Button>
+                ) : null}
+              </Space>
+            </div>
           ) : null}
-          {onCreatePayment ? (
-            <Button
-              type="primary"
-              icon={<CreditCardOutlined />}
-              onClick={() => {
-                onCreatePayment(data.client);
-              }}
-            >
-              Добавить платеж
-            </Button>
+          {onCreatePortalLink || onResetPortalPin ? (
+            <div className={`${styles.actionGroup} ${styles.portalActionGroup}`}>
+              <Typography.Text type="secondary" className={styles.actionGroupLabel}>
+                Клиентский портал
+              </Typography.Text>
+              <Space wrap size={[8, 8]}>
+                {onCreatePortalLink ? (
+                  <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
+                    Копировать ссылку
+                  </Button>
+                ) : null}
+                {onResetPortalPin ? (
+                  <Button icon={<ReloadOutlined />} loading={isResettingPortalPin} onClick={onResetPortalPin}>
+                    Сбросить PIN
+                  </Button>
+                ) : null}
+              </Space>
+            </div>
           ) : null}
-          {onEditVacations ? (
-            <Button
-              icon={<CalendarOutlined />}
-              onClick={() => {
-                onEditVacations(data.client);
-              }}
-            >
-              Отпуск
-            </Button>
-          ) : null}
-        </Space>
+        </div>
       ) : null}
       <div className={styles.detailGrid}>
         <Card size="small">
@@ -92,6 +156,78 @@ export function ClientHistoryPanel({
           </Descriptions>
         </Card>
       </div>
+
+      <Card
+        size="small"
+        title={
+          <Space size={8}>
+            <BookOutlined />
+            <span>Курсы и прогресс</span>
+          </Space>
+        }
+      >
+        {isCourseEnrollmentsLoading ? <Typography.Text type="secondary">Загрузка прогресса...</Typography.Text> : null}
+        {isCourseEnrollmentsError ? <Typography.Text type="danger">Не удалось загрузить прогресс по курсам.</Typography.Text> : null}
+        {!isCourseEnrollmentsLoading && !isCourseEnrollmentsError && (courseEnrollments?.length ?? 0) === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Курсы пока не назначены" />
+        ) : null}
+        {!isCourseEnrollmentsLoading && !isCourseEnrollmentsError && (courseEnrollments?.length ?? 0) > 0 ? (
+          <Space orientation="vertical" size={12} className="wide">
+            {courseEnrollments?.map((enrollment) => (
+              <Card
+                key={enrollment.id}
+                size="small"
+                className={styles.enrollmentCard}
+                title={enrollment.courseName}
+                extra={
+                  <Space wrap size={8}>
+                    {onOpenCourseProgress ? (
+                      <Button size="small" onClick={() => onOpenCourseProgress(enrollment.id)}>
+                        Прогресс
+                      </Button>
+                    ) : null}
+                    {onDeleteCourseEnrollment ? (
+                      <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDeleteCourseEnrollment(enrollment.id)}>
+                        Снять
+                      </Button>
+                    ) : null}
+                  </Space>
+                }
+              >
+                <Space orientation="vertical" size={10} className="wide">
+                  <Progress
+                    percent={
+                      enrollment.themes.length === 0
+                        ? 0
+                        : Math.round((enrollment.themes.filter((theme) => theme.state === 5).length / enrollment.themes.length) * 100)
+                    }
+                    size="small"
+                  />
+                  <Space wrap size={[8, 8]}>
+                    {enrollment.themes
+                      .filter((theme) => theme.state !== 5)
+                      .map((theme) => (
+                        <Tag key={theme.id} color={theme.state === 4 ? "orange" : "blue"}>
+                          {theme.themeTitle}
+                          {onUpdateThemeProgress && theme.state === 4 ? (
+                            <Button
+                              type="link"
+                              size="small"
+                              icon={<CheckOutlined />}
+                              onClick={() => onUpdateThemeProgress(theme.id, "pass-homework")}
+                            >
+                              Принять ДЗ
+                            </Button>
+                          ) : null}
+                        </Tag>
+                      ))}
+                  </Space>
+                </Space>
+              </Card>
+            ))}
+          </Space>
+        ) : null}
+      </Card>
 
       <Card size="small" title="Финансовая история">
         {data.events.data.length > 0 ? (
