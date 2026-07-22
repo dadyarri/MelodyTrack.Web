@@ -1,10 +1,9 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App as AntdApp, Form, Typography } from "antd";
+import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { clientsApi, clientSourcesApi, courseEnrollmentsApi, coursesApi } from "@/api/crm";
+import dayjs from "dayjs";
 import { queryKeys } from "@/api/queryKeys";
-import type { Client, CourseEnrollment, CourseEnrollmentThemeProgressAction, Ulid } from "@/api/types";
 import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
@@ -16,8 +15,11 @@ import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
+import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
+import type { Client, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
+import type { ClientVacationsFormValues } from "./ClientVacationsModal";
 
 type ClientSubmitInput = {
   firstName: string;
@@ -28,6 +30,7 @@ type ClientSubmitInput = {
   vk?: string;
   phone?: string;
   sourceId?: string;
+  vacations?: Array<{ startDate: string; endDate: string }>;
 };
 
 type ClientDraftValues = {
@@ -41,7 +44,7 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
-const clientHistoryAppointmentsPageSize = 8;
+const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
   const {
@@ -60,11 +63,12 @@ export function useClientsPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
+  const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
-  const [isEnrollmentCreateOpen, setEnrollmentCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
+  const [vacationsForm] = Form.useForm<ClientVacationsFormValues>();
+  const [vacationsClient, setVacationsClient] = useState<Client | null>(null);
   const navigate = useNavigate();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -90,7 +94,7 @@ export function useClientsPageController() {
   });
 
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -98,32 +102,12 @@ export function useClientsPageController() {
       }
 
       return clientsApi.history(clientId, {
-        page: historyAppointmentsPage,
-        page_size: clientHistoryAppointmentsPageSize,
+        page: historyEventsPage,
+        page_size: clientHistoryEventsPageSize,
       });
     },
     enabled: Boolean(historyClient),
     placeholderData: keepPreviousData,
-  });
-
-  const courseEnrollmentsQuery = useQuery({
-    queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
-    queryFn: () => {
-      const clientId = historyClient?.id;
-      if (!clientId) {
-        throw new Error("Enrollment client is not selected.");
-      }
-
-      return courseEnrollmentsApi.list({ clientId });
-    },
-    enabled: Boolean(historyClient),
-  });
-
-  const coursesCatalogQuery = useQuery({
-    queryKey: queryKeys.courses.list(""),
-    queryFn: () => coursesApi.list(),
-    enabled: Boolean(historyClient),
-    staleTime: 60_000,
   });
 
   const currentEditingClient = editing ? (query.data?.data.find((client) => client.id === editing.id) ?? editing) : null;
@@ -211,6 +195,18 @@ export function useClientsPageController() {
     },
   });
 
+  const vacationsMutation = useMutation({
+    mutationFn: ({ client, values }: { client: Client; values: ClientVacationsFormValues }) =>
+      clientsApi.update(client.id, prepareClientVacationUpdate(client, values), { expectedActivityId: client.lastActivity?.id }),
+    onSuccess: async () => {
+      message.success("Периоды отсутствия сохранены");
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+    onError: showErrors,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => {
       return clientsApi.remove(id, { expectedActivityId });
@@ -244,22 +240,11 @@ export function useClientsPageController() {
     },
   });
 
-  const createPortalLinkMutation = useMutation({
-    mutationFn: (clientId: Ulid) => clientsApi.createPortalLink(clientId),
-    onSuccess: (payload) => {
-      void navigator.clipboard?.writeText(payload.url)
-        .then(() => undefined)
-        .catch(() => {
-          void message.error("Не удалось скопировать ссылку автоматически");
-        });
-    },
-    onError: showErrors,
-  });
-
-  const resetPortalPinMutation = useMutation({
-    mutationFn: (clientId: Ulid) => clientsApi.resetPortalPin(clientId),
-    onSuccess: () => {
-      message.success("PIN клиентского кабинета сброшен");
+  const leadStatusMutation = useMutation({
+    mutationFn: ({ id, isClosed }: { id: Ulid; isClosed: boolean }) => clientsApi.setLeadClosed(id, isClosed),
+    onSuccess: async (_result, variables) => {
+      message.success(variables.isClosed ? "Лид закрыт" : "Лид возвращен в работу");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
     },
     onError: showErrors,
   });
@@ -315,74 +300,6 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
-  const createEnrollmentMutation = useMutation({
-    mutationFn: ({ courseId }: { courseId: Ulid; openProgress: boolean }) => {
-      const clientId = historyClient?.id;
-      if (!clientId) {
-        throw new Error("Клиент не выбран.");
-      }
-
-      return courseEnrollmentsApi.create({
-        clientId,
-        courseId,
-      });
-    },
-    onSuccess: async (result, variables) => {
-      message.success("Курс назначен");
-      setEnrollmentCreateOpen(false);
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
-      });
-
-      if (variables.openProgress) {
-        const createdEnrollment =
-          (await queryClient.fetchQuery({
-            queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
-            queryFn: () => {
-              const clientId = historyClient?.id;
-              if (!clientId) {
-                throw new Error("Клиент не выбран.");
-              }
-
-              return courseEnrollmentsApi.list({ clientId });
-            },
-          })).find((item) => item.id === result.id) ?? null;
-
-        if (createdEnrollment) {
-          const nextParams = new URLSearchParams();
-          nextParams.set("course", createdEnrollment.courseId);
-          nextParams.set("enrollment", createdEnrollment.id);
-          void navigate(`/courses?${nextParams.toString()}`);
-          return;
-        }
-      }
-    },
-    onError: showErrors,
-  });
-
-  const deleteEnrollmentMutation = useMutation({
-    mutationFn: (enrollmentId: Ulid) => courseEnrollmentsApi.remove(enrollmentId),
-    onSuccess: async () => {
-      message.success("Курс снят с клиента");
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
-      });
-    },
-    onError: showErrors,
-  });
-
-  const updateThemeProgressMutation = useMutation({
-    mutationFn: ({ themeId, action }: { themeId: Ulid; action: CourseEnrollmentThemeProgressAction }) =>
-      courseEnrollmentsApi.updateThemeProgress(themeId, action),
-    onSuccess: async (_, variables) => {
-      message.success(getThemeProgressSuccessMessage(variables.action));
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.courseEnrollments.list({ clientId: historyClient?.id }),
-      });
-    },
-    onError: showErrors,
-  });
-
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
   const handleSearch = useCallback((value: string) => {
@@ -391,14 +308,13 @@ export function useClientsPageController() {
   }, []);
 
   const openHistoryClient = useCallback((client: Client) => {
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
     setHistoryClient(client);
   }, []);
 
   const closeHistoryClient = useCallback(() => {
     setHistoryClient(null);
-    setHistoryAppointmentsPage(1);
-    setEnrollmentCreateOpen(false);
+    setHistoryEventsPage(1);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -459,12 +375,12 @@ export function useClientsPageController() {
     },
     historyQuery,
     historyClient,
-    historyAppointmentsPage,
-    courseEnrollmentsQuery,
-    coursesCatalogQuery,
-    setHistoryAppointmentsPage,
+    historyEventsPage,
+    setHistoryEventsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
+    vacationsForm,
+    vacationsClient,
     editing,
     isCreateOpen,
     hasCreateDraft,
@@ -473,16 +389,12 @@ export function useClientsPageController() {
     isEditingClientStale,
     editingBaselineActivityId,
     isSourceCreateOpen,
-    isEnrollmentCreateOpen,
     createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
+    vacationsMutation,
     createSourceMutation,
-    createEnrollmentMutation,
-    deleteEnrollmentMutation,
-    updateThemeProgressMutation,
     deleteMutation,
-    createPortalLinkMutation,
-    resetPortalPinMutation,
+    leadStatusMutation,
     openEditor,
     closeEditor,
     handleSearch,
@@ -501,6 +413,21 @@ export function useClientsPageController() {
       saveDraftFormValues(values);
     },
     clientHistoryActions,
+    openVacationsEditor: (client: Client) => {
+      vacationsForm.setFieldsValue({
+        vacations: client.vacations.map((vacation) => ({ period: [dayjs(vacation.startDate), dayjs(vacation.endDate)] })),
+      });
+      setVacationsClient(client);
+    },
+    closeVacationsEditor: () => {
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+    },
+    saveVacations: (values: ClientVacationsFormValues) => {
+      if (vacationsClient) {
+        vacationsMutation.mutate({ client: vacationsClient, values });
+      }
+    },
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",
@@ -512,6 +439,9 @@ export function useClientsPageController() {
         },
       });
     },
+    setLeadClosed: (client: Client, isClosed: boolean) => {
+      leadStatusMutation.mutate({ id: client.id, isClosed });
+    },
     openSourceCreate: () => {
       if (!canCreateClients) {
         return;
@@ -522,123 +452,11 @@ export function useClientsPageController() {
     closeSourceCreate: () => {
       setSourceCreateOpen(false);
     },
-    openEnrollmentCreate: () => {
-      if (!historyClient || !canCreateClients) {
-        return;
-      }
-
-      setEnrollmentCreateOpen(true);
-    },
-    closeEnrollmentCreate: () => {
-      setEnrollmentCreateOpen(false);
-    },
-    availableEnrollmentCourses: buildAvailableEnrollmentCourses(coursesCatalogQuery.data ?? [], courseEnrollmentsQuery.data ?? []),
     onCreateSource: (values: { name: string }) => {
       createSourceMutation.mutate(values);
     },
-    onCreateEnrollment: (values: { courseId: Ulid; openProgress: boolean }) => {
-      createEnrollmentMutation.mutate(values);
-    },
-    onCreatePortalLink: () => {
-      if (!historyClient) {
-        return;
-      }
-
-      createPortalLinkMutation.mutate(historyClient.id);
-    },
-    onResetPortalPin: () => {
-      if (!historyClient) {
-        return;
-      }
-
-      modal.confirm({
-        title: "Сбросить PIN клиентского кабинета?",
-        content: "Текущий PIN перестанет работать, а активные сессии клиента будут завершены.",
-        okText: "Сбросить PIN",
-        okButtonProps: { danger: true },
-        onOk: () => {
-          resetPortalPinMutation.mutate(historyClient.id);
-        },
-      });
-    },
-    onDeleteEnrollment: (enrollmentId: Ulid) => {
-      modal.confirm({
-        title: "Снять клиента с курса?",
-        onOk: () => {
-          deleteEnrollmentMutation.mutate(enrollmentId);
-        },
-      });
-    },
-    openCourseProgress: (enrollmentId?: Ulid) => {
-      if (!historyClient) {
-        return;
-      }
-
-      const enrollments = courseEnrollmentsQuery.data ?? [];
-      if (enrollments.length === 0) {
-        return;
-      }
-
-      const firstEnrollment = enrollments[0];
-      const selectedEnrollment = enrollments.find((item) => item.id === enrollmentId) ?? firstEnrollment;
-
-      const nextParams = new URLSearchParams();
-      nextParams.set("course", selectedEnrollment.courseId);
-      nextParams.set("enrollment", enrollmentId ?? selectedEnrollment.id);
-      void navigate(`/courses?${nextParams.toString()}`);
-    },
-    onUpdateThemeProgress: (themeId: Ulid, action: CourseEnrollmentThemeProgressAction) => {
-      if (action === "pass-homework") {
-        modal.confirm({
-          title: "Принять домашнее задание и завершить тему?",
-          onOk: () => {
-            updateThemeProgressMutation.mutate({
-              themeId,
-              action,
-            });
-          },
-        });
-        return;
-      }
-
-      updateThemeProgressMutation.mutate({
-        themeId,
-        action,
-      });
-    },
     onSourceLabelChange: (_label?: string) => {},
   };
-}
-
-function getThemeProgressSuccessMessage(action: CourseEnrollmentThemeProgressAction) {
-  switch (action) {
-    case "unlock":
-      return "Тема открыта";
-    case "start":
-      return "Тема переведена в работу";
-    case "send-to-homework":
-      return "Тема отправлена на домашнее задание";
-    case "pass-homework":
-      return "Домашнее задание принято, тема завершена";
-    case "return-to-progress":
-      return "Тема возвращена в работу";
-  }
-}
-
-function buildAvailableEnrollmentCourses(
-  courses: Array<{ id: Ulid; name: string; description?: string | null; blockCount: number; themeCount: number }>,
-  enrollments: CourseEnrollment[],
-) {
-  const enrolledCourseIds = new Set(enrollments.map((enrollment) => enrollment.courseId));
-  return courses
-    .filter((course) => !enrolledCourseIds.has(course.id))
-    .map((course) => ({
-      value: course.id,
-      label: course.name,
-      description: course.description,
-      blockCount: course.blockCount,
-      themeCount: course.themeCount,
-    }));
 }
 
 function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
@@ -654,6 +472,22 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
   };
 
   return omitEmptyContacts(input);
+}
+
+function prepareClientVacationUpdate(client: Client, values: ClientVacationsFormValues) {
+  return {
+    firstName: client.firstName,
+    lastName: client.lastName,
+    patronymic: client.patronymic,
+    dateOfBirth: client.dateOfBirth,
+    phone: getClientContactValue(client, "phone"),
+    telegram: getClientContactValue(client, "telegram"),
+    vk: getClientContactValue(client, "vk"),
+    sourceId: client.sourceId,
+    vacations: (values.vacations ?? []).flatMap((vacation) =>
+      vacation.period ? [{ startDate: vacation.period[0].format("YYYY-MM-DD"), endDate: vacation.period[1].format("YYYY-MM-DD") }] : [],
+    ),
+  };
 }
 
 function omitEmptyContacts(input: ClientSubmitInput) {

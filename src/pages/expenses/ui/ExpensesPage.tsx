@@ -1,12 +1,12 @@
-import { DeleteOutlined, DownloadOutlined, PlusOutlined } from "@/components/icons";
-import { Button, DatePicker, Form, Input, InputNumber, Space, Typography } from "antd";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
+import { Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
 import { ExpenseCategorySelect } from "@/components/RemoteSelect";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { useExpensesPageController } from "@/features/expenses/useExpensesPageController";
 import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
 import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDateTime } from "@/utils/date";
+import { DATE_FORMAT, formatDate } from "@/utils/date";
 import { formatMoney } from "@/utils/money";
 
 export function ExpensesPage() {
@@ -82,7 +82,7 @@ export function ExpensesPage() {
           <MoneyListSummaryCards
             totalAmount={controller.query.data?.summary.totalAmount}
             itemsCount={controller.query.data?.summary.itemsCount}
-            lastItemAtLabel={formatOptionalDateTime(controller.query.data?.summary.lastItemAtUtc)}
+            lastItemAtLabel={formatOptionalDate(controller.query.data?.summary.lastItemAtUtc)}
             itemsTitle="Расходов найдено"
             lastItemTitle="Последний расход"
           />
@@ -102,7 +102,7 @@ export function ExpensesPage() {
               {
                 title: "Дата",
                 dataIndex: "date",
-                render: (value: string) => formatDateTime(value),
+                render: (value: string) => formatDate(value),
               },
               { title: "Описание", dataIndex: "description" },
               {
@@ -117,23 +117,33 @@ export function ExpensesPage() {
               },
               {
                 title: "",
-                width: 72,
+                width: controller.canEditExpenses ? 120 : 72,
                 render: (_, row) => (
-                  <Button
-                    danger
-                    icon={<DeleteOutlined />}
-                    onClick={() =>
-                      controller.modal.confirm({
-                        title: "Удалить расход?",
-                        onOk: () => {
-                          controller.deleteMutation.mutate({
-                            id: row.id,
-                            expectedActivityId: row.lastActivity?.id,
-                          });
-                        },
-                      })
-                    }
-                  />
+                  <Space size={4}>
+                    {controller.canEditExpenses ? (
+                      <Button
+                        icon={<EditOutlined />}
+                        onClick={() => {
+                          controller.openEdit(row);
+                        }}
+                      />
+                    ) : null}
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() =>
+                        controller.modal.confirm({
+                          title: "Удалить расход?",
+                          onOk: () => {
+                            controller.deleteMutation.mutate({
+                              id: row.id,
+                              expectedActivityId: row.lastActivity?.id,
+                            });
+                          },
+                        })
+                      }
+                    />
+                  </Space>
                 ),
               },
             ]}
@@ -178,10 +188,37 @@ export function ExpensesPage() {
             <Input />
           </Form.Item>
           <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
-            <InputNumber min={0} className="wide" />
+            <InputNumber min={0.01} precision={2} step={0.01} className="wide" />
+          </Form.Item>
+          <Form.Item name="date" label="Дата" rules={[{ required: true }]}>
+            <DatePicker format={DATE_FORMAT} className="wide" />
           </Form.Item>
         </Form>
       </DraftFormModal>
+      <Modal
+        open={controller.editingExpense !== null}
+        title="Редактировать расход"
+        onCancel={controller.closeEdit}
+        onOk={() => {
+          controller.editForm.submit();
+        }}
+        confirmLoading={controller.editMutation.isPending}
+      >
+        <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
+          <Form.Item name="categoryId" label="Категория">
+            <ExpenseCategorySelect extraOptions={controller.createdCategoryOptions} />
+          </Form.Item>
+          <Form.Item name="description" label="Описание" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="amount" label="Сумма" rules={[{ required: true }]}>
+            <InputNumber min={0.01} precision={2} step={0.01} className="wide" />
+          </Form.Item>
+          <Form.Item name="date" label="Дата" rules={[{ required: true }]}>
+            <DatePicker format={DATE_FORMAT} className="wide" />
+          </Form.Item>
+        </Form>
+      </Modal>
       <ReferenceBookCreateModal
         open={controller.isCategoryCreateOpen}
         title="Новая категория расхода"
@@ -195,6 +232,6 @@ export function ExpensesPage() {
   );
 }
 
-function formatOptionalDateTime(value?: string | null) {
-  return value ? formatDateTime(value) : "Нет данных";
+function formatOptionalDate(value?: string | null) {
+  return value ? formatDate(value) : "Нет данных";
 }

@@ -31,6 +31,8 @@ export interface CreateEntityResponse {
 
 export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
 
+export type ClientLifecycleStatus = 0 | 1 | 2 | 3;
+
 export interface ReferenceBookItem {
   id: Ulid;
   name: string;
@@ -42,6 +44,12 @@ export interface ClientContacts {
   telegram?: string | null;
   vk?: string | null;
   phone?: string | null;
+}
+
+export interface ClientVacation {
+  id: Ulid;
+  startDate: string;
+  endDate: string;
 }
 
 export interface Client {
@@ -56,9 +64,11 @@ export interface Client {
   phone?: string | null;
   sourceId?: Ulid | null;
   sourceName?: string | null;
+  vacations: ClientVacation[];
   balance: number;
   lastAppointmentAtUtc?: string | null;
   nextAppointmentAtUtc?: string | null;
+  lifecycleStatus: ClientLifecycleStatus;
   lastActivity?: RecordActivity | null;
 }
 
@@ -76,24 +86,17 @@ export interface ClientHistorySummary {
   nextAppointmentAtUtc?: string | null;
 }
 
-export interface ClientHistoryPayment {
+export type ClientFinancialHistoryEventType = "top_up" | "appointment";
+
+export interface ClientFinancialHistoryEvent {
   id: Ulid;
+  type: ClientFinancialHistoryEventType;
   amount: number;
   date: string;
   description?: string | null;
   serviceName?: string | null;
-}
-
-export interface ClientHistoryAppointment {
-  id: Ulid;
-  startDate: string;
-  endDate: string;
-  serviceName: string;
   providerDisplayName?: string | null;
-  status: AppointmentStatus;
-  courseThemeId?: Ulid | null;
-  courseThemeTitle?: string | null;
-  lessonNotes?: string | null;
+  appointmentStatus?: AppointmentStatus | null;
 }
 
 export interface RecordActivity {
@@ -110,8 +113,14 @@ export interface RecordActivity {
 export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
-  recentPayments: ClientHistoryPayment[];
-  appointments: PaginatedResponse<ClientHistoryAppointment>;
+  events: PaginatedResponse<ClientFinancialHistoryEvent>;
+}
+
+export interface CalendarSubscription {
+  id: Ulid;
+  token: string;
+  url: string;
+  feedType: "user" | "client";
 }
 
 export interface LookupClient {
@@ -127,7 +136,9 @@ export interface LookupClient {
 export interface Service {
   id: Ulid;
   name: string;
+  publicName?: string | null;
   description?: string | null;
+  isConsultation: boolean;
   price: number;
   lastActivity?: RecordActivity | null;
 }
@@ -136,109 +147,6 @@ export interface LookupService {
   id: Ulid;
   name: string;
   price?: number;
-}
-
-export interface CourseSummary {
-  id: Ulid;
-  name: string;
-  description?: string | null;
-  blockCount: number;
-  themeCount: number;
-  updatedAtUtc: string;
-}
-
-export interface CourseTheme {
-  id: Ulid;
-  key: string;
-  title: string;
-  description?: string | null;
-  lessonContent?: string | null;
-  homeworkContent?: string | null;
-  order: number;
-  experiencePointsReward: number;
-  dependencyThemeIds: Ulid[];
-}
-
-export interface CourseLevel {
-  id: Ulid;
-  title: string;
-  order: number;
-  requiredExperiencePoints: number;
-}
-
-export interface CourseBranch {
-  id: Ulid;
-  title: string;
-  description?: string | null;
-  order: number;
-  themes: CourseTheme[];
-}
-
-export interface CourseBlock {
-  id: Ulid;
-  title: string;
-  description?: string | null;
-  order: number;
-  branches: CourseBranch[];
-}
-
-export interface Course {
-  id: Ulid;
-  name: string;
-  description?: string | null;
-  createdAtUtc: string;
-  updatedAtUtc: string;
-  levels: CourseLevel[];
-  blocks: CourseBlock[];
-}
-
-export type CourseThemeProgressState = 0 | 1 | 2 | 3 | 4 | 5;
-
-export interface CourseEnrollmentTheme {
-  id: Ulid;
-  courseThemeId: Ulid;
-  themeTitle: string;
-  themeDescription?: string | null;
-  lessonContent?: string | null;
-  homeworkContent?: string | null;
-  experiencePointsReward: number;
-  state: CourseThemeProgressState;
-  unlockedAtUtc?: string | null;
-  startedAtUtc?: string | null;
-  waitingForHomeworkAtUtc?: string | null;
-  completedAtUtc?: string | null;
-  earnedExperiencePoints: number;
-  recentAppointments: CourseEnrollmentThemeAppointment[];
-}
-
-export interface CourseEnrollmentLevel {
-  id: Ulid;
-  title: string;
-  order: number;
-  requiredExperiencePoints: number;
-}
-
-export interface CourseEnrollment {
-  id: Ulid;
-  clientId: Ulid;
-  clientDisplayName: string;
-  courseId: Ulid;
-  courseName: string;
-  createdAtUtc: string;
-  course: Course;
-  currentLevel?: CourseEnrollmentLevel | null;
-  earnedExperiencePoints: number;
-  themes: CourseEnrollmentTheme[];
-}
-
-export type CourseEnrollmentThemeProgressAction = "unlock" | "start" | "send-to-homework" | "pass-homework" | "return-to-progress";
-
-export interface CourseEnrollmentThemeAppointment {
-  id: Ulid;
-  startDateUtc: string;
-  providerDisplayName?: string | null;
-  status: AppointmentStatus;
-  lessonNotes?: string | null;
 }
 
 export interface User {
@@ -350,20 +258,11 @@ export interface Appointment {
   client: LookupClient;
   service: LookupService;
   provider?: User | null;
-  courseTheme?: AppointmentCourseTheme | null;
-  lessonNotes?: string | null;
   startDate: string;
   endDate: string;
   status: AppointmentStatus;
   recurringRule?: AppointmentRecurrenceRule | null;
   lastActivity?: RecordActivity | null;
-}
-
-export interface AppointmentCourseTheme {
-  id: Ulid;
-  title: string;
-  courseId: Ulid;
-  courseName: string;
 }
 
 export interface PaymentClient {

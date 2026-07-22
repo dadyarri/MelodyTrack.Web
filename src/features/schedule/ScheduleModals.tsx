@@ -552,6 +552,7 @@ export function AppointmentDetailsModal({
   onStatusChange,
   onDelete,
   onCreatePayment,
+  onCreateClientCalendarSubscription,
 }: {
   appointment: Appointment | null;
   isStale: boolean;
@@ -560,6 +561,7 @@ export function AppointmentDetailsModal({
   onStatusChange: (appointment: Appointment, status: AppointmentStatus) => void;
   onDelete: (appointment: Appointment) => void;
   onCreatePayment?: (appointment: Appointment) => void;
+  onCreateClientCalendarSubscription?: (appointment: Appointment) => void;
 }) {
   if (!appointment) {
     return null;
@@ -686,6 +688,15 @@ export function AppointmentDetailsModal({
               }}
             >
               Создать платеж
+            </Button>
+          ) : null}
+          {onCreateClientCalendarSubscription ? (
+            <Button
+              onClick={() => {
+                onCreateClientCalendarSubscription(appointment);
+              }}
+            >
+              Скопировать календарь клиента
             </Button>
           ) : null}
           <Button

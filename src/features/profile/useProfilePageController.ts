@@ -12,7 +12,7 @@ import {
   type Setup2FaResponse,
 } from "@/api/auth";
 import { queryKeys } from "@/api/queryKeys";
-import { usersApi } from "@/api/crm";
+import { calendarSubscriptionsApi, usersApi } from "@/api/crm";
 import { getApiErrorMessages } from "@/api/http";
 import type { Ulid, UserAvailability, WeekdayKey } from "@/api/types";
 import { normalizePhone, normalizeSocialLink } from "@/entities/client";
@@ -333,6 +333,15 @@ export function useProfilePageController() {
     onError: showErrors,
   });
 
+  const calendarSubscriptionMutation = useMutation({
+    mutationFn: (userId: Ulid) => calendarSubscriptionsApi.regenerateUser(userId),
+    onSuccess: async (subscription) => {
+      await navigator.clipboard.writeText(subscription.url);
+      message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
+    },
+    onError: showErrors,
+  });
+
   const me = meQuery.data;
   const isTwoFactorEnabled = me?.isTwoFactorEnabled ?? false;
   const isTwoFactorRequired = me?.isTwoFactorRequired ?? false;
@@ -415,6 +424,7 @@ export function useProfilePageController() {
     savePersonalInfoMutation,
     saveAvailabilityMutation,
     resetOnboardingMutation,
+    calendarSubscriptionMutation,
     isTwoFactorEnabled,
     isTwoFactorRequired,
     onPersonalInfoSubmit: (values: PersonalInfoFormValues) => {
