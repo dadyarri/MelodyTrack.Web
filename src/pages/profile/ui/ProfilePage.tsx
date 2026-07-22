@@ -113,6 +113,21 @@ export function ProfilePage() {
         </Card>
       </div>
 
+      <Card title="Подписка на календарь">
+        <Space orientation="vertical" size={12}>
+          <Typography.Text type="secondary">Ссылка содержит ваше расписание. При создании новой ссылки предыдущая сразу перестанет работать.</Typography.Text>
+          <Button
+            loading={controller.calendarSubscriptionMutation.isPending}
+            disabled={!controller.me}
+            onClick={() => {
+              if (controller.me) controller.calendarSubscriptionMutation.mutate(controller.me.id);
+            }}
+          >
+            Создать и скопировать ссылку
+          </Button>
+        </Space>
+      </Card>
+
       <Card title="График работы и отпуск" loading={controller.availabilityQuery.isLoading} data-onboarding-id="profile-availability">
         <Form<AvailabilityFormValues>
           form={controller.availabilityForm}

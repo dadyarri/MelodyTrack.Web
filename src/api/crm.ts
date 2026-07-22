@@ -5,6 +5,7 @@ import type {
   AppointmentsAnalytics,
   AuditLog,
   Client,
+  CalendarSubscription,
   ClientHistory,
   ClientWithBalance,
   CreateEntityResponse,
@@ -107,6 +108,15 @@ export const clientsApi = {
   },
 };
 
+export const calendarSubscriptionsApi = {
+  regenerateUser(userId: Ulid) {
+    return http.post<CalendarSubscription>(`/calendar-subscriptions/users/${userId}/regenerate`, {}).then((response) => response.data);
+  },
+  regenerateClient(clientId: Ulid) {
+    return http.post<CalendarSubscription>(`/calendar-subscriptions/clients/${clientId}/regenerate`, {}).then((response) => response.data);
+  },
+};
+
 export const dashboardApi = {
   stats(timezone: string) {
     return http.get<DashboardStats>("/dashboard/stats", { params: { timezone } }).then((response) => response.data);
@@ -151,10 +161,10 @@ export const servicesApi = {
       }>("/services/lookup", { params: name ? { name } : undefined })
       .then((response) => response.data.services);
   },
-  create(input: { name: string; description?: string; isConsultation: boolean; price: number }, options?: { replayKey?: string }) {
+  create(input: { name: string; publicName?: string; description?: string; isConsultation: boolean; price: number }, options?: { replayKey?: string }) {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: { name: string; description?: string; isConsultation: boolean }, options?: { expectedActivityId?: Ulid }) {
+  update(id: Ulid, input: { name: string; publicName?: string; description?: string; isConsultation: boolean }, options?: { expectedActivityId?: Ulid }) {
     return http
       .put<unknown>(`/services/${id}`, {
         id,

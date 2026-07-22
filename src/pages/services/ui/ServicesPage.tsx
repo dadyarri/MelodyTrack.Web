@@ -41,6 +41,7 @@ export function ServicesPage() {
             }}
             columns={[
               { title: "Название", dataIndex: "name" },
+              { title: "Название для клиента", dataIndex: "publicName", render: (value?: string | null) => value || "—" },
               {
                 title: "Тип",
                 width: 132,
@@ -128,6 +129,9 @@ export function ServicesPage() {
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+          <Form.Item name="publicName" label="Название для клиента" extra="Будет показано в клиентском календаре. Если не указано, используется внутреннее название.">
+            <Input />
+          </Form.Item>
           <Form.Item name="description" label="Описание">
             <Input />
           </Form.Item>
@@ -152,6 +156,9 @@ export function ServicesPage() {
       >
         <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="publicName" label="Название для клиента" extra="Будет показано в клиентском календаре.">
             <Input />
           </Form.Item>
           <Form.Item name="description" label="Описание">

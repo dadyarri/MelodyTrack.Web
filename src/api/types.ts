@@ -116,6 +116,13 @@ export interface ClientHistory {
   events: PaginatedResponse<ClientFinancialHistoryEvent>;
 }
 
+export interface CalendarSubscription {
+  id: Ulid;
+  token: string;
+  url: string;
+  feedType: "user" | "client";
+}
+
 export interface LookupClient {
   id: Ulid;
   firstName: string;
@@ -129,6 +136,7 @@ export interface LookupClient {
 export interface Service {
   id: Ulid;
   name: string;
+  publicName?: string | null;
   description?: string | null;
   isConsultation: boolean;
   price: number;
