@@ -161,10 +161,17 @@ export const servicesApi = {
       }>("/services/lookup", { params: name ? { name } : undefined })
       .then((response) => response.data.services);
   },
-  create(input: { name: string; publicName?: string; description?: string; isConsultation: boolean; price: number }, options?: { replayKey?: string }) {
+  create(
+    input: { name: string; publicName?: string; description?: string; isConsultation: boolean; price: number },
+    options?: { replayKey?: string },
+  ) {
     return http.post<CreateEntityResponse>("/services", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
   },
-  update(id: Ulid, input: { name: string; publicName?: string; description?: string; isConsultation: boolean }, options?: { expectedActivityId?: Ulid }) {
+  update(
+    id: Ulid,
+    input: { name: string; publicName?: string; description?: string; isConsultation: boolean },
+    options?: { expectedActivityId?: Ulid },
+  ) {
     return http
       .put<unknown>(`/services/${id}`, {
         id,

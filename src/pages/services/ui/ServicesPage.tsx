@@ -129,7 +129,11 @@ export function ServicesPage() {
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="publicName" label="Название для клиента" extra="Будет показано в клиентском календаре. Если не указано, используется внутреннее название.">
+          <Form.Item
+            name="publicName"
+            label="Название для клиента"
+            extra="Будет показано в клиентском календаре. Если не указано, используется внутреннее название."
+          >
             <Input />
           </Form.Item>
           <Form.Item name="description" label="Описание">

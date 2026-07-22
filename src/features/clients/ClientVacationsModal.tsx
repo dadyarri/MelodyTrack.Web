@@ -7,7 +7,13 @@ export type ClientVacationsFormValues = {
   vacations?: Array<{ period?: [Dayjs, Dayjs] }>;
 };
 
-export function ClientVacationsModal({ client, form, saving, onCancel, onSubmit }: {
+export function ClientVacationsModal({
+  client,
+  form,
+  saving,
+  onCancel,
+  onSubmit,
+}: {
   client: Client | null;
   form: ReturnType<typeof Form.useForm<ClientVacationsFormValues>>[0];
   saving: boolean;
@@ -15,7 +21,15 @@ export function ClientVacationsModal({ client, form, saving, onCancel, onSubmit 
   onSubmit: (values: ClientVacationsFormValues) => void;
 }) {
   return (
-    <Modal open={client !== null} title="Отпуск клиента" onCancel={onCancel} onOk={() => { form.submit(); }} confirmLoading={saving}>
+    <Modal
+      open={client !== null}
+      title="Отпуск клиента"
+      onCancel={onCancel}
+      onOk={() => {
+        form.submit();
+      }}
+      confirmLoading={saving}
+    >
       <Typography.Paragraph type="secondary">Встречи в эти даты не будут показаны или созданы.</Typography.Paragraph>
       <Form form={form} layout="vertical" onFinish={onSubmit}>
         <Form.List name="vacations">
@@ -26,10 +40,23 @@ export function ClientVacationsModal({ client, form, saving, onCancel, onSubmit 
                   <Form.Item name={[field.name, "period"]} rules={[{ required: true, message: "Укажите период отсутствия" }]} noStyle>
                     <DatePicker.RangePicker format={DATE_FORMAT} />
                   </Form.Item>
-                  <Button danger onClick={() => { remove(field.name); }}>Удалить</Button>
+                  <Button
+                    danger
+                    onClick={() => {
+                      remove(field.name);
+                    }}
+                  >
+                    Удалить
+                  </Button>
                 </Space>
               ))}
-              <Button onClick={() => { add({ period: undefined }); }}>Добавить отпуск</Button>
+              <Button
+                onClick={() => {
+                  add({ period: undefined });
+                }}
+              >
+                Добавить отпуск
+              </Button>
             </Space>
           )}
         </Form.List>

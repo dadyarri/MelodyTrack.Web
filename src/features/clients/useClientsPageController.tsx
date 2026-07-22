@@ -414,7 +414,9 @@ export function useClientsPageController() {
     },
     clientHistoryActions,
     openVacationsEditor: (client: Client) => {
-      vacationsForm.setFieldsValue({ vacations: client.vacations.map((vacation) => ({ period: [dayjs(vacation.startDate), dayjs(vacation.endDate)] })) });
+      vacationsForm.setFieldsValue({
+        vacations: client.vacations.map((vacation) => ({ period: [dayjs(vacation.startDate), dayjs(vacation.endDate)] })),
+      });
       setVacationsClient(client);
     },
     closeVacationsEditor: () => {
@@ -482,9 +484,9 @@ function prepareClientVacationUpdate(client: Client, values: ClientVacationsForm
     telegram: getClientContactValue(client, "telegram"),
     vk: getClientContactValue(client, "vk"),
     sourceId: client.sourceId,
-    vacations: (values.vacations ?? []).flatMap((vacation) => vacation.period
-      ? [{ startDate: vacation.period[0].format("YYYY-MM-DD"), endDate: vacation.period[1].format("YYYY-MM-DD") }]
-      : []),
+    vacations: (values.vacations ?? []).flatMap((vacation) =>
+      vacation.period ? [{ startDate: vacation.period[0].format("YYYY-MM-DD"), endDate: vacation.period[1].format("YYYY-MM-DD") }] : [],
+    ),
   };
 }
 

@@ -115,7 +115,9 @@ export function ProfilePage() {
 
       <Card title="Подписка на календарь">
         <Space orientation="vertical" size={12}>
-          <Typography.Text type="secondary">Ссылка содержит ваше расписание. При создании новой ссылки предыдущая сразу перестанет работать.</Typography.Text>
+          <Typography.Text type="secondary">
+            Ссылка содержит ваше расписание. При создании новой ссылки предыдущая сразу перестанет работать.
+          </Typography.Text>
           <Button
             loading={controller.calendarSubscriptionMutation.isPending}
             disabled={!controller.me}
