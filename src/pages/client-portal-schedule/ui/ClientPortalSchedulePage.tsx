@@ -1,8 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { Card, Space, Tag, Typography } from "antd";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Button, Card, Space, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
-import { clientPortalApi } from "@/api/crm";
+import { calendarSubscriptionsApi, clientPortalApi } from "@/api/crm";
 import { queryKeys } from "@/api/queryKeys";
+import { CalendarCheckOutlined } from "@/components/icons";
 import { useAuth } from "@/features/auth/useAuth";
 import { getAppointmentStatusLabel, getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
 import { formatMoney } from "@/utils/money";
@@ -20,6 +21,12 @@ export function ClientPortalSchedulePage() {
     queryFn: () => clientPortalApi.schedule({ timezone, startDate, endDate }),
     enabled: Boolean(linkedClientId),
   });
+  const calendarSubscriptionMutation = useMutation({
+    mutationFn: (clientId: string) => calendarSubscriptionsApi.regenerateClient(clientId),
+    onSuccess: async (subscription) => {
+      await navigator.clipboard.writeText(subscription.url);
+    },
+  });
 
   const appointments = query.data ?? [];
   const nextAppointment = appointments[0] ?? null;
@@ -29,10 +36,8 @@ export function ClientPortalSchedulePage() {
   return (
     <Space vertical size={16} className={styles.stack}>
       <div className={styles.summaryGrid}>
-        <Card loading={query.isLoading} className={styles.heroCard}>
+        <Card loading={query.isLoading} className={styles.heroCard} title="Ближайшее занятие">
           <Space vertical size={10} className={styles.heroCardContent}>
-            <Typography.Text type="secondary">Ближайшее занятие</Typography.Text>
-
             {nextAppointment ? (
               <>
                 <Typography.Text strong>{formatDateRange(nextAppointment.startDate, nextAppointment.endDate)}</Typography.Text>
@@ -49,9 +54,8 @@ export function ClientPortalSchedulePage() {
           </Space>
         </Card>
 
-        <Card className={styles.heroCard}>
+        <Card className={styles.heroCard} title="Баланс">
           <Space vertical size={10} className={styles.heroCardContent}>
-            <Typography.Text type="secondary">Баланс</Typography.Text>
             <Typography.Title level={3} className={balanceToneClassName}>
               {formatMoney(balance)}
             </Typography.Title>
@@ -62,6 +66,25 @@ export function ClientPortalSchedulePage() {
                   ? "Положительный баланс можно использовать для будущих занятий."
                   : "Баланс сейчас закрыт."}
             </Typography.Text> */}
+          </Space>
+        </Card>
+
+        <Card className={styles.heroCard} title="Подписка на календарь">
+          <Space vertical size={10} className={styles.heroCardContent}>
+            <Typography.Text type="secondary">Добавьте занятия в свой календарь и получайте привычные напоминания.</Typography.Text>
+            <Tooltip title="Вы можете добавить свои занятия в любой удобный календарь: Apple Calendar, Google Calendar и другие.">
+              <Button
+                icon={<CalendarCheckOutlined />}
+                loading={calendarSubscriptionMutation.isPending}
+                onClick={() => {
+                  if (linkedClientId) {
+                    calendarSubscriptionMutation.mutate(linkedClientId);
+                  }
+                }}
+              >
+                Подписка на календарь
+              </Button>
+            </Tooltip>
           </Space>
         </Card>
       </div>

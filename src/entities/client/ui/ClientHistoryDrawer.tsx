@@ -18,6 +18,8 @@ type ClientHistoryDrawerProps = {
   onCreateCourseEnrollment?: () => void;
   onCreatePortalLink?: () => void;
   isCreatingPortalLink?: boolean;
+  onCreateCalendarSubscription?: () => void;
+  isCreatingCalendarSubscription?: boolean;
   onResetPortalPin?: () => void;
   isResettingPortalPin?: boolean;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
@@ -41,6 +43,8 @@ export function ClientHistoryDrawer({
   onCreateCourseEnrollment,
   onCreatePortalLink,
   isCreatingPortalLink,
+  onCreateCalendarSubscription,
+  isCreatingCalendarSubscription,
   onResetPortalPin,
   isResettingPortalPin,
   onDeleteCourseEnrollment,
@@ -68,6 +72,8 @@ export function ClientHistoryDrawer({
           onCreateCourseEnrollment={onCreateCourseEnrollment}
           onCreatePortalLink={onCreatePortalLink}
           isCreatingPortalLink={isCreatingPortalLink}
+          onCreateCalendarSubscription={onCreateCalendarSubscription}
+          isCreatingCalendarSubscription={isCreatingCalendarSubscription}
           onResetPortalPin={onResetPortalPin}
           isResettingPortalPin={isResettingPortalPin}
           onDeleteCourseEnrollment={onDeleteCourseEnrollment}

@@ -15,7 +15,7 @@ import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/utils/refetch";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
-import { clientSourcesApi, clientsApi, courseEnrollmentsApi, coursesApi } from "../../api/crm";
+import { calendarSubscriptionsApi, clientSourcesApi, clientsApi, courseEnrollmentsApi, coursesApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, CourseEnrollment, CourseEnrollmentThemeProgressAction, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
@@ -279,6 +279,15 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
+  const createCalendarSubscriptionMutation = useMutation({
+    mutationFn: (clientId: Ulid) => calendarSubscriptionsApi.regenerateClient(clientId),
+    onSuccess: async (subscription) => {
+      await navigator.clipboard.writeText(subscription.url);
+      message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
+    },
+    onError: showErrors,
+  });
+
   const resetPortalPinMutation = useMutation({
     mutationFn: (clientId: Ulid) => clientsApi.resetPortalPin(clientId),
     onSuccess: () => {
@@ -475,6 +484,7 @@ export function useClientsPageController() {
     deleteMutation,
     leadStatusMutation,
     createPortalLinkMutation,
+    createCalendarSubscriptionMutation,
     resetPortalPinMutation,
     openEditor,
     closeEditor,
@@ -551,6 +561,11 @@ export function useClientsPageController() {
     onCreatePortalLink: () => {
       if (historyClient) {
         createPortalLinkMutation.mutate(historyClient.id);
+      }
+    },
+    onCreateCalendarSubscription: () => {
+      if (historyClient) {
+        createCalendarSubscriptionMutation.mutate(historyClient.id);
       }
     },
     onResetPortalPin: () => {

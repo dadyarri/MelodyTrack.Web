@@ -1,5 +1,6 @@
 import {
   BookOutlined,
+  CalendarCheckOutlined,
   CalendarOutlined,
   CheckOutlined,
   CreditCardOutlined,
@@ -26,6 +27,8 @@ type ClientHistoryPanelProps = {
   onCreateCourseEnrollment?: () => void;
   onCreatePortalLink?: () => void;
   isCreatingPortalLink?: boolean;
+  onCreateCalendarSubscription?: () => void;
+  isCreatingCalendarSubscription?: boolean;
   onResetPortalPin?: () => void;
   isResettingPortalPin?: boolean;
   onDeleteCourseEnrollment?: (enrollmentId: string) => void;
@@ -45,6 +48,8 @@ export function ClientHistoryPanel({
   onCreateCourseEnrollment,
   onCreatePortalLink,
   isCreatingPortalLink = false,
+  onCreateCalendarSubscription,
+  isCreatingCalendarSubscription = false,
   onResetPortalPin,
   isResettingPortalPin = false,
   onDeleteCourseEnrollment,
@@ -55,7 +60,13 @@ export function ClientHistoryPanel({
 }: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onCreatePortalLink || onResetPortalPin || onEditVacations ? (
+      {onCreateAppointment ||
+      onCreatePayment ||
+      onCreateCourseEnrollment ||
+      onCreatePortalLink ||
+      onCreateCalendarSubscription ||
+      onResetPortalPin ||
+      onEditVacations ? (
         <div className={styles.actionToolbar}>
           {onCreateAppointment || onCreatePayment || onCreateCourseEnrollment || onEditVacations ? (
             <div className={styles.actionGroup}>
@@ -102,7 +113,7 @@ export function ClientHistoryPanel({
               </Space>
             </div>
           ) : null}
-          {onCreatePortalLink || onResetPortalPin ? (
+          {onCreatePortalLink || onCreateCalendarSubscription || onResetPortalPin ? (
             <div className={`${styles.actionGroup} ${styles.portalActionGroup}`}>
               <Typography.Text type="secondary" className={styles.actionGroupLabel}>
                 Клиентский портал
@@ -111,6 +122,11 @@ export function ClientHistoryPanel({
                 {onCreatePortalLink ? (
                   <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
                     Копировать ссылку
+                  </Button>
+                ) : null}
+                {onCreateCalendarSubscription ? (
+                  <Button icon={<CalendarCheckOutlined />} loading={isCreatingCalendarSubscription} onClick={onCreateCalendarSubscription}>
+                    Скопировать календарь
                   </Button>
                 ) : null}
                 {onResetPortalPin ? (

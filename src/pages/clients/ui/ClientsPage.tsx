@@ -192,6 +192,8 @@ export function ClientsPage() {
         onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
         onCreatePortalLink={controller.canCreateClients ? controller.onCreatePortalLink : undefined}
         isCreatingPortalLink={controller.createPortalLinkMutation.isPending}
+        onCreateCalendarSubscription={controller.canCreateClients ? controller.onCreateCalendarSubscription : undefined}
+        isCreatingCalendarSubscription={controller.createCalendarSubscriptionMutation.isPending}
         onResetPortalPin={controller.canCreateClients ? controller.onResetPortalPin : undefined}
         isResettingPortalPin={controller.resetPortalPinMutation.isPending}
         onDeleteCourseEnrollment={controller.canCreateClients ? controller.onDeleteEnrollment : undefined}
