@@ -278,28 +278,8 @@ export function useTasksPageController() {
     submitCustomTask: async (values: CustomTaskFormValues) => {
       await createCustomTaskMutation.mutateAsync(values);
     },
-    completeTask: (task: RecurringTask) => {
-      modal.confirm({
-        title: "Завершить задачу?",
-        content: "Задача будет отмечена как выполненная и больше не появится в этом периоде.",
-        okText: "Завершить",
-        cancelText: "Отмена",
-        onOk: async () => {
-          await completeMutation.mutateAsync(task);
-        },
-      });
-    },
-    cancelTask: (task: RecurringTask) => {
-      modal.confirm({
-        title: "Отменить задачу?",
-        content: "Задача будет отменена и больше не появится в этом периоде.",
-        okText: "Отменить",
-        cancelText: "Отмена",
-        onOk: async () => {
-          await cancelMutation.mutateAsync(task);
-        },
-      });
-    },
+    completeTask: (task: RecurringTask) => completeMutation.mutateAsync(task),
+    cancelTask: (task: RecurringTask) => cancelMutation.mutateAsync(task),
     openDelayTask: (task: RecurringTask) => {
       setDelayingTask(task);
       delayTaskForm.setFieldsValue({

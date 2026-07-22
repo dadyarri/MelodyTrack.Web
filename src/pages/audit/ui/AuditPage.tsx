@@ -43,6 +43,7 @@ const actionLabels: Record<string, string> = {
   payment_created: "Платеж создан",
   payment_deleted: "Платеж удален",
   expense_created: "Расход создан",
+  expense_updated: "Расход изменен",
   expense_deleted: "Расход удален",
   expense_category_created: "Статья расхода создана",
   expense_category_deleted: "Статья расхода удалена",

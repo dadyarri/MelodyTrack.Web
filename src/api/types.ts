@@ -31,6 +31,8 @@ export interface CreateEntityResponse {
 
 export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
 
+export type ClientLifecycleStatus = 0 | 1 | 2 | 3;
+
 export interface ReferenceBookItem {
   id: Ulid;
   name: string;
@@ -42,6 +44,12 @@ export interface ClientContacts {
   telegram?: string | null;
   vk?: string | null;
   phone?: string | null;
+}
+
+export interface ClientVacation {
+  id: Ulid;
+  startDate: string;
+  endDate: string;
 }
 
 export interface Client {
@@ -56,9 +64,11 @@ export interface Client {
   phone?: string | null;
   sourceId?: Ulid | null;
   sourceName?: string | null;
+  vacations: ClientVacation[];
   balance: number;
   lastAppointmentAtUtc?: string | null;
   nextAppointmentAtUtc?: string | null;
+  lifecycleStatus: ClientLifecycleStatus;
   lastActivity?: RecordActivity | null;
 }
 
@@ -76,21 +86,17 @@ export interface ClientHistorySummary {
   nextAppointmentAtUtc?: string | null;
 }
 
-export interface ClientHistoryPayment {
+export type ClientFinancialHistoryEventType = "top_up" | "appointment";
+
+export interface ClientFinancialHistoryEvent {
   id: Ulid;
+  type: ClientFinancialHistoryEventType;
   amount: number;
   date: string;
   description?: string | null;
   serviceName?: string | null;
-}
-
-export interface ClientHistoryAppointment {
-  id: Ulid;
-  startDate: string;
-  endDate: string;
-  serviceName: string;
   providerDisplayName?: string | null;
-  status: AppointmentStatus;
+  appointmentStatus?: AppointmentStatus | null;
 }
 
 export interface RecordActivity {
@@ -107,8 +113,14 @@ export interface RecordActivity {
 export interface ClientHistory {
   client: Client;
   summary: ClientHistorySummary;
-  recentPayments: ClientHistoryPayment[];
-  appointments: PaginatedResponse<ClientHistoryAppointment>;
+  events: PaginatedResponse<ClientFinancialHistoryEvent>;
+}
+
+export interface CalendarSubscription {
+  id: Ulid;
+  token: string;
+  url: string;
+  feedType: "user" | "client";
 }
 
 export interface LookupClient {
@@ -124,7 +136,9 @@ export interface LookupClient {
 export interface Service {
   id: Ulid;
   name: string;
+  publicName?: string | null;
   description?: string | null;
+  isConsultation: boolean;
   price: number;
   lastActivity?: RecordActivity | null;
 }

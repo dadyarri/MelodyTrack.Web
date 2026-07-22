@@ -1,5 +1,5 @@
 import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
-import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space } from "antd";
+import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space, Switch, Tag } from "antd";
 import { useServicesPageController } from "@/features/services/useServicesPageController";
 import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatMoney } from "@/utils/money";
@@ -41,6 +41,12 @@ export function ServicesPage() {
             }}
             columns={[
               { title: "Название", dataIndex: "name" },
+              { title: "Название для клиента", dataIndex: "publicName", render: (value?: string | null) => value || "—" },
+              {
+                title: "Тип",
+                width: 132,
+                render: (_, row) => (row.isConsultation ? <Tag color="blue">Консультация</Tag> : null),
+              },
               { title: "Описание", dataIndex: "description" },
               {
                 title: "Цена",
@@ -123,8 +129,18 @@ export function ServicesPage() {
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+          <Form.Item
+            name="publicName"
+            label="Название для клиента"
+            extra="Будет показано в клиентском календаре. Если не указано, используется внутреннее название."
+          >
+            <Input />
+          </Form.Item>
           <Form.Item name="description" label="Описание">
             <Input />
+          </Form.Item>
+          <Form.Item name="isConsultation" label="Консультация" valuePropName="checked" initialValue={false}>
+            <Switch />
           </Form.Item>
           <Form.Item name="price" label="Цена" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
@@ -146,8 +162,14 @@ export function ServicesPage() {
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
+          <Form.Item name="publicName" label="Название для клиента" extra="Будет показано в клиентском календаре.">
+            <Input />
+          </Form.Item>
           <Form.Item name="description" label="Описание">
             <Input />
+          </Form.Item>
+          <Form.Item name="isConsultation" label="Консультация" valuePropName="checked">
+            <Switch />
           </Form.Item>
         </Form>
       </Modal>

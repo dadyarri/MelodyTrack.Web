@@ -11,13 +11,20 @@ type ClientHistoryPanelProps = {
   data: ClientHistory;
   onCreateAppointment?: (client: ClientHistory["client"]) => void;
   onCreatePayment?: (client: ClientHistory["client"]) => void;
-  onAppointmentsPageChange?: (page: number) => void;
+  onEventsPageChange?: (page: number) => void;
+  onEditVacations?: (client: ClientHistory["client"]) => void;
 };
 
-export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment, onAppointmentsPageChange }: ClientHistoryPanelProps) {
+export function ClientHistoryPanel({
+  data,
+  onCreateAppointment,
+  onCreatePayment,
+  onEventsPageChange,
+  onEditVacations,
+}: ClientHistoryPanelProps) {
   return (
     <Space orientation="vertical" size={16} className="wide">
-      {onCreateAppointment || onCreatePayment ? (
+      {onCreateAppointment || onCreatePayment || onEditVacations ? (
         <Space>
           {onCreateAppointment ? (
             <Button
@@ -38,6 +45,16 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
               }}
             >
               Добавить платеж
+            </Button>
+          ) : null}
+          {onEditVacations ? (
+            <Button
+              icon={<CalendarOutlined />}
+              onClick={() => {
+                onEditVacations(data.client);
+              }}
+            >
+              Отпуск
             </Button>
           ) : null}
         </Space>
@@ -76,69 +93,53 @@ export function ClientHistoryPanel({ data, onCreateAppointment, onCreatePayment,
         </Card>
       </div>
 
-      <Card size="small" title="Последние платежи">
-        {data.recentPayments.length > 0 ? (
-          <List
-            dataSource={data.recentPayments}
-            renderItem={(payment) => (
-              <List.Item>
-                <div className="wide">
-                  <Space className={`wide ${styles.listJustify}`} wrap>
-                    <Typography.Text strong>{formatMoney(payment.amount)}</Typography.Text>
-                    <Typography.Text type="secondary">{formatDateTime(payment.date)}</Typography.Text>
-                  </Space>
-                  <Typography.Text>{payment.description?.trim() || "Без описания"}</Typography.Text>
-                  {payment.serviceName ? (
-                    <div>
-                      <Typography.Text type="secondary">Услуга: {payment.serviceName}</Typography.Text>
-                    </div>
-                  ) : null}
-                </div>
-              </List.Item>
-            )}
-          />
-        ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Платежей пока нет" />
-        )}
-      </Card>
-
-      <Card size="small" title="История записей">
-        {data.appointments.data.length > 0 ? (
+      <Card size="small" title="Финансовая история">
+        {data.events.data.length > 0 ? (
           <Space orientation="vertical" size={16} className="wide">
             <List
-              dataSource={data.appointments.data}
-              renderItem={(appointment) => (
+              dataSource={data.events.data}
+              renderItem={(event) => (
                 <List.Item>
                   <div className="wide">
                     <Space className={`wide ${styles.listJustify}`} wrap>
-                      <Typography.Text strong>{appointment.serviceName}</Typography.Text>
+                      <Typography.Text strong>{event.type === "top_up" ? "Пополнение" : event.serviceName}</Typography.Text>
                       <Space wrap size={8}>
-                        <Tag color={getAppointmentStatusTagColor(appointment.status)}>
-                          {renderClientHistoryAppointmentStatus(appointment)}
-                        </Tag>
-                        <Typography.Text type="secondary">{formatDateTime(appointment.startDate)}</Typography.Text>
+                        {event.appointmentStatus ? (
+                          <Tag color={getAppointmentStatusTagColor(event.appointmentStatus)}>
+                            {renderClientHistoryAppointmentStatus(event.appointmentStatus)}
+                          </Tag>
+                        ) : null}
+                        <Typography.Text strong type={event.amount < 0 ? "danger" : "success"}>
+                          {event.amount > 0 ? "+" : ""}
+                          {formatMoney(event.amount)}
+                        </Typography.Text>
+                        <Typography.Text type="secondary">{formatDateTime(event.date)}</Typography.Text>
                       </Space>
                     </Space>
-                    <Typography.Text type="secondary">
-                      {appointment.providerDisplayName ? `Преподаватель: ${appointment.providerDisplayName}` : "Преподаватель не назначен"}
-                    </Typography.Text>
+                    {event.type === "top_up" ? (
+                      <Typography.Text>{event.description?.trim() || "Без описания"}</Typography.Text>
+                    ) : (
+                      <Typography.Text type="secondary">
+                        {event.providerDisplayName ? `Преподаватель: ${event.providerDisplayName}` : "Преподаватель не назначен"}
+                      </Typography.Text>
+                    )}
                   </div>
                 </List.Item>
               )}
             />
-            {data.appointments.info.total > data.appointments.info.pageSize ? (
+            {data.events.info.total > data.events.info.pageSize ? (
               <Pagination
                 align="end"
-                current={data.appointments.info.page}
-                pageSize={data.appointments.info.pageSize}
-                total={data.appointments.info.total}
-                onChange={onAppointmentsPageChange}
+                current={data.events.info.page}
+                pageSize={data.events.info.pageSize}
+                total={data.events.info.total}
+                onChange={onEventsPageChange}
                 showSizeChanger={false}
               />
             ) : null}
           </Space>
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Записей пока нет" />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Финансовых событий пока нет" />
         )}
       </Card>
     </Space>

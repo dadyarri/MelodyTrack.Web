@@ -13,13 +13,17 @@ import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
 type ServiceDraftValues = {
   name?: string;
+  publicName?: string;
   description?: string;
+  isConsultation?: boolean;
   price?: number;
 };
 
 type ServiceCreateInput = {
   name: string;
+  publicName?: string;
   description?: string;
+  isConsultation: boolean;
   price: number;
 };
 
@@ -29,7 +33,9 @@ type ServicePriceFormValues = {
 
 type ServiceEditFormValues = {
   name: string;
+  publicName?: string;
   description?: string;
+  isConsultation: boolean;
 };
 
 const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
@@ -138,7 +144,9 @@ export function useServicesPageController() {
 
     editForm.setFieldsValue({
       name: editing.name,
+      publicName: editing.publicName ?? undefined,
       description: editing.description ?? undefined,
+      isConsultation: editing.isConsultation,
     });
   }, [editForm, editing]);
 
@@ -193,7 +201,9 @@ export function useServicesPageController() {
 
       createMutation.mutate({
         name: values.name,
+        publicName: values.publicName,
         description: values.description,
+        isConsultation: values.isConsultation ?? false,
         price: values.price,
       });
     },

@@ -11,13 +11,13 @@ import { getClientHistoryActions } from "@/features/clients/clientHistoryActions
 import { downloadBlob } from "@/utils/download";
 import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
 
-const clientHistoryAppointmentsPageSize = 8;
+const clientHistoryEventsPageSize = 8;
 
 export function useDashboardPageController() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
+  const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const canSeeFinancialOverview = hasAdminAccess(auth.user);
 
@@ -35,15 +35,15 @@ export function useDashboardPageController() {
     queryFn: () => scheduleApi.mini(timezone),
   });
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
         throw new Error("History client is not selected.");
       }
       return clientsApi.history(clientId, {
-        page: historyAppointmentsPage,
-        page_size: clientHistoryAppointmentsPageSize,
+        page: historyEventsPage,
+        page_size: clientHistoryEventsPageSize,
       });
     },
     enabled: Boolean(historyClient),
@@ -83,21 +83,21 @@ export function useDashboardPageController() {
   const clientHistoryActions = useMemo(() => getClientHistoryActions(auth.user, navigate), [auth.user, navigate]);
 
   const openHistoryClient = (client: Client) => {
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
     setHistoryClient(client);
   };
 
   const closeHistoryClient = () => {
     setHistoryClient(null);
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
   };
 
   return {
     auth,
     canSeeFinancialOverview,
     historyClient,
-    historyAppointmentsPage,
-    setHistoryAppointmentsPage,
+    historyEventsPage,
+    setHistoryEventsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
     statsQuery,

@@ -1,8 +1,10 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined } from "@/components/icons";
-import { Button, Input, Space, Tag } from "antd";
+import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/components/icons";
+import { Button, Input, Popconfirm, Space, Tag } from "antd";
+import type { Client, ClientLifecycleStatus } from "@/api/types";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
+import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -76,6 +78,11 @@ export function ClientsPage() {
                 ),
               },
               {
+                title: "Статус",
+                width: 118,
+                render: (_, row) => <ClientLifecycleTag client={row} />,
+              },
+              {
                 title: "Последняя запись",
                 render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет"),
               },
@@ -90,7 +97,7 @@ export function ClientsPage() {
               },
               {
                 title: "",
-                width: 112,
+                width: 154,
                 render: (_, row) => (
                   <Space>
                     <Button
@@ -99,6 +106,34 @@ export function ClientsPage() {
                         controller.setHistoryClient(row);
                       }}
                     />
+                    {controller.canCreateClients && (row.lifecycleStatus === 1 || row.lifecycleStatus === 2) ? (
+                      <Popconfirm
+                        title="Закрыть лид?"
+                        description="Лид останется в базе, но будет исключен из активной воронки."
+                        okText="Закрыть"
+                        cancelText="Отмена"
+                        okButtonProps={{ danger: true, loading: controller.leadStatusMutation.isPending }}
+                        onConfirm={() => {
+                          controller.setLeadClosed(row, true);
+                        }}
+                      >
+                        <Button danger icon={<CloseOutlined />} loading={controller.leadStatusMutation.isPending} />
+                      </Popconfirm>
+                    ) : null}
+                    {controller.canCreateClients && row.lifecycleStatus === 3 ? (
+                      <Popconfirm
+                        title="Вернуть лид в работу?"
+                        description="Статус будет пересчитан по записям клиента."
+                        okText="Вернуть"
+                        cancelText="Отмена"
+                        okButtonProps={{ loading: controller.leadStatusMutation.isPending }}
+                        onConfirm={() => {
+                          controller.setLeadClosed(row, false);
+                        }}
+                      >
+                        <Button icon={<ReloadOutlined />} loading={controller.leadStatusMutation.isPending} />
+                      </Popconfirm>
+                    ) : null}
                     <Button
                       icon={<EditOutlined />}
                       onClick={() => {
@@ -150,8 +185,32 @@ export function ClientsPage() {
         onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
-        onAppointmentsPageChange={controller.setHistoryAppointmentsPage}
+        onEventsPageChange={controller.setHistoryEventsPage}
+        onEditVacations={controller.canCreateClients ? controller.openVacationsEditor : undefined}
+      />
+      <ClientVacationsModal
+        client={controller.vacationsClient}
+        form={controller.vacationsForm}
+        saving={controller.vacationsMutation.isPending}
+        onCancel={controller.closeVacationsEditor}
+        onSubmit={controller.saveVacations}
       />
     </PageLayout>
   );
+}
+
+function ClientLifecycleTag({ client }: { client: Client }) {
+  const lifecycleStatus = client.lifecycleStatus;
+  if (lifecycleStatus === 0) {
+    return null;
+  }
+
+  const labels: Record<Exclude<ClientLifecycleStatus, 0>, { label: string; color: string }> = {
+    1: { label: "Лид", color: "blue" },
+    2: { label: "Думает", color: "gold" },
+    3: { label: "Закрыт", color: "default" },
+  };
+  const status = labels[lifecycleStatus];
+
+  return <Tag color={status.color}>{status.label}</Tag>;
 }

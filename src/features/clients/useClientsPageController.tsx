@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { App as AntdApp, Form } from "antd";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import dayjs from "dayjs";
 import { queryKeys } from "@/api/queryKeys";
 import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
@@ -18,6 +19,7 @@ import { clientSourcesApi, clientsApi } from "../../api/crm";
 import { getApiErrorMessages } from "../../api/http";
 import type { Client, Ulid } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
+import type { ClientVacationsFormValues } from "./ClientVacationsModal";
 
 type ClientSubmitInput = {
   firstName: string;
@@ -28,6 +30,7 @@ type ClientSubmitInput = {
   vk?: string;
   phone?: string;
   sourceId?: string;
+  vacations?: Array<{ startDate: string; endDate: string }>;
 };
 
 type ClientDraftValues = {
@@ -41,7 +44,7 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
-const clientHistoryAppointmentsPageSize = 8;
+const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
   const {
@@ -60,10 +63,12 @@ export function useClientsPageController() {
   const hasCreateDraft = hasSavedDraft;
   const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
-  const [historyAppointmentsPage, setHistoryAppointmentsPage] = useState(1);
+  const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
   const [form] = Form.useForm<ClientFormValues>();
+  const [vacationsForm] = Form.useForm<ClientVacationsFormValues>();
+  const [vacationsClient, setVacationsClient] = useState<Client | null>(null);
   const navigate = useNavigate();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -89,7 +94,7 @@ export function useClientsPageController() {
   });
 
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyAppointmentsPage, clientHistoryAppointmentsPageSize),
+    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -97,8 +102,8 @@ export function useClientsPageController() {
       }
 
       return clientsApi.history(clientId, {
-        page: historyAppointmentsPage,
-        page_size: clientHistoryAppointmentsPageSize,
+        page: historyEventsPage,
+        page_size: clientHistoryEventsPageSize,
       });
     },
     enabled: Boolean(historyClient),
@@ -190,6 +195,18 @@ export function useClientsPageController() {
     },
   });
 
+  const vacationsMutation = useMutation({
+    mutationFn: ({ client, values }: { client: Client; values: ClientVacationsFormValues }) =>
+      clientsApi.update(client.id, prepareClientVacationUpdate(client, values), { expectedActivityId: client.lastActivity?.id }),
+    onSuccess: async () => {
+      message.success("Периоды отсутствия сохранены");
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+    onError: showErrors,
+  });
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, expectedActivityId }: { id: Ulid; expectedActivityId?: Ulid }) => {
       return clientsApi.remove(id, { expectedActivityId });
@@ -221,6 +238,15 @@ export function useClientsPageController() {
         },
       });
     },
+  });
+
+  const leadStatusMutation = useMutation({
+    mutationFn: ({ id, isClosed }: { id: Ulid; isClosed: boolean }) => clientsApi.setLeadClosed(id, isClosed),
+    onSuccess: async (_result, variables) => {
+      message.success(variables.isClosed ? "Лид закрыт" : "Лид возвращен в работу");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+    },
+    onError: showErrors,
   });
 
   const openEditor = useCallback(
@@ -282,13 +308,13 @@ export function useClientsPageController() {
   }, []);
 
   const openHistoryClient = useCallback((client: Client) => {
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
     setHistoryClient(client);
   }, []);
 
   const closeHistoryClient = useCallback(() => {
     setHistoryClient(null);
-    setHistoryAppointmentsPage(1);
+    setHistoryEventsPage(1);
   }, []);
 
   const handleClearCreateDraft = useCallback(() => {
@@ -349,10 +375,12 @@ export function useClientsPageController() {
     },
     historyQuery,
     historyClient,
-    historyAppointmentsPage,
-    setHistoryAppointmentsPage,
+    historyEventsPage,
+    setHistoryEventsPage,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
+    vacationsForm,
+    vacationsClient,
     editing,
     isCreateOpen,
     hasCreateDraft,
@@ -363,8 +391,10 @@ export function useClientsPageController() {
     isSourceCreateOpen,
     createdSourceOptions: createdSourceOptions.createdOptions,
     saveMutation,
+    vacationsMutation,
     createSourceMutation,
     deleteMutation,
+    leadStatusMutation,
     openEditor,
     closeEditor,
     handleSearch,
@@ -383,6 +413,21 @@ export function useClientsPageController() {
       saveDraftFormValues(values);
     },
     clientHistoryActions,
+    openVacationsEditor: (client: Client) => {
+      vacationsForm.setFieldsValue({
+        vacations: client.vacations.map((vacation) => ({ period: [dayjs(vacation.startDate), dayjs(vacation.endDate)] })),
+      });
+      setVacationsClient(client);
+    },
+    closeVacationsEditor: () => {
+      setVacationsClient(null);
+      vacationsForm.resetFields();
+    },
+    saveVacations: (values: ClientVacationsFormValues) => {
+      if (vacationsClient) {
+        vacationsMutation.mutate({ client: vacationsClient, values });
+      }
+    },
     confirmDelete: (client: Client) => {
       modal.confirm({
         title: "Удалить клиента?",
@@ -393,6 +438,9 @@ export function useClientsPageController() {
           });
         },
       });
+    },
+    setLeadClosed: (client: Client, isClosed: boolean) => {
+      leadStatusMutation.mutate({ id: client.id, isClosed });
     },
     openSourceCreate: () => {
       if (!canCreateClients) {
@@ -424,6 +472,22 @@ function prepareClientInput(values: ClientFormValues): ClientSubmitInput {
   };
 
   return omitEmptyContacts(input);
+}
+
+function prepareClientVacationUpdate(client: Client, values: ClientVacationsFormValues) {
+  return {
+    firstName: client.firstName,
+    lastName: client.lastName,
+    patronymic: client.patronymic,
+    dateOfBirth: client.dateOfBirth,
+    phone: getClientContactValue(client, "phone"),
+    telegram: getClientContactValue(client, "telegram"),
+    vk: getClientContactValue(client, "vk"),
+    sourceId: client.sourceId,
+    vacations: (values.vacations ?? []).flatMap((vacation) =>
+      vacation.period ? [{ startDate: vacation.period[0].format("YYYY-MM-DD"), endDate: vacation.period[1].format("YYYY-MM-DD") }] : [],
+    ),
+  };
 }
 
 function omitEmptyContacts(input: ClientSubmitInput) {

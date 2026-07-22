@@ -1,4 +1,5 @@
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@/components/icons";
+import { useMutation } from "@tanstack/react-query";
 import { Button, Space, Typography } from "antd";
 import dayjs from "dayjs";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
@@ -13,11 +14,18 @@ import {
 } from "@/features/schedule/ScheduleModals";
 import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
 import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
+import { calendarSubscriptionsApi } from "@/api/crm";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
+  const clientCalendarSubscriptionMutation = useMutation({
+    mutationFn: (clientId: string) => calendarSubscriptionsApi.regenerateClient(clientId),
+    onSuccess: async (subscription) => {
+      await navigator.clipboard.writeText(subscription.url);
+    },
+  });
   const weekRangeLabel = formatScheduleWeekRange(controller.weekStart);
 
   return (
@@ -163,6 +171,13 @@ export function SchedulePage() {
           controller.canCreateAppointments
             ? (appointment) => {
                 controller.openPaymentCreateForAppointment(appointment);
+              }
+            : undefined
+        }
+        onCreateClientCalendarSubscription={
+          controller.canCreateAppointments
+            ? (appointment) => {
+                clientCalendarSubscriptionMutation.mutate(appointment.client.id);
               }
             : undefined
         }

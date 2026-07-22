@@ -51,7 +51,10 @@ export function OfflineQueueSync() {
           }
 
           if (item.kind === "services:create") {
-            await servicesApi.create(item.payload, { replayKey: item.replayKey });
+            await servicesApi.create(
+              { ...item.payload, isConsultation: item.payload.isConsultation ?? false },
+              { replayKey: item.replayKey },
+            );
             removeOfflineQueueItem(item.id);
             syncedCount += 1;
             continue;

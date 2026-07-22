@@ -31,6 +31,7 @@ export type OfflineQueuedCreate =
       payload: {
         name: string;
         description?: string;
+        isConsultation?: boolean;
         price: number;
       };
     }
@@ -57,6 +58,7 @@ export type OfflineQueuedCreate =
       payload: {
         description: string;
         amount: number;
+        date: string;
         categoryId?: string;
       };
     }

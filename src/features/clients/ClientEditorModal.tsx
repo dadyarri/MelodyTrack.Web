@@ -6,7 +6,7 @@ import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import { formatRecordActivitySummary } from "@/utils/staleEntity";
 import { ClientFormFields } from "./ClientFormFields";
 
-export type ClientFormValues = Client & {
+export type ClientFormValues = Omit<Client, "vacations"> & {
   dateOfBirth?: string | null;
   telegram?: string | null;
   vk?: string | null;
