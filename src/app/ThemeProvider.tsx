@@ -249,3 +249,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     </ThemeContext.Provider>
   );
 }
+
+export function ClientPortalThemeProvider({ children }: { children: ReactNode }) {
+  return (
+    <ConfigProvider locale={ruRU} theme={{ ...lightTheme, inherit: false }}>
+      <div data-theme="light">{children}</div>
+    </ConfigProvider>
+  );
+}

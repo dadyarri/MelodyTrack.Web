@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="light"] {
   --bg-app: #f4e8c8;
   --bg-sider: #efe1be;
   --bg-card: #f8edcf;
