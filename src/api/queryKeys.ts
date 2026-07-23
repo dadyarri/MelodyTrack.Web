@@ -55,6 +55,16 @@ export const queryKeys = {
     lookup: (search: string) => ["services", "lookup", search] as const,
     selected: (serviceId?: string) => ["services", "selected", formatDateKey(serviceId)] as const,
   },
+  courses: {
+    all: ["courses"] as const,
+    list: (search: string) => ["courses", "list", search] as const,
+    selected: (courseId?: string) => ["courses", "selected", formatDateKey(courseId)] as const,
+  },
+  courseEnrollments: {
+    all: ["course-enrollments"] as const,
+    list: (params?: { clientId?: string | null; courseId?: string | null }) =>
+      ["course-enrollments", "list", formatDateKey(params?.clientId), formatDateKey(params?.courseId)] as const,
+  },
   payments: {
     all: ["payments"] as const,
     list: (page: number, search: string, clientId?: string, serviceId?: string, startDate?: Dayjs | null, endDate?: Dayjs | null) =>
@@ -94,5 +104,11 @@ export const queryKeys = {
     recurrenceTypes: ["schedule", "recurrenceTypes"] as const,
     availability: (userId?: string) => ["schedule", "availability", formatDateKey(userId)] as const,
     mini: (timezone: string) => ["schedule", "mini", timezone] as const,
+  },
+  portal: {
+    all: ["portal"] as const,
+    schedule: (clientId: string | null | undefined, startDateIso: string, endDateIso: string, timezone: string) =>
+      ["portal", "schedule", formatDateKey(clientId), startDateIso, endDateIso, timezone] as const,
+    enrollments: (clientId: string | null | undefined) => ["portal", "course-enrollments", formatDateKey(clientId)] as const,
   },
 };

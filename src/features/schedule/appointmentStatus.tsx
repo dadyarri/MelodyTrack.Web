@@ -6,13 +6,13 @@ import type { AppointmentStatus } from "@/api/types";
 export function getAppointmentStatusLabel(status: AppointmentStatus) {
   switch (status) {
     case "completed":
-      return "Завершена";
+      return "Завершено";
     case "cancelled":
-      return "Отменена";
+      return "Отменено";
     case "burned":
-      return "Сгорела";
+      return "Сгорело";
     default:
-      return "Запланирована";
+      return "Запланировано";
   }
 }
 

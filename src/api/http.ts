@@ -46,6 +46,7 @@ http.interceptors.response.use(
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     const publicAuthUrls = [
+      "/client-portal/auth/link",
       "/auth/login",
       "/auth/register",
       "/auth/invite",

@@ -1,4 +1,5 @@
 import {
+  BookOutlined,
   CalendarCheckOutlined,
   CalendarOutlined,
   CoinsOutlined,
@@ -118,6 +119,14 @@ export const appNavItems: AppNavItem[] = [
     label: "Клиенты",
     shortcut: "4",
     visibility: "admin",
+  },
+  {
+    key: "/courses",
+    icon: <BookOutlined />,
+    label: "Курсы",
+    shortcut: "K",
+    visibility: "admin",
+    group: "reference-books",
   },
   {
     key: "/services",

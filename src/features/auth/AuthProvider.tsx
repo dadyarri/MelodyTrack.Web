@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         gcTime: 0,
       });
       setCachedUser(me);
+      return me;
     },
     [queryClient],
   );
@@ -78,10 +79,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           accessToken: string;
           refreshToken: string;
         }>("/auth/login", input);
-        await loadMe(response.data.accessToken, response.data.refreshToken);
+        return loadMe(response.data.accessToken, response.data.refreshToken);
       },
       async establishSession(accessToken, refreshToken) {
-        await loadMe(accessToken, refreshToken);
+        return loadMe(accessToken, refreshToken);
       },
       async logout() {
         const refreshToken = authStore.getRefreshToken();

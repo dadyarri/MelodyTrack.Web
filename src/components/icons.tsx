@@ -2,6 +2,7 @@ import type { LucideIcon, LucideProps } from "lucide-react";
 import {
   BadgeInfo,
   BadgeRussianRuble,
+  BookOpenText,
   Blocks,
   Calendar,
   CalendarCheck2,
@@ -13,6 +14,8 @@ import {
   CircleX,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   Clock3,
   Cloud,
   CloudDownload,
@@ -43,6 +46,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  Save,
   Settings2,
   Shield,
   Sun,
@@ -81,6 +85,7 @@ export const CalendarOutlined = createIcon(Calendar);
 export const CalendarCheckOutlined = createIcon(CalendarCheck2);
 export const CheckCircleOutlined = createIcon(CircleCheck);
 export const CheckOutlined = createIcon(Check);
+export const BookOutlined = createIcon(BookOpenText);
 export const CoinsOutlined = createIcon(Coins);
 export const ClockCircleOutlined = createIcon(Clock3);
 export const CloseCircleOutlined = createIcon(CircleX);
@@ -104,6 +109,7 @@ export const HourglassOutlined = createIcon(Hourglass);
 export const InfoCircleOutlined = createIcon(BadgeInfo);
 export const KeyOutlined = createIcon(KeyRound);
 export const LeftOutlined = createIcon(ChevronLeft);
+export const DownOutlined = createIcon(ChevronDown);
 export const LineChartOutlined = createIcon(ChartLine);
 export const LinkOutlined = createIcon(Link);
 export const ListTodoOutlined = createIcon(ListTodo);
@@ -120,6 +126,8 @@ export const ProfileOutlined = createIcon(ContactRound);
 export const ReceiptOutlined = createIcon(Receipt);
 export const ReloadOutlined = createIcon(RefreshCcw);
 export const RightOutlined = createIcon(ChevronRight);
+export const SaveOutlined = createIcon(Save);
+export const UpOutlined = createIcon(ChevronUp);
 export const SafetyCertificateOutlined = createIcon(Shield);
 export const SearchOutlined = createIcon(Search);
 export const SendOutlined = createIcon(Send);

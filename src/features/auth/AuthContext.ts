@@ -12,8 +12,8 @@ export interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   user: MeResponse | null;
-  login: (input: LoginInput) => Promise<void>;
-  establishSession: (accessToken: string, refreshToken: string) => Promise<void>;
+  login: (input: LoginInput) => Promise<MeResponse>;
+  establishSession: (accessToken: string, refreshToken: string) => Promise<MeResponse>;
   logout: () => Promise<void>;
 }
 

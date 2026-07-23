@@ -4,6 +4,7 @@ import type { Client, ClientLifecycleStatus } from "@/api/types";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
+import { CourseEnrollmentCreateModal } from "@/features/clients/CourseEnrollmentCreateModal";
 import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
@@ -182,11 +183,32 @@ export function ClientsPage() {
         data={controller.historyQuery.data}
         isLoading={controller.historyQuery.isLoading}
         isError={controller.historyQuery.isError}
+        courseEnrollments={controller.courseEnrollmentsQuery.data}
+        isCourseEnrollmentsLoading={controller.courseEnrollmentsQuery.isLoading}
+        isCourseEnrollmentsError={controller.courseEnrollmentsQuery.isError}
         onClose={controller.closeHistoryClient}
         onCreateAppointment={controller.clientHistoryActions.onCreateAppointment}
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
+        onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
+        onCreatePortalLink={controller.canCreateClients ? controller.onCreatePortalLink : undefined}
+        isCreatingPortalLink={controller.createPortalLinkMutation.isPending}
+        onCreateCalendarSubscription={controller.canCreateClients ? controller.onCreateCalendarSubscription : undefined}
+        isCreatingCalendarSubscription={controller.createCalendarSubscriptionMutation.isPending}
+        onResetPortalPin={controller.canCreateClients ? controller.onResetPortalPin : undefined}
+        isResettingPortalPin={controller.resetPortalPinMutation.isPending}
+        onDeleteCourseEnrollment={controller.canCreateClients ? controller.onDeleteEnrollment : undefined}
+        onOpenCourseProgress={controller.openCourseProgress}
+        onUpdateThemeProgress={controller.canCreateClients ? controller.onUpdateThemeProgress : undefined}
         onEventsPageChange={controller.setHistoryEventsPage}
         onEditVacations={controller.canCreateClients ? controller.openVacationsEditor : undefined}
+      />
+      <CourseEnrollmentCreateModal
+        open={controller.isEnrollmentCreateOpen}
+        clientName={controller.historyClient ? formatClientName(controller.historyClient) : undefined}
+        options={controller.availableEnrollmentCourses}
+        confirmLoading={controller.createEnrollmentMutation.isPending}
+        onCancel={controller.closeEnrollmentCreate}
+        onSubmit={controller.onCreateEnrollment}
       />
       <ClientVacationsModal
         client={controller.vacationsClient}

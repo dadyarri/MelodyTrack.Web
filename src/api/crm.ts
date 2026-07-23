@@ -8,6 +8,10 @@ import type {
   CalendarSubscription,
   ClientHistory,
   ClientWithBalance,
+  Course,
+  CourseEnrollment,
+  CourseEnrollmentThemeProgressAction,
+  CourseSummary,
   CreateEntityResponse,
   CreateCustomTaskInput,
   DashboardStats,
@@ -35,6 +39,17 @@ import type {
   UserWorkingHoursDay,
   User,
 } from "./types";
+
+export interface ClientPortalAppointment {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: Appointment["status"];
+  courseTheme?: {
+    id: string;
+    title: string;
+  } | null;
+}
 
 export const clientsApi = {
   list(params: PaginatedParams & Partial<Client> & { search?: string }) {
@@ -105,6 +120,12 @@ export const clientsApi = {
   },
   exportDebtors() {
     return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
+  },
+  createPortalLink(id: Ulid) {
+    return http.post<{ url: string }>(`/clients/${id}/portal-link`, {}).then((response) => response.data);
+  },
+  resetPortalPin(id: Ulid) {
+    return http.post<unknown>(`/clients/${id}/portal-pin/reset`, {}).then(() => undefined);
   },
 };
 
@@ -194,6 +215,139 @@ export const servicesApi = {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
       })
       .then(() => undefined);
+  },
+};
+
+export const coursesApi = {
+  list(search?: string) {
+    return http
+      .get<{ courses: CourseSummary[] }>("/courses", {
+        params: search ? { search } : undefined,
+      })
+      .then((response) => response.data.courses);
+  },
+  get(id: Ulid) {
+    return http.get<{ course: Course }>(`/courses/${id}`).then((response) => response.data.course);
+  },
+  create(input: {
+    name: string;
+    description?: string;
+    levels?: Array<{
+      title: string;
+      order: number;
+      requiredExperiencePoints: number;
+    }>;
+    blocks?: Array<{
+      title: string;
+      description?: string;
+      order: number;
+      branches?: Array<{
+        title: string;
+        description?: string;
+        order: number;
+        themes?: Array<{
+          key: string;
+          title: string;
+          description?: string;
+          lessonContent?: string;
+          homeworkContent?: string;
+          order: number;
+          experiencePointsReward: number;
+          dependencyKeys: string[];
+        }>;
+      }>;
+    }>;
+  }) {
+    return http.post<CreateEntityResponse>("/courses", input).then((response) => response.data);
+  },
+  update(
+    id: Ulid,
+    input: {
+      name: string;
+      description?: string;
+      levels: Array<{
+        title: string;
+        order: number;
+        requiredExperiencePoints: number;
+      }>;
+      blocks: Array<{
+        title: string;
+        description?: string;
+        order: number;
+        branches: Array<{
+          title: string;
+          description?: string;
+          order: number;
+          themes: Array<{
+            key: string;
+            title: string;
+            description?: string;
+            lessonContent?: string;
+            homeworkContent?: string;
+            order: number;
+            experiencePointsReward: number;
+            dependencyKeys: string[];
+          }>;
+        }>;
+      }>;
+    },
+    options?: { expectedActivityId?: Ulid },
+  ) {
+    return http
+      .put<unknown>(`/courses/${id}`, {
+        id,
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
+  },
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/courses/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
+  },
+};
+
+export const courseEnrollmentsApi = {
+  list(params?: { clientId?: Ulid; courseId?: Ulid }) {
+    return http
+      .get<{ enrollments: CourseEnrollment[] }>("/course-enrollments", {
+        params: params && (params.clientId || params.courseId) ? { clientId: params.clientId, courseId: params.courseId } : undefined,
+      })
+      .then((response) => response.data.enrollments);
+  },
+  create(input: { clientId: Ulid; courseId: Ulid }) {
+    return http.post<CreateEntityResponse>("/course-enrollments", input).then((response) => response.data);
+  },
+  remove(id: Ulid) {
+    return http.delete<unknown>(`/course-enrollments/${id}`).then(() => undefined);
+  },
+  updateThemeProgress(themeId: Ulid, action: CourseEnrollmentThemeProgressAction) {
+    return http
+      .post<unknown>(`/course-enrollment-themes/${themeId}/actions`, {
+        id: themeId,
+        action,
+      })
+      .then(() => undefined);
+  },
+};
+
+export const clientPortalApi = {
+  schedule(params: { timezone: string; startDate: string; endDate: string }) {
+    return http
+      .get<{ appointments: ClientPortalAppointment[] }>("/client-portal/schedule", {
+        params: {
+          timezone: params.timezone,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        },
+      })
+      .then((response) => response.data.appointments);
+  },
+  courseEnrollments() {
+    return http.get<{ enrollments: CourseEnrollment[] }>("/client-portal/course-enrollments").then((response) => response.data.enrollments);
   },
 };
 
@@ -413,7 +567,9 @@ export const scheduleApi = {
       clientId: Ulid;
       serviceId: Ulid;
       providerId?: Ulid;
+      courseThemeId?: Ulid;
       recurrenceTypeId?: Ulid;
+      lessonNotes?: string;
       startDate: string;
       timezone: string;
       patternEndDate?: string;
@@ -429,6 +585,10 @@ export const scheduleApi = {
       clientId: Ulid;
       serviceId: Ulid;
       providerId: Ulid;
+      courseThemeId: Ulid | null;
+      hasCourseThemeSelection: boolean;
+      lessonNotes: string | null;
+      hasLessonNotes: boolean;
       startDate: string;
       timezone: string;
       status: "planned" | "completed" | "cancelled" | "burned";
