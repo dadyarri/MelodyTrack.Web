@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "scheduler"],
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
@@ -12,6 +13,9 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: false,
+  },
+  optimizeDeps: {
+    include: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "scheduler"],
   },
   build: {
     rolldownOptions: {
