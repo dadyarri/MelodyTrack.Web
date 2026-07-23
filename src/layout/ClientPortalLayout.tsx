@@ -18,7 +18,9 @@ export function ClientPortalLayout() {
             </Typography.Title>
           </div>
           <Space className={styles.actions}>
-            <Typography.Text type="secondary">{auth.user?.firstName} {auth.user?.lastName}</Typography.Text>
+            <Typography.Text type="secondary">
+              {auth.user?.firstName} {auth.user?.lastName}
+            </Typography.Text>
             <Button icon={<LogoutOutlined />} onClick={() => void auth.logout()}>
               Выйти
             </Button>

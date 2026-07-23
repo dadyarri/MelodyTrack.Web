@@ -198,12 +198,24 @@ export function ClientHistoryPanel({
                 extra={
                   <Space wrap size={8}>
                     {onOpenCourseProgress ? (
-                      <Button size="small" onClick={() => onOpenCourseProgress(enrollment.id)}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          onOpenCourseProgress(enrollment.id);
+                        }}
+                      >
                         Прогресс
                       </Button>
                     ) : null}
                     {onDeleteCourseEnrollment ? (
-                      <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDeleteCourseEnrollment(enrollment.id)}>
+                      <Button
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => {
+                          onDeleteCourseEnrollment(enrollment.id);
+                        }}
+                      >
                         Снять
                       </Button>
                     ) : null}
@@ -230,7 +242,9 @@ export function ClientHistoryPanel({
                               type="link"
                               size="small"
                               icon={<CheckOutlined />}
-                              onClick={() => onUpdateThemeProgress(theme.id, "pass-homework")}
+                              onClick={() => {
+                                onUpdateThemeProgress(theme.id, "pass-homework");
+                              }}
                             >
                               Принять ДЗ
                             </Button>

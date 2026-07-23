@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Card, Form, Input, Result, Space, Spin, Typography } from "antd";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 import { authApi, type ClientPortalPinAuthInput } from "@/api/auth";
 import { getApiErrorMessage } from "@/api/http";
@@ -15,6 +15,11 @@ type PortalPinFormValues = {
 
 export function PortalAccessPage() {
   const { token } = useParams<{ token: string }>();
+
+  return <PortalAccessPageContent key={token ?? "saved-clients"} token={token} />;
+}
+
+function PortalAccessPageContent({ token }: { token?: string }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const [form] = Form.useForm<PortalPinFormValues>();
@@ -52,18 +57,6 @@ export function PortalAccessPage() {
       setPinConfirmationError(fieldErrors.pinConfirmation);
     },
   });
-
-  useEffect(() => {
-    if (!statusQuery.data) {
-      return;
-    }
-
-    setPinSetupStep("entry");
-    setPendingPin("");
-    setPinError(null);
-    setPinConfirmationError(null);
-    form.resetFields();
-  }, [form, token, statusQuery.data?.hasPin]);
 
   if (auth.isAuthenticated) {
     return <Navigate to={auth.user?.isClientPortal ? "/portal" : "/"} replace />;
@@ -103,7 +96,7 @@ export function PortalAccessPage() {
       ) : statusQuery.isError ? (
         <Result status="warning" title="Ссылка входа недействительна" subTitle={getApiErrorMessage(statusQuery.error)} />
       ) : statusQuery.data ? (
-        <Space direction="vertical" size={16} className="wide">
+        <Space orientation="vertical" size={16} className="wide">
           <Form<PortalPinFormValues>
             form={form}
             layout="vertical"
@@ -262,7 +255,7 @@ function getPortalPinFieldErrors(error: unknown, hasPin: boolean, step: "entry" 
 }
 
 function getFieldErrors(errorsByField: Record<string, string[]>, fieldName: string) {
-  return errorsByField[fieldName] ?? errorsByField[fieldName.toLowerCase()] ?? [];
+  return errorsByField[fieldName.toLowerCase()] ?? [];
 }
 
 function readApiErrorsByField(error: unknown) {
@@ -314,15 +307,26 @@ function SavedClientsList({
 
   return (
     <Card size="small" title={title}>
-      <Space direction="vertical" size={12} className="wide">
+      <Space orientation="vertical" size={12} className="wide">
         {clients.map((client) => (
           <Space key={client.token} className="wide" style={{ justifyContent: "space-between" }}>
             <div>
               <Typography.Text strong>{[client.firstName, client.lastName].filter(Boolean).join(" ")}</Typography.Text>
             </div>
             <Space>
-              <Button onClick={() => onOpen(client.token)}>Открыть</Button>
-              <Button danger onClick={() => onRemove(client.token)}>
+              <Button
+                onClick={() => {
+                  onOpen(client.token);
+                }}
+              >
+                Открыть
+              </Button>
+              <Button
+                danger
+                onClick={() => {
+                  onRemove(client.token);
+                }}
+              >
                 Убрать
               </Button>
             </Space>

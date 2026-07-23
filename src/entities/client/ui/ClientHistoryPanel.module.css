@@ -22,9 +22,7 @@
 }
 
 .portalActionGroup {
-  background:
-    linear-gradient(180deg, rgba(214, 180, 126, 0.12), rgba(214, 180, 126, 0.04)),
-    var(--bg-card);
+  background: linear-gradient(180deg, rgba(214, 180, 126, 0.12), rgba(214, 180, 126, 0.04)), var(--bg-card);
 }
 
 .listJustify {

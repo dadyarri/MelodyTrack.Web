@@ -18,22 +18,22 @@
   width: 100%;
 }
 
-.balancePositive,
-.balanceNegative,
-.balanceNeutral {
-  margin: 0 !important;
+.balancePositive:global(.ant-typography),
+.balanceNegative:global(.ant-typography),
+.balanceNeutral:global(.ant-typography) {
+  margin: 0;
 }
 
-.balancePositive {
-  color: #2f7d32 !important;
+.balancePositive:global(.ant-typography) {
+  color: #2f7d32;
 }
 
-.balanceNegative {
-  color: #c62828 !important;
+.balanceNegative:global(.ant-typography) {
+  color: #c62828;
 }
 
-.balanceNeutral {
-  color: #5d4a37 !important;
+.balanceNeutral:global(.ant-typography) {
+  color: #5d4a37;
 }
 
 .notes {

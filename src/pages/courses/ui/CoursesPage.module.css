@@ -105,7 +105,6 @@
   gap: 8px;
 }
 
-
 .modalFooter {
   width: 100%;
   justify-content: space-between;
@@ -594,8 +593,8 @@
   text-transform: uppercase;
 }
 
-.progressOverlayTitle {
-  margin: 0 !important;
+.progressOverlayTitle:global(.ant-typography) {
+  margin: 0;
 }
 
 .progressHero {
@@ -611,7 +610,11 @@
   border: 1px solid color-mix(in srgb, var(--course-diagram-gold-border) 42%, var(--ant-color-border));
   border-radius: 18px 18px 22px 22px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--course-diagram-gold-soft) 92%, white), color-mix(in srgb, var(--course-diagram-gold-panel) 84%, var(--ant-color-bg-container))),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--course-diagram-gold-soft) 92%, white),
+      color-mix(in srgb, var(--course-diagram-gold-panel) 84%, var(--ant-color-bg-container))
+    ),
     var(--ant-color-bg-container);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 72%, transparent),
@@ -626,7 +629,11 @@
 :global([data-theme="dark"]) .progressLevelBadge {
   border: 1px solid color-mix(in srgb, var(--ant-color-primary) 22%, var(--ant-color-border));
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--ant-color-primary-bg) 88%, white), color-mix(in srgb, var(--ant-color-bg-container) 96%, white)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ant-color-primary-bg) 88%, white),
+      color-mix(in srgb, var(--ant-color-bg-container) 96%, white)
+    ),
     var(--ant-color-bg-container);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 18%, transparent),
@@ -704,7 +711,11 @@
     filter 0.35s ease,
     transform 0.35s ease;
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--course-diagram-gold-line) 84%, #9c5f09), color-mix(in srgb, var(--ant-color-warning) 82%, #ffe082)),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--course-diagram-gold-line) 84%, #9c5f09),
+      color-mix(in srgb, var(--ant-color-warning) 82%, #ffe082)
+    ),
     var(--course-diagram-gold-line);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 44%, transparent),
@@ -713,7 +724,11 @@
 
 :global([data-theme="dark"]) .progressBarFill {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--ant-color-primary) 76%, #6aa4ff), color-mix(in srgb, var(--ant-color-warning) 68%, #f4d35e)),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ant-color-primary) 76%, #6aa4ff),
+      color-mix(in srgb, var(--ant-color-warning) 68%, #f4d35e)
+    ),
     var(--ant-color-primary);
 }
 

@@ -325,14 +325,12 @@ export function CoursesPage() {
                         Свойства курса
                       </Button>
                       <Button
-                        type={controller.hasUnsavedChanges && !isProgressMode ? "primary" : "dashed"}
+                        type={controller.hasUnsavedChanges ? "primary" : "dashed"}
                         icon={<SaveOutlined />}
                         loading={controller.updateMutation.isPending}
                         onClick={controller.saveCourse}
                       >
-                        <span className={styles.saveButtonLabel}>
-                          Сохранить
-                        </span>
+                        <span className={styles.saveButtonLabel}>Сохранить</span>
                       </Button>
                     </>
                   ) : null}
@@ -631,7 +629,7 @@ function CourseEditorFlow({
         <Controls showInteractive={false} position="top-left" />
       </ReactFlow>
       {enrollment ? <ProgressOverlayCard course={course} enrollment={enrollment} /> : null}
-      {hasUnsavedChanges ? <Alert className={styles.unsavedWarning} type="warning" showIcon message="Есть несохраненные изменения" /> : null}
+      {hasUnsavedChanges ? <Alert className={styles.unsavedWarning} type="warning" showIcon title="Есть несохраненные изменения" /> : null}
       <DiagramLegend />
     </div>
   );
@@ -643,10 +641,19 @@ function ProgressOverlayCard({ course, enrollment }: { course: EditorCourse; enr
   const [xpGain, setXpGain] = useState<number | null>(null);
   const [isXpAnimating, setXpAnimating] = useState(false);
   const sortedLevels = useMemo(
-    () => course.levels.slice().sort((left, right) => left.requiredExperiencePoints - right.requiredExperiencePoints || course.levels.indexOf(left) - course.levels.indexOf(right)),
+    () =>
+      course.levels
+        .slice()
+        .sort(
+          (left, right) =>
+            left.requiredExperiencePoints - right.requiredExperiencePoints || course.levels.indexOf(left) - course.levels.indexOf(right),
+        ),
     [course.levels],
   );
-  const currentLevel = enrollment.currentLevel ?? sortedLevels.filter((level) => level.requiredExperiencePoints <= enrollment.earnedExperiencePoints).at(-1) ?? null;
+  const currentLevel =
+    enrollment.currentLevel ??
+    sortedLevels.filter((level) => level.requiredExperiencePoints <= enrollment.earnedExperiencePoints).at(-1) ??
+    null;
   const nextLevel = sortedLevels.find((level) => level.requiredExperiencePoints > enrollment.earnedExperiencePoints) ?? null;
   const currentLevelTitle = currentLevel?.title ?? "Не задан";
   const currentLevelGoal = currentLevel?.requiredExperiencePoints ?? 0;
@@ -659,7 +666,8 @@ function ProgressOverlayCard({ course, enrollment }: { course: EditorCourse; enr
   const currentLevelIndex = currentLevel
     ? sortedLevels.findIndex(
         (level) =>
-          ("id" in currentLevel && level.localId === currentLevel.id) || ("localId" in currentLevel && level.localId === currentLevel.localId),
+          ("id" in currentLevel && level.localId === currentLevel.id) ||
+          ("localId" in currentLevel && level.localId === currentLevel.localId),
       ) + 1
     : 0;
 
@@ -710,12 +718,12 @@ function ProgressOverlayCard({ course, enrollment }: { course: EditorCourse; enr
       <div className={styles.progressBarPanel}>
         <div className={styles.progressBarHeader}>
           <strong>{enrollment.earnedExperiencePoints} XP</strong>
-          <span>{nextLevel ? `${nextLevel.requiredExperiencePoints} XP` : "Максимум"}</span>
+          <span>{nextLevel ? `${String(nextLevel.requiredExperiencePoints)} XP` : "Максимум"}</span>
         </div>
         <div className={styles.progressBarTrack} aria-hidden="true">
           <div
             className={`${styles.progressBarFill} ${isXpAnimating ? styles.progressBarFillAnimated : ""}`}
-            style={{ width: `${progressPercent}%` }}
+            style={{ width: `${String(progressPercent)}%` }}
           />
         </div>
         {xpGain ? <div className={styles.xpGainBurst}>+{xpGain} XP</div> : null}
@@ -1050,12 +1058,7 @@ function CourseNodeModal({
               </Button>
             ) : null}
             {selected.kind === "course" ? (
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                loading={controller.deleteMutation.isPending}
-                onClick={controller.confirmDelete}
-              >
+              <Button danger icon={<DeleteOutlined />} loading={controller.deleteMutation.isPending} onClick={controller.confirmDelete}>
                 Удалить курс
               </Button>
             ) : null}
@@ -1530,7 +1533,7 @@ function CourseLevelsEditor({ course, controller }: { course: EditorCourse; cont
         <Alert
           type="info"
           showIcon
-          message="Уровни пока не настроены"
+          title="Уровни пока не настроены"
           description="Клиенты будут получать опыт, но название уровня определяться не будет."
         />
       ) : (
@@ -1578,7 +1581,7 @@ function CourseLevelRow({
 }) {
   return (
     <div className={styles.levelRow}>
-      <Tag bordered={false} color="gold">
+      <Tag variant="filled" color="gold">
         {index + 1}
       </Tag>
       <Input
@@ -1588,18 +1591,31 @@ function CourseLevelRow({
           onChange({ title: event.target.value });
         }}
       />
-      <InputNumber
-        min={0}
-        value={level.requiredExperiencePoints}
-        className={styles.levelThresholdInput}
-        addonBefore="XP"
-        onChange={(value) => {
-          onChange({ requiredExperiencePoints: typeof value === "number" ? value : 0 });
-        }}
-      />
+      <Space.Compact className={styles.levelThresholdInput}>
+        <Input value="XP" readOnly aria-label="Единица измерения" />
+        <InputNumber
+          min={0}
+          value={level.requiredExperiencePoints}
+          onChange={(value) => {
+            onChange({ requiredExperiencePoints: typeof value === "number" ? value : 0 });
+          }}
+        />
+      </Space.Compact>
       <Space>
-        <Button icon={<UpOutlined />} disabled={!canMoveUp} onClick={() => onMove("up")} />
-        <Button icon={<DownOutlined />} disabled={!canMoveDown} onClick={() => onMove("down")} />
+        <Button
+          icon={<UpOutlined />}
+          disabled={!canMoveUp}
+          onClick={() => {
+            onMove("up");
+          }}
+        />
+        <Button
+          icon={<DownOutlined />}
+          disabled={!canMoveDown}
+          onClick={() => {
+            onMove("down");
+          }}
+        />
         <Button danger icon={<DeleteOutlined />} onClick={onRemove} />
       </Space>
     </div>

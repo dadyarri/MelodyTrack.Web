@@ -29,7 +29,7 @@ export function ClientPortalSchedulePage() {
   });
 
   const appointments = query.data ?? [];
-  const nextAppointment = appointments[0] ?? null;
+  const nextAppointment = appointments[0];
   const balance = auth.user?.balance ?? 0;
   const balanceToneClassName = balance < 0 ? styles.balanceNegative : balance > 0 ? styles.balancePositive : styles.balanceNeutral;
 
@@ -38,7 +38,7 @@ export function ClientPortalSchedulePage() {
       <div className={styles.summaryGrid}>
         <Card loading={query.isLoading} className={styles.heroCard} title="Ближайшее занятие">
           <Space vertical size={10} className={styles.heroCardContent}>
-            {nextAppointment ? (
+            {appointments.length > 0 ? (
               <>
                 <Typography.Text strong>{formatDateRange(nextAppointment.startDate, nextAppointment.endDate)}</Typography.Text>
                 <Space wrap>

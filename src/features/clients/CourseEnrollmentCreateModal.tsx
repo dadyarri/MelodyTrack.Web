@@ -90,9 +90,7 @@ export function CourseEnrollmentCreateModal({
               {selectedCourse.blockCount} блоков · {selectedCourse.themeCount} тем
             </Typography.Text>
             {selectedCourse.description ? (
-              <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
-                {selectedCourse.description}
-              </Typography.Paragraph>
+              <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>{selectedCourse.description}</Typography.Paragraph>
             ) : null}
           </div>
         ) : null}
