@@ -1,7 +1,8 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Card, Space, Tag, Tooltip, Typography } from "antd";
+import { App as AntdApp, Button, Card, Space, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import { calendarSubscriptionsApi, clientPortalApi } from "@/api/crm";
+import { getApiErrorMessages } from "@/api/http";
 import { queryKeys } from "@/api/queryKeys";
 import { CalendarCheckOutlined } from "@/components/icons";
 import { useAuth } from "@/features/auth/useAuth";
@@ -11,6 +12,7 @@ import styles from "./ClientPortalSchedulePage.module.css";
 
 export function ClientPortalSchedulePage() {
   const auth = useAuth();
+  const { message } = AntdApp.useApp();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startDate = dayjs().startOf("day").toISOString();
   const endDate = dayjs().add(45, "day").endOf("day").toISOString();
@@ -25,6 +27,12 @@ export function ClientPortalSchedulePage() {
     mutationFn: (clientId: string) => calendarSubscriptionsApi.regenerateClient(clientId),
     onSuccess: async (subscription) => {
       await navigator.clipboard.writeText(subscription.url);
+      message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
+    },
+    onError: (error) => {
+      for (const errorMessage of getApiErrorMessages(error)) {
+        void message.error(errorMessage);
+      }
     },
   });
 
