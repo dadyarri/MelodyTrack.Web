@@ -119,7 +119,9 @@ export function PaymentCreateModal({
                   "quantity" | "serviceId"
                 >;
                 if (serviceId && price !== undefined) {
-                  form.setFieldValue("amount", price * (typeof quantity === "number" ? quantity : 1));
+                  const amount = price * (typeof quantity === "number" ? quantity : 1);
+                  form.setFieldValue("amount", amount);
+                  onValuesChange({ amount }, { ...form.getFieldsValue(true), amount } as PaymentCreateFormValues);
                 }
               }}
             />
