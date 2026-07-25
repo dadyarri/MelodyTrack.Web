@@ -1,15 +1,17 @@
-import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/shared/ui/icons";
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
+
 import type { Appointment } from "@/entities/appointment";
+import { renderAppointmentStatusTag } from "@/entities/appointment";
 import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
-import { ClientHistoryDrawer } from "@/widgets/client-history";
-import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
-import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
-import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { formatDateTime, TIME_FORMAT } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { PageLayout, ShortcutButton } from "@/shared/ui";
+import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/shared/ui/icons";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
+import { ClientHistoryDrawer } from "@/widgets/client-history";
+
+import { type DashboardReminderListProps, useDashboardPageController } from "../model/useDashboardPageController";
 import styles from "./DashboardPage.module.css";
 
 export function DashboardPage() {

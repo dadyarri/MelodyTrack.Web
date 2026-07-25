@@ -1,21 +1,23 @@
+import "./icons.css";
+
 import type { LucideIcon, LucideProps } from "lucide-react";
 import {
   BadgeInfo,
   BadgeRussianRuble,
-  BookOpenText,
   Blocks,
+  BookOpenText,
   Calendar,
   CalendarCheck2,
   ChartLine,
   ChartPie,
   Check,
-  CircleCheck,
-  CircleDollarSign,
-  CircleX,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ChevronDown,
+  CircleCheck,
+  CircleDollarSign,
+  CircleX,
   Clock3,
   Cloud,
   CloudDownload,
@@ -31,22 +33,22 @@ import {
   Hourglass,
   IdCard,
   KeyRound,
-  ListTodo,
   Link,
+  ListTodo,
   Lock,
   LogOut,
   Mail,
   Menu,
   Moon,
-  Phone,
   Pencil,
+  Phone,
   Plus,
   Receipt,
   RefreshCcw,
   RefreshCw,
+  Save,
   Search,
   Send,
-  Save,
   Settings2,
   Shield,
   Sun,
@@ -62,7 +64,6 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import "./icons.css";
 
 type MelodyIconProps = LucideProps & {
   spin?: boolean;

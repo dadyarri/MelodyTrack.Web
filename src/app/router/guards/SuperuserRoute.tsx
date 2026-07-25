@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { hasSuperuserAccess } from "@/features/auth/access";
+
+import { hasSuperuserAccess } from "@/entities/session";
+
 import { RouteGate } from "./RouteGate";
 
 export function SuperuserRoute({ children }: { children: ReactNode }) {

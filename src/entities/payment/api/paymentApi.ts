@@ -1,0 +1,44 @@
+import { type CreateEntityResponse, http, type PaginatedParams, type Ulid } from "@/shared/api";
+
+import type { PaymentInput, PaymentsResponse } from "../model/types";
+
+export interface PaymentListParams extends PaginatedParams {
+  firstName?: string;
+  lastName?: string;
+  search?: string;
+  clientId?: string;
+  serviceId?: string;
+  start?: string;
+  end?: string;
+}
+
+export const paymentsApi = {
+  list(params: PaymentListParams) {
+    return http.get<PaymentsResponse>("/payments", { params }).then((response) => response.data);
+  },
+  export(params: PaymentListParams) {
+    return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
+  },
+  create(input: PaymentInput, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/payments", input, replayConfig(options?.replayKey)).then((response) => response.data);
+  },
+  update(id: Ulid, input: PaymentInput, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .put<unknown>(`/payments/${id}`, {
+        ...input,
+        expectedActivityId: options?.expectedActivityId,
+      })
+      .then(() => undefined);
+  },
+  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
+    return http
+      .delete<unknown>(`/payments/${id}`, {
+        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
+      })
+      .then(() => undefined);
+  },
+};
+
+function replayConfig(replayKey?: string) {
+  return replayKey ? { headers: { "Idempotency-Key": replayKey } } : undefined;
+}

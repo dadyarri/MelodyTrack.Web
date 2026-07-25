@@ -1,6 +1,7 @@
-import { InfoCircleOutlined } from "@/shared/ui/icons";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
+
+import { InfoCircleOutlined } from "@/shared/ui/icons";
 
 export function InfoLabel({ label, tooltip }: { label: ReactNode; tooltip: ReactNode }) {
   return (

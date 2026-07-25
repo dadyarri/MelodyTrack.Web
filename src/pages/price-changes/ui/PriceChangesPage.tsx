@@ -1,25 +1,29 @@
 import { Card, DatePicker, InputNumber, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { ReactNode } from "react";
-import { queryKeys } from "@/api/queryKeys";
-import { dashboardApi } from "@/api/crm";
-import type { PriceChangeAnalytics, PriceChangeAnalyticsItem, PriceChangeRanking } from "@/api/types";
-import { StatsHorizontalBarChart } from "@/shared/ui/charts";
-import { STATS_CHART_COLORS } from "@/shared/ui/charts";
-import { InfoLabel } from "@/shared/ui";
-import { SummaryCard, SummaryGrid } from "@/shared/ui";
-import { useDashboardDateRangeWindowDaysQuery } from "@/features/stats/useDashboardStatsQuery";
-import { PageLayout, ListFilters } from "@/shared/ui";
-import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
+
+import {
+  analyticsQueryKeys,
+  dashboardApi,
+  type PriceChangeAnalytics,
+  type PriceChangeAnalyticsItem,
+  type PriceChangeRanking,
+} from "@/entities/dashboard";
+import { useDashboardDateRangeWindowDaysQuery } from "@/entities/dashboard";
 import { DATE_FORMAT } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { InfoLabel } from "@/shared/ui";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
+import { ListFilters, PageLayout } from "@/shared/ui";
+import { StatsHorizontalBarChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
+import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
 
 export function PriceChangesPage() {
   const controller = useDashboardDateRangeWindowDaysQuery<PriceChangeAnalytics>({
     initialRange: [dayjs().startOf("year"), dayjs().endOf("month")],
     initialWindowDays: 30,
-    getQueryKey: ({ timezone, dateRange, windowDays }) =>
-      queryKeys.dashboard.priceChanges(timezone, dateRange[0], dateRange[1], windowDays),
+    getQueryKey: ({ timezone, dateRange, windowDays }) => analyticsQueryKeys.priceChanges(timezone, dateRange[0], dateRange[1], windowDays),
     queryFn: ({ timezone, dateRange, windowDays }) =>
       dashboardApi.priceChanges({
         timezone,

@@ -1,14 +1,17 @@
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
-import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
-import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
-import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
-import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
-import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
-import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+
+import { ClientSelect } from "@/entities/client";
+import { ServiceSelect } from "@/entities/service";
+import { ClientQuickCreateModal } from "@/features/manage-client";
+import { PaymentCreateModal } from "@/features/record-payment";
 import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { MoneyListSummaryCards } from "@/shared/ui";
+import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
+
+import { formatOptionalDateTime, usePaymentsPageController } from "../model/usePaymentsPageController";
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();

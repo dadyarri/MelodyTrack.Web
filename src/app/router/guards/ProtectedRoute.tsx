@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { hasClientPortalAccess } from "@/features/auth/access";
+
+import { hasClientPortalAccess } from "@/entities/session";
+
 import { RouteGate } from "./RouteGate";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {

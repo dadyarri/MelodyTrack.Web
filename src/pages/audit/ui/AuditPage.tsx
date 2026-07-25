@@ -1,10 +1,12 @@
 import { Input, Typography } from "antd";
-import { useAuditPageController } from "@/features/audit/useAuditPageController";
-import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
+
+import type { RecurringTaskType } from "@/entities/task";
+import { getRecurringTaskTypeLabel } from "@/entities/task";
+import { formatDateTime } from "@/shared/lib";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { formatDateTime } from "@/shared/lib";
-import type { RecurringTaskType } from "@/api/types";
+
+import { useAuditPageController } from "../model/useAuditPageController";
 import styles from "./AuditPage.module.css";
 
 const categoryLabels: Record<string, string> = {

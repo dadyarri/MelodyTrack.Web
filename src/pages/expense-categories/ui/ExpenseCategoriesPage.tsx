@@ -1,10 +1,11 @@
-import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button } from "antd";
-import { queryKeys } from "@/api/queryKeys";
-import { expenseCategoriesApi } from "@/api/crm";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useReferenceBookPageController } from "@/features/reference-books";
+
+import { expenseQueryKeys } from "@/entities/expense";
+import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
+import { useReferenceBookPageController } from "@/features/manage-reference-book";
+import { ReferenceBookCreateModal } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 export function ExpenseCategoriesPage() {
   const controller = useReferenceBookPageController({
@@ -19,9 +20,9 @@ export function ExpenseCategoriesPage() {
     },
     createItem: (values) => expenseCategoriesApi.create(values),
     deleteItem: (id, options) => expenseCategoriesApi.remove(id, options),
-    listQueryKey: queryKeys.expenses.categories,
+    listQueryKey: referenceBookQueryKeys.expenseCategories,
     listQueryFn: () => expenseCategoriesApi.list(),
-    invalidateQueryKeys: [queryKeys.expenses.all],
+    invalidateQueryKeys: [expenseQueryKeys.all],
   });
 
   return (

@@ -1,6 +1,8 @@
-import { CloudDownloadOutlined, CloudOutlined } from "@/shared/ui/icons";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
+
+import { CloudDownloadOutlined, CloudOutlined } from "@/shared/ui/icons";
+
 import styles from "./DraftModalTitle.module.css";
 
 type DraftModalTitleProps = {

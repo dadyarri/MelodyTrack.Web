@@ -1,5 +1,6 @@
 import { Modal, type ModalProps } from "antd";
 import type { ReactNode } from "react";
+
 import { DraftModalFooter } from "./DraftModalFooter";
 import { DraftModalTitle } from "./DraftModalTitle";
 

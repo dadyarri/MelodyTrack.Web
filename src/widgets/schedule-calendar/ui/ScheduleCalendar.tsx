@@ -1,12 +1,14 @@
-import { CheckOutlined, SyncOutlined } from "@/shared/ui/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
-import type { UserAvailability } from "@/api/types";
+
 import type { Appointment } from "@/entities/appointment";
-import { getAppointmentStatusColorVars, getAppointmentStatusLabel, renderAppointmentStatusIcon } from "@/features/schedule";
+import { getAppointmentStatusColorVars, getAppointmentStatusLabel, renderAppointmentStatusIcon } from "@/entities/appointment";
+import type { UserAvailability } from "@/entities/user";
+import { getBlockedRanges, isSlotAvailable } from "@/entities/user";
 import { formatDate, TIME_FORMAT } from "@/shared/lib";
-import { getBlockedRanges, isSlotAvailable } from "@/utils/userAvailability";
+import { CheckOutlined, SyncOutlined } from "@/shared/ui/icons";
+
 import styles from "./ScheduleCalendar.module.css";
 
 const defaultStartHour = 10;

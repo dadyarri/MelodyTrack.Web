@@ -2,11 +2,10 @@
 
 ## Architecture
 
-The frontend is migrating incrementally to
+The frontend follows
 [Feature-Sliced Design v2.1](https://feature-sliced.design/docs/get-started/overview).
-All new code and every migrated module must follow FSD. Do not extend the
-legacy top-level `api`, `components`, `layout`, or `utils` groupings when a
-valid FSD location exists.
+All new code must follow FSD. Do not recreate the removed top-level `api`,
+`components`, `layout`, or `utils` groupings.
 
 Use these layers, from highest to lowest:
 
@@ -45,12 +44,12 @@ Put code in the lowest layer that truthfully describes it:
 Do not create empty layers, speculative abstractions, or single-file slices
 just to make the directory tree resemble an example.
 
-## Incremental Migration
+## Architecture Maintenance
 
-The current tree predates the FSD migration. Explicit exceptions in
-`steiger.config.js` are the legacy baseline, not examples to copy. Do not
-broaden those exceptions. Remove an exception when its corresponding module is
-migrated.
+The scoped exceptions in `steiger.config.js` document intentional page
+granularity and focused single-consumer slices, not legacy import violations.
+Do not broaden them to silence a layer, sibling-slice, public-API, or
+segmentless-slice violation.
 
 Preserve behavior while relocating code. Keep query keys and persisted storage
 formats stable unless the change includes an explicit migration and tests.

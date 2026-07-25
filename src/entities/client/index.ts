@@ -37,3 +37,4 @@ export type {
 } from "./model/types";
 export { clientsApi } from "./api/clientApi";
 export { clientQueryKeys } from "./api/queryKeys";
+export { ClientSelect } from "./ui/ClientSelect";

@@ -1,13 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MeResponse } from "@/api/auth";
-import type { AuthContextValue } from "@/features/auth/AuthContext";
+
+import type { AuthContextValue, MeResponse } from "@/entities/session";
+
 import { RouteGate } from "./RouteGate";
 
 let authState: AuthContextValue;
 
-vi.mock("@/features/auth/useAuth", () => ({
+vi.mock("@/entities/session", () => ({
   useAuth: () => authState,
 }));
 

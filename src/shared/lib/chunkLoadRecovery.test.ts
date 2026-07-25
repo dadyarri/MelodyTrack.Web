@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+
 import { clearNavigationIntent, isRecoverableChunkLoadError, recoverableImport, rememberNavigationIntent } from "./chunkLoadRecovery";
 
 const navigationIntentKey = "melodytrack:navigation-intent";

@@ -1,3 +1,6 @@
+import type { ReactNode } from "react";
+
+import { type AccessAudience, type AppUser, canAccessAudience } from "@/entities/session";
 import {
   BookOutlined,
   CalendarCheckOutlined,
@@ -19,8 +22,6 @@ import {
   WalletOutlined,
   WalletStatsOutlined,
 } from "@/shared/ui/icons";
-import type { ReactNode } from "react";
-import { canAccessAudience, type AccessAudience, type AppUser } from "@/features/auth/access";
 
 type NavGroup = "stats" | "reference-books";
 

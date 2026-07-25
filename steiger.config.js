@@ -1,28 +1,15 @@
 import fsd from "@feature-sliced/steiger-plugin";
 import { defineConfig } from "steiger";
 
-const legacySegmentlessFeatureSlices = [
-  "audit",
-  "auth",
-  "clients",
-  "courses",
-  "dashboard",
-  "drafts",
-  "expenses",
-  "navigation",
-  "offline",
-  "onboarding",
-  "payments",
-  "profile",
-  "reference-books",
-  "schedule",
-  "services",
-  "stats",
-  "tasks",
-  "users",
-];
-
 const intentionalRouteWidgets = ["course-workspace", "schedule-calendar"];
+const intentionalFocusedSlices = [
+  "entities/audit-log",
+  "features/client-portal",
+  "features/edit-user",
+  "features/enroll-client-course",
+  "features/manage-appointment",
+  "features/update-course-progress",
+];
 
 export default defineConfig([
   ...fsd.configs.recommended,
@@ -32,10 +19,10 @@ export default defineConfig([
       "fsd/excessive-slicing": "off",
     },
   },
-  ...legacySegmentlessFeatureSlices.map((slice) => ({
-    files: [`./src/features/${slice}/**`],
+  ...intentionalFocusedSlices.map((slice) => ({
+    files: [`./src/${slice}/**`],
     rules: {
-      "fsd/no-segmentless-slices": "off",
+      "fsd/insignificant-slice": "off",
     },
   })),
   ...intentionalRouteWidgets.map((slice) => ({

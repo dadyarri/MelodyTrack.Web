@@ -1,4 +1,5 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
+
 import { apiBaseUrl } from "../config";
 
 export type HttpSession = {

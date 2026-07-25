@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
-import { hasAdminAccess } from "@/features/auth/access";
+
+import { hasAdminAccess } from "@/entities/session";
+
 import { RouteGate } from "./RouteGate";
 
 export function AdminRoute({ children }: { children: ReactNode }) {

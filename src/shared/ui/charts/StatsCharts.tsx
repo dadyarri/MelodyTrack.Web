@@ -1,5 +1,6 @@
-import { Tooltip, Typography, theme } from "antd";
+import { theme, Tooltip, Typography } from "antd";
 import type { ReactNode } from "react";
+
 import { STATS_CHART_COLORS } from "./chartColors";
 
 function stringifyNumber(value: number) {

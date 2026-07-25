@@ -1,19 +1,21 @@
-import { LeftOutlined, PlusOutlined, RightOutlined } from "@/shared/ui/icons";
 import { Button, Space, Typography } from "antd";
 import dayjs from "dayjs";
-import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
-import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
-import { UserSelect } from "@/components/RemoteSelect";
+
+import { UserSelect } from "@/entities/user";
 import {
   AppointmentCreateModal,
   AppointmentDetailsModal,
   AppointmentEditModal,
   RecurringDeleteModal,
   RecurringRescheduleModal,
-} from "@/features/schedule/ScheduleModals";
-import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
-import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
+} from "@/features/manage-appointment";
+import { ClientQuickCreateModal } from "@/features/manage-client";
+import { PaymentCreateModal } from "@/features/record-payment";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
+import { LeftOutlined, PlusOutlined, RightOutlined } from "@/shared/ui/icons";
+import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
+
+import { useSchedulePageController } from "../model/useSchedulePageController";
 import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {

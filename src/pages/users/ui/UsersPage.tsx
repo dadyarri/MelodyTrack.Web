@@ -1,10 +1,12 @@
-import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button, Form, Input, Modal, Space } from "antd";
-import { RoleSelect } from "@/components/RemoteSelect";
-import { UserEditorModal } from "@/features/users/UserEditorModal";
-import { useUsersPageController } from "@/features/users/useUsersPageController";
-import { AccessDeniedNotice, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+
 import { formatPhone } from "@/entities/client";
+import { RoleSelect } from "@/entities/user";
+import { UserEditorModal } from "@/features/edit-user";
+import { AccessDeniedNotice, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
+
+import { useUsersPageController } from "../model/useUsersPageController";
 
 export function UsersPage() {
   const controller = useUsersPageController();

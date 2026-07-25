@@ -1,16 +1,13 @@
-import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
 import { Alert, Button, Card, DatePicker, Divider, Form, Input, List, Space, Switch, Tag, TimePicker, Typography } from "antd";
-import type { MeResponse } from "@/api/auth";
-import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
-import { TotpSecretPanel } from "@/components/TotpSecretPanel";
+
 import { formatPhoneInput, isValidPhone, normalizeSocialLink } from "@/entities/client";
-import {
-  type AvailabilityFormValues,
-  type PersonalInfoFormValues,
-  useProfilePageController,
-} from "@/features/profile/useProfilePageController";
+import type { MeResponse } from "@/entities/session";
+import { RecoveryCodesCard, TotpSecretPanel } from "@/entities/session";
+import { weekdayLabels, weekdayOrder } from "@/entities/user";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
-import { weekdayLabels, weekdayOrder } from "@/utils/userAvailability";
+import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
+
+import { type AvailabilityFormValues, type PersonalInfoFormValues, useProfilePageController } from "../model/useProfilePageController";
 import styles from "./ProfilePage.module.css";
 
 function getWorkingHoursValue(values: AvailabilityFormValues | undefined, index: number) {

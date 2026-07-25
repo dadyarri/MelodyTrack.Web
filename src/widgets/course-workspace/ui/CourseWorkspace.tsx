@@ -1,37 +1,40 @@
 import "@xyflow/react/dist/style.css";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   Background,
   BackgroundVariant,
   BaseEdge,
   Controls,
+  type Edge,
+  type EdgeProps,
+  type EdgeTypes,
   Handle,
   MarkerType,
+  type Node,
+  type NodeProps,
+  type NodeTypes,
   Position,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
-  type Edge,
-  type EdgeProps,
-  type EdgeTypes,
-  type Node,
-  type NodeProps,
-  type NodeTypes,
 } from "@xyflow/react";
 import { Alert, App as AntdApp, Button, Empty, Form, Input, InputNumber, Modal, Select, Space, Tag, Typography } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { courseEnrollmentsApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/shared/api";
-import { queryKeys } from "@/api/queryKeys";
+
 import type {
   CourseEnrollment,
   CourseEnrollmentTheme,
   CourseEnrollmentThemeProgressAction,
   CourseThemeProgressState,
-  Ulid,
-} from "@/api/types";
+} from "@/entities/course";
+import { courseEnrollmentsApi, courseQueryKeys } from "@/entities/course";
+import { useUpdateCourseProgress } from "@/features/update-course-progress";
+import type { Ulid } from "@/shared/api";
+import { getApiErrorMessages } from "@/shared/api";
+import { pluralizeRu } from "@/shared/lib";
+import { PageLayout } from "@/shared/ui";
 import { BbcodeContent } from "@/shared/ui/editors";
 import { BbcodeEditor } from "@/shared/ui/editors";
 import {
@@ -44,9 +47,8 @@ import {
   SearchOutlined,
   UpOutlined,
 } from "@/shared/ui/icons";
-import { useCoursesPageController } from "@/features/courses/useCoursesPageController";
-import { PageLayout } from "@/shared/ui";
-import { pluralizeRu } from "@/shared/lib";
+
+import { useCoursesPageController } from "../model/useCoursesPageController";
 import styles from "./CourseWorkspace.module.css";
 
 const topicNodeWidth = 250;
@@ -147,7 +149,6 @@ const edgeTypes: EdgeTypes = {
 export function CourseWorkspace() {
   const controller = useCoursesPageController();
   const { message, modal } = AntdApp.useApp();
-  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedNode, setSelectedNode] = useState<DiagramNodeSelection | null>(null);
   const [addIntent, setAddIntent] = useState<AddNodeIntent | null>(null);
@@ -163,7 +164,7 @@ export function CourseWorkspace() {
   }, [controller, requestedCourseId]);
 
   const enrollmentsQuery = useQuery({
-    queryKey: queryKeys.courseEnrollments.list({ courseId: controller.selectedCourseId }),
+    queryKey: courseQueryKeys.enrollments.list({ courseId: controller.selectedCourseId }),
     queryFn: () => {
       if (!controller.selectedCourseId) {
         throw new Error("Курс не выбран.");
@@ -179,12 +180,9 @@ export function CourseWorkspace() {
       ? ((enrollmentsQuery.data ?? []).find((enrollment) => enrollment.id === requestedEnrollmentId) ?? null)
       : null;
   const isProgressMode = selectedEnrollment != null;
-  const updateThemeProgressMutation = useMutation({
-    mutationFn: ({ themeId, action }: { themeId: Ulid; action: CourseEnrollmentThemeProgressAction }) =>
-      courseEnrollmentsApi.updateThemeProgress(themeId, action),
-    onSuccess: async (_, variables) => {
-      void message.success(getThemeProgressSuccessMessage(variables.action));
-      await queryClient.invalidateQueries({ queryKey: queryKeys.courseEnrollments.all });
+  const updateThemeProgressMutation = useUpdateCourseProgress({
+    onSuccess: ({ action }) => {
+      void message.success(getThemeProgressSuccessMessage(action));
     },
     onError: (error) => {
       for (const errorMessage of getApiErrorMessages(error)) {

@@ -1,9 +1,10 @@
-import { KeyOutlined, LockOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
 import { Button, Form, Input, Segmented } from "antd";
-import type { ResetPasswordInput } from "@/api/auth";
-import { AuthScreenLayout } from "@/components/AuthScreenLayout";
-import { type ResetPasswordSecondFactorMode, useRestorePasswordPageController } from "@/features/auth/useRestorePasswordPageController";
+
+import type { ResetPasswordInput } from "@/entities/session";
+import { type ResetPasswordSecondFactorMode, useRestorePasswordPageController } from "@/features/auth";
+import { AuthScreenLayout } from "@/shared/ui";
 import { StatusBanner } from "@/shared/ui";
+import { KeyOutlined, LockOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
 
 export function RestorePasswordPage() {
   const controller = useRestorePasswordPageController();

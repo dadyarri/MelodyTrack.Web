@@ -1,10 +1,11 @@
-import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button } from "antd";
-import { clientSourcesApi } from "@/api/crm";
+
 import { clientQueryKeys } from "@/entities/client";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useReferenceBookPageController } from "@/features/reference-books";
+import { clientSourcesApi } from "@/entities/reference-book";
+import { useReferenceBookPageController } from "@/features/manage-reference-book";
+import { ReferenceBookCreateModal } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 export function ClientSourcesPage() {
   const controller = useReferenceBookPageController({

@@ -1,3 +1,11 @@
+import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
+import { lazy, type ReactNode, Suspense, useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
+
+import { hasSuperuserAccess, useAuth } from "@/entities/session";
+import { OfflineQueueIndicator } from "@/features/offline";
+import { useTheme } from "@/shared/config";
+import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
   FileSearchOutlined,
   LeftOutlined,
@@ -9,20 +17,13 @@ import {
   SunOutlined,
   UserOutlined,
 } from "@/shared/ui/icons";
-import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
-import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
-import { hasSuperuserAccess } from "@/features/auth/access";
-import { useAuth } from "@/features/auth/useAuth";
-import { useTheme } from "@/shared/config";
-import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
+
+import styles from "./AppShell.module.css";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
-import styles from "./AppShell.module.css";
 
 const AppOnboarding = lazy(async () => {
-  const module = await recoverableImport(() => import("@/features/onboarding/AppOnboarding"));
+  const module = await recoverableImport(() => import("@/features/onboarding"));
 
   return { default: module.AppOnboarding };
 });

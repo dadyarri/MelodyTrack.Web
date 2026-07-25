@@ -1,13 +1,15 @@
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
-import { ExpenseCategorySelect } from "@/components/RemoteSelect";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useExpensesPageController } from "@/features/expenses/useExpensesPageController";
-import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
-import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+
+import { ExpenseCategorySelect } from "@/entities/reference-book";
 import { DATE_FORMAT, formatDate } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { ReferenceBookCreateModal } from "@/shared/ui";
+import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { MoneyListSummaryCards } from "@/shared/ui";
+import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
+
+import { useExpensesPageController } from "../model/useExpensesPageController";
 
 export function ExpensesPage() {
   const controller = useExpensesPageController();

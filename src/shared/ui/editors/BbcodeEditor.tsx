@@ -1,10 +1,12 @@
-import { Typography } from "antd";
-import { useEffect, useEffectEvent, useId, useRef } from "react";
 import "sceditor/minified/themes/default.min.css";
 import "sceditor/minified/sceditor.min.js";
 import "sceditor/minified/formats/bbcode.js";
 import "sceditor/minified/icons/material.js";
 import "sceditor/languages/ru.js";
+
+import { Typography } from "antd";
+import { useEffect, useEffectEvent, useId, useRef } from "react";
+
 import { getBbcodeContentCss } from "./bbcodeContentTheme";
 import styles from "./BbcodeEditor.module.css";
 

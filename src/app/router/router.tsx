@@ -1,13 +1,14 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
+
 import { ClientPortalThemeProvider } from "@/shared/config";
 import { recoverableImport } from "@/shared/lib";
-import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
 import { AdminRoute } from "./guards/AdminRoute";
 import { ClientPortalRoute } from "./guards/ClientPortalRoute";
 import { ProtectedRoute } from "./guards/ProtectedRoute";
 import { StatsRoute } from "./guards/StatsRoute";
 import { SuperuserRoute } from "./guards/SuperuserRoute";
+import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
 export const router = createBrowserRouter([
   {

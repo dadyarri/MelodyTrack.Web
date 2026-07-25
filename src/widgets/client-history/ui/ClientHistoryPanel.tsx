@@ -1,3 +1,15 @@
+import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
+
+import { getAppointmentStatusTagColor } from "@/entities/appointment";
+import {
+  type ClientHistory,
+  getClientContactValue,
+  renderClientHistoryAppointmentStatus,
+  renderClientPhoneLink,
+  renderClientSocialLink,
+} from "@/entities/client";
+import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/entities/course";
+import { formatDate, formatDateTime, formatMoney } from "@/shared/lib";
 import {
   BookOutlined,
   CalendarCheckOutlined,
@@ -9,17 +21,7 @@ import {
   PlusOutlined,
   ReloadOutlined,
 } from "@/shared/ui/icons";
-import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
-import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
-import {
-  getClientContactValue,
-  renderClientHistoryAppointmentStatus,
-  renderClientPhoneLink,
-  renderClientSocialLink,
-  type ClientHistory,
-} from "@/entities/client";
-import { getAppointmentStatusTagColor } from "@/features/schedule";
-import { formatDate, formatDateTime, formatMoney } from "@/shared/lib";
+
 import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {

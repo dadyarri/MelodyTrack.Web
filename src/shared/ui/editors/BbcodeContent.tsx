@@ -1,6 +1,7 @@
-import { useEffect, useMemo, type ReactNode } from "react";
-import { bbcodeContentClassName, ensureBbcodeContentTheme } from "./bbcodeContentTheme";
+import { type ReactNode, useEffect, useMemo } from "react";
+
 import styles from "./BbcodeContent.module.css";
+import { bbcodeContentClassName, ensureBbcodeContentTheme } from "./bbcodeContentTheme";
 
 type BbcodeContentProps = {
   value: string;

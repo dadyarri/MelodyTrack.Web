@@ -1,17 +1,18 @@
-import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
 import { Button, Input, Popconfirm, Space, Tag } from "antd";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { formatClientName, type Client, type ClientLifecycleStatus } from "@/entities/client";
-import { ClientHistoryDrawer } from "@/widgets/client-history";
-import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
-import { CourseEnrollmentCreateModal } from "@/features/clients/CourseEnrollmentCreateModal";
-import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
-import { useClientsPageController } from "@/features/clients/useClientsPageController";
-import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+
+import { type Client, type ClientLifecycleStatus, formatClientName } from "@/entities/client";
+import { CourseEnrollmentCreateModal } from "@/features/enroll-client-course";
+import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-client";
 import { formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { ReferenceBookCreateModal } from "@/shared/ui";
+import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
+import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
+import { ClientHistoryDrawer } from "@/widgets/client-history";
+
+import { useClientsPageController } from "../model/useClientsPageController";
 
 export function ClientsPage() {
   const controller = useClientsPageController();

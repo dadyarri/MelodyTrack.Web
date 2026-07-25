@@ -1,4 +1,5 @@
-import { http, type CreateEntityResponse, type Ulid } from "@/shared/api";
+import { type CreateEntityResponse, http, type Ulid } from "@/shared/api";
+
 import type {
   Appointment,
   CreateAppointmentInput,

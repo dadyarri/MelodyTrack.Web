@@ -27,22 +27,14 @@ CI also runs `npm audit --omit=dev` before verification.
 
 ## Architecture Baseline
 
-Steiger passes with narrowly scoped exceptions for architecture that predates
-the migration:
-
-- 24 existing ungrouped page slices exceed Steiger's default recommendation;
-- 19 named legacy feature slices do not yet have FSD segments.
-- the course workspace and schedule calendar are intentionally route-specific
-  widgets: each is a substantial independently maintained UI section even
-  though it currently has one page consumer.
-
-The exact exceptions live in `steiger.config.js`. They are intentionally tied
-to existing paths so that new slices do not inherit them. Each exception should
-be removed when that area is migrated.
+Steiger passes without layer-direction, sibling-slice, private-import, or
+segmentless-slice violations. The remaining scoped configuration covers page
+slice granularity and deliberately focused slices that currently have one
+consumer; it no longer exempts any legacy feature structure.
 
 ## Automated Behavior Baseline
 
-The current suite contains 20 tests covering:
+The current suite contains 28 tests covering:
 
 - normalization and rejection rules for public API configuration;
 - complete and partial authentication session persistence;
@@ -68,9 +60,8 @@ Business-agnostic infrastructure now has stable shared public APIs:
 - `shared/ui` owns generic icons, charts, BBCode UI, summaries, and existing
   reusable primitives.
 
-The remaining top-level `api`, `components`, and `utils` modules contain domain
-contracts or feature behavior and are intentionally deferred to the entity and
-feature migration stages.
+The former top-level `api`, `components`, and `utils` compatibility locations
+were removed in Stage 4 after their consumers migrated.
 
 ## Stage 3 Page Composition
 
@@ -113,6 +104,28 @@ by the backend instead of importing sibling entities. The generated backend
 OpenAPI document is the contract source of truth; validation also corrected
 appointment deletion to send `scope` and `expectedActivityId` in the JSON body
 defined by `DeleteAppointmentRequest`.
+
+Stage 4 is complete. Cohesive entity slices now own services, courses and
+enrollments, payments, expenses, users and availability, recurring tasks,
+reference books, dashboard analytics, audit records, session state, and the
+offline queue in addition to clients and appointments. Their API contracts and
+query keys are exposed only through slice public APIs.
+
+Reusable client, service, user, role, expense-category, and client-source
+selectors live with their entities. Appointment status representation, user
+availability rules, task labels, and dashboard date-range query helpers moved
+with the domain they represent.
+
+Route-specific controllers now live in page or widget `model` segments.
+Reusable actions are explicit feature slices, including client management,
+appointment management, payment recording, course enrollment, course-progress
+updates, user editing, and reference-book management. Authentication UI actions
+are separated from the session entity, and onboarding, portal access, and
+offline synchronization have segmented public APIs.
+
+The monolithic `crm.ts`, `types.ts`, and global query-key registry no longer
+exist. The legacy segmentless-feature allowlist was removed, and Steiger
+reports no architecture violations.
 
 ## Production Bundle Baseline
 

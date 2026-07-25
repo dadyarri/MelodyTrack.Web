@@ -1,5 +1,3 @@
-import type { Dayjs } from "dayjs";
-import { useRef } from "react";
 import {
   Button,
   Card,
@@ -18,10 +16,20 @@ import {
   Tag,
   Typography,
 } from "antd";
+import type { TextAreaRef } from "antd/es/input/TextArea";
+import type { Dayjs } from "dayjs";
+import { useRef } from "react";
+
+import { ClientSelect } from "@/entities/client";
+import { getPhoneUri, getSocialHandle } from "@/entities/client";
+import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/entities/task";
+import { getRecurringTaskTypeLabel } from "@/entities/task";
+import { formatRecordActivitySummary } from "@/shared/lib";
+import { PageLayout } from "@/shared/ui";
 import {
   CalendarCheckOutlined,
-  ClockCircleOutlined,
   CheckOutlined,
+  ClockCircleOutlined,
   CloseOutlined,
   CopyOutlined,
   DownloadOutlined,
@@ -31,18 +39,8 @@ import {
   PlusOutlined,
   SendOutlined,
 } from "@/shared/ui/icons";
-import { ClientSelect } from "@/components/RemoteSelect";
-import { getPhoneUri, getSocialHandle } from "@/entities/client";
-import {
-  type CustomTaskFormValues,
-  type RecurringTaskRuleFormValues,
-  useTasksPageController,
-} from "@/features/tasks/useTasksPageController";
-import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
-import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/api/types";
-import { PageLayout } from "@/shared/ui";
-import { formatRecordActivitySummary } from "@/utils/staleEntity";
-import type { TextAreaRef } from "antd/es/input/TextArea";
+
+import { type CustomTaskFormValues, type RecurringTaskRuleFormValues, useTasksPageController } from "../model/useTasksPageController";
 
 const statusOptions: { label: string; value: RecurringTaskListStatus }[] = [
   { label: "Открытые", value: "open" },

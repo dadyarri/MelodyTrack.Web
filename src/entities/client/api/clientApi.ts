@@ -1,4 +1,5 @@
-import { http, type CreateEntityResponse, type PaginatedResponse, type Ulid } from "@/shared/api";
+import { type CreateEntityResponse, http, type PaginatedResponse, type Ulid } from "@/shared/api";
+
 import type {
   Client,
   ClientCalendarSubscription,

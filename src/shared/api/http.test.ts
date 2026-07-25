@@ -1,5 +1,6 @@
 import type { InternalAxiosRequestConfig } from "axios";
 import { describe, expect, it, vi } from "vitest";
+
 import { configureHttpSession, getApiErrorMessages, http } from "./index";
 
 describe("shared HTTP transport", () => {

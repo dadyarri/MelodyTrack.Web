@@ -1,8 +1,10 @@
-import { FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@/shared/ui/icons";
 import type { ItemType } from "antd/es/menu/interface";
 import type { ReactNode } from "react";
-import { navGroupIcons, navGroupLabels, type AppNavItem } from "./navigation";
+
+import { FileSearchOutlined, LogoutOutlined, MoonOutlined, SettingOutlined, SunOutlined } from "@/shared/ui/icons";
 import { Shortcut } from "@/shared/ui/Shortcut";
+
+import { type AppNavItem, navGroupIcons, navGroupLabels } from "./navigation";
 
 export type ShellActionKey = "profile" | "audit" | "theme" | "logout";
 
