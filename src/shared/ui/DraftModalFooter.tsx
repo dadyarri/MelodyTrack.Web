@@ -11,7 +11,7 @@ type DraftModalFooterProps = {
 export function DraftModalFooter({ onClearDraft, showClearDraft = true, CancelBtn, OkBtn }: DraftModalFooterProps) {
   return (
     <>
-      {showClearDraft ? <Button onClick={onClearDraft}>Очистить черновик</Button> : null}
+      {showClearDraft ? <Button onClick={onClearDraft}>Отбросить черновик</Button> : null}
       <CancelBtn />
       <OkBtn />
     </>

@@ -3,6 +3,7 @@ import { Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography 
 import { ExpenseCategorySelect } from "@/entities/reference-book";
 import { DATE_FORMAT, formatDate } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { ReferenceBookCreateModal } from "@/shared/ui";
 import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/shared/ui";
@@ -13,6 +14,7 @@ import { useExpensesPageController } from "../model/useExpensesPageController";
 
 export function ExpensesPage() {
   const controller = useExpensesPageController();
+  useUnsavedDraftGuard(controller.isOpen, controller.createDraftSaveStatus);
 
   return (
     <PageLayout
@@ -164,6 +166,8 @@ export function ExpensesPage() {
         open={controller.isOpen}
         title="Новый расход"
         restored={controller.hasCreateDraft && controller.isOpen}
+        saveStatus={controller.createDraftSaveStatus}
+        showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}
         onCancel={() => {
           controller.setOpen(false);

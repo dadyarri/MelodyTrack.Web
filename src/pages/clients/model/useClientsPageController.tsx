@@ -60,6 +60,7 @@ export function useClientsPageController() {
   const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
+    saveStatus: createDraftSaveStatus,
     replayKeyRef: draftReplayKeyRef,
     isHydratingRef: isDraftHydratingRef,
     loadDraftValues,
@@ -489,6 +490,7 @@ export function useClientsPageController() {
     editing,
     isCreateOpen,
     hasCreateDraft,
+    createDraftSaveStatus,
     form,
     currentEditingClient,
     isEditingClientStale,

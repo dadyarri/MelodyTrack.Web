@@ -6,6 +6,7 @@ import { ClientQuickCreateModal } from "@/features/manage-client";
 import { PaymentCreateModal } from "@/features/record-payment";
 import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { MoneyListSummaryCards } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -15,6 +16,7 @@ import { formatOptionalDateTime, usePaymentsPageController } from "../model/useP
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();
+  useUnsavedDraftGuard(controller.isCreateModalOpen && !controller.editingPayment, controller.createDraftSaveStatus);
   const { modal } = AntdApp.useApp();
 
   return (
@@ -185,6 +187,7 @@ export function PaymentsPage() {
         open={controller.isCreateModalOpen}
         editing={Boolean(controller.editingPayment)}
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         createPending={controller.saveMutation.isPending}
         createdClientOptions={controller.createdClientOptions}

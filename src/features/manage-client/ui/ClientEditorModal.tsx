@@ -4,6 +4,7 @@ import type { DefaultOptionType } from "antd/es/select";
 
 import type { Client } from "@/entities/client";
 import { formatRecordActivitySummary } from "@/shared/lib";
+import type { DraftSaveStatus } from "@/shared/lib/react";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 
 import { ClientFormFields } from "./ClientFormFields";
@@ -19,6 +20,7 @@ export function ClientEditorModal({
   open,
   editing,
   draftRestored,
+  draftSaveStatus,
   form,
   savePending,
   isStale,
@@ -34,6 +36,7 @@ export function ClientEditorModal({
   open: boolean;
   editing: boolean;
   draftRestored: boolean;
+  draftSaveStatus: DraftSaveStatus;
   form: FormInstance<ClientFormValues>;
   savePending: boolean;
   isStale: boolean;
@@ -49,7 +52,9 @@ export function ClientEditorModal({
   return (
     <Modal
       open={open}
-      title={editing ? "Редактировать клиента" : <DraftModalTitle title="Новый клиент" restored={draftRestored} />}
+      title={
+        editing ? "Редактировать клиента" : <DraftModalTitle title="Новый клиент" restored={draftRestored} saveStatus={draftSaveStatus} />
+      }
       onCancel={onCancel}
       onOk={() => {
         form.submit();
@@ -59,7 +64,7 @@ export function ClientEditorModal({
         editing
           ? undefined
           : (_, { CancelBtn, OkBtn }) => {
-              return <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
+              return <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={draftRestored} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
             }
       }
     >

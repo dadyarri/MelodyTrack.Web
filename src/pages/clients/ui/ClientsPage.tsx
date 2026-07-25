@@ -5,6 +5,7 @@ import { CourseEnrollmentCreateModal } from "@/features/enroll-client-course";
 import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-client";
 import { formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
+import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { ReferenceBookCreateModal } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -16,6 +17,7 @@ import { useClientsPageController } from "../model/useClientsPageController";
 
 export function ClientsPage() {
   const controller = useClientsPageController();
+  useUnsavedDraftGuard(controller.isCreateOpen, controller.createDraftSaveStatus);
 
   return (
     <PageLayout
@@ -168,6 +170,7 @@ export function ClientsPage() {
         open={controller.isCreateOpen}
         editing={Boolean(controller.editing)}
         draftRestored={controller.hasCreateDraft && controller.isCreateOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         savePending={controller.saveMutation.isPending}
         isStale={controller.isEditingClientStale}

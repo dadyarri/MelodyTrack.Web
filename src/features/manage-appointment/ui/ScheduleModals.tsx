@@ -12,6 +12,7 @@ import { ServiceSelect } from "@/entities/service";
 import { UserSelect } from "@/entities/user";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/shared/lib";
 import { formatRecordActivitySummary } from "@/shared/lib";
+import type { DraftSaveStatus } from "@/shared/lib/react";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import {
   CheckOutlined,
@@ -182,6 +183,7 @@ export function AppointmentCreateModal({
   createPending,
   createdClientOptions,
   draftRestored,
+  draftSaveStatus,
   form,
   lockedProviderId,
   canCreateClient = true,
@@ -202,6 +204,7 @@ export function AppointmentCreateModal({
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
   draftRestored: boolean;
+  draftSaveStatus: DraftSaveStatus;
   form: FormInstance<AppointmentFormValues>;
   lockedProviderId?: string;
   canCreateClient?: boolean;
@@ -261,14 +264,16 @@ export function AppointmentCreateModal({
   return (
     <Modal
       open={open}
-      title={<DraftModalTitle title="Новая запись" restored={draftRestored} />}
+      title={<DraftModalTitle title="Новая запись" restored={draftRestored} saveStatus={draftSaveStatus} />}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
       confirmLoading={createPending}
       destroyOnHidden
-      footer={(_, { CancelBtn, OkBtn }) => <DraftModalFooter onClearDraft={onClearDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />}
+      footer={(_, { CancelBtn, OkBtn }) => (
+        <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={draftRestored} CancelBtn={CancelBtn} OkBtn={OkBtn} />
+      )}
     >
       <Form<AppointmentFormValues>
         form={form}

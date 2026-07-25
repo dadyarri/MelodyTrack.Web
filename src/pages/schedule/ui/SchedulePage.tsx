@@ -11,6 +11,7 @@ import {
 } from "@/features/manage-appointment";
 import { ClientQuickCreateModal } from "@/features/manage-client";
 import { PaymentCreateModal } from "@/features/record-payment";
+import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@/shared/ui/icons";
 import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
@@ -20,6 +21,12 @@ import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
+  const activeDraftSaveStatus = controller.isCreateModalOpen
+    ? controller.createDraftSaveStatus
+    : controller.paymentCreate.createDraftSaveStatus;
+  const isDraftEditorOpen =
+    controller.isCreateModalOpen || (controller.paymentCreate.isCreateModalOpen && !controller.paymentCreate.editingPayment);
+  useUnsavedDraftGuard(isDraftEditorOpen, activeDraftSaveStatus);
   const weekRangeLabel = formatScheduleWeekRange(controller.weekStart);
 
   return (
@@ -235,6 +242,7 @@ export function SchedulePage() {
         createPending={controller.createMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
         draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         lockedProviderId={controller.lockedProviderId}
         onCreateClient={() => {
@@ -295,6 +303,7 @@ export function SchedulePage() {
         open={controller.paymentCreate.isCreateModalOpen}
         editing={Boolean(controller.paymentCreate.editingPayment)}
         draftRestored={controller.paymentCreate.hasCreateDraft && controller.paymentCreate.isCreateModalOpen}
+        draftSaveStatus={controller.paymentCreate.createDraftSaveStatus}
         form={controller.paymentCreate.form}
         createPending={controller.paymentCreate.saveMutation.isPending}
         createdClientOptions={controller.paymentCreate.createdClientOptions}

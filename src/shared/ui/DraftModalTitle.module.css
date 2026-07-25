@@ -12,13 +12,26 @@
 .titleState {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 5px;
   flex: 0 0 auto;
   color: var(--text-subtle);
-  font-size: 14px;
+  font-size: 12px;
   line-height: 1;
 }
 
 .titleStateRestored {
   color: var(--accent);
+}
+
+.titleStateFailed {
+  color: var(--ant-color-error);
+}
+
+@media (max-width: 520px) {
+  .titleState span {
+    max-width: 112px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }

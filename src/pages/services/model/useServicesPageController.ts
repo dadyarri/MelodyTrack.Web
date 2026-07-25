@@ -52,6 +52,7 @@ export function useServicesPageController() {
   const auth = useAuth();
   const {
     hasSavedDraft,
+    saveStatus: createDraftSaveStatus,
     replayKeyRef,
     loadDraftValues,
     withHydration,
@@ -194,6 +195,7 @@ export function useServicesPageController() {
     pricing,
     setPricing,
     hasCreateDraft,
+    createDraftSaveStatus,
     isCreateOpen,
     setCreateOpen,
     form,

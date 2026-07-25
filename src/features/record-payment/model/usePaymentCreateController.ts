@@ -42,8 +42,16 @@ const paymentDraftSchema = v.object({
 const isPaymentDraft = (value: unknown): value is PaymentDraftValues => v.safeParse(paymentDraftSchema, value).success;
 
 export function usePaymentCreateController({ useRouteIntent = false }: { useRouteIntent?: boolean } = {}) {
-  const { hasSavedDraft, replayKeyRef, isHydratingRef, loadDraftValues, withHydration, resetStoredDraft, saveDraftValues } =
-    useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, isPaymentDraft);
+  const {
+    hasSavedDraft,
+    saveStatus: createDraftSaveStatus,
+    replayKeyRef,
+    isHydratingRef,
+    loadDraftValues,
+    withHydration,
+    resetStoredDraft,
+    saveDraftValues,
+  } = useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, isPaymentDraft);
   const [isOpen, setOpen] = useState(false);
   const [localPrefill, setLocalPrefill] = useState<PaymentCreatePrefill | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -270,6 +278,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
     setSelectedServicePrice,
     createdClientOptions: createdClientOptions.createdOptions,
     hasCreateDraft: hasSavedDraft,
+    createDraftSaveStatus,
     isCreateModalOpen,
     editingPayment,
     currentEditingPayment,

@@ -59,6 +59,7 @@ export function useSchedulePageController() {
   const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
+    saveStatus: createDraftSaveStatus,
     replayKeyRef: draftReplayKeyRef,
     loadDraftValues,
     withHydration,
@@ -745,6 +746,7 @@ export function useSchedulePageController() {
     form,
     editForm,
     hasCreateDraft,
+    createDraftSaveStatus,
     isCreateModalOpen,
     createMutation,
     updateMutation,

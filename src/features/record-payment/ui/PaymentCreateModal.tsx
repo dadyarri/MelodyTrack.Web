@@ -6,6 +6,7 @@ import type dayjs from "dayjs";
 import { ClientSelect } from "@/entities/client";
 import { ServiceSelect } from "@/entities/service";
 import { DATE_TIME_FORMAT, TIME_FORMAT } from "@/shared/lib";
+import type { DraftSaveStatus } from "@/shared/lib/react";
 import { DraftFormModal } from "@/shared/ui";
 
 export type PaymentCreateFormValues = {
@@ -21,6 +22,7 @@ export function PaymentCreateModal({
   open,
   editing,
   draftRestored,
+  draftSaveStatus,
   form,
   createPending,
   createdClientOptions,
@@ -39,6 +41,7 @@ export function PaymentCreateModal({
   open: boolean;
   editing: boolean;
   draftRestored: boolean;
+  draftSaveStatus: DraftSaveStatus;
   form: FormInstance<PaymentCreateFormValues>;
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
@@ -59,7 +62,9 @@ export function PaymentCreateModal({
       open={open}
       title={editing ? "Редактировать платеж" : "Новый платеж"}
       restored={!editing && draftRestored}
-      showClearDraft={!editing}
+      saveStatus={draftSaveStatus}
+      showClearDraft={!editing && draftRestored}
+      showDraftState={!editing}
       onClearDraft={onClearDraft}
       onCancel={onCancel}
       onOk={() => {

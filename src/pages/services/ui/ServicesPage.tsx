@@ -1,6 +1,7 @@
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space, Switch, Tag } from "antd";
 
 import { formatMoney } from "@/shared/lib";
+import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 
@@ -8,6 +9,7 @@ import { useServicesPageController } from "../model/useServicesPageController";
 
 export function ServicesPage() {
   const controller = useServicesPageController();
+  useUnsavedDraftGuard(controller.isCreateOpen, controller.createDraftSaveStatus);
   const { modal } = AntdApp.useApp();
 
   return (
@@ -119,6 +121,8 @@ export function ServicesPage() {
         open={controller.canManageServices && controller.isCreateOpen}
         title="Новая услуга"
         restored={controller.hasCreateDraft && controller.isCreateOpen}
+        saveStatus={controller.createDraftSaveStatus}
+        showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}
         onCancel={() => {
           controller.setCreateOpen(false);
