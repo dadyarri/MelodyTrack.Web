@@ -20,4 +20,12 @@ describe("URL state", () => {
     expect(next.toString()).toBe("tab=rules&q=Grace");
     expect(current.toString()).toBe("tab=rules&page=2&q=Ada");
   });
+
+  it("preserves unrelated state while navigating the schedule", () => {
+    const current = new URLSearchParams("week=2026-07-20&provider=user-1&create=appointment");
+    const next = updateUrlSearchParams(current, { week: "2026-07-27", provider: null });
+
+    expect(next.toString()).toBe("week=2026-07-27&create=appointment");
+    expect(current.toString()).toBe("week=2026-07-20&provider=user-1&create=appointment");
+  });
 });

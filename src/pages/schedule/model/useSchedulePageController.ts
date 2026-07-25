@@ -26,7 +26,7 @@ import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { useDraftFormState } from "@/shared/lib/react";
+import { useDraftFormState, useUrlState } from "@/shared/lib/react";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
@@ -56,6 +56,7 @@ const appointmentDraftSchema = v.object({
 const isAppointmentDraft = (value: unknown): value is AppointmentDraftValues => v.safeParse(appointmentDraftSchema, value).success;
 
 export function useSchedulePageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
     replayKeyRef: draftReplayKeyRef,
@@ -64,7 +65,16 @@ export function useSchedulePageController() {
     resetStoredDraft,
     saveDraftValues: saveCreateDraftValues,
   } = useDraftFormState<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, isAppointmentDraft);
-  const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
+  const requestedWeekStart = dayjs(searchParams.get("week") ?? "");
+  const weekStart = requestedWeekStart.isValid() ? requestedWeekStart.startOf("week") : dayjs().startOf("week");
+  const setWeekStart = useCallback(
+    (next: Dayjs) => {
+      const normalized = next.startOf("week");
+      const currentWeek = dayjs().startOf("week");
+      setUrlState({ week: normalized.isSame(currentWeek, "day") ? null : normalized.format("YYYY-MM-DD") });
+    },
+    [setUrlState],
+  );
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
   const isOpen = isCreateRequestedOpen || hasCreateDraft;
@@ -79,7 +89,13 @@ export function useSchedulePageController() {
   const [appointmentToRescheduleBaselineActivityId, setAppointmentToRescheduleBaselineActivityId] = useState<Ulid | null | undefined>();
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const createdClientOptions = useCreatedReferenceOptions("client");
-  const [providerFilterId, setProviderFilterId] = useState<string | undefined>();
+  const providerFilterId = searchParams.get("provider") ?? undefined;
+  const setProviderFilterId = useCallback(
+    (next?: string) => {
+      setUrlState({ provider: next });
+    },
+    [setUrlState],
+  );
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
   const [pendingCreateProviderId, setPendingCreateProviderId] = useState<string | undefined>();
   const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
@@ -108,7 +124,7 @@ export function useSchedulePageController() {
   const createPrefillClientId = createRouteIntent.prefillClientId;
   const isCreateModalOpen = canCreateAppointments && (isOpen || createRouteIntent.hasOpenCreateIntent);
 
-  const openCreateModal = useCallback(() => {
+  const openCreateModal = () => {
     if (!canCreateAppointments) {
       return;
     }
@@ -116,23 +132,20 @@ export function useSchedulePageController() {
     setPendingCreateStartDate(null);
     setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
     setOpen(true);
-  }, [canCreateAppointments, effectiveProviderFilterId, lockedProviderId]);
+  };
 
-  const openPaymentCreateForAppointment = useCallback(
-    (appointment: Appointment) => {
-      if (!canCreateAppointments) {
-        return;
-      }
+  const openPaymentCreateForAppointment = (appointment: Appointment) => {
+    if (!canCreateAppointments) {
+      return;
+    }
 
-      setSelectedAppointment(null);
-      setSelectedAppointmentBaselineActivityId(undefined);
-      paymentCreate.openCreateModal({
-        clientId: appointment.client.id,
-        serviceId: appointment.service.id,
-      });
-    },
-    [canCreateAppointments, paymentCreate],
-  );
+    setSelectedAppointment(null);
+    setSelectedAppointmentBaselineActivityId(undefined);
+    paymentCreate.openCreateModal({
+      clientId: appointment.client.id,
+      serviceId: appointment.service.id,
+    });
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -142,13 +155,13 @@ export function useSchedulePageController() {
 
       if (matchesPlainKey(event, "arrowleft")) {
         event.preventDefault();
-        setWeekStart((value) => value.subtract(1, "week"));
+        setWeekStart(weekStart.subtract(1, "week"));
         return;
       }
 
       if (matchesPlainKey(event, "arrowright")) {
         event.preventDefault();
-        setWeekStart((value) => value.add(1, "week"));
+        setWeekStart(weekStart.add(1, "week"));
         return;
       }
 
@@ -164,13 +177,15 @@ export function useSchedulePageController() {
         }
 
         event.preventDefault();
-        openCreateModal();
+        setPendingCreateStartDate(null);
+        setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
+        setOpen(true);
         return;
       }
 
       if (matchesPlainKey(event, "m") && !isSpecialistFilterLocked && auth.user?.id) {
         event.preventDefault();
-        setProviderFilterId((current) => (current === auth.user?.id ? undefined : auth.user?.id));
+        setProviderFilterId(providerFilterId === auth.user.id ? undefined : auth.user.id);
       }
     };
 
@@ -178,7 +193,17 @@ export function useSchedulePageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [auth.user?.id, canCreateAppointments, isSpecialistFilterLocked, openCreateModal]);
+  }, [
+    auth.user?.id,
+    canCreateAppointments,
+    effectiveProviderFilterId,
+    isSpecialistFilterLocked,
+    lockedProviderId,
+    providerFilterId,
+    setProviderFilterId,
+    setWeekStart,
+    weekStart,
+  ]);
 
   const query = useQuery({
     queryKey: appointmentQueryKeys.appointments(range[0].toISOString(), range[1].toISOString()),
@@ -270,40 +295,37 @@ export function useSchedulePageController() {
     ? isActivityStale(currentReschedulingAppointment.lastActivity?.id, appointmentToRescheduleBaselineActivityId)
     : false;
 
-  const syncAppointmentBaseline = useCallback(
-    (appointmentId: Ulid) => {
-      const freshAppointment = findItemInQueryData(
-        queryClient,
-        appointmentQueryKeys.appointmentsAll,
-        (data) => data as Appointment[] | undefined,
-        appointmentId,
-      );
-      if (!freshAppointment) {
-        return;
-      }
+  const syncAppointmentBaseline = (appointmentId: Ulid) => {
+    const freshAppointment = findItemInQueryData(
+      queryClient,
+      appointmentQueryKeys.appointmentsAll,
+      (data) => data as Appointment[] | undefined,
+      appointmentId,
+    );
+    if (!freshAppointment) {
+      return;
+    }
 
-      if (selectedAppointment?.id === appointmentId) {
-        setSelectedAppointment(freshAppointment);
-        setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
-      }
+    if (selectedAppointment?.id === appointmentId) {
+      setSelectedAppointment(freshAppointment);
+      setSelectedAppointmentBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+    }
 
-      if (appointmentToEdit?.id === appointmentId) {
-        setAppointmentToEdit(freshAppointment);
-        setAppointmentToEditBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
-      }
+    if (appointmentToEdit?.id === appointmentId) {
+      setAppointmentToEdit(freshAppointment);
+      setAppointmentToEditBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+    }
 
-      if (appointmentToDelete?.id === appointmentId) {
-        setAppointmentToDelete(freshAppointment);
-        setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
-      }
+    if (appointmentToDelete?.id === appointmentId) {
+      setAppointmentToDelete(freshAppointment);
+      setAppointmentToDeleteBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+    }
 
-      if (appointmentToReschedule?.id === appointmentId) {
-        setAppointmentToReschedule(freshAppointment);
-        setAppointmentToRescheduleBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
-      }
-    },
-    [appointmentToDelete?.id, appointmentToEdit?.id, appointmentToReschedule?.id, queryClient, selectedAppointment?.id],
-  );
+    if (appointmentToReschedule?.id === appointmentId) {
+      setAppointmentToReschedule(freshAppointment);
+      setAppointmentToRescheduleBaselineActivityId(freshAppointment.lastActivity?.id ?? null);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: (values: AppointmentFormValues) =>
@@ -612,25 +634,19 @@ export function useSchedulePageController() {
     },
   });
 
-  const handleCreateDraftChange = useCallback(
-    (values: AppointmentFormValues) => {
-      saveCreateDraftValues(serializeAppointmentDraft(values));
-    },
-    [saveCreateDraftValues],
-  );
+  const handleCreateDraftChange = (values: AppointmentFormValues) => {
+    saveCreateDraftValues(serializeAppointmentDraft(values));
+  };
 
-  const openCreateModalAt = useCallback(
-    (startDate: Dayjs) => {
-      if (!canCreateAppointments) {
-        return;
-      }
+  const openCreateModalAt = (startDate: Dayjs) => {
+    if (!canCreateAppointments) {
+      return;
+    }
 
-      setPendingCreateStartDate(startDate.second(0).millisecond(0));
-      setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
-      setOpen(true);
-    },
-    [canCreateAppointments, effectiveProviderFilterId, lockedProviderId],
-  );
+    setPendingCreateStartDate(startDate.second(0).millisecond(0));
+    setPendingCreateProviderId(lockedProviderId ?? effectiveProviderFilterId);
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!isCreateModalOpen) {

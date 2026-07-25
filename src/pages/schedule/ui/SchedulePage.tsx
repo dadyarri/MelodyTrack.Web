@@ -35,7 +35,7 @@ export function SchedulePage() {
               leadingIcon={<LeftOutlined />}
               label="Пред."
               onClick={() => {
-                controller.setWeekStart((value) => value.subtract(1, "week"));
+                controller.setWeekStart(controller.weekStart.subtract(1, "week"));
               }}
             />
             <ShortcutButton
@@ -50,7 +50,7 @@ export function SchedulePage() {
               leadingIcon={<RightOutlined />}
               label="След."
               onClick={() => {
-                controller.setWeekStart((value) => value.add(1, "week"));
+                controller.setWeekStart(controller.weekStart.add(1, "week"));
               }}
             />
             {controller.canCreateAppointments ? (
@@ -82,7 +82,7 @@ export function SchedulePage() {
                             disabled={false}
                             label="Моё"
                             onClick={() => {
-                              controller.setProviderFilterId((current) => (current === currentUserId ? undefined : currentUserId));
+                              controller.setProviderFilterId(controller.providerFilterId === currentUserId ? undefined : currentUserId);
                             }}
                           />
                         );
