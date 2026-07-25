@@ -1,7 +1,7 @@
 import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button } from "antd";
 import { clientSourcesApi } from "@/api/crm";
-import { queryKeys } from "@/api/queryKeys";
+import { clientQueryKeys } from "@/entities/client";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
 import { useReferenceBookPageController } from "@/features/reference-books";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
@@ -19,9 +19,9 @@ export function ClientSourcesPage() {
     },
     createItem: (values) => clientSourcesApi.create(values),
     deleteItem: (id, options) => clientSourcesApi.remove(id, options),
-    listQueryKey: queryKeys.clients.sources,
+    listQueryKey: clientQueryKeys.sources,
     listQueryFn: () => clientSourcesApi.list(),
-    invalidateQueryKeys: [queryKeys.clients.all],
+    invalidateQueryKeys: [clientQueryKeys.all],
   });
 
   return (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import dayjs from "dayjs";
 import { queryKeys } from "@/api/queryKeys";
-import { getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
+import { clientQueryKeys, clientsApi, getClientContactValue, normalizePhone, normalizeSocialLink, type Client } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
@@ -15,9 +15,9 @@ import { createOfflineTempId } from "@/utils/offlineQueue";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
-import { calendarSubscriptionsApi, clientSourcesApi, clientsApi, courseEnrollmentsApi, coursesApi } from "../../api/crm";
-import { getApiErrorMessages } from "@/shared/api";
-import type { Client, CourseEnrollment, CourseEnrollmentThemeProgressAction, Ulid } from "../../api/types";
+import { clientSourcesApi, courseEnrollmentsApi, coursesApi } from "../../api/crm";
+import { getApiErrorMessages, type Ulid } from "@/shared/api";
+import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "../../api/types";
 import type { ClientFormValues } from "./ClientEditorModal";
 import type { ClientVacationsFormValues } from "./ClientVacationsModal";
 
@@ -84,7 +84,7 @@ export function useClientsPageController() {
   const canCreateClients = hasAdminAccess(auth.user);
 
   const query = useQuery({
-    queryKey: queryKeys.clients.list(page, search),
+    queryKey: clientQueryKeys.list(page, search),
     queryFn: () =>
       clientsApi.list({
         page,
@@ -95,7 +95,7 @@ export function useClientsPageController() {
   });
 
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
+    queryKey: clientQueryKeys.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {
@@ -167,7 +167,7 @@ export function useClientsPageController() {
       });
       if (!result.offline) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.clients.all,
+          queryKey: clientQueryKeys.all,
         });
       }
     },
@@ -181,7 +181,7 @@ export function useClientsPageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.clients.all,
+        invalidateQueryKey: clientQueryKeys.all,
         showErrors,
         title: "Клиент уже изменен",
         okText: "Перезаписать",
@@ -194,7 +194,7 @@ export function useClientsPageController() {
         },
         onReload: () => {
           const freshClient =
-            findItemInQueryData(queryClient, queryKeys.clients.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
+            findItemInQueryData(queryClient, clientQueryKeys.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
             currentEditingClient;
           if (!freshClient) {
             return;
@@ -222,7 +222,7 @@ export function useClientsPageController() {
       message.success("Периоды отсутствия сохранены");
       setVacationsClient(null);
       vacationsForm.resetFields();
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      await queryClient.invalidateQueries({ queryKey: clientQueryKeys.all });
     },
     onError: showErrors,
   });
@@ -233,14 +233,14 @@ export function useClientsPageController() {
     },
     onSuccess: async () => {
       message.success("Клиент удален");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      await queryClient.invalidateQueries({ queryKey: clientQueryKeys.all });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.clients.all,
+        invalidateQueryKey: clientQueryKeys.all,
         showErrors,
         title: "Клиент уже изменен",
         okText: "Удалить все равно",
@@ -253,7 +253,7 @@ export function useClientsPageController() {
         },
         onReload: () => {
           void queryClient.invalidateQueries({
-            queryKey: queryKeys.clients.all,
+            queryKey: clientQueryKeys.all,
           });
         },
       });
@@ -264,7 +264,7 @@ export function useClientsPageController() {
     mutationFn: ({ id, isClosed }: { id: Ulid; isClosed: boolean }) => clientsApi.setLeadClosed(id, isClosed),
     onSuccess: async (_result, variables) => {
       message.success(variables.isClosed ? "Лид закрыт" : "Лид возвращен в работу");
-      await queryClient.invalidateQueries({ queryKey: queryKeys.clients.all });
+      await queryClient.invalidateQueries({ queryKey: clientQueryKeys.all });
     },
     onError: showErrors,
   });
@@ -280,7 +280,7 @@ export function useClientsPageController() {
   });
 
   const createCalendarSubscriptionMutation = useMutation({
-    mutationFn: (clientId: Ulid) => calendarSubscriptionsApi.regenerateClient(clientId),
+    mutationFn: (clientId: Ulid) => clientsApi.regenerateCalendarSubscription(clientId),
     onSuccess: async (subscription) => {
       await navigator.clipboard.writeText(subscription.url);
       message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
@@ -341,7 +341,7 @@ export function useClientsPageController() {
       form.setFieldValue("sourceId", result.id);
       setSourceCreateOpen(false);
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.clients.sources,
+        queryKey: clientQueryKeys.sources,
       });
     },
     onError: showErrors,

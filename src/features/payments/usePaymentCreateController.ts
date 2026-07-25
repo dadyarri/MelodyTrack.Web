@@ -4,6 +4,7 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { paymentsApi } from "@/api/crm";
+import { clientQueryKeys } from "@/entities/client";
 import { getApiErrorMessages } from "@/shared/api";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
@@ -96,8 +97,8 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
       if (!result.offline) {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.clients.history() }),
+          queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
+          queryClient.invalidateQueries({ queryKey: clientQueryKeys.history() }),
         ]);
       }
     },

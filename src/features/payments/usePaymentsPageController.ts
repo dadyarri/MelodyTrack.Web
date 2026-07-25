@@ -4,6 +4,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { paymentsApi } from "@/api/crm";
+import { clientQueryKeys } from "@/entities/client";
 import { getApiErrorMessages } from "@/shared/api";
 import { usePaymentCreateController } from "@/features/payments/usePaymentCreateController";
 import { formatDateTime } from "@/shared/lib";
@@ -51,8 +52,8 @@ export function usePaymentsPageController() {
       message.success("Платеж удален");
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.clients.history() }),
+        queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: clientQueryKeys.history() }),
       ]);
     },
     onError: async (error, variables) => {

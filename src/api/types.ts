@@ -1,17 +1,14 @@
-export type Ulid = string;
+import type { LookupClient } from "@/entities/client";
+import type { PaginatedResponse, RecordActivity, Ulid } from "@/shared/api";
 
-export interface PagedInfo {
-  page: number;
-  pageSize: number;
-  total: number;
-  hasPrevPage: boolean;
-  hasNextPage: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  info: PagedInfo;
-}
+export type {
+  CreateEntityResponse,
+  PaginatedParams,
+  PaginatedResponse,
+  PagedInfo,
+  RecordActivity,
+  Ulid,
+} from "@/shared/api";
 
 export interface MoneyListSummary {
   totalAmount: number;
@@ -20,18 +17,7 @@ export interface MoneyListSummary {
   lastItemAtUtc?: string | null;
 }
 
-export interface PaginatedParams {
-  page?: number;
-  page_size?: number;
-}
-
-export interface CreateEntityResponse {
-  id: Ulid;
-}
-
 export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
-
-export type ClientLifecycleStatus = 0 | 1 | 2 | 3;
 
 export interface ReferenceBookItem {
   id: Ulid;
@@ -39,98 +25,11 @@ export interface ReferenceBookItem {
   lastActivity?: RecordActivity | null;
 }
 
-export interface ClientContacts {
-  id?: Ulid;
-  telegram?: string | null;
-  vk?: string | null;
-  phone?: string | null;
-}
-
-export interface ClientVacation {
-  id: Ulid;
-  startDate: string;
-  endDate: string;
-}
-
-export interface Client {
-  id: Ulid;
-  firstName: string;
-  lastName: string;
-  patronymic?: string | null;
-  dateOfBirth?: string | null;
-  contacts?: ClientContacts | null;
-  telegram?: string | null;
-  vk?: string | null;
-  phone?: string | null;
-  sourceId?: Ulid | null;
-  sourceName?: string | null;
-  vacations: ClientVacation[];
-  balance: number;
-  lastAppointmentAtUtc?: string | null;
-  nextAppointmentAtUtc?: string | null;
-  lifecycleStatus: ClientLifecycleStatus;
-  lastActivity?: RecordActivity | null;
-}
-
-export interface ClientWithBalance extends Client {
-  balance: number;
-}
-
-export interface ClientHistorySummary {
-  totalPayments: number;
-  paymentsCount: number;
-  completedAppointmentsCount: number;
-  upcomingAppointmentsCount: number;
-  lastPaymentAtUtc?: string | null;
-  lastVisitAtUtc?: string | null;
-  nextAppointmentAtUtc?: string | null;
-}
-
-export type ClientFinancialHistoryEventType = "top_up" | "appointment";
-
-export interface ClientFinancialHistoryEvent {
-  id: Ulid;
-  type: ClientFinancialHistoryEventType;
-  amount: number;
-  date: string;
-  description?: string | null;
-  serviceName?: string | null;
-  providerDisplayName?: string | null;
-  appointmentStatus?: AppointmentStatus | null;
-}
-
-export interface RecordActivity {
-  id: Ulid;
-  createdAtUtc: string;
-  category: string;
-  action: string;
-  actorEmail?: string | null;
-  actorDisplayName?: string | null;
-  sourceIpAddress?: string | null;
-  details?: string | null;
-}
-
-export interface ClientHistory {
-  client: Client;
-  summary: ClientHistorySummary;
-  events: PaginatedResponse<ClientFinancialHistoryEvent>;
-}
-
 export interface CalendarSubscription {
   id: Ulid;
   token: string;
   url: string;
   feedType: "user" | "client";
-}
-
-export interface LookupClient {
-  id: Ulid;
-  firstName: string;
-  lastName: string;
-  patronymic?: string | null;
-  contacts?: ClientContacts | null;
-  sourceId?: Ulid | null;
-  sourceName?: string | null;
 }
 
 export interface Service {

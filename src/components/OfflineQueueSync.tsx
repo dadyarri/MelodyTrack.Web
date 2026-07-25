@@ -2,7 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 import { queryKeys } from "@/api/queryKeys";
-import { clientsApi, expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
+import { expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
+import { clientQueryKeys, clientsApi } from "@/entities/client";
 import { probeBackendReachable } from "@/shared/api";
 import { authStore } from "../features/auth/authStore";
 import {
@@ -105,7 +106,7 @@ export function OfflineQueueSync() {
       if (syncedCount > 0) {
         message.success(`Синхронизировано ${String(syncedCount)} отложенных изменений`);
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.clients.all }),
+          queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.services.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all }),

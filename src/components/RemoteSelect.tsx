@@ -3,9 +3,10 @@ import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
+import { clientQueryKeys, clientsApi } from "@/entities/client";
 import { useAuth } from "@/features/auth/useAuth";
 import { formatMoney } from "@/shared/lib";
-import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
+import { clientSourcesApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";
 
@@ -33,10 +34,10 @@ export function ClientSelect({
   onResolvedLabelChange?: (label?: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const query = useQuery({ queryKey: queryKeys.clients.lookup(search), queryFn: () => clientsApi.lookup(search), retry: false });
+  const query = useQuery({ queryKey: clientQueryKeys.lookup(search), queryFn: () => clientsApi.lookup(search), retry: false });
   const pendingClientOption = getQueuedClientOption(value);
   const selectedQuery = useQuery({
-    queryKey: queryKeys.clients.selected(value),
+    queryKey: clientQueryKeys.selected(value),
     queryFn: () => {
       if (!value) {
         throw new Error("Client id is missing.");
@@ -296,7 +297,7 @@ export function ClientSourceSelect({
   extraOptions?: DefaultOptionType[];
   onResolvedLabelChange?: (label?: string) => void;
 }) {
-  const query = useQuery({ queryKey: queryKeys.clients.sources, queryFn: () => clientSourcesApi.list(), retry: false });
+  const query = useQuery({ queryKey: clientQueryKeys.sources, queryFn: () => clientSourcesApi.list(), retry: false });
   const cachedLabel = getCachedReferenceLabel("client-source", value);
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];

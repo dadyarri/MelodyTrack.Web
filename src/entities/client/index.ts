@@ -17,3 +17,21 @@ export {
   normalizePhone,
   normalizeSocialLink,
 } from "./lib/contact";
+export type {
+  Client,
+  ClientCalendarSubscription,
+  ClientContacts,
+  ClientFinancialHistoryEvent,
+  ClientFinancialHistoryEventType,
+  ClientHistory,
+  ClientHistoryAppointmentStatus,
+  ClientHistorySummary,
+  ClientLifecycleStatus,
+  ClientVacation,
+  ClientWithBalance,
+  CreateClientInput,
+  LookupClient,
+  UpdateClientInput,
+} from "./model/types";
+export { clientsApi } from "./api/clientApi";
+export { clientQueryKeys } from "./api/queryKeys";

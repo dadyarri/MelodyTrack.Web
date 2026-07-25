@@ -4,10 +4,7 @@ import type {
   Appointment,
   AppointmentsAnalytics,
   AuditLog,
-  Client,
   CalendarSubscription,
-  ClientHistory,
-  ClientWithBalance,
   Course,
   CourseEnrollment,
   CourseEnrollmentThemeProgressAction,
@@ -17,7 +14,6 @@ import type {
   DashboardStats,
   ExpensesResponse,
   ReferenceBookItem,
-  LookupClient,
   LookupService,
   PaginatedParams,
   PaginatedResponse,
@@ -51,90 +47,9 @@ export interface ClientPortalAppointment {
   } | null;
 }
 
-export const clientsApi = {
-  list(params: PaginatedParams & Partial<Client> & { search?: string }) {
-    return http.get<PaginatedResponse<Client>>("/clients", { params }).then((response) => response.data);
-  },
-  get(id: Ulid) {
-    return http.get<Client>(`/clients/${id}`).then((response) => response.data);
-  },
-  history(id: Ulid, params?: PaginatedParams) {
-    return http.get<ClientHistory>(`/clients/${id}/history`, { params }).then((response) => response.data);
-  },
-  lookup(search?: string) {
-    return http
-      .get<{
-        clients: LookupClient[];
-      }>("/clients/lookup", { params: search ? { search } : undefined })
-      .then((response) => response.data.clients);
-  },
-  create(
-    input: {
-      firstName: string;
-      lastName: string;
-      patronymic?: string | null;
-      dateOfBirth?: string | null;
-      telegram?: string;
-      vk?: string;
-      phone?: string;
-      sourceId?: Ulid;
-    },
-    options?: { replayKey?: string },
-  ) {
-    return http.post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
-  },
-  update(
-    id: Ulid,
-    input: {
-      firstName?: string;
-      lastName?: string;
-      patronymic?: string | null;
-      dateOfBirth?: string | null;
-      telegram?: string;
-      vk?: string;
-      phone?: string;
-      sourceId?: Ulid | null;
-      vacations?: Array<{ startDate: string; endDate: string }>;
-    },
-    options?: { expectedActivityId?: Ulid },
-  ) {
-    return http
-      .put<unknown>(`/clients/${id}`, {
-        ...input,
-        expectedActivityId: options?.expectedActivityId,
-      })
-      .then(() => undefined);
-  },
-  remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
-    return http
-      .delete<unknown>(`/clients/${id}`, {
-        params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
-      })
-      .then(() => undefined);
-  },
-  setLeadClosed(id: Ulid, isClosed: boolean) {
-    return http.patch<unknown>(`/clients/${id}/lead-status`, { isClosed }).then(() => undefined);
-  },
-  debtors() {
-    return http.get<{ debtors: ClientWithBalance[] }>("/clients/inDebt").then((response) => response.data.debtors);
-  },
-  exportDebtors() {
-    return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
-  },
-  createPortalLink(id: Ulid) {
-    return http.post<{ url: string }>(`/clients/${id}/portal-link`, {}).then((response) => response.data);
-  },
-  resetPortalPin(id: Ulid) {
-    return http.post<unknown>(`/clients/${id}/portal-pin/reset`, {}).then(() => undefined);
-  },
-};
-
 export const calendarSubscriptionsApi = {
   regenerateUser(userId: Ulid) {
     return http.post<CalendarSubscription>(`/calendar-subscriptions/users/${userId}/regenerate`, {}).then((response) => response.data);
-  },
-  regenerateClient(clientId: Ulid) {
-    return http.post<CalendarSubscription>(`/calendar-subscriptions/clients/${clientId}/regenerate`, {}).then((response) => response.data);
   },
 };
 

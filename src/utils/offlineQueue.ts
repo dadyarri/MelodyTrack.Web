@@ -1,6 +1,6 @@
 import type { DefaultOptionType } from "antd/es/select";
 import axios from "axios";
-import type { Client } from "../api/types";
+import type { Client } from "@/entities/client";
 import { formatDateTime } from "@/shared/lib";
 import { createReplayKey } from "@/shared/lib";
 

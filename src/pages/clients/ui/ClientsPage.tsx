@@ -1,8 +1,7 @@
 import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
 import { Button, Input, Popconfirm, Space, Tag } from "antd";
-import type { Client, ClientLifecycleStatus } from "@/api/types";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { formatClientName } from "@/entities/client";
+import { formatClientName, type Client, type ClientLifecycleStatus } from "@/entities/client";
 import { ClientHistoryDrawer } from "@/widgets/client-history";
 import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
 import { CourseEnrollmentCreateModal } from "@/features/clients/CourseEnrollmentCreateModal";

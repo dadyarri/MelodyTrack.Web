@@ -1,5 +1,5 @@
 import type { MeResponse } from "@/api/auth";
-import type { Client } from "@/api/types";
+import type { Client } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import type { NavigateFunction } from "react-router";
 

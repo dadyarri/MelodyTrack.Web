@@ -93,6 +93,19 @@ need them and may not import upward from `app`. Every widget exposes a root
 public API, and Steiger reports no layer-direction, cross-slice, or private
 import violations.
 
+## Stage 4 Entity Migration
+
+The client domain is the first complete entity boundary. `entities/client` now
+owns client contracts, CRUD and history requests, debtor export, portal and
+calendar-link operations, stable React Query keys, contact helpers, and its
+public API. Client consumers no longer import those concerns from
+`api/crm.ts`, `api/types.ts`, or `api/queryKeys.ts`.
+
+Generic transport contracts such as ULIDs, pagination, create responses, and
+record activity metadata moved to `shared/api`. Client API tests preserve
+idempotency headers, endpoint paths, response mapping, and the pre-migration
+query-key shapes.
+
 ## Production Bundle Baseline
 
 The production build succeeds with route-level code splitting. The largest

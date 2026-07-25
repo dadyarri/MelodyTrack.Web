@@ -3,8 +3,9 @@ import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { queryKeys } from "@/api/queryKeys";
-import { clientsApi, dashboardApi, scheduleApi } from "@/api/crm";
-import type { Appointment, Client } from "@/api/types";
+import { dashboardApi, scheduleApi } from "@/api/crm";
+import type { Appointment } from "@/api/types";
+import { clientQueryKeys, clientsApi, type Client } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
@@ -26,7 +27,7 @@ export function useDashboardPageController() {
     queryFn: () => dashboardApi.stats(timezone),
   });
   const debtorsQuery = useQuery({
-    queryKey: queryKeys.clients.debtors,
+    queryKey: clientQueryKeys.debtors,
     queryFn: () => clientsApi.debtors(),
     enabled: canSeeFinancialOverview,
   });
@@ -35,7 +36,7 @@ export function useDashboardPageController() {
     queryFn: () => scheduleApi.mini(timezone),
   });
   const historyQuery = useQuery({
-    queryKey: queryKeys.clients.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
+    queryKey: clientQueryKeys.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
       const clientId = historyClient?.id;
       if (!clientId) {

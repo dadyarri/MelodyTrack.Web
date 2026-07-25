@@ -1,7 +1,7 @@
 import type { FormInstance } from "antd";
 import { Form, Modal } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import type { Client } from "@/api/types";
+import type { Client } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import { formatRecordActivitySummary } from "@/utils/staleEntity";
 import { ClientFormFields } from "./ClientFormFields";

@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import { App as AntdApp, Form, Modal } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { normalizePhone, normalizeSocialLink } from "@/entities/client/lib/contact";
+import { clientsApi, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { createOrQueueOffline, isQueuedClientCreate } from "@/features/offline/createOrQueueOffline";
-import { clientSourcesApi, clientsApi } from "../api/crm";
+import { clientSourcesApi } from "../api/crm";
 import { getApiErrorMessages } from "@/shared/api";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
 import { useCreatedReferenceOptions } from "../features/reference-books/useCreatedReferenceOptions";

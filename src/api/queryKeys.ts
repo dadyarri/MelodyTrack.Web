@@ -37,17 +37,6 @@ export const queryKeys = {
     all: ["audit"] as const,
     list: (page: number, search: string, timezone: string) => ["audit", "list", page, search, timezone] as const,
   },
-  clients: {
-    all: ["clients"] as const,
-    reference: ["clients", "reference"] as const,
-    list: (page: number, search: string) => ["clients", "list", page, search] as const,
-    history: (clientId?: string | null, page?: number | null, pageSize?: number | null) =>
-      ["clients", "history", formatDateKey(clientId), formatDateKey(page), formatDateKey(pageSize)] as const,
-    debtors: ["clients", "debtors"] as const,
-    lookup: (search: string) => ["clients", "lookup", search] as const,
-    selected: (clientId?: string) => ["clients", "selected", formatDateKey(clientId)] as const,
-    sources: ["client-sources"] as const,
-  },
   services: {
     all: ["services"] as const,
     reference: ["services", "reference"] as const,

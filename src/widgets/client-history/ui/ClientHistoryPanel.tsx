@@ -10,12 +10,13 @@ import {
   ReloadOutlined,
 } from "@/shared/ui/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
-import type { ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
+import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
 import {
   getClientContactValue,
   renderClientHistoryAppointmentStatus,
   renderClientPhoneLink,
   renderClientSocialLink,
+  type ClientHistory,
 } from "@/entities/client";
 import { getAppointmentStatusTagColor } from "@/features/schedule";
 import { formatDate, formatDateTime, formatMoney } from "@/shared/lib";
