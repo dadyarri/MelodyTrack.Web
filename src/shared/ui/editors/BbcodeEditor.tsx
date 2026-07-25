@@ -63,7 +63,7 @@ type EditorApi = {
   };
 };
 
-type BbcodeEditorProps = {
+export type BbcodeEditorProps = {
   helper?: string;
   label: string;
   onChange: (value: string) => void;

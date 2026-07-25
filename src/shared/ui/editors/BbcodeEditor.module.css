@@ -4,6 +4,16 @@
   gap: 10px;
 }
 
+.loading {
+  display: grid;
+  min-height: 180px;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
 .header {
   display: flex;
   justify-content: space-between;

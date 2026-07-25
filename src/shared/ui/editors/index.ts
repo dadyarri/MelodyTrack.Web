@@ -1,2 +1,2 @@
 export { BbcodeContent } from "./BbcodeContent";
-export { BbcodeEditor } from "./BbcodeEditor";
+export { LazyBbcodeEditor as BbcodeEditor } from "./LazyBbcodeEditor";
