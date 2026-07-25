@@ -1,9 +1,12 @@
 type RouteModuleLoader = () => Promise<unknown>;
 
-export function createRoutePrefetcher(loaders: Readonly<Partial<Record<string, RouteModuleLoader>>>) {
+export function createRoutePrefetcher<TContext = undefined>(
+  loaders: Readonly<Partial<Record<string, RouteModuleLoader>>>,
+  prepare?: (module: unknown, context: TContext) => unknown,
+) {
   const requests = new Map<string, Promise<void>>();
 
-  return (path: string) => {
+  return (path: string, context: TContext) => {
     const routePath = path.split(/[?#]/, 1)[0];
     const load = loaders[routePath];
 
@@ -17,7 +20,9 @@ export function createRoutePrefetcher(loaders: Readonly<Partial<Record<string, R
     }
 
     const request = load()
-      .then(() => undefined)
+      .then(async (module) => {
+        await prepare?.(module, context);
+      })
       .catch(() => {
         if (requests.get(routePath) === request) {
           requests.delete(routePath);

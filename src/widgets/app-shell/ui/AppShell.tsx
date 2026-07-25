@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { lazy, type ReactNode, Suspense, type SyntheticEvent, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -33,9 +34,10 @@ export function AppShell({
   onPrefetchRoute,
 }: {
   children?: ReactNode;
-  onPrefetchRoute?: (path: string) => Promise<void> | void;
+  onPrefetchRoute?: (path: string, queryClient: ReturnType<typeof useQueryClient>) => Promise<void> | void;
 }) {
   const auth = useAuth();
+  const queryClient = useQueryClient();
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -99,10 +101,10 @@ export function AppShell({
 
       const path = event.target.closest<HTMLElement>("[data-nav-route]")?.dataset.navRoute;
       if (path) {
-        void onPrefetchRoute?.(path);
+        void onPrefetchRoute?.(path, queryClient);
       }
     },
-    [onPrefetchRoute],
+    [onPrefetchRoute, queryClient],
   );
 
   useEffect(() => {

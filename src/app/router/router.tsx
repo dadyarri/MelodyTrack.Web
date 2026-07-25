@@ -1,3 +1,4 @@
+import type { QueryClient } from "@tanstack/react-query";
 import { createBrowserRouter, Navigate, Outlet } from "react-router";
 
 import { ClientPortalThemeProvider } from "@/shared/config";
@@ -11,27 +12,38 @@ import { SuperuserRoute } from "./guards/SuperuserRoute";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 import { createRoutePrefetcher } from "./routePrefetch";
 
-const prefetchStaffRoute = createRoutePrefetcher({
-  "/": () => import("@/pages/dashboard"),
-  "/appointments-stats": () => import("@/pages/appointments-stats"),
-  "/audit": () => import("@/pages/audit"),
-  "/client-sources": () => import("@/pages/client-sources"),
-  "/clients": () => import("@/pages/clients"),
-  "/clients-stats": () => import("@/pages/clients-stats"),
-  "/courses": () => import("@/pages/courses"),
-  "/expense-categories": () => import("@/pages/expense-categories"),
-  "/expenses": () => import("@/pages/expenses"),
-  "/expenses-dashboard": () => import("@/pages/expenses-stats"),
-  "/payments": () => import("@/pages/payments"),
-  "/payments-stats": () => import("@/pages/payments-stats"),
-  "/price-changes": () => import("@/pages/price-changes"),
-  "/profile": () => import("@/pages/profile"),
-  "/revenue": () => import("@/pages/revenue"),
-  "/schedule": () => import("@/pages/schedule"),
-  "/services": () => import("@/pages/services"),
-  "/tasks": () => import("@/pages/tasks"),
-  "/users": () => import("@/pages/users"),
-});
+const prefetchStaffRoute = createRoutePrefetcher<QueryClient>(
+  {
+    "/": () => import("@/pages/dashboard"),
+    "/appointments-stats": () => import("@/pages/appointments-stats"),
+    "/audit": () => import("@/pages/audit"),
+    "/client-sources": () => import("@/pages/client-sources"),
+    "/clients": () => import("@/pages/clients"),
+    "/clients-stats": () => import("@/pages/clients-stats"),
+    "/courses": () => import("@/pages/courses"),
+    "/expense-categories": () => import("@/pages/expense-categories"),
+    "/expenses": () => import("@/pages/expenses"),
+    "/expenses-dashboard": () => import("@/pages/expenses-stats"),
+    "/payments": () => import("@/pages/payments"),
+    "/payments-stats": () => import("@/pages/payments-stats"),
+    "/price-changes": () => import("@/pages/price-changes"),
+    "/profile": () => import("@/pages/profile"),
+    "/revenue": () => import("@/pages/revenue"),
+    "/schedule": () => import("@/pages/schedule"),
+    "/services": () => import("@/pages/services"),
+    "/tasks": () => import("@/pages/tasks"),
+    "/users": () => import("@/pages/users"),
+  },
+  async (module, queryClient) => {
+    if (isPrefetchableRouteModule(module)) {
+      await module.prefetchRouteData(queryClient);
+    }
+  },
+);
+
+function isPrefetchableRouteModule(module: unknown): module is { prefetchRouteData: (queryClient: QueryClient) => Promise<unknown> } {
+  return typeof module === "object" && module != null && "prefetchRouteData" in module && typeof module.prefetchRouteData === "function";
+}
 
 export const router = createBrowserRouter([
   {
