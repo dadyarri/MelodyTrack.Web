@@ -1,12 +1,12 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
 import { authStore } from "../features/auth/authStore";
+import { apiBaseUrl } from "../shared/config";
 import type { StaleEntityConflict } from "./types";
 
-const baseURL = import.meta.env.DEV ? "http://localhost:5000" : "https://mt.dadyarri.dev/api";
 export const authExpiredEventName = "melodytrack:auth-expired";
 
 export const http = axios.create({
-  baseURL,
+  baseURL: apiBaseUrl,
   headers: {
     "Content-Type": "application/json",
   },
@@ -136,7 +136,7 @@ function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
 }
 
 function buildCacheKey(config: InternalAxiosRequestConfig) {
-  const url = new URL(config.url ?? "", baseURL);
+  const url = new URL(config.url ?? "", new URL(apiBaseUrl, window.location.origin));
   const params = new URLSearchParams();
   const entries = Object.entries((config.params ?? {}) as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
   for (const [key, value] of entries) {
@@ -164,7 +164,7 @@ export async function probeBackendReachable() {
   }
 
   try {
-    await axios.get(`${baseURL}/auth/me`, {
+    await axios.get(`${apiBaseUrl}/auth/me`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
@@ -185,7 +185,7 @@ async function refreshAccessToken() {
 
   try {
     const response = await axios.post<{ accessToken: string; refreshToken: string }>(
-      `${baseURL}/auth/refresh`,
+      `${apiBaseUrl}/auth/refresh`,
       { refreshToken },
       { headers: { "Content-Type": "application/json" } },
     );
