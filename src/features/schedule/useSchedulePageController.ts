@@ -4,9 +4,17 @@ import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
-import { courseEnrollmentsApi, scheduleApi, usersApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/shared/api";
-import type { Appointment, AppointmentStatus, CourseEnrollment, CourseThemeProgressState, RecurrenceType, Ulid } from "@/api/types";
+import { courseEnrollmentsApi, usersApi } from "@/api/crm";
+import {
+  appointmentQueryKeys,
+  appointmentsApi,
+  type Appointment,
+  type AppointmentMutationScope,
+  type AppointmentStatus,
+  type RecurrenceType,
+} from "@/entities/appointment";
+import { getApiErrorMessages, type Ulid } from "@/shared/api";
+import type { CourseEnrollment, CourseThemeProgressState } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
@@ -14,12 +22,7 @@ import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { usePaymentCreateController } from "@/features/payments/usePaymentCreateController";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
 import { useAuth } from "@/features/auth/useAuth";
-import type {
-  AppointmentDeleteScope,
-  AppointmentEditFormValues,
-  AppointmentFormValues,
-  AppointmentRescheduleScope,
-} from "@/features/schedule/ScheduleModals";
+import type { AppointmentEditFormValues, AppointmentFormValues } from "@/features/schedule/ScheduleModals";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
@@ -164,15 +167,15 @@ export function useSchedulePageController() {
   }, [auth.user?.id, canCreateAppointments, isSpecialistFilterLocked, openCreateModal]);
 
   const query = useQuery({
-    queryKey: queryKeys.schedule.appointments(range[0].toISOString(), range[1].toISOString()),
-    queryFn: () => scheduleApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
+    queryKey: appointmentQueryKeys.appointments(range[0].toISOString(), range[1].toISOString()),
+    queryFn: () => appointmentsApi.list({ timezone, startDate: range[0].toISOString(), endDate: range[1].toISOString() }),
     refetchInterval: getBackgroundRefetchInterval(
       Boolean(selectedAppointment || appointmentToEdit || appointmentToDelete || appointmentToReschedule),
     ),
   });
   const recurrenceTypesQuery = useQuery({
-    queryKey: queryKeys.schedule.recurrenceTypes,
-    queryFn: () => scheduleApi.recurrenceTypes(),
+    queryKey: appointmentQueryKeys.recurrenceTypes,
+    queryFn: () => appointmentsApi.recurrenceTypes(),
   });
   const providerAvailabilityQuery = useQuery({
     queryKey: queryKeys.schedule.availability(effectiveProviderFilterId),
@@ -257,7 +260,7 @@ export function useSchedulePageController() {
     (appointmentId: Ulid) => {
       const freshAppointment = findItemInQueryData(
         queryClient,
-        queryKeys.schedule.appointmentsAll,
+        appointmentQueryKeys.appointmentsAll,
         (data) => data as Appointment[] | undefined,
         appointmentId,
       );
@@ -293,7 +296,7 @@ export function useSchedulePageController() {
       createOrQueueOffline({
         input: buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone),
         replayKey: draftReplayKeyRef.current,
-        create: (input) => scheduleApi.create(input, { replayKey: draftReplayKeyRef.current }),
+        create: (input) => appointmentsApi.create(input, { replayKey: draftReplayKeyRef.current }),
         buildQueueItem: (input, replayKey) => ({
           kind: "appointments:create",
           replayKey,
@@ -308,7 +311,7 @@ export function useSchedulePageController() {
     onSuccess: async (result) => {
       message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
       if (result.offline) {
-        queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.appointmentsAll }, (current) => {
+        queryClient.setQueriesData<Appointment[]>({ queryKey: appointmentQueryKeys.appointmentsAll }, (current) => {
           if (!current) {
             return current;
           }
@@ -328,7 +331,7 @@ export function useSchedulePageController() {
       closeCreateModal();
       resetStoredDraft();
       if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
+        await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
       }
     },
     onError: showErrors,
@@ -336,7 +339,7 @@ export function useSchedulePageController() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input, expectedActivityId }: { id: string; input: { status?: AppointmentStatus }; expectedActivityId?: Ulid }) =>
-      scheduleApi.update(id, { ...input, expectedActivityId }),
+      appointmentsApi.update(id, { ...input, expectedActivityId }),
     onMutate: ({ id, input }) => {
       const nextState = (appointment: Appointment) =>
         appointment.id === id
@@ -347,12 +350,12 @@ export function useSchedulePageController() {
           : appointment;
 
       setSelectedAppointment((current) => (current ? nextState(current) : current));
-      queryClient.setQueriesData<Appointment[]>({ queryKey: queryKeys.schedule.appointmentsAll }, (current) => {
+      queryClient.setQueriesData<Appointment[]>({ queryKey: appointmentQueryKeys.appointmentsAll }, (current) => {
         return current ? current.map(nextState) : current;
       });
     },
     onSuccess: async (_, variables) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
+      await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
       syncAppointmentBaseline(variables.id);
     },
     onError: async (error, variables) => {
@@ -360,7 +363,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
+        invalidateQueryKey: appointmentQueryKeys.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Повторить поверх новой версии",
@@ -371,7 +374,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.appointmentsAll,
+            appointmentQueryKeys.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );
@@ -388,7 +391,7 @@ export function useSchedulePageController() {
 
   const editMutation = useMutation({
     mutationFn: ({ id, input, expectedActivityId }: { id: string; input: AppointmentEditFormValues; expectedActivityId?: Ulid }) => {
-      return scheduleApi.update(id, {
+      return appointmentsApi.update(id, {
         clientId: input.clientId,
         serviceId: input.serviceId,
         providerId: input.providerId,
@@ -405,7 +408,7 @@ export function useSchedulePageController() {
       message.success("Запись обновлена");
       setAppointmentToEdit(null);
       setAppointmentToEditBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
+      await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
     },
     onError: async (error, variables) => {
       if (!appointmentToEdit) {
@@ -417,7 +420,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
+        invalidateQueryKey: appointmentQueryKeys.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перезаписать",
@@ -429,7 +432,7 @@ export function useSchedulePageController() {
           const freshAppointment =
             findItemInQueryData(
               queryClient,
-              queryKeys.schedule.appointmentsAll,
+              appointmentQueryKeys.appointmentsAll,
               (data) => data as Appointment[] | undefined,
               appointmentToEdit.id,
             ) ?? currentEditingAppointment;
@@ -461,10 +464,10 @@ export function useSchedulePageController() {
     }: {
       appointment: Appointment;
       startDate: Dayjs;
-      scope?: AppointmentRescheduleScope;
+      scope?: AppointmentMutationScope;
       expectedActivityId?: Ulid;
     }) => {
-      return scheduleApi.update(appointment.id, {
+      return appointmentsApi.update(appointment.id, {
         startDate: startDate.toISOString(),
         timezone,
         scope,
@@ -495,7 +498,7 @@ export function useSchedulePageController() {
         setAppointmentToRescheduleBaselineActivityId(undefined);
       }
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
+      await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
       syncAppointmentBaseline(variables.appointment.id);
     },
     onError: async (error, variables) => {
@@ -503,7 +506,7 @@ export function useSchedulePageController() {
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
+        invalidateQueryKey: appointmentQueryKeys.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Перенести поверх новой версии",
@@ -514,7 +517,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.appointmentsAll,
+            appointmentQueryKeys.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.appointment.id,
           );
@@ -548,8 +551,8 @@ export function useSchedulePageController() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentDeleteScope; expectedActivityId?: Ulid }) => {
-      return scheduleApi.remove(id, scope, { expectedActivityId });
+    mutationFn: ({ id, scope, expectedActivityId }: { id: string; scope?: AppointmentMutationScope; expectedActivityId?: Ulid }) => {
+      return appointmentsApi.remove(id, { scope, expectedActivityId });
     },
     onSuccess: async () => {
       message.success("Запись удалена");
@@ -557,14 +560,14 @@ export function useSchedulePageController() {
       setSelectedAppointmentBaselineActivityId(undefined);
       setAppointmentToDelete(null);
       setAppointmentToDeleteBaselineActivityId(undefined);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll });
+      await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
     },
     onError: async (error, variables) => {
       await handleStaleEntityConflict({
         error,
         modal,
         queryClient,
-        invalidateQueryKey: queryKeys.schedule.appointmentsAll,
+        invalidateQueryKey: appointmentQueryKeys.appointmentsAll,
         showErrors,
         title: "Запись уже изменена",
         okText: "Удалить все равно",
@@ -575,7 +578,7 @@ export function useSchedulePageController() {
         onReload: () => {
           const freshAppointment = findItemInQueryData(
             queryClient,
-            queryKeys.schedule.appointmentsAll,
+            appointmentQueryKeys.appointmentsAll,
             (data) => data as Appointment[] | undefined,
             variables.id,
           );

@@ -1,0 +1,50 @@
+import { http, type CreateEntityResponse, type Ulid } from "@/shared/api";
+import type {
+  Appointment,
+  CreateAppointmentInput,
+  DeleteAppointmentInput,
+  ListAppointmentsParams,
+  RecurrenceType,
+  UpdateAppointmentInput,
+} from "../model/types";
+
+export const appointmentsApi = {
+  list(params: ListAppointmentsParams) {
+    return http.get<{ appointments: Appointment[] }>("/appointments", { params }).then((response) => response.data.appointments);
+  },
+  mini(timezone: string) {
+    return http
+      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", {
+        params: { timezone },
+      })
+      .then((response) => response.data.appointments);
+  },
+  recurrenceTypes() {
+    return http
+      .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
+      .then((response) => response.data.recurrenceTypes);
+  },
+  create(input: CreateAppointmentInput, options?: { replayKey?: string }) {
+    return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  },
+  update(id: Ulid, input: UpdateAppointmentInput) {
+    return http.patch<unknown>(`/appointments/${id}`, input).then(() => undefined);
+  },
+  remove(id: Ulid, input: DeleteAppointmentInput = {}) {
+    return http
+      .delete<unknown>(`/appointments/${id}`, {
+        data: input,
+      })
+      .then(() => undefined);
+  },
+};
+
+function buildReplayConfig(replayKey?: string) {
+  return replayKey
+    ? {
+        headers: {
+          "Idempotency-Key": replayKey,
+        },
+      }
+    : undefined;
+}

@@ -2,7 +2,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 import { queryKeys } from "@/api/queryKeys";
-import { expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
+import { expensesApi, paymentsApi, servicesApi } from "../api/crm";
+import { appointmentQueryKeys, appointmentsApi } from "@/entities/appointment";
 import { clientQueryKeys, clientsApi } from "@/entities/client";
 import { probeBackendReachable } from "@/shared/api";
 import { authStore } from "../features/auth/authStore";
@@ -81,7 +82,7 @@ export function OfflineQueueSync() {
             continue;
           }
 
-          await scheduleApi.create(
+          await appointmentsApi.create(
             {
               ...item.payload,
               clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
@@ -110,7 +111,7 @@ export function OfflineQueueSync() {
           queryClient.invalidateQueries({ queryKey: queryKeys.services.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.payments.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.expenses.all }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.schedule.appointmentsAll }),
+          queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll }),
           queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all }),
         ]);
       }

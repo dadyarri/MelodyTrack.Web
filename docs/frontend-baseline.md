@@ -106,6 +106,14 @@ record activity metadata moved to `shared/api`. Client API tests preserve
 idempotency headers, endpoint paths, response mapping, and the pre-migration
 query-key shapes.
 
+The appointment domain now owns schedule contracts, appointment requests,
+recurrence lookups, and schedule query keys. Its nested client, service,
+provider, and course-theme contracts mirror the purpose-specific DTOs exposed
+by the backend instead of importing sibling entities. The generated backend
+OpenAPI document is the contract source of truth; validation also corrected
+appointment deletion to send `scope` and `expectedActivityId` in the JSON body
+defined by `DeleteAppointmentRequest`.
+
 ## Production Bundle Baseline
 
 The production build succeeds with route-level code splitting. The largest

@@ -1,7 +1,6 @@
-import type { AppointmentRescheduleScope } from "@/features/schedule/ScheduleModals";
+import type { AppointmentStatus } from "@/entities/appointment";
 import { http } from "@/shared/api";
 import type {
-  Appointment,
   AppointmentsAnalytics,
   AuditLog,
   CalendarSubscription,
@@ -22,7 +21,6 @@ import type {
   ExpensesAnalytics,
   ClientsAnalyticsResponse,
   PriceChangeAnalytics,
-  RecurrenceType,
   RevenueAnalytics,
   Role,
   RecurringTask,
@@ -40,7 +38,7 @@ export interface ClientPortalAppointment {
   id: string;
   startDate: string;
   endDate: string;
-  status: Appointment["status"];
+  status: AppointmentStatus;
   courseTheme?: {
     id: string;
     title: string;
@@ -454,76 +452,6 @@ export const expensesApi = {
     return http
       .delete<unknown>(`/expenses/${id}`, {
         params: options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : undefined,
-      })
-      .then(() => undefined);
-  },
-};
-
-export const scheduleApi = {
-  list(params: { timezone: string; startDate: string; endDate: string }) {
-    return http.get<{ appointments: Appointment[] }>("/appointments", { params }).then((response) => response.data.appointments);
-  },
-  mini(timezone: string) {
-    return http
-      .get<{
-        appointments: Record<string, Appointment[]>;
-      }>("/appointments/mini", { params: { timezone } })
-      .then((response) => response.data.appointments);
-  },
-  recurrenceTypes() {
-    return http
-      .get<{
-        recurrenceTypes: RecurrenceType[];
-      }>("/appointments/recurrenceTypes")
-      .then((response) => response.data.recurrenceTypes);
-  },
-  create(
-    input: {
-      clientId: Ulid;
-      serviceId: Ulid;
-      providerId?: Ulid;
-      courseThemeId?: Ulid;
-      recurrenceTypeId?: Ulid;
-      lessonNotes?: string;
-      startDate: string;
-      timezone: string;
-      patternEndDate?: string;
-      recurrencePattern?: number;
-    },
-    options?: { replayKey?: string },
-  ) {
-    return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
-  },
-  update(
-    id: Ulid,
-    input: Partial<{
-      clientId: Ulid;
-      serviceId: Ulid;
-      providerId: Ulid;
-      courseThemeId: Ulid | null;
-      hasCourseThemeSelection: boolean;
-      lessonNotes: string | null;
-      hasLessonNotes: boolean;
-      startDate: string;
-      timezone: string;
-      status: "planned" | "completed" | "cancelled" | "burned";
-      scope: AppointmentRescheduleScope;
-      expectedActivityId: Ulid;
-    }>,
-  ) {
-    return http.patch<unknown>(`/appointments/${id}`, input).then(() => undefined);
-  },
-  remove(
-    id: Ulid,
-    scope?: "single" | "this-and-following" | "all" | "weekday-this-and-following" | "weekday-all",
-    options?: { expectedActivityId?: Ulid },
-  ) {
-    return http
-      .delete<unknown>(`/appointments/${id}`, {
-        params: {
-          ...(scope ? { scope } : {}),
-          ...(options?.expectedActivityId ? { expectedActivityId: options.expectedActivityId } : {}),
-        },
       })
       .then(() => undefined);
   },

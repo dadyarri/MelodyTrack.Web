@@ -1,4 +1,4 @@
-import type { LookupClient } from "@/entities/client";
+import type { AppointmentStatus } from "@/entities/appointment";
 import type { PaginatedResponse, RecordActivity, Ulid } from "@/shared/api";
 
 export type {
@@ -16,8 +16,6 @@ export interface MoneyListSummary {
   firstItemAtUtc?: string | null;
   lastItemAtUtc?: string | null;
 }
-
-export type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
 
 export interface ReferenceBookItem {
   id: Ulid;
@@ -239,41 +237,6 @@ export interface UserAvailability {
 export interface Role {
   id: Ulid;
   displayName: string;
-}
-
-export interface AppointmentRecurrenceRule {
-  id: Ulid;
-  startDate: string;
-  endDate?: string | null;
-  key: "daily" | "weekly" | "monthly";
-  recurrencePattern?: number | null;
-}
-
-export interface RecurrenceType {
-  id: Ulid;
-  key: "daily" | "weekly" | "monthly";
-  displayName: string;
-}
-
-export interface Appointment {
-  id: Ulid;
-  client: LookupClient;
-  service: LookupService;
-  provider?: User | null;
-  courseTheme?: AppointmentCourseTheme | null;
-  lessonNotes?: string | null;
-  startDate: string;
-  endDate: string;
-  status: AppointmentStatus;
-  recurringRule?: AppointmentRecurrenceRule | null;
-  lastActivity?: RecordActivity | null;
-}
-
-export interface AppointmentCourseTheme {
-  id: Ulid;
-  title: string;
-  courseId: Ulid;
-  courseName: string;
 }
 
 export interface PaymentClient {

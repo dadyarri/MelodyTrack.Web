@@ -3,8 +3,8 @@ import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { queryKeys } from "@/api/queryKeys";
-import { dashboardApi, scheduleApi } from "@/api/crm";
-import type { Appointment } from "@/api/types";
+import { dashboardApi } from "@/api/crm";
+import { appointmentQueryKeys, appointmentsApi, type Appointment } from "@/entities/appointment";
 import { clientQueryKeys, clientsApi, type Client } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
@@ -32,8 +32,8 @@ export function useDashboardPageController() {
     enabled: canSeeFinancialOverview,
   });
   const miniQuery = useQuery({
-    queryKey: queryKeys.schedule.mini(timezone),
-    queryFn: () => scheduleApi.mini(timezone),
+    queryKey: appointmentQueryKeys.mini(timezone),
+    queryFn: () => appointmentsApi.mini(timezone),
   });
   const historyQuery = useQuery({
     queryKey: clientQueryKeys.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),

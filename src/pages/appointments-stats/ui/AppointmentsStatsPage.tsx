@@ -3,13 +3,8 @@ import dayjs from "dayjs";
 import type { ReactNode } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { dashboardApi } from "@/api/crm";
-import type {
-  AppointmentHourAnalytics,
-  AppointmentLoadByDay,
-  AppointmentStatus,
-  BurnedClientAnalytics,
-  TeacherAppointmentsAnalytics,
-} from "@/api/types";
+import type { AppointmentHourAnalytics, AppointmentLoadByDay, BurnedClientAnalytics, TeacherAppointmentsAnalytics } from "@/api/types";
+import type { AppointmentStatus } from "@/entities/appointment";
 import { StatsDonutChart, StatsTrendChart } from "@/shared/ui/charts";
 import { STATS_CHART_COLORS } from "@/shared/ui/charts";
 import { InfoLabel } from "@/shared/ui";

@@ -16,9 +16,9 @@ import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSelect";
+import type { Appointment, AppointmentMutationScope, AppointmentStatus, RecurrenceType } from "@/entities/appointment";
 import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
-import type { Appointment, AppointmentStatus, RecurrenceType } from "../../api/types";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/shared/lib";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
 import { getAppointmentStatusLabel } from "./appointmentStatus";
@@ -55,11 +55,8 @@ export type AppointmentEditFormValues = {
   startDate: Dayjs;
 };
 
-export type AppointmentDeleteScope = "single" | "this-and-following" | "all" | "weekday-this-and-following" | "weekday-all";
-export type AppointmentRescheduleScope = AppointmentDeleteScope;
-
 type RecurringDeleteOption = {
-  scope: AppointmentDeleteScope;
+  scope: AppointmentMutationScope;
   label: string;
   description: string;
 };
@@ -379,10 +376,10 @@ export function RecurringDeleteModal({
   deletePending: boolean;
   isStale: boolean;
   onCancel: () => void;
-  onDelete: (appointment: Appointment, scope: AppointmentDeleteScope) => void;
+  onDelete: (appointment: Appointment, scope: AppointmentMutationScope) => void;
 }) {
   const deleteOptions = appointment ? getRecurringDeleteOptions(appointment) : [];
-  const [confirmScope, setConfirmScope] = useState<AppointmentDeleteScope | null>(null);
+  const [confirmScope, setConfirmScope] = useState<AppointmentMutationScope | null>(null);
   const confirmTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -393,7 +390,7 @@ export function RecurringDeleteModal({
     };
   }, []);
 
-  const armDeleteConfirmation = (scope: AppointmentDeleteScope) => {
+  const armDeleteConfirmation = (scope: AppointmentMutationScope) => {
     setConfirmScope(scope);
     if (confirmTimeoutRef.current !== null) {
       window.clearTimeout(confirmTimeoutRef.current);
@@ -405,7 +402,7 @@ export function RecurringDeleteModal({
     }, DELETE_CONFIRMATION_TIMEOUT_MS);
   };
 
-  const handleDeleteClick = (currentAppointment: Appointment, scope: AppointmentDeleteScope) => {
+  const handleDeleteClick = (currentAppointment: Appointment, scope: AppointmentMutationScope) => {
     if (confirmScope === scope) {
       if (confirmTimeoutRef.current !== null) {
         window.clearTimeout(confirmTimeoutRef.current);
@@ -484,7 +481,7 @@ export function RecurringRescheduleModal({
   reschedulePending: boolean;
   isStale: boolean;
   onCancel: () => void;
-  onReschedule: (appointment: Appointment, nextStartDate: Dayjs, scope: AppointmentRescheduleScope) => void;
+  onReschedule: (appointment: Appointment, nextStartDate: Dayjs, scope: AppointmentMutationScope) => void;
 }) {
   return (
     <Modal

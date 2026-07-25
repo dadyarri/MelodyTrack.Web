@@ -1,7 +1,7 @@
 import { CheckOutlined, ClockCircleOutlined, CloseOutlined, FireOutlined } from "@/shared/ui/icons";
 import { Tag } from "antd";
 import type { CSSProperties } from "react";
-import type { AppointmentStatus } from "@/api/types";
+import type { AppointmentStatus } from "@/entities/appointment";
 
 export function getAppointmentStatusLabel(status: AppointmentStatus) {
   switch (status) {
