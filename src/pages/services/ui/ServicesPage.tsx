@@ -2,7 +2,7 @@ import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space, Switch,
 
 import { formatMoney } from "@/shared/lib";
 import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { ActionableEmptyState, DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 import { useServicesPageController } from "../model/useServicesPageController";
@@ -35,6 +35,13 @@ export function ServicesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Услуги пока не созданы"
+                actionLabel={controller.canManageServices ? "Добавить услугу" : undefined}
+                onAction={controller.canManageServices ? () => { controller.setCreateOpen(true); } : undefined}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

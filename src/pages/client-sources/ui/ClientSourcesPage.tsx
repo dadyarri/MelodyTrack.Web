@@ -3,7 +3,7 @@ import { Button } from "antd";
 import { clientQueryKeys } from "@/entities/client";
 import { clientSourcesApi } from "@/entities/reference-book";
 import { useReferenceBookPageController } from "@/features/manage-reference-book";
-import { ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 
@@ -45,6 +45,15 @@ export function ClientSourcesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Источники клиентов пока не созданы"
+                actionLabel="Добавить источник"
+                onAction={() => {
+                  controller.setCreateOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

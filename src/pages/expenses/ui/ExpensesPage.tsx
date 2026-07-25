@@ -4,7 +4,7 @@ import { ExpenseCategorySelect } from "@/entities/reference-book";
 import { DATE_FORMAT, formatDate } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
 import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
 import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/shared/ui";
 import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -95,6 +95,13 @@ export function ExpensesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Расходов по выбранным условиям пока нет"
+                actionLabel="Добавить расход"
+                onAction={() => { controller.setOpen(true); }}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

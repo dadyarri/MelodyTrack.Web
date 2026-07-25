@@ -3,7 +3,7 @@ import { Input, Typography } from "antd";
 import type { RecurringTaskType } from "@/entities/task";
 import { getRecurringTaskTypeLabel } from "@/entities/task";
 import { formatDateTime } from "@/shared/lib";
-import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
+import { AccessDeniedNotice, ActionableEmptyState, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 
 import { useAuditPageController } from "../model/useAuditPageController";
@@ -184,6 +184,7 @@ export function AuditPage() {
         </ListFilters>
         <ListTable
           rowKey="id"
+          emptyText={<ActionableEmptyState description="Действий по выбранным условиям не найдено" />}
           loading={controller.query.isLoading}
           queryStatus={{
             isError: controller.query.isError,

@@ -6,7 +6,7 @@ import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-clien
 import { formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
 import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
@@ -59,6 +59,13 @@ export function ClientsPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Клиентов по выбранным условиям пока нет"
+                actionLabel={controller.canCreateClients ? "Добавить клиента" : undefined}
+                onAction={controller.canCreateClients ? controller.openEditor : undefined}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

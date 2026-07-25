@@ -3,7 +3,7 @@ import { Button } from "antd";
 import { expenseQueryKeys } from "@/entities/expense";
 import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
 import { useReferenceBookPageController } from "@/features/manage-reference-book";
-import { ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
 
@@ -45,6 +45,15 @@ export function ExpenseCategoriesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Статьи расходов пока не созданы"
+                actionLabel="Добавить статью"
+                onAction={() => {
+                  controller.setCreateOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

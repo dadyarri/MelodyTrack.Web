@@ -3,7 +3,7 @@ import { Button, Form, Input, Modal, Space } from "antd";
 import { formatPhone } from "@/entities/client";
 import { RoleSelect } from "@/entities/user";
 import { UserEditorModal } from "@/features/edit-user";
-import { AccessDeniedNotice, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { AccessDeniedNotice, ActionableEmptyState, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 import { useUsersPageController } from "../model/useUsersPageController";
@@ -36,6 +36,15 @@ export function UsersPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Пользователей пока нет"
+                actionLabel="Создать приглашение"
+                onAction={() => {
+                  controller.setInviteOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,

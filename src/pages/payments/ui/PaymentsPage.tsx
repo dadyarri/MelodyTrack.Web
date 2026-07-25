@@ -7,7 +7,7 @@ import { PaymentCreateModal } from "@/features/record-payment";
 import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
 import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { MoneyListSummaryCards } from "@/shared/ui";
+import { ActionableEmptyState, MoneyListSummaryCards } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
@@ -117,6 +117,13 @@ export function PaymentsPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Платежей по выбранным условиям пока нет"
+                actionLabel="Добавить платёж"
+                onAction={controller.openCreateModal}
+              />
+            }
             loading={controller.query.isLoading}
             queryStatus={{
               isError: controller.query.isError,
