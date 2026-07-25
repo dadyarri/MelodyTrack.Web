@@ -4,12 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="/favicon-96x96.png?v=20260524-2" sizes="96x96" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260524-2" />
-  <link rel="shortcut icon" href="/favicon.ico?v=20260524-2" />
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20260524-2" />
+  <link rel="icon" type="image/png" href="/favicon-96x96.png?v=20260725-1" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260725-1" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20260725-1" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20260725-1" />
   <meta name="apple-mobile-web-app-title" content="MelodyTrack" />
-  <link rel="manifest" href="/site.webmanifest?v=20260524-2" />
+  <link rel="manifest" href="/site.webmanifest?v=20260725-1" />
   <title>MelodyTrack CRM</title>
   <script>
     try {
@@ -84,10 +84,13 @@
       margin-bottom: 18px;
       border-radius: 16px;
       background: var(--boot-accent);
-      color: var(--boot-card);
-      font-size: 28px;
-      font-weight: 750;
-      line-height: 1;
+      overflow: hidden;
+    }
+
+    .app-loading-mark img {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     .app-loading-title {
@@ -134,7 +137,9 @@
   <div id="root">
     <div class="app-loading-screen" role="status" aria-live="polite">
       <div class="app-loading-card">
-        <div class="app-loading-mark" aria-hidden="true">M</div>
+        <div class="app-loading-mark" aria-hidden="true">
+          <img src="/favicon.svg?v=20260725-1" alt="" width="52" height="52" />
+        </div>
         <p class="app-loading-title">MelodyTrack</p>
         <p class="app-loading-message">Загружаем приложение…</p>
         <div class="app-loading-spinner" aria-hidden="true"></div>
