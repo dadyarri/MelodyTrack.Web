@@ -64,6 +64,9 @@ export function ClientSourcesPage() {
                   <Button
                     danger
                     icon={<DeleteOutlined />}
+                    aria-label="Удалить источник клиентов"
+                    title="Удалить"
+                    loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                     onClick={() => {
                       controller.modal.confirm({
                         title: "Удалить источник?",

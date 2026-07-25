@@ -64,6 +64,9 @@ export function ExpenseCategoriesPage() {
                   <Button
                     danger
                     icon={<DeleteOutlined />}
+                    aria-label="Удалить статью расходов"
+                    title="Удалить"
+                    loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                     onClick={() => {
                       controller.modal.confirm({
                         title: "Удалить категорию?",

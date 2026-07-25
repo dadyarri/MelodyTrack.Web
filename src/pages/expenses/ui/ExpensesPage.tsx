@@ -114,12 +114,14 @@ export function ExpensesPage() {
               {
                 title: "Дата",
                 dataIndex: "date",
+                responsive: ["sm"],
                 render: (value: string) => formatDate(value),
               },
               { title: "Описание", dataIndex: "description" },
               {
                 title: "Категория",
                 dataIndex: "categoryName",
+                responsive: ["md"],
                 render: (value?: string | null) => value || "Без категории",
               },
               {
@@ -135,6 +137,8 @@ export function ExpensesPage() {
                     {controller.canEditExpenses ? (
                       <Button
                         icon={<EditOutlined />}
+                        aria-label="Редактировать расход"
+                        title="Редактировать"
                         onClick={() => {
                           controller.openEdit(row);
                         }}
@@ -143,6 +147,9 @@ export function ExpensesPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить расход"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() =>
                         controller.modal.confirm({
                           title: "Удалить расход?",

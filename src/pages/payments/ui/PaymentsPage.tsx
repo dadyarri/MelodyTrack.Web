@@ -137,19 +137,25 @@ export function PaymentsPage() {
               {
                 title: "Дата",
                 dataIndex: "date",
+                responsive: ["sm"],
                 render: (value: string) => formatDateTime(value),
               },
               {
                 title: "Клиент",
                 render: (_, row) => `${row.client.lastName} ${row.client.firstName}`,
               },
-              { title: "Услуга", render: (_, row) => row.service?.name },
+              { title: "Услуга", responsive: ["md"], render: (_, row) => row.service?.name },
               {
                 title: "Сумма",
                 dataIndex: "amount",
                 render: (value: number) => formatMoney(value),
               },
-              { title: "Описание", dataIndex: "description", render: (value?: string | null) => value?.trim() || "Без описания" },
+              {
+                title: "Описание",
+                dataIndex: "description",
+                responsive: ["lg"],
+                render: (value?: string | null) => value?.trim() || "Без описания",
+              },
               {
                 title: "",
                 width: 112,
@@ -157,6 +163,8 @@ export function PaymentsPage() {
                   <Space>
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать платёж"
+                      title="Редактировать"
                       onClick={() => {
                         controller.openEditModal(row);
                       }}
@@ -164,6 +172,9 @@ export function PaymentsPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить платёж"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() => {
                         modal.confirm({
                           title: "Удалить платеж?",

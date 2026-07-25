@@ -49,20 +49,23 @@ export function UsersPage() {
             columns={[
               { title: "Фамилия", dataIndex: "lastName" },
               { title: "Имя", dataIndex: "firstName" },
-              { title: "Роль", dataIndex: "roleDisplayName" },
+              { title: "Роль", dataIndex: "roleDisplayName", responsive: ["sm"] },
               {
                 title: "Телефон",
                 dataIndex: "phone",
+                responsive: ["md"],
                 render: (value?: string | null) => (value ? formatPhone(value) : "—"),
               },
               {
                 title: "Telegram",
                 dataIndex: "telegram",
+                responsive: ["lg"],
                 render: (value?: string | null) => value || "—",
               },
               {
                 title: "VK",
                 dataIndex: "vk",
+                responsive: ["lg"],
                 render: (value?: string | null) => value || "—",
               },
               {
@@ -72,12 +75,20 @@ export function UsersPage() {
                   <Space>
                     <Button
                       icon={<KeyOutlined />}
+                      aria-label="Создать ссылку восстановления пароля"
+                      title="Восстановление пароля"
+                      loading={
+                        controller.createPasswordResetLinkMutation.isPending &&
+                        controller.createPasswordResetLinkMutation.variables.id === row.id
+                      }
                       onClick={() => {
                         controller.createPasswordResetLink(row);
                       }}
                     />
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать пользователя"
+                      title="Редактировать"
                       onClick={() => {
                         controller.openEditor(row);
                       }}
@@ -121,7 +132,13 @@ export function UsersPage() {
           <Form.Item label="Ссылка приглашения">
             <Space.Compact className="wide">
               <Input readOnly value={controller.inviteUrl} />
-              <Button icon={<CopyOutlined />} disabled={!controller.inviteUrl} onClick={controller.copyInviteUrl} />
+              <Button
+                icon={<CopyOutlined />}
+                aria-label="Копировать ссылку приглашения"
+                title="Копировать"
+                disabled={!controller.inviteUrl}
+                onClick={controller.copyInviteUrl}
+              />
             </Space.Compact>
           </Form.Item>
         </Space>
@@ -145,6 +162,8 @@ export function UsersPage() {
               <Input readOnly value={controller.passwordResetUrl} />
               <Button
                 icon={<CopyOutlined />}
+                aria-label="Копировать ссылку восстановления"
+                title="Копировать"
                 disabled={!controller.passwordResetUrl}
                 loading={controller.createPasswordResetLinkMutation.isPending}
                 onClick={controller.copyPasswordResetUrl}

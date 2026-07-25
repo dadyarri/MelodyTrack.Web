@@ -1614,7 +1614,7 @@ function CourseLevelRow({
             onMove("down");
           }}
         />
-        <Button danger icon={<DeleteOutlined />} onClick={onRemove} />
+        <Button danger icon={<DeleteOutlined />} aria-label="Удалить уровень курса" title="Удалить" onClick={onRemove} />
       </Space>
     </div>
   );

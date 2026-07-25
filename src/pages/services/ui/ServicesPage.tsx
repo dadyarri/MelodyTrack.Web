@@ -52,13 +52,19 @@ export function ServicesPage() {
             }}
             columns={[
               { title: "Название", dataIndex: "name" },
-              { title: "Название для клиента", dataIndex: "publicName", render: (value?: string | null) => value || "—" },
+              {
+                title: "Название для клиента",
+                dataIndex: "publicName",
+                responsive: ["lg"],
+                render: (value?: string | null) => value || "—",
+              },
               {
                 title: "Тип",
                 width: 132,
+                responsive: ["md"],
                 render: (_, row) => (row.isConsultation ? <Tag color="blue">Консультация</Tag> : null),
               },
-              { title: "Описание", dataIndex: "description" },
+              { title: "Описание", dataIndex: "description", responsive: ["lg"] },
               {
                 title: "Цена",
                 dataIndex: "price",
@@ -71,6 +77,8 @@ export function ServicesPage() {
                   <Space>
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать услугу"
+                      title="Редактировать"
                       disabled={!controller.canManageServices}
                       onClick={() => {
                         if (!controller.canManageServices) {
@@ -82,6 +90,8 @@ export function ServicesPage() {
                     />
                     <Button
                       icon={<DollarOutlined />}
+                      aria-label="Обновить цену услуги"
+                      title="Обновить цену"
                       disabled={!controller.canManageServices}
                       onClick={() => {
                         if (!controller.canManageServices) {
@@ -95,6 +105,9 @@ export function ServicesPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить услугу"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables === row.id}
                       disabled={!controller.canManageServices}
                       onClick={() => {
                         if (!controller.canManageServices) {

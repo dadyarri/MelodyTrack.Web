@@ -92,19 +92,23 @@ export function ClientsPage() {
               {
                 title: "Статус",
                 width: 118,
+                responsive: ["sm"],
                 render: (_, row) => <ClientLifecycleTag client={row} />,
               },
               {
                 title: "Последняя запись",
+                responsive: ["lg"],
                 render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет"),
               },
               {
                 title: "Следующая запись",
+                responsive: ["md"],
                 render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет"),
               },
               {
                 title: "Баланс",
                 dataIndex: "balance",
+                responsive: ["sm"],
                 render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
               },
               {
@@ -114,6 +118,8 @@ export function ClientsPage() {
                   <Space>
                     <Button
                       icon={<ProfileOutlined />}
+                      aria-label="Открыть карточку клиента"
+                      title="Открыть карточку"
                       onClick={() => {
                         controller.setHistoryClient(row);
                       }}
@@ -129,7 +135,13 @@ export function ClientsPage() {
                           controller.setLeadClosed(row, true);
                         }}
                       >
-                        <Button danger icon={<CloseOutlined />} loading={controller.leadStatusMutation.isPending} />
+                        <Button
+                          danger
+                          icon={<CloseOutlined />}
+                          aria-label="Закрыть лид"
+                          title="Закрыть лид"
+                          loading={controller.leadStatusMutation.isPending && controller.leadStatusMutation.variables.id === row.id}
+                        />
                       </Popconfirm>
                     ) : null}
                     {controller.canCreateClients && row.lifecycleStatus === 3 ? (
@@ -143,11 +155,18 @@ export function ClientsPage() {
                           controller.setLeadClosed(row, false);
                         }}
                       >
-                        <Button icon={<ReloadOutlined />} loading={controller.leadStatusMutation.isPending} />
+                        <Button
+                          icon={<ReloadOutlined />}
+                          aria-label="Вернуть лид в работу"
+                          title="Вернуть лид в работу"
+                          loading={controller.leadStatusMutation.isPending && controller.leadStatusMutation.variables.id === row.id}
+                        />
                       </Popconfirm>
                     ) : null}
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать клиента"
+                      title="Редактировать"
                       onClick={() => {
                         controller.openEditor(row);
                       }}
@@ -155,6 +174,9 @@ export function ClientsPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить клиента"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() => {
                         controller.confirmDelete(row);
                       }}
