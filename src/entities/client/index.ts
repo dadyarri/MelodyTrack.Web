@@ -30,6 +30,8 @@ export type {
   ClientVacation,
   ClientWithBalance,
   CreateClientInput,
+  GetClientHistoryParams,
+  ListClientsParams,
   LookupClient,
   UpdateClientInput,
 } from "./model/types";

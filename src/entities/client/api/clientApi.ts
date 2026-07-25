@@ -1,22 +1,24 @@
-import { http, type CreateEntityResponse, type PaginatedParams, type PaginatedResponse, type Ulid } from "@/shared/api";
+import { http, type CreateEntityResponse, type PaginatedResponse, type Ulid } from "@/shared/api";
 import type {
   Client,
   ClientCalendarSubscription,
   ClientHistory,
   ClientWithBalance,
   CreateClientInput,
+  GetClientHistoryParams,
+  ListClientsParams,
   LookupClient,
   UpdateClientInput,
 } from "../model/types";
 
 export const clientsApi = {
-  list(params: PaginatedParams & Partial<Client> & { search?: string }) {
+  list(params: ListClientsParams) {
     return http.get<PaginatedResponse<Client>>("/clients", { params }).then((response) => response.data);
   },
-  get(id: Ulid) {
-    return http.get<Client>(`/clients/${id}`).then((response) => response.data);
+  get(id: Ulid, params?: { expectedActivityId?: Ulid }) {
+    return http.get<Client>(`/clients/${id}`, { params }).then((response) => response.data);
   },
-  history(id: Ulid, params?: PaginatedParams) {
+  history(id: Ulid, params?: GetClientHistoryParams) {
     return http.get<ClientHistory>(`/clients/${id}/history`, { params }).then((response) => response.data);
   },
   lookup(search?: string) {

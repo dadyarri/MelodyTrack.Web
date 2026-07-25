@@ -1,16 +1,17 @@
-import type { PaginatedResponse, RecordActivity, Ulid } from "@/shared/api";
+import type { PaginatedParams, PaginatedResponse, RecordActivity, Ulid } from "@/shared/api";
 
 export type ClientLifecycleStatus = 0 | 1 | 2 | 3;
 
 export interface ClientContacts {
   id?: Ulid;
+  email?: string | null;
   telegram?: string | null;
   vk?: string | null;
   phone?: string | null;
 }
 
 export interface ClientVacation {
-  id: Ulid;
+  clientId: Ulid;
   startDate: string;
   endDate: string;
 }
@@ -27,6 +28,8 @@ export interface Client {
   phone?: string | null;
   sourceId?: Ulid | null;
   sourceName?: string | null;
+  createdAtUtc: string;
+  isLeadClosed: boolean;
   vacations: ClientVacation[];
   balance: number;
   lastAppointmentAtUtc?: string | null;
@@ -84,6 +87,7 @@ export type CreateClientInput = {
   lastName: string;
   patronymic?: string | null;
   dateOfBirth?: string | null;
+  email?: string | null;
   telegram?: string;
   vk?: string;
   phone?: string;
@@ -93,6 +97,21 @@ export type CreateClientInput = {
 export type UpdateClientInput = Partial<Omit<CreateClientInput, "sourceId">> & {
   sourceId?: Ulid | null;
   vacations?: Array<{ startDate: string; endDate: string }>;
+};
+
+export type ListClientsParams = PaginatedParams & {
+  search?: string;
+  lifecycleStatus?: ClientLifecycleStatus;
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  sourceId?: Ulid;
+  createdAtUtc?: string;
+  isLeadClosed?: boolean;
+};
+
+export type GetClientHistoryParams = PaginatedParams & {
+  expectedActivityId?: Ulid;
 };
 
 export type ClientCalendarSubscription = {
