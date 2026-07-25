@@ -8,11 +8,14 @@ export type DraftSaveStatus = "loading" | "saved" | "pending" | "failed";
 export function useDraftFormState<TValues>(storageKey: string, validateValues: (value: unknown) => value is TValues) {
   const [draft, setDraft] = useState<Awaited<ReturnType<typeof loadDraft<TValues>>>>(null);
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>("loading");
+  const [isDraftRestored, setDraftRestored] = useState(false);
   const replayKeyRef = useRef(createReplayKey());
   const draftRef = useRef(draft);
   const isHydratingRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
   const pendingValuesRef = useRef<TValues | null>(null);
+  const saveRevisionRef = useRef(0);
+  const persistenceQueueRef = useRef<Promise<unknown>>(Promise.resolve());
 
   useEffect(() => {
     let isActive = true;
@@ -21,13 +24,16 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
         if (!isActive) {
           return;
         }
-        setDraft(loadedDraft);
-        draftRef.current = loadedDraft;
-        replayKeyRef.current = loadedDraft?.replayKey ?? createReplayKey();
-        setSaveStatus("saved");
+        if (saveRevisionRef.current === 0) {
+          setDraft(loadedDraft);
+          draftRef.current = loadedDraft;
+          replayKeyRef.current = loadedDraft?.replayKey ?? createReplayKey();
+          setDraftRestored(loadedDraft !== null);
+          setSaveStatus("saved");
+        }
       })
       .catch(() => {
-        if (isActive) {
+        if (isActive && saveRevisionRef.current === 0) {
           setSaveStatus("failed");
         }
       });
@@ -42,7 +48,10 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
         window.clearTimeout(saveTimerRef.current);
       }
       if (pendingValuesRef.current) {
-        void saveDraftValues(storageKey, replayKeyRef.current, pendingValuesRef.current);
+        const pendingValues = pendingValuesRef.current;
+        persistenceQueueRef.current = persistenceQueueRef.current
+          .catch(() => undefined)
+          .then(() => saveDraftValues(storageKey, replayKeyRef.current, pendingValues));
       }
     },
     [storageKey],
@@ -61,12 +70,19 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
         saveTimerRef.current = null;
       }
       pendingValuesRef.current = null;
+      saveRevisionRef.current += 1;
       setDraft(null);
       draftRef.current = null;
+      setDraftRestored(false);
       replayKeyRef.current = createReplayKey();
       setSaveStatus("saved");
-      void clearDraft(storageKey).catch(() => {
-        setSaveStatus("failed");
+      const resetRevision = saveRevisionRef.current;
+      const clearOperation = persistenceQueueRef.current.catch(() => undefined).then(() => clearDraft(storageKey));
+      persistenceQueueRef.current = clearOperation;
+      void clearOperation.catch(() => {
+        if (resetRevision === saveRevisionRef.current) {
+          setSaveStatus("failed");
+        }
       });
       if (action) {
         withDraftHydration(isHydratingRef, action);
@@ -82,6 +98,9 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
       }
 
       pendingValuesRef.current = values;
+      const saveRevision = saveRevisionRef.current + 1;
+      saveRevisionRef.current = saveRevision;
+      setDraftRestored(false);
       setSaveStatus("pending");
       if (saveTimerRef.current !== null) {
         window.clearTimeout(saveTimerRef.current);
@@ -92,15 +111,24 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
         if (!pendingValues) {
           return;
         }
-        void saveDraftValues(storageKey, replayKeyRef.current, pendingValues)
+        const saveOperation = persistenceQueueRef.current
+          .catch(() => undefined)
+          .then(() => saveDraftValues(storageKey, replayKeyRef.current, pendingValues));
+        persistenceQueueRef.current = saveOperation;
+        void saveOperation
           .then((savedDraft) => {
+            if (saveRevision !== saveRevisionRef.current) {
+              return;
+            }
             pendingValuesRef.current = null;
             setDraft(savedDraft);
             draftRef.current = savedDraft;
             setSaveStatus("saved");
           })
           .catch(() => {
-            setSaveStatus("failed");
+            if (saveRevision === saveRevisionRef.current) {
+              setSaveStatus("failed");
+            }
           });
       }, 400);
     },
@@ -109,6 +137,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
 
   return {
     hasSavedDraft: draft !== null,
+    isDraftRestored,
     isDraftReady: saveStatus !== "loading",
     saveStatus,
     replayKeyRef,

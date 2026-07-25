@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import { useEffect, useMemo } from "react";
+import { useEffect, useEffectEvent, useMemo } from "react";
 
 import { formatMoney, getCachedReferenceLabel, rememberReferenceLabels } from "@/shared/lib";
 
@@ -47,6 +47,13 @@ export function ServiceSelect({
   });
   const cachedLabel = getCachedReferenceLabel("service", value);
   const selectedService = selectedQuery.data?.id === value ? selectedQuery.data : undefined;
+  const notifyResolved = useEffectEvent((label?: string, price?: number) => {
+    onResolvedLabelChange?.(label);
+    onResolvedPriceChange?.(price);
+  });
+  const resolvedService = selectedService ?? query.data?.find((item) => item.id === value);
+  const resolvedLabel = resolvedService?.name ?? cachedLabel;
+  const resolvedPrice = resolvedService?.price;
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = selectedService
       ? [{ value: selectedService.id, label: formatServiceLabel(selectedService.name, selectedService.price, showPrice) }]
@@ -61,10 +68,8 @@ export function ServiceSelect({
   }, [cachedLabel, query.data, selectedService, showPrice, value]);
 
   useEffect(() => {
-    const service = selectedService ?? query.data?.find((item) => item.id === value);
-    onResolvedLabelChange?.(service?.name ?? cachedLabel);
-    onResolvedPriceChange?.(service?.price);
-  }, [cachedLabel, onResolvedLabelChange, onResolvedPriceChange, query.data, selectedService, value]);
+    notifyResolved(resolvedLabel, resolvedPrice);
+  }, [resolvedLabel, resolvedPrice]);
 
   useEffect(() => {
     if (query.data) {

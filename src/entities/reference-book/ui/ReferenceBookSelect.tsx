@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import { useEffect, useMemo } from "react";
+import { useEffect, useEffectEvent, useMemo } from "react";
 
 import { getCachedReferenceLabel, type ReferenceLabelKind, rememberReferenceLabels } from "@/shared/lib";
 
@@ -27,6 +27,9 @@ function ReferenceBookSelect({
 }) {
   const query = useQuery({ queryKey, queryFn, retry: false });
   const cachedLabel = getCachedReferenceLabel(kind, value);
+  const notifyResolvedLabel = useEffectEvent((label?: string) => {
+    onResolvedLabelChange?.(label);
+  });
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = cachedLabel && value ? [{ value, label: cachedLabel }] : [];
     const lookupOptions = query.data?.map((item) => ({ value: item.id, label: item.name })) ?? [];
@@ -34,11 +37,12 @@ function ReferenceBookSelect({
       (option, index, items) => items.findIndex((item) => item.value === option.value) === index,
     );
   }, [cachedLabel, extraOptions, query.data, value]);
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? cachedLabel;
+  const resolvedLabel = typeof selectedLabel === "string" ? selectedLabel : undefined;
 
   useEffect(() => {
-    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
-    onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
-  }, [cachedLabel, onResolvedLabelChange, options, value]);
+    notifyResolvedLabel(resolvedLabel);
+  }, [resolvedLabel]);
 
   useEffect(() => {
     if (query.data) {

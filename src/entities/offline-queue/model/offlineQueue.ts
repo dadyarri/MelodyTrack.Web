@@ -166,7 +166,7 @@ export async function clearOfflineQueue() {
 }
 
 export function shouldQueueOfflineError(error: unknown) {
-  return axios.isAxiosError(error) && !error.response;
+  return axios.isAxiosError(error) && !axios.isCancel(error) && !error.response;
 }
 
 export function formatOfflineQueueItem(item: OfflineQueuedCreate) {

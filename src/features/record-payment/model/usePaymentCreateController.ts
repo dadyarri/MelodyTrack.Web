@@ -44,6 +44,7 @@ const isPaymentDraft = (value: unknown): value is PaymentDraftValues => v.safePa
 export function usePaymentCreateController({ useRouteIntent = false }: { useRouteIntent?: boolean } = {}) {
   const {
     hasSavedDraft,
+    isDraftRestored,
     saveStatus: createDraftSaveStatus,
     replayKeyRef,
     isHydratingRef,
@@ -282,6 +283,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
     setSelectedServicePrice,
     createdClientOptions: createdClientOptions.createdOptions,
     hasCreateDraft: hasSavedDraft,
+    isCreateDraftRestored: isDraftRestored,
     createDraftSaveStatus,
     isCreateModalOpen,
     editingPayment,

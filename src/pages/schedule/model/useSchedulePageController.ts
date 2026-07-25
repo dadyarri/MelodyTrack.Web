@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
 
 import {
@@ -20,7 +20,7 @@ import { userQueryKeys, usersApi } from "@/entities/user";
 import { getVisibleScheduleHours } from "@/entities/user";
 import type { AppointmentEditFormValues, AppointmentFormValues } from "@/features/manage-appointment";
 import { usePaymentCreateController } from "@/features/record-payment";
-import { getApiErrorMessages, type Ulid } from "@/shared/api";
+import { getApiErrorMessages, isHttpRequestCanceled, type Ulid } from "@/shared/api";
 import { useOpenCreateRouteIntent } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
@@ -59,6 +59,7 @@ export function useSchedulePageController() {
   const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
+    isDraftRestored,
     saveStatus: createDraftSaveStatus,
     replayKeyRef: draftReplayKeyRef,
     loadDraftValues,
@@ -104,6 +105,7 @@ export function useSchedulePageController() {
   const [createProviderLabel, setCreateProviderLabel] = useState<string | undefined>();
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
+  const createRequestControllerRef = useRef<AbortController | null>(null);
   const [editForm] = Form.useForm<AppointmentEditFormValues>();
   const createSelectedClientId = Form.useWatch("clientId", form);
   const editSelectedClientId = Form.useWatch("clientId", editForm);
@@ -329,11 +331,17 @@ export function useSchedulePageController() {
   };
 
   const createMutation = useMutation({
-    mutationFn: (values: AppointmentFormValues) =>
-      createOrQueueOffline({
+    mutationFn: (values: AppointmentFormValues) => {
+      const requestController = new AbortController();
+      createRequestControllerRef.current = requestController;
+      return createOrQueueOffline({
         input: buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone),
         replayKey: draftReplayKeyRef.current,
-        create: (input) => appointmentsApi.create(input, { replayKey: draftReplayKeyRef.current }),
+        create: (input) =>
+          appointmentsApi.create(input, {
+            replayKey: draftReplayKeyRef.current,
+            signal: requestController.signal,
+          }),
         buildQueueItem: (input, replayKey) => ({
           kind: "appointments:create",
           replayKey,
@@ -344,7 +352,12 @@ export function useSchedulePageController() {
             providerLabel: createProviderLabel,
           },
         }),
-      }),
+      }).finally(() => {
+        if (createRequestControllerRef.current === requestController) {
+          createRequestControllerRef.current = null;
+        }
+      });
+    },
     onSuccess: async (result) => {
       message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
       if (result.offline) {
@@ -371,7 +384,11 @@ export function useSchedulePageController() {
         await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
       }
     },
-    onError: showErrors,
+    onError: (error) => {
+      if (!isHttpRequestCanceled(error)) {
+        showErrors(error);
+      }
+    },
   });
 
   const updateMutation = useMutation({
@@ -683,6 +700,8 @@ export function useSchedulePageController() {
   ]);
 
   function closeCreateModal() {
+    createRequestControllerRef.current?.abort();
+    createRequestControllerRef.current = null;
     setOpen(false);
     setPendingCreateStartDate(null);
     setPendingCreateProviderId(undefined);
@@ -746,6 +765,7 @@ export function useSchedulePageController() {
     form,
     editForm,
     hasCreateDraft,
+    isCreateDraftRestored: isDraftRestored,
     createDraftSaveStatus,
     isCreateModalOpen,
     createMutation,

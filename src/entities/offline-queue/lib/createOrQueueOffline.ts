@@ -31,6 +31,17 @@ export async function createOrQueueOffline<TInput, TResponse, TQueued extends Of
   create: (input: TInput) => Promise<TResponse>;
   buildQueueItem: (input: TInput, replayKey: string) => TQueued;
 }): Promise<OfflineCreateResult<TInput, TResponse, TQueued>> {
+  const queueCreate = async (): Promise<OfflineCreateResult<TInput, TResponse, TQueued>> => ({
+    input,
+    offline: true,
+    response: null,
+    queuedItem: await enqueueOfflineCreate(buildQueueItem(input, replayKey)),
+  });
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return queueCreate();
+  }
+
   try {
     return {
       input,
@@ -43,12 +54,7 @@ export async function createOrQueueOffline<TInput, TResponse, TQueued extends Of
       throw error;
     }
 
-    return {
-      input,
-      offline: true,
-      response: null,
-      queuedItem: await enqueueOfflineCreate(buildQueueItem(input, replayKey)),
-    };
+    return queueCreate();
   }
 }
 

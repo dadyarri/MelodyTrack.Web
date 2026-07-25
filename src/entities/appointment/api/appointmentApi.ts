@@ -25,8 +25,8 @@ export const appointmentsApi = {
       .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
       .then((response) => response.data.recurrenceTypes);
   },
-  create(input: CreateAppointmentInput, options?: { replayKey?: string }) {
-    return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  create(input: CreateAppointmentInput, options?: { replayKey?: string; signal?: AbortSignal }) {
+    return http.post<CreateEntityResponse>("/appointments", input, buildReplayConfig(options)).then((response) => response.data);
   },
   update(id: Ulid, input: UpdateAppointmentInput) {
     return http.patch<unknown>(`/appointments/${id}`, input).then(() => undefined);
@@ -40,12 +40,17 @@ export const appointmentsApi = {
   },
 };
 
-function buildReplayConfig(replayKey?: string) {
-  return replayKey
-    ? {
-        headers: {
-          "Idempotency-Key": replayKey,
-        },
-      }
-    : undefined;
+function buildReplayConfig(options?: { replayKey?: string; signal?: AbortSignal }) {
+  if (!options?.replayKey && !options?.signal) {
+    return undefined;
+  }
+
+  return {
+    signal: options.signal,
+    headers: options.replayKey
+      ? {
+          "Idempotency-Key": options.replayKey,
+        }
+      : undefined,
+  };
 }

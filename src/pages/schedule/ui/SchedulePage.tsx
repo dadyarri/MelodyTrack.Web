@@ -241,7 +241,8 @@ export function SchedulePage() {
         canCreateClient={controller.canCreateAppointments}
         createPending={controller.createMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
-        draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateModalOpen}
         draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         lockedProviderId={controller.lockedProviderId}
@@ -302,7 +303,8 @@ export function SchedulePage() {
       <PaymentCreateModal
         open={controller.paymentCreate.isCreateModalOpen}
         editing={Boolean(controller.paymentCreate.editingPayment)}
-        draftRestored={controller.paymentCreate.hasCreateDraft && controller.paymentCreate.isCreateModalOpen}
+        hasDraft={controller.paymentCreate.hasCreateDraft}
+        draftRestored={controller.paymentCreate.isCreateDraftRestored && controller.paymentCreate.isCreateModalOpen}
         draftSaveStatus={controller.paymentCreate.createDraftSaveStatus}
         form={controller.paymentCreate.form}
         createPending={controller.paymentCreate.saveMutation.isPending}

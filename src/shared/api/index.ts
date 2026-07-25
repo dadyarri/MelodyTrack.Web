@@ -6,6 +6,7 @@ export {
   getApiErrorMessages,
   getStaleEntityConflict,
   http,
+  isHttpRequestCanceled,
   probeBackendReachable,
   restoreAccessToken,
   type HttpSession,

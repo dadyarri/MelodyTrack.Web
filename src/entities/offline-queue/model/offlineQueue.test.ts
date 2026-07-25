@@ -1,12 +1,12 @@
 import "fake-indexeddb/auto";
 
-import { AxiosError } from "axios";
+import { AxiosError, CanceledError } from "axios";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MelodyTrackDatabase } from "@/shared/database";
 
 import { createIndexedDbOfflineQueueRepository } from "./indexedDbOfflineQueueRepository";
-import { discardLegacyOfflineQueue } from "./offlineQueue";
+import { discardLegacyOfflineQueue, shouldQueueOfflineError } from "./offlineQueue";
 import { replayOfflineQueue } from "./replayOfflineQueue";
 
 let database: MelodyTrackDatabase;
@@ -22,6 +22,10 @@ afterEach(async () => {
 });
 
 describe("offline queue persistence", () => {
+  it("does not turn a deliberately canceled request into queued work", () => {
+    expect(shouldQueueOfflineError(new CanceledError("Canceled by the user"))).toBe(false);
+  });
+
   it("discards the legacy Web Storage queue without migration", () => {
     localStorage.setItem("melodytrack:offline-queue", JSON.stringify([{ id: "legacy-command" }]));
 

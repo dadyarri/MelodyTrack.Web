@@ -37,6 +37,10 @@ export function configureHttpSession(session: HttpSession) {
   httpSession = session;
 }
 
+export function isHttpRequestCanceled(error: unknown) {
+  return axios.isCancel(error);
+}
+
 export function restoreAccessToken() {
   const accessToken = httpSession?.getAccessToken();
   if (accessToken) {

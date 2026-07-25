@@ -199,7 +199,8 @@ export function PaymentsPage() {
       <PaymentCreateModal
         open={controller.isCreateModalOpen}
         editing={Boolean(controller.editingPayment)}
-        draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateModalOpen}
         draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         createPending={controller.saveMutation.isPending}

@@ -19,6 +19,7 @@ export type ClientFormValues = Omit<Client, "vacations"> & {
 export function ClientEditorModal({
   open,
   editing,
+  hasDraft,
   draftRestored,
   draftSaveStatus,
   form,
@@ -35,6 +36,7 @@ export function ClientEditorModal({
 }: {
   open: boolean;
   editing: boolean;
+  hasDraft: boolean;
   draftRestored: boolean;
   draftSaveStatus: DraftSaveStatus;
   form: FormInstance<ClientFormValues>;
@@ -64,7 +66,7 @@ export function ClientEditorModal({
         editing
           ? undefined
           : (_, { CancelBtn, OkBtn }) => {
-              return <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={draftRestored} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
+              return <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={hasDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
             }
       }
     >

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import { useEffect, useMemo } from "react";
+import { useEffect, useEffectEvent, useMemo } from "react";
 
 import { getCachedReferenceLabel, rememberReferenceLabels } from "@/shared/lib";
 
@@ -21,17 +21,21 @@ export function UserSelect({
 }) {
   const query = useQuery({ queryKey: userQueryKeys.all, queryFn: () => usersApi.list(), retry: false });
   const cachedLabel = getCachedReferenceLabel("user", value);
+  const notifyResolvedLabel = useEffectEvent((label?: string) => {
+    onResolvedLabelChange?.(label);
+  });
   const options = useMemo<DefaultOptionType[]>(
     () =>
       query.data?.map((user) => ({ value: user.id, label: `${user.lastName} ${user.firstName}` })) ??
       (cachedLabel && value ? [{ value, label: cachedLabel }] : []),
     [cachedLabel, query.data, value],
   );
+  const selectedLabel = options.find((option) => option.value === value)?.label ?? cachedLabel;
+  const resolvedLabel = typeof selectedLabel === "string" ? selectedLabel : undefined;
 
   useEffect(() => {
-    const label = options.find((option) => option.value === value)?.label ?? cachedLabel;
-    onResolvedLabelChange?.(typeof label === "string" ? label : undefined);
-  }, [cachedLabel, onResolvedLabelChange, options, value]);
+    notifyResolvedLabel(resolvedLabel);
+  }, [resolvedLabel]);
 
   useEffect(() => {
     if (query.data) {

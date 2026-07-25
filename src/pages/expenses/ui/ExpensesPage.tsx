@@ -178,7 +178,7 @@ export function ExpensesPage() {
       <DraftFormModal
         open={controller.isOpen}
         title="Новый расход"
-        restored={controller.hasCreateDraft && controller.isOpen}
+        restored={controller.isCreateDraftRestored && controller.isOpen}
         saveStatus={controller.createDraftSaveStatus}
         showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}

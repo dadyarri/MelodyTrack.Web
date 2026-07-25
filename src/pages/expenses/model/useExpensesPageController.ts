@@ -38,6 +38,7 @@ export function useExpensesPageController() {
   const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
+    isDraftRestored,
     saveStatus: createDraftSaveStatus,
     replayKeyRef,
     loadDraftValues,
@@ -246,6 +247,7 @@ export function useExpensesPageController() {
     dateRange,
     setDateRange,
     hasCreateDraft,
+    isCreateDraftRestored: isDraftRestored,
     createDraftSaveStatus,
     isOpen,
     setOpen,

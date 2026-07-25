@@ -182,6 +182,7 @@ export function AppointmentEditModal({
 export function AppointmentCreateModal({
   createPending,
   createdClientOptions,
+  hasDraft,
   draftRestored,
   draftSaveStatus,
   form,
@@ -203,6 +204,7 @@ export function AppointmentCreateModal({
 }: {
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
+  hasDraft: boolean;
   draftRestored: boolean;
   draftSaveStatus: DraftSaveStatus;
   form: FormInstance<AppointmentFormValues>;
@@ -272,7 +274,7 @@ export function AppointmentCreateModal({
       confirmLoading={createPending}
       destroyOnHidden
       footer={(_, { CancelBtn, OkBtn }) => (
-        <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={draftRestored} CancelBtn={CancelBtn} OkBtn={OkBtn} />
+        <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={hasDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />
       )}
     >
       <Form<AppointmentFormValues>

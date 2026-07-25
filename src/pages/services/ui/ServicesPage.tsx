@@ -146,7 +146,7 @@ export function ServicesPage() {
       <DraftFormModal
         open={controller.canManageServices && controller.isCreateOpen}
         title="Новая услуга"
-        restored={controller.hasCreateDraft && controller.isCreateOpen}
+        restored={controller.isCreateDraftRestored && controller.isCreateOpen}
         saveStatus={controller.createDraftSaveStatus}
         showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}

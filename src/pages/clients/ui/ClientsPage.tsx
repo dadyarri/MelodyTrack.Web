@@ -198,7 +198,8 @@ export function ClientsPage() {
       <ClientEditorModal
         open={controller.isCreateOpen}
         editing={Boolean(controller.editing)}
-        draftRestored={controller.hasCreateDraft && controller.isCreateOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateOpen}
         draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         savePending={controller.saveMutation.isPending}

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels, useDebouncedValue } from "@/shared/lib";
 
@@ -44,6 +44,10 @@ export function ClientSelect({
     staleTime: 5 * 60 * 1000,
   });
   const cachedLabel = getCachedReferenceLabel("client", value);
+  const notifyResolvedLabel = useEffectEvent((label?: string) => {
+    onResolvedLabelChange?.(label);
+  });
+  const selectedLabel = selectedQuery.data ? formatClientLabel(selectedQuery.data) : cachedLabel;
   const options = useMemo<DefaultOptionType[]>(() => {
     const selectedOption = selectedQuery.data
       ? [{ value: selectedQuery.data.id, label: formatClientLabel(selectedQuery.data) }]
@@ -57,9 +61,8 @@ export function ClientSelect({
   }, [cachedLabel, extraOptions, query.data, selectedQuery.data, value]);
 
   useEffect(() => {
-    const selectedLabel = selectedQuery.data ? formatClientLabel(selectedQuery.data) : cachedLabel;
-    onResolvedLabelChange?.(selectedLabel);
-  }, [cachedLabel, onResolvedLabelChange, selectedQuery.data]);
+    notifyResolvedLabel(selectedLabel);
+  }, [selectedLabel]);
 
   useEffect(() => {
     if (query.data) {
