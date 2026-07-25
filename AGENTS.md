@@ -33,6 +33,9 @@ Every slice has a deliberate root `index.ts` public API. Cross-slice imports
 must use that public API; files inside the same slice use explicit relative
 imports. Avoid wildcard re-exports.
 
+See [`docs/fsd-development-guide.md`](docs/fsd-development-guide.md) for
+concrete placement and import examples.
+
 Put code in the lowest layer that truthfully describes it:
 
 - passive reusable domain display belongs to an entity, not a feature;
