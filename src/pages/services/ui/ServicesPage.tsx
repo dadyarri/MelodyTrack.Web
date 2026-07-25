@@ -34,6 +34,13 @@ export function ServicesPage() {
           <ListTable
             rowKey="id"
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.query.data?.data}
             pagination={{
               current: controller.page,

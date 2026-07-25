@@ -47,6 +47,11 @@ body {
   color: var(--text-main);
 }
 
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, white);
+  outline-offset: 2px;
+}
+
 ::view-transition-group(root) {
   animation-duration: 700ms;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
@@ -229,5 +234,22 @@ body {
 @media (max-width: 900px) {
   .profile-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
   }
 }
