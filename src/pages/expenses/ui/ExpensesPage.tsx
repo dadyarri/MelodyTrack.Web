@@ -99,7 +99,9 @@ export function ExpensesPage() {
               <ActionableEmptyState
                 description="Расходов по выбранным условиям пока нет"
                 actionLabel="Добавить расход"
-                onAction={() => { controller.setOpen(true); }}
+                onAction={() => {
+                  controller.setOpen(true);
+                }}
               />
             }
             loading={controller.query.isLoading}

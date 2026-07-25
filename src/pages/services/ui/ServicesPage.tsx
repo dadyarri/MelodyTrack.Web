@@ -39,7 +39,13 @@ export function ServicesPage() {
               <ActionableEmptyState
                 description="Услуги пока не созданы"
                 actionLabel={controller.canManageServices ? "Добавить услугу" : undefined}
-                onAction={controller.canManageServices ? () => { controller.setCreateOpen(true); } : undefined}
+                onAction={
+                  controller.canManageServices
+                    ? () => {
+                        controller.setCreateOpen(true);
+                      }
+                    : undefined
+                }
               />
             }
             loading={controller.query.isLoading}
