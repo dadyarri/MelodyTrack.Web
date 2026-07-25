@@ -1,6 +1,7 @@
 export {
   authExpiredEventName,
   configureHttpSession,
+  discardLegacyHttpCache,
   getApiErrorMessage,
   getApiErrorMessages,
   getStaleEntityConflict,
