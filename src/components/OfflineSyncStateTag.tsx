@@ -1,4 +1,4 @@
-import { SyncOutlined, WarningOutlined } from "@/components/icons";
+import { SyncOutlined, WarningOutlined } from "@/shared/ui/icons";
 import { Tag } from "antd";
 import styles from "./OfflineSyncStateTag.module.css";
 

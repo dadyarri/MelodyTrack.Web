@@ -1,4 +1,4 @@
-import { CopyOutlined, DownloadOutlined } from "@/components/icons";
+import { CopyOutlined, DownloadOutlined } from "@/shared/ui/icons";
 import { App as AntdApp, Button, Card, Space, Typography } from "antd";
 import styles from "./AuthStyles.module.css";
 

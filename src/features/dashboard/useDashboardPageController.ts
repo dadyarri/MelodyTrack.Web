@@ -8,8 +8,8 @@ import type { Appointment, Client } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { getClientHistoryActions } from "@/features/clients/clientHistoryActions";
-import { downloadBlob } from "@/utils/download";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { downloadBlob } from "@/shared/lib";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 
 const clientHistoryEventsPageSize = 8;
 

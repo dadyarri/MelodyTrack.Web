@@ -2,9 +2,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button, Card, Form, Input, Result, Space, Spin, Typography } from "antd";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import { ClientPortalThemeProvider } from "@/app/ThemeProvider";
 import { authApi, type ClientPortalPinAuthInput } from "@/api/auth";
-import { getApiErrorMessage } from "@/api/http";
+import { getApiErrorMessage } from "@/shared/api";
 import { AuthScreenLayout } from "@/components/AuthScreenLayout";
 import { portalClientsStore } from "@/features/auth/portalClientsStore";
 import { useAuth } from "@/features/auth/useAuth";
@@ -17,11 +16,7 @@ type PortalPinFormValues = {
 export function PortalAccessPage() {
   const { token } = useParams<{ token: string }>();
 
-  return (
-    <ClientPortalThemeProvider>
-      <PortalAccessPageContent key={token ?? "saved-clients"} token={token} />
-    </ClientPortalThemeProvider>
-  );
+  return <PortalAccessPageContent key={token ?? "saved-clients"} token={token} />;
 }
 
 function PortalAccessPageContent({ token }: { token?: string }) {

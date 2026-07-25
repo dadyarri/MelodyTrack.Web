@@ -23,7 +23,7 @@ import { Alert, App as AntdApp, Button, Empty, Form, Input, InputNumber, Modal, 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { courseEnrollmentsApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { queryKeys } from "@/api/queryKeys";
 import type {
   CourseEnrollment,
@@ -32,8 +32,8 @@ import type {
   CourseThemeProgressState,
   Ulid,
 } from "@/api/types";
-import { BbcodeContent } from "@/components/editors/BbcodeContent";
-import { BbcodeEditor } from "@/components/editors/BbcodeEditor";
+import { BbcodeContent } from "@/shared/ui/editors";
+import { BbcodeEditor } from "@/shared/ui/editors";
 import {
   BookOutlined,
   DeleteOutlined,
@@ -43,10 +43,10 @@ import {
   SaveOutlined,
   SearchOutlined,
   UpOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import { useCoursesPageController } from "@/features/courses/useCoursesPageController";
 import { PageLayout } from "@/shared/ui";
-import { pluralizeRu } from "@/utils/pluralize";
+import { pluralizeRu } from "@/shared/lib";
 import styles from "./CoursesPage.module.css";
 
 const topicNodeWidth = 250;

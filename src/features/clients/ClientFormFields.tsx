@@ -3,7 +3,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import type { DefaultOptionType } from "antd/es/select";
 import { ClientSourceSelect } from "@/components/RemoteSelect";
 import { formatPhone, formatPhoneInput, isValidPhone, normalizePhone, normalizeSocialLink } from "@/entities/client";
-import { DATE_FORMAT } from "@/utils/date";
+import { DATE_FORMAT } from "@/shared/lib";
 
 export function ClientFormFields({
   sourceOptions,

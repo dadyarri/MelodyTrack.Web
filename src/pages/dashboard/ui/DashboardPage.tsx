@@ -1,4 +1,4 @@
-import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/components/icons";
+import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/shared/ui/icons";
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { Appointment } from "@/api/types";
@@ -6,8 +6,8 @@ import { ClientHistoryDrawer, getPhoneUri, getSocialLinkHref } from "@/entities/
 import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
-import { formatDateTime, TIME_FORMAT } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { formatDateTime, TIME_FORMAT } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 import styles from "./DashboardPage.module.css";
 

@@ -1,4 +1,4 @@
-import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/components/icons";
+import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
 import { Alert, Button, Card, DatePicker, Divider, Form, Input, List, Space, Switch, Tag, TimePicker, Typography } from "antd";
 import type { MeResponse } from "@/api/auth";
 import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "@/utils/drafts";
+import { getDraftReplayKey, hasDraft, loadDraft, resetDraft, saveDraftValues, withDraftHydration } from "@/shared/lib";
 
 export function useDraftFormState<TValues>(storageKey: string) {
   const hasSavedDraft = hasDraft(storageKey);

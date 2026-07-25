@@ -1,4 +1,4 @@
-import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/components/icons";
+import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/shared/ui/icons";
 import { Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { Navigate } from "react-router";
 import type { LoginInput, RecoveryCodeItem } from "@/api/auth";

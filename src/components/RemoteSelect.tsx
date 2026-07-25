@@ -4,7 +4,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { useAuth } from "@/features/auth/useAuth";
-import { formatMoney } from "@/utils/money";
+import { formatMoney } from "@/shared/lib";
 import { clientSourcesApi, clientsApi, expenseCategoriesApi, rolesApi, servicesApi, usersApi } from "../api/crm";
 import { getQueuedClientOption } from "../utils/offlineQueue";
 import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "../utils/referenceLabels";

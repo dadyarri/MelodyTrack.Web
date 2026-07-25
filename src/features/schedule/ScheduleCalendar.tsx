@@ -1,9 +1,9 @@
-import { CheckOutlined, SyncOutlined } from "@/components/icons";
+import { CheckOutlined, SyncOutlined } from "@/shared/ui/icons";
 import { Empty, Typography } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { type CSSProperties, type DragEvent, useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Appointment, UserAvailability } from "../../api/types";
-import { formatDate, TIME_FORMAT } from "../../utils/date";
+import { formatDate, TIME_FORMAT } from "@/shared/lib";
 import { getBlockedRanges, isSlotAvailable } from "../../utils/userAvailability";
 import { getAppointmentStatusColorVars, getAppointmentStatusLabel, renderAppointmentStatusIcon } from "./appointmentStatus";
 import styles from "./ScheduleCalendar.module.css";

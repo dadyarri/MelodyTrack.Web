@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { RouterProvider } from "react-router";
-import { ApiErrorNotifier } from "../components/ApiErrorNotifier";
-import { OfflineQueueSync } from "../components/OfflineQueueSync";
-import { AuthProvider } from "../features/auth/AuthProvider";
-import { router } from "./router";
+import { router } from "@/app/router";
+import { ApiErrorNotifier } from "@/components/ApiErrorNotifier";
+import { OfflineQueueSync } from "@/components/OfflineQueueSync";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {

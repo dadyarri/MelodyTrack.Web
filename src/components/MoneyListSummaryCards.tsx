@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { formatMoney } from "../utils/money";
-import { SummaryCard, SummaryGrid } from "./SummaryGrid";
+import { formatMoney } from "@/shared/lib";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
 
 export function MoneyListSummaryCards({
   totalAmount,

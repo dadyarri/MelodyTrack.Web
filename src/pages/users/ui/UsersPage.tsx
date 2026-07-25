@@ -1,4 +1,4 @@
-import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/components/icons";
+import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { Button, Form, Input, Modal, Space } from "antd";
 import { RoleSelect } from "@/components/RemoteSelect";
 import { UserEditorModal } from "@/features/users/UserEditorModal";

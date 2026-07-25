@@ -3,7 +3,7 @@ import { useAuditPageController } from "@/features/audit/useAuditPageController"
 import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
 import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { formatDateTime } from "@/utils/date";
+import { formatDateTime } from "@/shared/lib";
 import type { RecurringTaskType } from "@/api/types";
 import styles from "./AuditPage.module.css";
 

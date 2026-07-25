@@ -3,13 +3,13 @@ import { App as AntdApp, Form } from "antd";
 import { useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { servicesApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import type { Service } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useAuth } from "@/features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 
 type ServiceDraftValues = {
   name?: string;

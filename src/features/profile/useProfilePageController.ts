@@ -13,11 +13,11 @@ import {
 } from "@/api/auth";
 import { queryKeys } from "@/api/queryKeys";
 import { calendarSubscriptionsApi, usersApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import type { Ulid, UserAvailability, WeekdayKey } from "@/api/types";
 import { normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { useAuth } from "@/features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
 import { weekdayOrder } from "@/utils/userAvailability";
 

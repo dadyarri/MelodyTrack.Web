@@ -1,4 +1,4 @@
-import { InfoCircleOutlined } from "@/components/icons";
+import { InfoCircleOutlined } from "@/shared/ui/icons";
 import { Tooltip } from "antd";
 import type { ReactNode } from "react";
 

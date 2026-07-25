@@ -10,15 +10,15 @@ import type {
   BurnedClientAnalytics,
   TeacherAppointmentsAnalytics,
 } from "@/api/types";
-import { StatsDonutChart, StatsTrendChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { InfoLabel } from "@/components/InfoLabel";
-import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
+import { StatsDonutChart, StatsTrendChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
+import { InfoLabel } from "@/shared/ui";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
 import { useDashboardDateRangeQuery } from "@/features/stats/useDashboardStatsQuery";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DATE_FORMAT } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 
 const statusLabels: Record<AppointmentStatus, string> = {
   planned: "Запланировано",

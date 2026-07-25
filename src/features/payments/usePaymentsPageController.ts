@@ -4,11 +4,11 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { paymentsApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { usePaymentCreateController } from "@/features/payments/usePaymentCreateController";
-import { formatDateTime } from "@/utils/date";
-import { downloadBlob } from "@/utils/download";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { formatDateTime } from "@/shared/lib";
+import { downloadBlob } from "@/shared/lib";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
 
 const getDefaultPaymentsDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useEffect, useRef } from "react";
-import { getApiErrorMessages } from "../api/http";
+import { getApiErrorMessages } from "@/shared/api";
 
 export function ApiErrorNotifier() {
   const queryClient = useQueryClient();

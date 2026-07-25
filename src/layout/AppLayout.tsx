@@ -8,16 +8,16 @@ import {
   SettingOutlined,
   SunOutlined,
   UserOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { clearNavigationIntent, recoverableImport, rememberNavigationIntent } from "../app/chunkLoadRecovery";
-import { useTheme } from "../app/useTheme";
+import { useTheme } from "@/app/config";
+import { clearNavigationIntent, recoverableImport, rememberNavigationIntent } from "@/app/router";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { hasSuperuserAccess } from "../features/auth/access";
 import { useAuth } from "../features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "../utils/shortcuts";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
 import styles from "./AppLayout.module.css";

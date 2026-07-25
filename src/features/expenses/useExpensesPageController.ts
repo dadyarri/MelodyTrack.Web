@@ -4,14 +4,14 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { expenseCategoriesApi, expensesApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { hasSuperuserAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";
 import { useCreatedReferenceOptions } from "@/features/reference-books/useCreatedReferenceOptions";
-import { downloadBlob } from "@/utils/download";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { downloadBlob } from "@/shared/lib";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
 
 export type ExpenseFormValues = {

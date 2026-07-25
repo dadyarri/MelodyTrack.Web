@@ -1,4 +1,4 @@
-import { CheckCircleOutlined, CloseCircleOutlined, CloudOutlined, CloudSyncOutlined, HourglassOutlined } from "@/components/icons";
+import { CheckCircleOutlined, CloseCircleOutlined, CloudOutlined, CloudSyncOutlined, HourglassOutlined } from "@/shared/ui/icons";
 import { Badge, Button, Popover, Space, Typography } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { formatOfflineQueueItem, loadOfflineQueue, offlineQueueChangedEventName } from "../utils/offlineQueue";

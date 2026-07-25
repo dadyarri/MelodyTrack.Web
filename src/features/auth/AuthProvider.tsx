@@ -2,10 +2,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
+import { authExpiredEventName, configureHttpSession, http } from "@/shared/api";
 import { authApi, type MeResponse } from "../../api/auth";
-import { authExpiredEventName, http } from "../../api/http";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
 import { authStore } from "./authStore";
+
+configureHttpSession(authStore);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();

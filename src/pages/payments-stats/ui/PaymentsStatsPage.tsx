@@ -2,15 +2,15 @@ import { Card, DatePicker, Space, Table, Tag, Typography } from "antd";
 import type { ReactNode } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { dashboardApi } from "@/api/crm";
-import { StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { InfoLabel } from "@/components/InfoLabel";
-import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
+import { StatsDonutChart, StatsHorizontalBarChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
+import { InfoLabel } from "@/shared/ui";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
 import { useDashboardDateRangeQuery } from "@/features/stats/useDashboardStatsQuery";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DATE_FORMAT } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 
 export function PaymentsStatsPage() {
   const controller = useDashboardDateRangeQuery({

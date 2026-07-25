@@ -1,8 +1,8 @@
 import type { DefaultOptionType } from "antd/es/select";
 import axios from "axios";
 import type { Client } from "../api/types";
-import { formatDateTime } from "./date";
-import { createReplayKey } from "./drafts";
+import { formatDateTime } from "@/shared/lib";
+import { createReplayKey } from "@/shared/lib";
 
 export type OfflineCreateKind = "clients:create" | "services:create" | "payments:create" | "expenses:create" | "appointments:create";
 

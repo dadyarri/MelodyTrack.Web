@@ -30,7 +30,7 @@ import {
   PhoneOutlined,
   PlusOutlined,
   SendOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import { ClientSelect } from "@/components/RemoteSelect";
 import { getPhoneUri, getSocialHandle } from "@/entities/client";
 import {

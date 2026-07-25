@@ -1,4 +1,4 @@
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
 import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
 import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
@@ -7,8 +7,8 @@ import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
 import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();

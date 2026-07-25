@@ -1,4 +1,4 @@
-import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/components/icons";
+import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
 import { Button, Input, Popconfirm, Space, Tag } from "antd";
 import type { Client, ClientLifecycleStatus } from "@/api/types";
 import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
@@ -9,8 +9,8 @@ import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
 import { useClientsPageController } from "@/features/clients/useClientsPageController";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 
 export function ClientsPage() {

@@ -1,5 +1,5 @@
 import type { AppointmentRescheduleScope } from "@/features/schedule/ScheduleModals";
-import { http } from "./http";
+import { http } from "@/shared/api";
 import type {
   Appointment,
   AppointmentsAnalytics,

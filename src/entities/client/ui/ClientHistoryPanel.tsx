@@ -8,12 +8,12 @@ import {
   LinkOutlined,
   PlusOutlined,
   ReloadOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
 import type { ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
 import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
-import { formatDate, formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { formatDate, formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 import { getClientContactValue, renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
 import styles from "./ClientHistoryPanel.module.css";
 

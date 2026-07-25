@@ -1,9 +1,9 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { Space, Typography } from "antd";
 import type { HookAPI } from "antd/es/modal/useModal";
-import { getStaleEntityConflict } from "../api/http";
-import type { RecordActivity, StaleEntityConflict, Ulid } from "../api/types";
-import { formatDateTime } from "./date";
+import { getStaleEntityConflict, type StaleEntityConflict } from "@/shared/api";
+import type { RecordActivity, Ulid } from "../api/types";
+import { formatDateTime } from "@/shared/lib";
 
 export function formatRecordActivitySummary(activity?: RecordActivity | null) {
   if (!activity) {
@@ -26,7 +26,7 @@ export function openStaleEntityConflictModal({
 }: {
   modal: HookAPI;
   title: string;
-  conflict: StaleEntityConflict;
+  conflict: StaleEntityConflict<RecordActivity>;
   okText: string;
   cancelText: string;
   onConfirm: () => void;
@@ -71,10 +71,10 @@ export async function handleStaleEntityConflict<TError>({
   title: string;
   okText: string;
   cancelText: string;
-  onConfirm: (conflict: StaleEntityConflict) => void;
-  onReload: (conflict: StaleEntityConflict) => void;
+  onConfirm: (conflict: StaleEntityConflict<RecordActivity>) => void;
+  onReload: (conflict: StaleEntityConflict<RecordActivity>) => void;
 }) {
-  const conflict = getStaleEntityConflict(error);
+  const conflict = getStaleEntityConflict<RecordActivity>(error);
   if (!conflict) {
     showErrors(error);
     return false;

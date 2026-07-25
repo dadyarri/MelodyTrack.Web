@@ -1,11 +1,12 @@
 import { createBrowserRouter, Navigate } from "react-router";
+import { ClientPortalThemeProvider } from "@/app/config";
 import { recoverableImport } from "./chunkLoadRecovery";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
-import { AdminRoute } from "../layout/AdminRoute";
-import { ClientPortalRoute } from "../layout/ClientPortalRoute";
-import { StatsRoute } from "../layout/StatsRoute";
-import { SuperuserRoute } from "../layout/SuperuserRoute";
+import { AdminRoute } from "@/layout/AdminRoute";
+import { ClientPortalRoute } from "@/layout/ClientPortalRoute";
+import { StatsRoute } from "@/layout/StatsRoute";
+import { SuperuserRoute } from "@/layout/SuperuserRoute";
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +27,11 @@ export const router = createBrowserRouter([
       const { PortalAccessPage } = await recoverableImport(() => import("@/pages/portal-access"));
 
       return {
-        Component: PortalAccessPage,
+        Component: () => (
+          <ClientPortalThemeProvider>
+            <PortalAccessPage />
+          </ClientPortalThemeProvider>
+        ),
       };
     },
   },
@@ -37,7 +42,11 @@ export const router = createBrowserRouter([
       const { PortalAccessPage } = await recoverableImport(() => import("@/pages/portal-access"));
 
       return {
-        Component: PortalAccessPage,
+        Component: () => (
+          <ClientPortalThemeProvider>
+            <PortalAccessPage />
+          </ClientPortalThemeProvider>
+        ),
       };
     },
   },
@@ -71,9 +80,11 @@ export const router = createBrowserRouter([
 
       return {
         Component: () => (
-          <ClientPortalRoute>
-            <ClientPortalLayout />
-          </ClientPortalRoute>
+          <ClientPortalThemeProvider>
+            <ClientPortalRoute>
+              <ClientPortalLayout />
+            </ClientPortalRoute>
+          </ClientPortalThemeProvider>
         ),
       };
     },

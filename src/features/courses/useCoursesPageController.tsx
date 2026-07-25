@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useDeferredValue, useMemo, useState } from "react";
 import { coursesApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { queryKeys } from "@/api/queryKeys";
 import type { Course, Ulid } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";

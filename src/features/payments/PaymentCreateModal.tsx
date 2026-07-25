@@ -4,7 +4,7 @@ import type { DefaultOptionType } from "antd/es/select";
 import type dayjs from "dayjs";
 import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
 import { DraftFormModal } from "@/shared/ui";
-import { DATE_TIME_FORMAT, TIME_FORMAT } from "../../utils/date";
+import { DATE_TIME_FORMAT, TIME_FORMAT } from "@/shared/lib";
 
 export type PaymentCreateFormValues = {
   clientId: string;

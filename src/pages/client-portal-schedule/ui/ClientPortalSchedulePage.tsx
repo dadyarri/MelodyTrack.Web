@@ -2,12 +2,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, Space, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import { calendarSubscriptionsApi, clientPortalApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { queryKeys } from "@/api/queryKeys";
-import { CalendarCheckOutlined } from "@/components/icons";
+import { CalendarCheckOutlined } from "@/shared/ui/icons";
 import { useAuth } from "@/features/auth/useAuth";
 import { getAppointmentStatusLabel, getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
-import { formatMoney } from "@/utils/money";
+import { formatMoney } from "@/shared/lib";
 import styles from "./ClientPortalSchedulePage.module.css";
 
 export function ClientPortalSchedulePage() {

@@ -11,7 +11,7 @@
     "format:check": "biome format .",
     "lint:biome": "biome lint .",
     "lint:architecture": "steiger ./src",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsgo -b",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",

@@ -30,12 +30,6 @@ export default defineConfig([
       "fsd/excessive-slicing": "off",
     },
   },
-  {
-    files: ["./src/pages/portal-access/ui/PortalAccessPage.tsx"],
-    rules: {
-      "fsd/forbidden-imports": "off",
-    },
-  },
   ...legacySegmentlessFeatureSlices.map((slice) => ({
     files: [`./src/features/${slice}/**`],
     rules: {

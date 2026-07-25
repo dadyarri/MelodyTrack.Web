@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { normalizePhone, normalizeSocialLink } from "@/entities/client/lib/contact";
 import { createOrQueueOffline, isQueuedClientCreate } from "@/features/offline/createOrQueueOffline";
 import { clientSourcesApi, clientsApi } from "../api/crm";
-import { getApiErrorMessages } from "../api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { ClientFormFields } from "../features/clients/ClientFormFields";
 import { useCreatedReferenceOptions } from "../features/reference-books/useCreatedReferenceOptions";
 import { ReferenceBookCreateModal } from "./ReferenceBookCreateModal";
-import { createReplayKey } from "../utils/drafts";
+import { createReplayKey } from "@/shared/lib";
 import { createOfflineTempId } from "../utils/offlineQueue";
 
 type ClientQuickCreateValues = {

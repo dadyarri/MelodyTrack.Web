@@ -3,7 +3,7 @@ import { App as AntdApp } from "antd";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { authApi, type ResetPasswordInput } from "@/api/auth";
-import { getApiErrorMessage, getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessage, getApiErrorMessages } from "@/shared/api";
 
 export type ResetPasswordSecondFactorMode = "otp" | "recoveryCode";
 

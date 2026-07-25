@@ -1,7 +1,7 @@
 import { Button, DatePicker, Form, Modal, Space, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 import type { Client } from "@/api/types";
-import { DATE_FORMAT } from "@/utils/date";
+import { DATE_FORMAT } from "@/shared/lib";
 
 export type ClientVacationsFormValues = {
   vacations?: Array<{ period?: [Dayjs, Dayjs] }>;

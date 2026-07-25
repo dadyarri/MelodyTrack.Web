@@ -3,11 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useMemo, useState } from "react";
 import { tasksApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { queryKeys } from "@/api/queryKeys";
 import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType, Ulid } from "@/api/types";
 import { getSocialHandle } from "@/entities/client";
-import { downloadBlob } from "@/utils/download";
+import { downloadBlob } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 
 export type RecurringTaskRuleFormValues = {

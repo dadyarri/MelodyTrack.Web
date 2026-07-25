@@ -18,7 +18,7 @@ import {
   UserBadgeOutlined,
   WalletOutlined,
   WalletStatsOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import type { ReactNode } from "react";
 import { canAccessAudience, type AccessAudience, type AppUser } from "@/features/auth/access";
 

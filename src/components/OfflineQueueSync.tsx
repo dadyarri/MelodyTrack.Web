@@ -3,7 +3,7 @@ import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { clientsApi, expensesApi, paymentsApi, scheduleApi, servicesApi } from "../api/crm";
-import { probeBackendReachable } from "../api/http";
+import { probeBackendReachable } from "@/shared/api";
 import { authStore } from "../features/auth/authStore";
 import {
   formatQueuedClientLabel,

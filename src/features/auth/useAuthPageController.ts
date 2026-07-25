@@ -13,7 +13,7 @@ import {
   type RegisterInput,
 } from "@/api/auth";
 import { queryKeys } from "@/api/queryKeys";
-import { getApiErrorMessage, getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessage, getApiErrorMessages } from "@/shared/api";
 import { useAuth } from "@/features/auth/useAuth";
 
 export type AuthMode = "login" | "register" | "recover2fa";

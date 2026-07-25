@@ -876,10 +876,3 @@ export interface AuditLog {
   sourceIpAddress?: string | null;
   details?: string | null;
 }
-
-export interface StaleEntityConflict {
-  entityType: string;
-  entityId: string;
-  message: string;
-  currentActivity?: RecordActivity | null;
-}

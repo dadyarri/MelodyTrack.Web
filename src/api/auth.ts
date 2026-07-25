@@ -1,4 +1,4 @@
-import { http } from "./http";
+import { http } from "@/shared/api";
 
 export interface InviteInfo {
   email?: string | null;

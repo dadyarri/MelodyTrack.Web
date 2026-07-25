@@ -31,7 +31,6 @@ Steiger passes with narrowly scoped exceptions for architecture that predates
 the migration:
 
 - 24 existing ungrouped page slices exceed Steiger's default recommendation;
-- `pages/portal-access` has one existing upward import from `app`;
 - 19 named legacy feature slices do not yet have FSD segments.
 
 The exact exceptions live in `steiger.config.js`. They are intentionally tied
@@ -40,14 +39,35 @@ be removed when that area is migrated.
 
 ## Automated Behavior Baseline
 
-The initial suite contains 15 tests covering:
+The current suite contains 20 tests covering:
 
 - normalization and rejection rules for public API configuration;
 - complete and partial authentication session persistence;
-- allowed and denied protected-route behavior.
+- allowed and denied protected-route behavior;
+- injected HTTP authentication and basic API error normalization.
 
 The next migration stages must expand this baseline before moving HTTP refresh,
 offline replay, conflict resolution, or other business-critical behavior.
+
+## Stage 2 Foundation
+
+The app layer is divided by purpose into `config`, `entrypoint`, `router`, and
+`styles`. Portal theming is composed at the router boundary, so pages no longer
+import from the app layer.
+
+Business-agnostic infrastructure now has stable shared public APIs:
+
+- `shared/api` owns HTTP transport, error normalization, and generic conflict
+  parsing; authentication injects its session adapter from above;
+- `shared/config` owns validated public environment configuration;
+- `shared/lib` owns generic date, money, download, draft, polling, pluralization,
+  and keyboard helpers;
+- `shared/ui` owns generic icons, charts, BBCode UI, summaries, and existing
+  reusable primitives.
+
+The remaining top-level `api`, `components`, and `utils` modules contain domain
+contracts or feature behavior and are intentionally deferred to the entity and
+feature migration stages.
 
 ## Production Bundle Baseline
 

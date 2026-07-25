@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useState } from "react";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import type { ReferenceBookItem, Ulid } from "@/api/types";
 import { handleStaleEntityConflict } from "@/utils/staleEntity";
 

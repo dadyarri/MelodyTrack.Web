@@ -5,7 +5,7 @@ import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { courseEnrollmentsApi, scheduleApi, usersApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import type { Appointment, AppointmentStatus, CourseEnrollment, CourseThemeProgressState, RecurrenceType, Ulid } from "@/api/types";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
@@ -20,8 +20,8 @@ import type {
   AppointmentFormValues,
   AppointmentRescheduleScope,
 } from "@/features/schedule/ScheduleModals";
-import { getBackgroundRefetchInterval } from "@/utils/refetch";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { getBackgroundRefetchInterval } from "@/shared/lib";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
 import { getVisibleScheduleHours } from "@/utils/userAvailability";
 

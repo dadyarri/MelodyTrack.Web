@@ -1,4 +1,4 @@
-import { formatShortcutLabel } from "@/utils/shortcuts";
+import { formatShortcutLabel } from "@/shared/lib";
 import styles from "./Shortcut.module.css";
 
 export function Shortcut({ keyb }: { keyb: string }) {

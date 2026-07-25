@@ -1,17 +1,17 @@
-import { InfoCircleOutlined } from "@/components/icons";
+import { InfoCircleOutlined } from "@/shared/ui/icons";
 import { Card, DatePicker, Flex, Space, Table, Tag, Tooltip, Typography } from "antd";
 import type { ReactNode } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { dashboardApi } from "@/api/crm";
 import type { ClientAnalytics, ClientRfmAnalytics, ClientSourceAnalytics, ClientsAnalyticsResponse } from "@/api/types";
-import { StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { SummaryCard } from "@/components/SummaryGrid";
+import { StatsDonutChart, StatsHorizontalBarChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
+import { SummaryCard } from "@/shared/ui";
 import { useDashboardDateRangeQuery } from "@/features/stats/useDashboardStatsQuery";
 import { PageLayout, ListFilters } from "@/shared/ui";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
 
 export function ClientsStatsPage() {
   const controller = useDashboardDateRangeQuery({

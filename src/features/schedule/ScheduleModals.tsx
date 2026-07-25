@@ -9,7 +9,7 @@ import {
   LinkOutlined,
   PhoneOutlined,
   SendOutlined,
-} from "@/components/icons";
+} from "@/shared/ui/icons";
 import type { FormInstance } from "antd";
 import { Button, Checkbox, DatePicker, Form, Input, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
@@ -19,7 +19,7 @@ import { ClientSelect, ServiceSelect, UserSelect } from "@/components/RemoteSele
 import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
 import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
 import type { Appointment, AppointmentStatus, RecurrenceType } from "../../api/types";
-import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "../../utils/date";
+import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/shared/lib";
 import { formatRecordActivitySummary } from "../../utils/staleEntity";
 import { getAppointmentStatusLabel } from "./appointmentStatus";
 import styles from "./ScheduleModals.module.css";

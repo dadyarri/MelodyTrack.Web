@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
 import { queryKeys } from "@/api/queryKeys";
 import { paymentsApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import { useDraftFormState } from "@/features/drafts/useDraftFormState";
 import { useOpenCreateRouteIntent } from "@/features/navigation/useOpenCreateRouteIntent";
 import { createOrQueueOffline } from "@/features/offline/createOrQueueOffline";

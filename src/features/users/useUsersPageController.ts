@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { authApi, type CreateInviteInput } from "@/api/auth";
 import { queryKeys } from "@/api/queryKeys";
 import { usersApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
+import { getApiErrorMessages } from "@/shared/api";
 import type { User, Ulid } from "@/api/types";
 import { normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { hasAdminAccess } from "@/features/auth/access";
 import { useAuth } from "@/features/auth/useAuth";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/utils/staleEntity";
-import { isShortcutTarget, matchesPlainKey } from "@/utils/shortcuts";
+import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import type { UserFormValues } from "./UserEditorModal";
 
 export function useUsersPageController() {

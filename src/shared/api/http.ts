@@ -1,7 +1,19 @@
 import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
-import { authStore } from "../features/auth/authStore";
-import { apiBaseUrl } from "../shared/config";
-import type { StaleEntityConflict } from "./types";
+import { apiBaseUrl } from "../config";
+
+export type HttpSession = {
+  clear: () => void;
+  getAccessToken: () => string | null;
+  getRefreshToken: () => string | null;
+  setTokens: (accessToken: string, refreshToken: string) => void;
+};
+
+export type StaleEntityConflict<TActivity = unknown> = {
+  entityType: string;
+  entityId: string;
+  message: string;
+  currentActivity?: TActivity | null;
+};
 
 export const authExpiredEventName = "melodytrack:auth-expired";
 
@@ -13,10 +25,15 @@ export const http = axios.create({
 });
 
 let refreshRequest: Promise<string | null> | null = null;
+let httpSession: HttpSession | null = null;
 const cacheStorageKeyPrefix = "melodytrack:http-cache:";
 
+export function configureHttpSession(session: HttpSession) {
+  httpSession = session;
+}
+
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const accessToken = authStore.getAccessToken();
+  const accessToken = httpSession?.getAccessToken();
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
@@ -72,7 +89,7 @@ http.interceptors.response.use(
 
     const token = await refreshRequest;
     if (!token) {
-      authStore.clear();
+      httpSession?.clear();
       window.dispatchEvent(new Event(authExpiredEventName));
       return Promise.reject(new Error("Сессия истекла. Войдите снова."));
     }
@@ -158,7 +175,7 @@ function isAuthenticatedRequest(config: InternalAxiosRequestConfig) {
 }
 
 export async function probeBackendReachable() {
-  const accessToken = authStore.getAccessToken();
+  const accessToken = httpSession?.getAccessToken();
   if (!accessToken) {
     return false;
   }
@@ -178,7 +195,7 @@ export async function probeBackendReachable() {
 }
 
 async function refreshAccessToken() {
-  const refreshToken = authStore.getRefreshToken();
+  const refreshToken = httpSession?.getRefreshToken();
   if (!refreshToken) {
     return null;
   }
@@ -189,7 +206,7 @@ async function refreshAccessToken() {
       { refreshToken },
       { headers: { "Content-Type": "application/json" } },
     );
-    authStore.setTokens(response.data.accessToken, response.data.refreshToken);
+    httpSession?.setTokens(response.data.accessToken, response.data.refreshToken);
     return response.data.accessToken;
   } catch {
     return null;
@@ -253,17 +270,17 @@ export function getApiErrorMessage(error: unknown) {
   return getApiErrorMessages(error).join("\n");
 }
 
-export function getStaleEntityConflict(error: unknown) {
+export function getStaleEntityConflict<TActivity = unknown>(error: unknown) {
   if (!axios.isAxiosError(error) || error.response?.status !== 409) {
     return null;
   }
 
-  const data = error.response.data as Partial<StaleEntityConflict> | undefined;
+  const data = error.response.data as Partial<StaleEntityConflict<TActivity>> | undefined;
   if (!data?.entityType || !data.entityId || !data.message) {
     return null;
   }
 
-  return data as StaleEntityConflict;
+  return data as StaleEntityConflict<TActivity>;
 }
 
 function serializeQueryParam(value: unknown) {

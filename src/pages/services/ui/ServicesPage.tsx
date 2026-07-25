@@ -1,8 +1,8 @@
-import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
+import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space, Switch, Tag } from "antd";
 import { useServicesPageController } from "@/features/services/useServicesPageController";
 import { DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { formatMoney } from "@/utils/money";
+import { formatMoney } from "@/shared/lib";
 
 export function ServicesPage() {
   const controller = useServicesPageController();
