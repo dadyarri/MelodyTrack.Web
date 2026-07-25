@@ -127,6 +127,23 @@ The monolithic `crm.ts`, `types.ts`, and global query-key registry no longer
 exist. The legacy segmentless-feature allowlist was removed, and Steiger
 reports no architecture violations.
 
+## Stage 5 Offline And Session Boundaries
+
+The durable offline-command contract is versioned and validated at its storage
+boundary; the old unversioned queue is intentionally discarded. Replay is a
+pure model operation rather than React component logic, and it preserves
+retries, partial progress, conflicts, and temporary-ID replacement across
+reloads. The UI feature is limited to scheduling replay, reporting state, and
+invalidating successfully changed queries.
+
+Authentication state is isolated behind the session adapter consumed by the
+shared HTTP transport. Access tokens are memory-only, refresh rotation and
+logout propagate across tabs, and legacy persisted access tokens are removed.
+The backend still accepts refresh tokens in JSON request bodies, so the
+remaining refresh-token `localStorage` risk and the coordinated HttpOnly-cookie
+migration are recorded in
+[`offline-and-session-boundaries.md`](./offline-and-session-boundaries.md).
+
 ## Production Bundle Baseline
 
 The production build succeeds with route-level code splitting. The largest

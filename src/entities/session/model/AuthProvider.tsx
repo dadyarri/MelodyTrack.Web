@@ -8,6 +8,7 @@ import { authQueryKeys } from "../api/queryKeys";
 import { authApi, type MeResponse } from "../api/sessionApi";
 import { AuthContext, type AuthContextValue } from "./AuthContext";
 import { authStore } from "./authStore";
+import { logoutSession } from "./logoutSession";
 
 configureHttpSession(authStore);
 
@@ -16,9 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [hasSession, setHasSession] = useState(() => authStore.hasSession());
   const [cachedUser, setCachedUser] = useState<MeResponse | null>(null);
 
-  const handleSessionExpired = useCallback(() => {
-    authStore.clear();
-    setHasSession(false);
+  const clearSessionQueries = useCallback(() => {
     setCachedUser(null);
     void queryClient.cancelQueries({ queryKey: authQueryKeys.me });
     void queryClient.cancelQueries({ queryKey: authQueryKeys.sessions });
@@ -26,6 +25,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryClient.removeQueries({ queryKey: authQueryKeys.sessions });
     queryClient.removeQueries({ queryKey: ["users", "availability", null] });
   }, [queryClient]);
+
+  const handleSessionExpired = useCallback(() => {
+    authStore.clear();
+  }, []);
 
   const meQuery = useQuery({
     queryKey: authQueryKeys.me,
@@ -41,6 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener(authExpiredEventName, handleSessionExpired);
     };
   }, [handleSessionExpired]);
+
+  useEffect(
+    () =>
+      authStore.subscribe(({ hasSession: sessionAvailable, source }) => {
+        setHasSession(sessionAvailable);
+        if (sessionAvailable && source === "external") {
+          void queryClient.invalidateQueries({ queryKey: authQueryKeys.me });
+        } else {
+          clearSessionQueries();
+        }
+      }),
+    [clearSessionQueries, queryClient],
+  );
 
   useEffect(() => {
     if (!hasSession || !meQuery.isError) {
@@ -89,15 +105,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return loadMe(accessToken, refreshToken);
       },
       async logout() {
-        const refreshToken = authStore.getRefreshToken();
-        if (refreshToken) {
-          await http.post("/auth/logout", { refreshToken }).catch(() => undefined);
-        }
-        authStore.clear();
-        handleSessionExpired();
+        await logoutSession({
+          getRefreshToken: () => authStore.getRefreshToken(),
+          revoke: (refreshToken) => http.post("/auth/logout", { refreshToken }).then(() => undefined),
+          clear: () => {
+            authStore.clear();
+          },
+        }).catch(() => undefined);
       },
     }),
-    [cachedUser, handleSessionExpired, hasSession, loadMe, meQuery.data, meQuery.isPending],
+    [cachedUser, hasSession, loadMe, meQuery.data, meQuery.isPending],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

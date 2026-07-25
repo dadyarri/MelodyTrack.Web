@@ -8,10 +8,10 @@ import { analyticsQueryKeys } from "@/entities/dashboard";
 import { expenseQueryKeys, expensesApi } from "@/entities/expense";
 import {
   formatQueuedClientLabel,
-  getOfflineSyncStatus,
+  getOfflineQueueRepository,
   loadOfflineQueue,
   offlineQueueChangedEventName,
-  removeOfflineQueueItem,
+  replayOfflineQueue,
   setOfflineSyncStatus,
   shouldQueueOfflineError,
 } from "@/entities/offline-queue";
@@ -34,26 +34,28 @@ export function OfflineQueueSync() {
       return;
     }
 
-    const queue = loadOfflineQueue();
-    if (queue.length === 0) {
+    const repository = getOfflineQueueRepository();
+    if (repository.list().length === 0) {
       setOfflineSyncStatus("synced");
       return;
     }
 
     isSyncingRef.current = true;
     setOfflineSyncStatus("syncing");
-    const tempClientIds = new Map<string, string>();
-    let syncedCount = 0;
 
     try {
-      for (const item of queue) {
-        try {
+      const result = await replayOfflineQueue({
+        repository,
+        isRetryableError: shouldQueueOfflineError,
+        execute: async (item, resolveId) => {
           if (item.kind === "clients:create") {
             const response = await clientsApi.create(item.payload, { replayKey: item.replayKey });
-            tempClientIds.set(item.tempId, response.id);
-            removeOfflineQueueItem(item.id);
-            syncedCount += 1;
-            continue;
+            return {
+              tempIdReplacement: {
+                temporaryId: item.tempId,
+                serverId: response.id,
+              },
+            };
           }
 
           if (item.kind === "services:create") {
@@ -61,55 +63,43 @@ export function OfflineQueueSync() {
               { ...item.payload, isConsultation: item.payload.isConsultation ?? false },
               { replayKey: item.replayKey },
             );
-            removeOfflineQueueItem(item.id);
-            syncedCount += 1;
-            continue;
+            return;
           }
 
           if (item.kind === "expenses:create") {
             await expensesApi.create(item.payload, { replayKey: item.replayKey });
-            removeOfflineQueueItem(item.id);
-            syncedCount += 1;
-            continue;
+            return;
           }
 
           if (item.kind === "payments:create") {
             await paymentsApi.create(
               {
                 ...item.payload,
-                clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
+                clientId: resolveId(item.payload.clientId),
               },
               { replayKey: item.replayKey },
             );
-            removeOfflineQueueItem(item.id);
-            syncedCount += 1;
-            continue;
+            return;
           }
 
           await appointmentsApi.create(
             {
               ...item.payload,
-              clientId: tempClientIds.get(item.payload.clientId) ?? item.payload.clientId,
+              clientId: resolveId(item.payload.clientId),
             },
             { replayKey: item.replayKey },
           );
-          removeOfflineQueueItem(item.id);
-          syncedCount += 1;
-        } catch (error) {
-          if (shouldQueueOfflineError(error)) {
-            setOfflineSyncStatus("pending");
-            break;
-          }
+        },
+      });
 
-          setOfflineSyncStatus("error");
-          const actionLabel = item.kind === "clients:create" ? formatQueuedClientLabel(item.payload) : item.kind;
-          message.error(`Не удалось отправить отложенное действие: ${actionLabel}`);
-          break;
-        }
+      if (result.status === "error" && result.failedItem) {
+        const actionLabel =
+          result.failedItem.kind === "clients:create" ? formatQueuedClientLabel(result.failedItem.payload) : result.failedItem.kind;
+        message.error(`Не удалось отправить отложенное действие: ${actionLabel}`);
       }
 
-      if (syncedCount > 0) {
-        message.success(`Синхронизировано ${String(syncedCount)} отложенных изменений`);
+      if (result.syncedCount > 0) {
+        message.success(`Синхронизировано ${String(result.syncedCount)} отложенных изменений`);
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
           queryClient.invalidateQueries({ queryKey: serviceQueryKeys.all }),
@@ -120,11 +110,7 @@ export function OfflineQueueSync() {
         ]);
       }
 
-      if (loadOfflineQueue().length === 0) {
-        setOfflineSyncStatus("synced");
-      } else if (getOfflineSyncStatus() !== "error") {
-        setOfflineSyncStatus("pending");
-      }
+      setOfflineSyncStatus(result.status);
     } finally {
       isSyncingRef.current = false;
     }
