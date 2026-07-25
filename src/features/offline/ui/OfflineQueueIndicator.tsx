@@ -6,6 +6,7 @@ import {
   getOfflineSyncStatus,
   loadOfflineQueue,
   offlineQueueChangedEventName,
+  type OfflineQueuedCreate,
   offlineSyncStateChangedEventName,
 } from "@/entities/offline-queue";
 import { CheckCircleOutlined, CloseCircleOutlined, CloudOutlined, CloudSyncOutlined, HourglassOutlined } from "@/shared/ui/icons";
@@ -13,27 +14,28 @@ import { CheckCircleOutlined, CloseCircleOutlined, CloudOutlined, CloudSyncOutli
 import styles from "./OfflineQueueIndicator.module.css";
 
 export function OfflineQueueIndicator() {
-  const [queue, setQueue] = useState(() => loadOfflineQueue());
+  const [queue, setQueue] = useState<OfflineQueuedCreate[]>([]);
   const [syncStatus, setSyncStatus] = useState(() => getOfflineSyncStatus());
 
   useEffect(() => {
-    const updateQueue = () => {
-      setQueue(loadOfflineQueue());
+    const updateQueue = async () => {
+      setQueue(await loadOfflineQueue());
     };
     const updateStatus = () => {
       setSyncStatus(getOfflineSyncStatus());
     };
-    updateQueue();
+    void updateQueue();
     updateStatus();
-    window.addEventListener(offlineQueueChangedEventName, updateQueue);
+    const handleQueueChange = () => void updateQueue();
+    window.addEventListener(offlineQueueChangedEventName, handleQueueChange);
     window.addEventListener(offlineSyncStateChangedEventName, updateStatus);
-    window.addEventListener("online", updateQueue);
-    window.addEventListener("offline", updateQueue);
+    window.addEventListener("online", handleQueueChange);
+    window.addEventListener("offline", handleQueueChange);
     return () => {
-      window.removeEventListener(offlineQueueChangedEventName, updateQueue);
+      window.removeEventListener(offlineQueueChangedEventName, handleQueueChange);
       window.removeEventListener(offlineSyncStateChangedEventName, updateStatus);
-      window.removeEventListener("online", updateQueue);
-      window.removeEventListener("offline", updateQueue);
+      window.removeEventListener("online", handleQueueChange);
+      window.removeEventListener("offline", handleQueueChange);
     };
   }, []);
 

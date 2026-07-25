@@ -3,6 +3,7 @@ import { App as AntdApp, Form } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import * as v from "valibot";
 
 import { type Client, clientQueryKeys, clientsApi, getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/entities/course";
@@ -13,11 +14,11 @@ import { hasAdminAccess, useAuth } from "@/entities/session";
 import type { ClientFormValues, ClientVacationsFormValues } from "@/features/manage-client";
 import { useUpdateCourseProgress } from "@/features/update-course-progress";
 import { getApiErrorMessages, type Ulid } from "@/shared/api";
-import { useDraftFormState } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
+import { useDraftFormState } from "@/shared/lib/react";
 import { getClientHistoryActions } from "@/widgets/client-history";
 
 type ClientSubmitInput = {
@@ -43,6 +44,16 @@ type ClientDraftValues = {
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
+const clientDraftSchema = v.object({
+  firstName: v.optional(v.string()),
+  lastName: v.optional(v.string()),
+  patronymic: v.optional(v.nullable(v.string())),
+  dateOfBirth: v.optional(v.nullable(v.string())),
+  telegram: v.optional(v.nullable(v.string())),
+  vk: v.optional(v.nullable(v.string())),
+  phone: v.optional(v.nullable(v.string())),
+});
+const isClientDraft = (value: unknown): value is ClientDraftValues => v.safeParse(clientDraftSchema, value).success;
 const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
@@ -54,13 +65,14 @@ export function useClientsPageController() {
     withHydration,
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
-  } = useDraftFormState<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY);
+  } = useDraftFormState<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, isClientDraft);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Client | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const hasCreateDraft = hasSavedDraft;
-  const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
+  const [isCreateRequestedOpen, setCreateOpen] = useState(false);
+  const isCreateOpen = isCreateRequestedOpen || hasCreateDraft;
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);

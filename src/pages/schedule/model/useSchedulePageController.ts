@@ -3,6 +3,7 @@ import { App as AntdApp, Form } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
 import { useCallback, useEffect, useState } from "react";
+import * as v from "valibot";
 
 import {
   type Appointment,
@@ -20,11 +21,12 @@ import { getVisibleScheduleHours } from "@/entities/user";
 import type { AppointmentEditFormValues, AppointmentFormValues } from "@/features/manage-appointment";
 import { usePaymentCreateController } from "@/features/record-payment";
 import { getApiErrorMessages, type Ulid } from "@/shared/api";
-import { useDraftFormState, useOpenCreateRouteIntent } from "@/shared/lib";
+import { useOpenCreateRouteIntent } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
+import { useDraftFormState } from "@/shared/lib/react";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
@@ -40,6 +42,18 @@ export type AppointmentDraftValues = {
   patternEndDate?: string;
   weeklyDays?: number[];
 };
+const appointmentDraftSchema = v.object({
+  clientId: v.optional(v.string()),
+  serviceId: v.optional(v.string()),
+  providerId: v.optional(v.string()),
+  courseThemeId: v.optional(v.string()),
+  lessonNotes: v.optional(v.string()),
+  startDate: v.optional(v.string()),
+  recurrenceTypeId: v.optional(v.string()),
+  patternEndDate: v.optional(v.string()),
+  weeklyDays: v.optional(v.array(v.number())),
+});
+const isAppointmentDraft = (value: unknown): value is AppointmentDraftValues => v.safeParse(appointmentDraftSchema, value).success;
 
 export function useSchedulePageController() {
   const {
@@ -49,10 +63,11 @@ export function useSchedulePageController() {
     withHydration,
     resetStoredDraft,
     saveDraftValues: saveCreateDraftValues,
-  } = useDraftFormState<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY);
+  } = useDraftFormState<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, isAppointmentDraft);
   const [weekStart, setWeekStart] = useState(dayjs().startOf("week"));
   const hasCreateDraft = hasSavedDraft;
-  const [isOpen, setOpen] = useState(() => hasCreateDraft);
+  const [isCreateRequestedOpen, setOpen] = useState(false);
+  const isOpen = isCreateRequestedOpen || hasCreateDraft;
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedAppointmentBaselineActivityId, setSelectedAppointmentBaselineActivityId] = useState<Ulid | null | undefined>();
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
@@ -84,6 +99,7 @@ export function useSchedulePageController() {
       void message.error(errorMessage);
     }
   };
+
   const range: [Dayjs, Dayjs] = [weekStart, weekStart.endOf("week")];
   const canCreateAppointments = hasAdminAccess(auth.user);
   const isSpecialistFilterLocked = Boolean(auth.user && !hasAdminAccess(auth.user));

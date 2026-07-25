@@ -24,33 +24,34 @@ export async function replayOfflineQueue({
   now = () => new Date(),
 }: {
   repository: OfflineQueueRepository;
-  execute: (item: OfflineQueuedCreate, resolveId: (id: string) => string) => Promise<OfflineReplayExecutionResult | undefined>;
+  execute: (item: OfflineQueuedCreate, resolveId: (id: string) => Promise<string>) => Promise<OfflineReplayExecutionResult | undefined>;
   isRetryableError: (error: unknown) => boolean;
   now?: () => Date;
 }): Promise<OfflineReplayResult> {
   let syncedCount = 0;
 
-  for (const item of repository.list()) {
+  for (const item of await repository.list()) {
     try {
       const result = await execute(item, repository.resolveId);
-      repository.complete(item.id, result?.tempIdReplacement);
+      await repository.complete(item.id, result?.tempIdReplacement);
       syncedCount += 1;
     } catch (error) {
-      repository.markAttemptFailed(item.id, getErrorMessage(error), now().toISOString());
+      await repository.markAttemptFailed(item.id, getErrorMessage(error), now().toISOString());
       return {
         status: isRetryableError(error) ? "pending" : "error",
         syncedCount,
-        remainingCount: repository.list().length,
+        remainingCount: (await repository.list()).length,
         failedItem: item,
         error,
       };
     }
   }
 
+  const remainingCount = (await repository.list()).length;
   return {
-    status: repository.list().length === 0 ? "synced" : "pending",
+    status: remainingCount === 0 ? "synced" : "pending",
     syncedCount,
-    remainingCount: repository.list().length,
+    remainingCount,
     failedItem: null,
     error: null,
   };

@@ -1,8 +1,7 @@
-import type { DefaultOptionType } from "antd/es/select";
 import axios from "axios";
 
-import { formatDateTime } from "@/shared/lib";
 import { createReplayKey } from "@/shared/lib";
+import { formatDateTime } from "@/shared/lib/date";
 
 export type OfflineCreateKind = "clients:create" | "services:create" | "payments:create" | "expenses:create" | "appointments:create";
 
@@ -120,157 +119,54 @@ export type OfflineQueuedCreateInput =
 
 export type QueuedCreateFromInput<TInput extends OfflineQueuedCreateInput> = Extract<OfflineQueuedCreate, { kind: TInput["kind"] }>;
 
-type OfflineQueueSnapshot = {
-  schemaVersion: 1;
-  revision: number;
-  items: OfflineQueuedCreate[];
-  tempIdMap: Record<string, string>;
-};
-
 export interface OfflineQueueRepository {
-  list: () => OfflineQueuedCreate[];
-  enqueue: <TInput extends OfflineQueuedCreateInput>(item: TInput) => QueuedCreateFromInput<TInput>;
-  complete: (id: string, tempIdReplacement?: { temporaryId: string; serverId: string }) => void;
-  markAttemptFailed: (id: string, error: string, attemptedAtUtc: string) => void;
-  clear: () => void;
-  resolveId: (id: string) => string;
+  list: () => Promise<OfflineQueuedCreate[]>;
+  enqueue: <TInput extends OfflineQueuedCreateInput>(item: TInput) => Promise<QueuedCreateFromInput<TInput>>;
+  complete: (id: string, tempIdReplacement?: { temporaryId: string; serverId: string }) => Promise<void>;
+  markAttemptFailed: (id: string, error: string, attemptedAtUtc: string) => Promise<void>;
+  clear: () => Promise<void>;
+  resolveId: (id: string) => Promise<string>;
 }
 
-const currentSchemaVersion = 1;
 const offlineQueueStorageKey = "melodytrack:offline-queue";
 export const offlineQueueChangedEventName = "melodytrack:offline-queue-changed";
+let ownerUserIdProvider: () => string | null = () => null;
 
-export function createLocalStorageOfflineQueueRepository(
-  storage: Storage,
-  dispatchChanged: () => void = () => {
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event(offlineQueueChangedEventName));
-    }
-  },
-): OfflineQueueRepository {
-  const read = (): OfflineQueueSnapshot => {
-    const raw = storage.getItem(offlineQueueStorageKey);
-    if (!raw) {
-      return emptySnapshot();
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      const snapshot = parseSnapshot(parsed);
-      if (snapshot) {
-        return snapshot;
-      }
-    } catch {
-      // Invalid persisted state is discarded below.
-    }
-
-    storage.removeItem(offlineQueueStorageKey);
-    return emptySnapshot();
-  };
-
-  const write = (snapshot: OfflineQueueSnapshot) => {
-    storage.setItem(offlineQueueStorageKey, JSON.stringify(snapshot));
-    dispatchChanged();
-  };
-
-  return {
-    list: () => read().items,
-    enqueue<TInput extends OfflineQueuedCreateInput>(item: TInput) {
-      const snapshot = read();
-      const queuedItem: OfflineQueuedCreate = {
-        ...item,
-        id: createOfflineId(item.kind),
-        createdAtUtc: new Date().toISOString(),
-        attemptCount: 0,
-      };
-      snapshot.items.push(queuedItem);
-      snapshot.revision += 1;
-      write(snapshot);
-      return queuedItem as QueuedCreateFromInput<TInput>;
-    },
-    complete(id, tempIdReplacement) {
-      const snapshot = read();
-      snapshot.items = snapshot.items.filter((item) => item.id !== id);
-      if (tempIdReplacement) {
-        snapshot.tempIdMap[tempIdReplacement.temporaryId] = tempIdReplacement.serverId;
-      }
-      snapshot.revision += 1;
-      write(snapshot);
-    },
-    markAttemptFailed(id, error, attemptedAtUtc) {
-      const snapshot = read();
-      snapshot.items = snapshot.items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              attemptCount: item.attemptCount + 1,
-              lastAttemptAtUtc: attemptedAtUtc,
-              lastError: error,
-            }
-          : item,
-      );
-      snapshot.revision += 1;
-      write(snapshot);
-    },
-    clear() {
-      write(emptySnapshot());
-    },
-    resolveId: (id) => read().tempIdMap[id] ?? id,
-  };
+export function configureOfflineQueueOwner(provider: () => string | null) {
+  ownerUserIdProvider = provider;
 }
 
-function getDefaultRepository() {
-  if (typeof window === "undefined") {
-    return null;
+export function discardLegacyOfflineQueue(storage: Storage) {
+  storage.removeItem(offlineQueueStorageKey);
+}
+
+async function getDefaultRepository() {
+  const ownerUserId = ownerUserIdProvider();
+  if (!ownerUserId) {
+    throw new Error("Offline storage requires an authenticated user.");
   }
-
-  return createLocalStorageOfflineQueueRepository(window.localStorage);
+  const { createDefaultOfflineQueueRepository } = await import("./indexedDbOfflineQueueRepository");
+  return createDefaultOfflineQueueRepository(ownerUserId);
 }
 
-export function loadOfflineQueue() {
-  return getDefaultRepository()?.list() ?? [];
+export async function loadOfflineQueue() {
+  return (await getDefaultRepository()).list();
 }
 
-export function enqueueOfflineCreate<TInput extends OfflineQueuedCreateInput>(item: TInput): QueuedCreateFromInput<TInput> {
-  const repository = getDefaultRepository();
-  if (!repository) {
-    throw new Error("Offline queue storage is unavailable.");
-  }
-  return repository.enqueue(item);
+export async function enqueueOfflineCreate<TInput extends OfflineQueuedCreateInput>(item: TInput): Promise<QueuedCreateFromInput<TInput>> {
+  return (await getDefaultRepository()).enqueue(item);
 }
 
-export function getOfflineQueueRepository() {
-  const repository = getDefaultRepository();
-  if (!repository) {
-    throw new Error("Offline queue storage is unavailable.");
-  }
-  return repository;
+export async function getOfflineQueueRepository() {
+  return getDefaultRepository();
 }
 
-export function clearOfflineQueue() {
-  getDefaultRepository()?.clear();
+export async function clearOfflineQueue() {
+  await (await getDefaultRepository()).clear();
 }
 
 export function shouldQueueOfflineError(error: unknown) {
   return axios.isAxiosError(error) && !error.response;
-}
-
-export function getQueuedClientOption(value?: string) {
-  if (!value) {
-    return null;
-  }
-
-  const item = loadOfflineQueue().find(
-    (entry): entry is Extract<OfflineQueuedCreate, { kind: "clients:create" }> => entry.kind === "clients:create" && entry.tempId === value,
-  );
-  if (!item) {
-    return null;
-  }
-
-  return {
-    value: item.tempId,
-    label: formatQueuedClientLabel(item.payload),
-  } satisfies DefaultOptionType;
 }
 
 export function formatOfflineQueueItem(item: OfflineQueuedCreate) {
@@ -304,7 +200,7 @@ export function formatQueuedClientLabel(client: { firstName: string; lastName: s
   return [client.lastName, client.firstName, client.patronymic].filter(Boolean).join(" ");
 }
 
-function createOfflineId(kind: string) {
+export function createOfflineId(kind: string) {
   return `offline:${kind}:${createReplayKey()}`;
 }
 
@@ -312,34 +208,7 @@ function formatPaymentLikeLabel(clientId: string, clientLabel: string | undefine
   return `${clientLabel ?? clientId} · ${String(amount)} ₽ · ${formatDateTime(date)}`;
 }
 
-function emptySnapshot(): OfflineQueueSnapshot {
-  return {
-    schemaVersion: currentSchemaVersion,
-    revision: 0,
-    items: [],
-    tempIdMap: {},
-  };
-}
-
-function parseSnapshot(value: unknown): OfflineQueueSnapshot | null {
-  if (!isRecord(value) || value.schemaVersion !== currentSchemaVersion || !Array.isArray(value.items) || !isStringRecord(value.tempIdMap)) {
-    return null;
-  }
-
-  const items = value.items.map(normalizeQueueItem);
-  if (!items.every((item): item is OfflineQueuedCreate => item !== null)) {
-    return null;
-  }
-
-  return {
-    schemaVersion: currentSchemaVersion,
-    revision: typeof value.revision === "number" && Number.isSafeInteger(value.revision) ? value.revision : 0,
-    items,
-    tempIdMap: value.tempIdMap,
-  };
-}
-
-function normalizeQueueItem(value: unknown): OfflineQueuedCreate | null {
+export function normalizeQueueItem(value: unknown): OfflineQueuedCreate | null {
   if (
     !isRecord(value) ||
     typeof value.id !== "string" ||
@@ -446,10 +315,6 @@ function hasOptionalBoolean(value: Record<string, unknown>, key: string) {
 
 function hasOptionalNumber(value: Record<string, unknown>, key: string) {
   return value[key] === undefined || typeof value[key] === "number";
-}
-
-function isStringRecord(value: unknown): value is Record<string, string> {
-  return isRecord(value) && Object.values(value).every((item) => typeof item === "string");
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -47,7 +47,7 @@ export async function createOrQueueOffline<TInput, TResponse, TQueued extends Of
       input,
       offline: true,
       response: null,
-      queuedItem: enqueueOfflineCreate(buildQueueItem(input, replayKey)),
+      queuedItem: await enqueueOfflineCreate(buildQueueItem(input, replayKey)),
     };
   }
 }

@@ -9,25 +9,26 @@ import {
   offlineQueueChangedEventName,
   setOfflineSyncStatus,
 } from "@/entities/offline-queue";
-import { authStore } from "@/entities/session";
+import { authStore, useAuth } from "@/entities/session";
 import { probeBackendReachable } from "@/shared/api";
 
 export function OfflineQueueSync() {
+  const auth = useAuth();
   const queryClient = useQueryClient();
   const { message } = AntdApp.useApp();
   const isSyncingRef = useRef(false);
   const syncTimerRef = useRef<number | null>(null);
 
   const syncQueue = useCallback(async () => {
-    if (isSyncingRef.current || !navigator.onLine || !authStore.hasSession()) {
-      if (loadOfflineQueue().length > 0 && !navigator.onLine) {
+    if (!auth.user || isSyncingRef.current || !navigator.onLine || !authStore.hasSession()) {
+      if (auth.user && (await loadOfflineQueue()).length > 0 && !navigator.onLine) {
         setOfflineSyncStatus("pending");
       }
       return;
     }
 
-    const repository = getOfflineQueueRepository();
-    if (repository.list().length === 0) {
+    const repository = await getOfflineQueueRepository();
+    if ((await repository.list()).length === 0) {
       setOfflineSyncStatus("synced");
       return;
     }
@@ -54,15 +55,20 @@ export function OfflineQueueSync() {
     } finally {
       isSyncingRef.current = false;
     }
-  }, [message, queryClient]);
+  }, [auth.user, message, queryClient]);
 
-  const scheduleSync = useCallback(() => {
+  const scheduleSync = useCallback(async () => {
     if (syncTimerRef.current !== null) {
       window.clearInterval(syncTimerRef.current);
       syncTimerRef.current = null;
     }
 
-    const hasQueuedItems = loadOfflineQueue().length > 0;
+    if (!auth.user) {
+      setOfflineSyncStatus("synced");
+      return;
+    }
+
+    const hasQueuedItems = (await loadOfflineQueue()).length > 0;
     if (!hasQueuedItems) {
       setOfflineSyncStatus("synced");
       return;
@@ -70,7 +76,7 @@ export function OfflineQueueSync() {
 
     const attemptSync = async () => {
       if (!navigator.onLine || !authStore.hasSession() || isSyncingRef.current) {
-        if (!navigator.onLine && loadOfflineQueue().length > 0) {
+        if (!navigator.onLine && (await loadOfflineQueue()).length > 0) {
           setOfflineSyncStatus("pending");
         }
         return;
@@ -88,28 +94,24 @@ export function OfflineQueueSync() {
     syncTimerRef.current = window.setInterval(() => {
       attemptSync().catch(() => {});
     }, 7000);
-  }, [syncQueue]);
+  }, [auth.user, syncQueue]);
 
   useEffect(() => {
-    scheduleSync();
-    const hasQueuedItems = loadOfflineQueue().length > 0;
+    void scheduleSync();
     const handleOnline = () => {
-      scheduleSync();
+      void scheduleSync();
     };
     const handleQueueChange = () => {
-      scheduleSync();
+      void scheduleSync();
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        scheduleSync();
+        void scheduleSync();
       }
     };
     window.addEventListener("online", handleOnline);
     window.addEventListener(offlineQueueChangedEventName, handleQueueChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    if (!hasQueuedItems) {
-      setOfflineSyncStatus("synced");
-    }
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener(offlineQueueChangedEventName, handleQueueChange);

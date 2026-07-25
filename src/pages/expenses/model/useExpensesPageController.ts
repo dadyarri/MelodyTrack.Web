@@ -2,17 +2,18 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { App as AntdApp, Form } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
+import * as v from "valibot";
 
 import { expenseQueryKeys, expensesApi } from "@/entities/expense";
 import { createOrQueueOffline } from "@/entities/offline-queue";
 import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
 import { getApiErrorMessages } from "@/shared/api";
-import { useDraftFormState } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { downloadBlob } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
+import { useDraftFormState } from "@/shared/lib/react";
 
 export type ExpenseFormValues = {
   description?: string;
@@ -24,6 +25,13 @@ export type ExpenseFormValues = {
 type ExpenseDraftValues = Omit<ExpenseFormValues, "date"> & { date?: string };
 
 const EXPENSE_CREATE_DRAFT_KEY = "draft:expenses:create";
+const expenseDraftSchema = v.object({
+  description: v.optional(v.string()),
+  amount: v.optional(v.number()),
+  date: v.optional(v.string()),
+  categoryId: v.optional(v.string()),
+});
+const isExpenseDraft = (value: unknown): value is ExpenseDraftValues => v.safeParse(expenseDraftSchema, value).success;
 const getDefaultExpensesDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function useExpensesPageController() {
@@ -34,10 +42,11 @@ export function useExpensesPageController() {
     withHydration,
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
-  } = useDraftFormState<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY);
+  } = useDraftFormState<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, isExpenseDraft);
   const [page, setPage] = useState(1);
   const hasCreateDraft = hasSavedDraft;
-  const [isOpen, setOpen] = useState(() => hasCreateDraft);
+  const [isCreateRequestedOpen, setOpen] = useState(false);
+  const isOpen = isCreateRequestedOpen || hasCreateDraft;
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultExpensesDateRange());
   const [form] = Form.useForm<ExpenseFormValues>();

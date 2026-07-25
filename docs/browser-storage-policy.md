@@ -12,15 +12,15 @@ assets. Those classes must not share one generic cache or lifecycle.
 | Refresh token | `localStorage`, `melodytrack.refreshToken` | Rotated by the HTTP interceptor and shared across tabs | JavaScript-readable credential; transitional until the backend supports an HttpOnly cookie |
 | Saved portal clients | `localStorage`, `melodytrack.portalClients` | Stores up to eight names, timestamps, and portal link tokens | Persists a login capability in JavaScript-readable storage |
 | Theme | `localStorage`, `melodytrack.theme` | Device-wide light/dark preference | Appropriate data class, but not expressed through a standard preference adapter |
-| Create-form drafts | Five `draft:*:create` `localStorage` keys | Stores form values, replay key, and update time | Unversioned, unvalidated, unscoped by user, and never expires |
-| Offline commands | `localStorage`, `melodytrack:offline-queue` | Versioned and validated; preserves retries, errors, ordering, and ID mappings | Synchronous, capacity-limited, and not partitioned by user |
+| Create-form drafts | IndexedDB `drafts` store | User-partitioned, runtime-validated, debounced, and expired after 30 days | Durable recoverable work; valid legacy drafts migrate after authentication |
+| Offline commands | IndexedDB `offlineCommands` and `offlineIdMappings` stores | User-partitioned, versioned and validated; transactional completion/ID mapping | Durable until replay or explicit removal; the legacy queue is discarded |
 | Reference labels | Six `melodytrack:reference-labels:*` `localStorage` keys | Accumulates ID-to-label maps | Unversioned, unbounded, stale, contains names, and is not partitioned by user |
 | Generic HTTP responses | `localStorage`, `melodytrack:http-cache:*` | Caches unauthenticated GET responses by URL and query | Unversioned and unbounded; does not cache authenticated CRM data; can place portal tokens in storage keys |
 | Chunk retry/navigation intent | Two `sessionStorage` keys | Survives one reload in the current tab and is then cleared | Appropriate data class |
 | React Query data | Memory | Lost on reload | Correct for online-only data; insufficient for the future offline working set |
 | Offline sync status | Memory | Recomputed from queue/connectivity activity | Correct target |
 | App shell/assets | Browser HTTP cache only | Normal Vite asset loading | No service worker or explicit offline shell cache exists |
-| IndexedDB | Not used | — | Required for durable, transactional offline domain data |
+| IndexedDB | Versioned `melodytrack` database | Stores drafts, offline commands, and ID mappings; reserves domain stores for later working sets | Current durable user-work target |
 
 The generic HTTP cache currently excludes requests carrying an Authorization
 header. It therefore is not an offline CRM cache. Its most notable eligible

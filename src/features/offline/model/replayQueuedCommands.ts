@@ -46,7 +46,7 @@ export async function replayQueuedCommands(repository: OfflineQueueRepository) {
         await paymentsApi.create(
           {
             ...item.payload,
-            clientId: resolveId(item.payload.clientId),
+            clientId: await resolveId(item.payload.clientId),
           },
           { replayKey: item.replayKey },
         );
@@ -56,7 +56,7 @@ export async function replayQueuedCommands(repository: OfflineQueueRepository) {
       await appointmentsApi.create(
         {
           ...item.payload,
-          clientId: resolveId(item.payload.clientId),
+          clientId: await resolveId(item.payload.clientId),
         },
         { replayKey: item.replayKey },
       );

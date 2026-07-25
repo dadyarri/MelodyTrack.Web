@@ -10,9 +10,11 @@ describe("authStore", () => {
 
   it("keeps the access token in memory and persists only the refresh token", () => {
     authStore.setSession("access", "refresh");
+    authStore.setUserId("user-1");
 
     expect(authStore.getAccessToken()).toBe("access");
     expect(authStore.getRefreshToken()).toBe("refresh");
+    expect(authStore.getUserId()).toBe("user-1");
     expect(authStore.hasSession()).toBe(true);
     expect(localStorage.getItem("melodytrack.accessToken")).toBeNull();
 
@@ -20,6 +22,7 @@ describe("authStore", () => {
 
     expect(authStore.getAccessToken()).toBeNull();
     expect(authStore.getRefreshToken()).toBeNull();
+    expect(authStore.getUserId()).toBeNull();
     expect(authStore.hasSession()).toBe(false);
   });
 

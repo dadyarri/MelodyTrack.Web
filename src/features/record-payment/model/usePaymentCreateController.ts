@@ -2,15 +2,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import dayjs from "dayjs";
 import { useCallback, useEffect, useState } from "react";
+import * as v from "valibot";
 
 import { clientQueryKeys } from "@/entities/client";
 import { createOrQueueOffline } from "@/entities/offline-queue";
 import { type Payment, paymentQueryKeys, paymentsApi } from "@/entities/payment";
 import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
-import { useDraftFormState, useOpenCreateRouteIntent } from "@/shared/lib";
+import { useOpenCreateRouteIntent } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
+import { useDraftFormState } from "@/shared/lib/react";
 
 import type { PaymentCreateFormValues } from "../ui/PaymentCreateModal";
 
@@ -29,11 +31,20 @@ type PaymentCreatePrefill = {
 };
 
 const PAYMENT_CREATE_DRAFT_KEY = "draft:payments:create";
+const paymentDraftSchema = v.object({
+  clientId: v.optional(v.string()),
+  serviceId: v.optional(v.string()),
+  quantity: v.optional(v.number()),
+  amount: v.optional(v.number()),
+  date: v.optional(v.string()),
+  description: v.optional(v.string()),
+});
+const isPaymentDraft = (value: unknown): value is PaymentDraftValues => v.safeParse(paymentDraftSchema, value).success;
 
 export function usePaymentCreateController({ useRouteIntent = false }: { useRouteIntent?: boolean } = {}) {
   const { hasSavedDraft, replayKeyRef, isHydratingRef, loadDraftValues, withHydration, resetStoredDraft, saveDraftValues } =
-    useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY);
-  const [isOpen, setOpen] = useState(() => hasSavedDraft);
+    useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, isPaymentDraft);
+  const [isOpen, setOpen] = useState(false);
   const [localPrefill, setLocalPrefill] = useState<PaymentCreatePrefill | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
@@ -59,7 +70,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
   const routePrefillServiceId = useRouteIntent && routeIntent.hasOpenCreateIntent ? routeIntent.prefillServiceId : undefined;
   const createPrefillClientId = localPrefill?.clientId ?? routePrefillClientId;
   const createPrefillServiceId = localPrefill?.serviceId ?? routePrefillServiceId;
-  const isCreateModalOpen = isOpen || (useRouteIntent && routeIntent.hasOpenCreateIntent);
+  const isCreateModalOpen = isOpen || hasSavedDraft || (useRouteIntent && routeIntent.hasOpenCreateIntent);
   const currentEditingPayment = editingPayment;
   const isEditingPaymentStale = currentEditingPayment
     ? isActivityStale(currentEditingPayment.lastActivity?.id, editingBaselineActivityId)

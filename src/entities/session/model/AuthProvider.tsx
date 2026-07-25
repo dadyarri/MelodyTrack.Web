@@ -83,11 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         staleTime: 0,
         gcTime: 0,
       });
+      authStore.setUserId(me.id);
       setCachedUser(me);
       return me;
     },
     [queryClient],
   );
+
+  useEffect(() => {
+    if (meQuery.data) {
+      authStore.setUserId(meQuery.data.id);
+    }
+  }, [meQuery.data]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

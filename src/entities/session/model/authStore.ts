@@ -2,6 +2,7 @@ const refreshTokenKey = "melodytrack.refreshToken";
 const legacyAccessTokenKey = "melodytrack.accessToken";
 
 let accessToken: string | null = null;
+let currentUserId: string | null = null;
 type SessionChange = {
   hasSession: boolean;
   source: "local" | "external";
@@ -14,6 +15,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
     if (event.key === refreshTokenKey || event.key === null) {
       accessToken = null;
+      currentUserId = null;
       notifyListeners("external");
     }
   });
@@ -25,6 +27,9 @@ export const authStore = {
   },
   getRefreshToken() {
     return localStorage.getItem(refreshTokenKey);
+  },
+  getUserId() {
+    return currentUserId;
   },
   hasSession() {
     return Boolean(localStorage.getItem(refreshTokenKey));
@@ -38,8 +43,12 @@ export const authStore = {
     setAccessToken(accessToken);
     localStorage.setItem(refreshTokenKey, refreshToken);
   },
+  setUserId(userId: string) {
+    currentUserId = userId;
+  },
   clear() {
     accessToken = null;
+    currentUserId = null;
     localStorage.removeItem(refreshTokenKey);
     localStorage.removeItem(legacyAccessTokenKey);
     notifyListeners("local");

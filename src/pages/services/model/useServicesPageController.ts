@@ -1,13 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useEffect, useState } from "react";
+import * as v from "valibot";
 
 import { createOrQueueOffline } from "@/entities/offline-queue";
 import { type Service, serviceQueryKeys, servicesApi } from "@/entities/service";
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import { getApiErrorMessages } from "@/shared/api";
-import { useDraftFormState } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
+import { useDraftFormState } from "@/shared/lib/react";
 
 type ServiceDraftValues = {
   name?: string;
@@ -37,6 +38,14 @@ type ServiceEditFormValues = {
 };
 
 const SERVICE_CREATE_DRAFT_KEY = "draft:services:create";
+const serviceDraftSchema = v.object({
+  name: v.optional(v.string()),
+  publicName: v.optional(v.string()),
+  description: v.optional(v.string()),
+  isConsultation: v.optional(v.boolean()),
+  price: v.optional(v.number()),
+});
+const isServiceDraft = (value: unknown): value is ServiceDraftValues => v.safeParse(serviceDraftSchema, value).success;
 
 export function useServicesPageController() {
   const auth = useAuth();
@@ -47,10 +56,11 @@ export function useServicesPageController() {
     withHydration,
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
-  } = useDraftFormState<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY);
+  } = useDraftFormState<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, isServiceDraft);
   const [page, setPage] = useState(1);
   const hasCreateDraft = hasSavedDraft;
-  const [isCreateOpen, setCreateOpen] = useState(() => hasCreateDraft);
+  const [isCreateRequestedOpen, setCreateOpen] = useState(false);
+  const isCreateOpen = isCreateRequestedOpen || hasCreateDraft;
   const [editing, setEditing] = useState<Service | null>(null);
   const [pricing, setPricing] = useState<Service | null>(null);
   const [form] = Form.useForm<ServiceDraftValues>();
@@ -64,6 +74,7 @@ export function useServicesPageController() {
       void message.error(errorMessage);
     }
   };
+
   const query = useQuery({
     queryKey: serviceQueryKeys.list(page),
     queryFn: () => servicesApi.list({ page, page_size: 10 }),
