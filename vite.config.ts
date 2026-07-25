@@ -24,64 +24,20 @@ export default defineConfig({
         codeSplitting: {
           groups: [
             {
-              name: "react",
-              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
-            },
-            {
-              name: "router",
-              test: /[\\/]node_modules[\\/](react-router|@remix-run[\\/]router)[\\/]/,
-            },
-            {
               name: "query",
-              test: /[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/,
+              test: /[\\/]node_modules[\\/]@tanstack[\\/](query-core|react-query)[\\/]/,
             },
             {
               name: "network",
               test: /[\\/]node_modules[\\/]axios[\\/]/,
             },
             {
-              name: "date-utils",
-              test: /[\\/]node_modules[\\/](dayjs|libphonenumber-js)[\\/]/,
-            },
-            {
-              name: "antd-pickers",
-              test: /[\\/]node_modules[\\/]antd[\\/]es[\\/](auto-complete|cascader|date-picker|select|time-picker|transfer|tree-select)[\\/]/,
-            },
-            {
-              name: "antd-forms",
-              test: /[\\/]node_modules[\\/]antd[\\/]es[\\/](checkbox|color-picker|form|input|input-number|mentions|radio|rate|slider|switch|upload)[\\/]/,
-            },
-            {
-              name: "antd-data-display",
-              test: /[\\/]node_modules[\\/]antd[\\/]es[\\/](avatar|badge|calendar|card|carousel|collapse|descriptions|empty|image|list|popover|qrcode|segmented|statistic|table|tabs|tag|timeline|tooltip|tour|tree|typography)[\\/]/,
-            },
-            {
-              name: "antd-feedback",
-              test: /[\\/]node_modules[\\/]antd[\\/]es[\\/](alert|drawer|message|modal|notification|popconfirm|progress|result|skeleton|spin)[\\/]/,
-            },
-            {
-              name: "antd-navigation",
-              test: /[\\/]node_modules[\\/]antd[\\/]es[\\/](anchor|breadcrumb|dropdown|menu|pagination|steps)[\\/]/,
-            },
-            {
-              name: "antd-core",
-              test: /[\\/]node_modules[\\/]antd[\\/]/,
-            },
-            {
-              name: "rc-data",
-              test: /[\\/]node_modules[\\/]@rc-component[\\/](async-validator|form|input|pagination|picker|select|table|tree|virtual-list)[\\/]/,
-            },
-            {
-              name: "rc-overlay",
-              test: /[\\/]node_modules[\\/]@rc-component[\\/]/,
-            },
-            {
-              name: "antd-internals",
-              test: /[\\/]node_modules[\\/](@ant-design|rc-[^\\/]+)[\\/]/,
-            },
-            {
-              name: "icons",
+              name: "lucide",
               test: /[\\/]node_modules[\\/]lucide-react[\\/]/,
+            },
+            {
+              name: "select-runtime",
+              test: /[\\/]node_modules[\\/]@rc-component[\\/](select|virtual-list)[\\/]/,
             },
           ],
         },

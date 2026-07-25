@@ -3,7 +3,7 @@ import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import { useEffect, useMemo, useState } from "react";
 
-import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels } from "@/shared/lib";
+import { getCachedReferenceLabel, rememberReferenceLabel, rememberReferenceLabels, useDebouncedValue } from "@/shared/lib";
 
 import { clientsApi } from "../api/clientApi";
 import { clientQueryKeys } from "../api/queryKeys";
@@ -24,7 +24,13 @@ export function ClientSelect({
   onResolvedLabelChange?: (label?: string) => void;
 }) {
   const [search, setSearch] = useState("");
-  const query = useQuery({ queryKey: clientQueryKeys.lookup(search), queryFn: () => clientsApi.lookup(search), retry: false });
+  const debouncedSearch = useDebouncedValue(search.trim(), 250);
+  const query = useQuery({
+    queryKey: clientQueryKeys.lookup(debouncedSearch),
+    queryFn: ({ signal }) => clientsApi.lookup(debouncedSearch, signal),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const selectedQuery = useQuery({
     queryKey: clientQueryKeys.selected(value),
     queryFn: () => {
@@ -35,6 +41,7 @@ export function ClientSelect({
     },
     enabled: Boolean(value),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
   const cachedLabel = getCachedReferenceLabel("client", value);
   const options = useMemo<DefaultOptionType[]>(() => {

@@ -1,8 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
-import { RouterProvider } from "react-router";
 
-import { router } from "@/app/router";
+import { AppRouter } from "@/app/router";
 import { AuthProvider } from "@/entities/session";
 import { OfflineQueueSync } from "@/features/offline";
 import { ApiErrorNotifier } from "@/shared/ui";
@@ -25,7 +24,7 @@ export function App() {
         <ApiErrorNotifier />
         <OfflineQueueSync />
         <AuthProvider>
-          <RouterProvider router={router} />
+          <AppRouter />
         </AuthProvider>
       </AntdApp>
     </QueryClientProvider>

@@ -2,21 +2,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import { useCallback, useEffect, useRef } from "react";
 
-import { appointmentQueryKeys, appointmentsApi } from "@/entities/appointment";
-import { clientQueryKeys, clientsApi } from "@/entities/client";
-import { analyticsQueryKeys } from "@/entities/dashboard";
-import { expenseQueryKeys, expensesApi } from "@/entities/expense";
 import {
   formatQueuedClientLabel,
   getOfflineQueueRepository,
   loadOfflineQueue,
   offlineQueueChangedEventName,
-  replayOfflineQueue,
   setOfflineSyncStatus,
-  shouldQueueOfflineError,
 } from "@/entities/offline-queue";
-import { paymentQueryKeys, paymentsApi } from "@/entities/payment";
-import { serviceQueryKeys, servicesApi } from "@/entities/service";
 import { authStore } from "@/entities/session";
 import { probeBackendReachable } from "@/shared/api";
 
@@ -44,53 +36,8 @@ export function OfflineQueueSync() {
     setOfflineSyncStatus("syncing");
 
     try {
-      const result = await replayOfflineQueue({
-        repository,
-        isRetryableError: shouldQueueOfflineError,
-        execute: async (item, resolveId) => {
-          if (item.kind === "clients:create") {
-            const response = await clientsApi.create(item.payload, { replayKey: item.replayKey });
-            return {
-              tempIdReplacement: {
-                temporaryId: item.tempId,
-                serverId: response.id,
-              },
-            };
-          }
-
-          if (item.kind === "services:create") {
-            await servicesApi.create(
-              { ...item.payload, isConsultation: item.payload.isConsultation ?? false },
-              { replayKey: item.replayKey },
-            );
-            return;
-          }
-
-          if (item.kind === "expenses:create") {
-            await expensesApi.create(item.payload, { replayKey: item.replayKey });
-            return;
-          }
-
-          if (item.kind === "payments:create") {
-            await paymentsApi.create(
-              {
-                ...item.payload,
-                clientId: resolveId(item.payload.clientId),
-              },
-              { replayKey: item.replayKey },
-            );
-            return;
-          }
-
-          await appointmentsApi.create(
-            {
-              ...item.payload,
-              clientId: resolveId(item.payload.clientId),
-            },
-            { replayKey: item.replayKey },
-          );
-        },
-      });
+      const { replayQueuedCommands } = await import("./replayQueuedCommands");
+      const { invalidationKeys, result } = await replayQueuedCommands(repository);
 
       if (result.status === "error" && result.failedItem) {
         const actionLabel =
@@ -100,14 +47,7 @@ export function OfflineQueueSync() {
 
       if (result.syncedCount > 0) {
         message.success(`Синхронизировано ${String(result.syncedCount)} отложенных изменений`);
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: serviceQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: expenseQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll }),
-          queryClient.invalidateQueries({ queryKey: analyticsQueryKeys.all }),
-        ]);
+        await Promise.all(invalidationKeys.map((queryKey) => queryClient.invalidateQueries({ queryKey })));
       }
 
       setOfflineSyncStatus(result.status);

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Select } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import { formatMoney, getCachedReferenceLabel, rememberReferenceLabels } from "@/shared/lib";
 
@@ -27,8 +27,12 @@ export function ServiceSelect({
   onResolvedLabelChange?: (label?: string) => void;
   onResolvedPriceChange?: (price?: number) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const query = useQuery({ queryKey: serviceQueryKeys.lookup(search), queryFn: () => servicesApi.lookup(), retry: false });
+  const query = useQuery({
+    queryKey: serviceQueryKeys.reference,
+    queryFn: () => servicesApi.lookup(),
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
   const selectedQuery = useQuery({
     queryKey: serviceQueryKeys.selected(value),
     queryFn: () => {
@@ -39,6 +43,7 @@ export function ServiceSelect({
     },
     enabled: Boolean(value),
     retry: false,
+    staleTime: 5 * 60 * 1000,
   });
   const cachedLabel = getCachedReferenceLabel("service", value);
   const selectedService = selectedQuery.data?.id === value ? selectedQuery.data : undefined;
@@ -73,7 +78,7 @@ export function ServiceSelect({
   return (
     <Select
       className="wide"
-      showSearch={{ filterOption: false, onSearch: setSearch }}
+      showSearch={{ optionFilterProp: "label" }}
       allowClear={allowClear}
       loading={query.isLoading || selectedQuery.isLoading}
       options={options}

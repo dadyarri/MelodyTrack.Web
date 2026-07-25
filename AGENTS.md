@@ -54,6 +54,23 @@ segmentless-slice violation.
 Preserve behavior while relocating code. Keep query keys and persisted storage
 formats stable unless the change includes an explicit migration and tests.
 
+## Browser Persistence
+
+Follow [`docs/browser-storage-policy.md`](docs/browser-storage-policy.md).
+New code must not use browser persistence APIs ad hoc.
+
+- Keep access tokens and transient query/UI state in memory.
+- Use `sessionStorage` only for small, non-sensitive tab recovery markers.
+- Use `localStorage` only for small, non-sensitive device preferences.
+- Put durable user work and offline domain data behind user-scoped, versioned,
+  runtime-validated repositories; the target backend is IndexedDB.
+- Never persist credentials or secret-bearing URLs outside a Secure, HttpOnly
+  cookie.
+
+Business storage schemas belong to the entity or feature that owns the data.
+Shared code may provide storage mechanics but must not become a global
+business-data cache.
+
 ## Verification
 
 Run `npm run verify` before handing off frontend changes. It checks formatting,

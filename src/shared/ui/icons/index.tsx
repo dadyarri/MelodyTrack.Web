@@ -1,69 +1,67 @@
 import "./icons.css";
 
 import type { LucideIcon, LucideProps } from "lucide-react";
-import {
-  BadgeInfo,
-  BadgeRussianRuble,
-  Blocks,
-  BookOpenText,
-  Calendar,
-  CalendarCheck2,
-  ChartLine,
-  ChartPie,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  CircleCheck,
-  CircleDollarSign,
-  CircleX,
-  Clock3,
-  Cloud,
-  CloudDownload,
-  Coins,
-  ContactRound,
-  Copy,
-  CreditCard,
-  Download,
-  FileSearch,
-  Flame,
-  FolderOpen,
-  Goal,
-  Hourglass,
-  IdCard,
-  KeyRound,
-  Link,
-  ListTodo,
-  Lock,
-  LogOut,
-  Mail,
-  Menu,
-  Moon,
-  Pencil,
-  Phone,
-  Plus,
-  Receipt,
-  RefreshCcw,
-  RefreshCw,
-  Save,
-  Search,
-  Send,
-  Settings2,
-  Shield,
-  Sun,
-  Tags,
-  Trash2,
-  TriangleAlert,
-  Unplug,
-  UserRound,
-  Users,
-  UsersRound,
-  Wallet,
-  WalletCards,
-  Wrench,
-  X,
-} from "lucide-react";
+import BadgeInfo from "lucide-react/dist/esm/icons/badge-info";
+import BadgeRussianRuble from "lucide-react/dist/esm/icons/badge-russian-ruble";
+import Blocks from "lucide-react/dist/esm/icons/blocks";
+import BookOpenText from "lucide-react/dist/esm/icons/book-open-text";
+import Calendar from "lucide-react/dist/esm/icons/calendar";
+import CalendarCheck2 from "lucide-react/dist/esm/icons/calendar-check-2";
+import ChartLine from "lucide-react/dist/esm/icons/chart-line";
+import ChartPie from "lucide-react/dist/esm/icons/chart-pie";
+import Check from "lucide-react/dist/esm/icons/check";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
+import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
+import CircleCheck from "lucide-react/dist/esm/icons/circle-check";
+import CircleDollarSign from "lucide-react/dist/esm/icons/circle-dollar-sign";
+import CircleX from "lucide-react/dist/esm/icons/circle-x";
+import Clock3 from "lucide-react/dist/esm/icons/clock-3";
+import Cloud from "lucide-react/dist/esm/icons/cloud";
+import CloudDownload from "lucide-react/dist/esm/icons/cloud-download";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import ContactRound from "lucide-react/dist/esm/icons/contact-round";
+import Copy from "lucide-react/dist/esm/icons/copy";
+import CreditCard from "lucide-react/dist/esm/icons/credit-card";
+import Download from "lucide-react/dist/esm/icons/download";
+import FileSearch from "lucide-react/dist/esm/icons/file-search";
+import Flame from "lucide-react/dist/esm/icons/flame";
+import FolderOpen from "lucide-react/dist/esm/icons/folder-open";
+import Goal from "lucide-react/dist/esm/icons/goal";
+import Hourglass from "lucide-react/dist/esm/icons/hourglass";
+import IdCard from "lucide-react/dist/esm/icons/id-card";
+import KeyRound from "lucide-react/dist/esm/icons/key-round";
+import Link from "lucide-react/dist/esm/icons/link";
+import ListTodo from "lucide-react/dist/esm/icons/list-todo";
+import Lock from "lucide-react/dist/esm/icons/lock";
+import LogOut from "lucide-react/dist/esm/icons/log-out";
+import Mail from "lucide-react/dist/esm/icons/mail";
+import Menu from "lucide-react/dist/esm/icons/menu";
+import Moon from "lucide-react/dist/esm/icons/moon";
+import Pencil from "lucide-react/dist/esm/icons/pencil";
+import Phone from "lucide-react/dist/esm/icons/phone";
+import Plus from "lucide-react/dist/esm/icons/plus";
+import Receipt from "lucide-react/dist/esm/icons/receipt";
+import RefreshCcw from "lucide-react/dist/esm/icons/refresh-ccw";
+import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Save from "lucide-react/dist/esm/icons/save";
+import Search from "lucide-react/dist/esm/icons/search";
+import Send from "lucide-react/dist/esm/icons/send";
+import Settings2 from "lucide-react/dist/esm/icons/settings-2";
+import Shield from "lucide-react/dist/esm/icons/shield";
+import Sun from "lucide-react/dist/esm/icons/sun";
+import Tags from "lucide-react/dist/esm/icons/tags";
+import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import TriangleAlert from "lucide-react/dist/esm/icons/triangle-alert";
+import Unplug from "lucide-react/dist/esm/icons/unplug";
+import UserRound from "lucide-react/dist/esm/icons/user-round";
+import Users from "lucide-react/dist/esm/icons/users";
+import UsersRound from "lucide-react/dist/esm/icons/users-round";
+import Wallet from "lucide-react/dist/esm/icons/wallet";
+import WalletCards from "lucide-react/dist/esm/icons/wallet-cards";
+import Wrench from "lucide-react/dist/esm/icons/wrench";
+import X from "lucide-react/dist/esm/icons/x";
 
 type MelodyIconProps = LucideProps & {
   spin?: boolean;

@@ -22,10 +22,11 @@ export const clientsApi = {
   history(id: Ulid, params?: GetClientHistoryParams) {
     return http.get<ClientHistory>(`/clients/${id}/history`, { params }).then((response) => response.data);
   },
-  lookup(search?: string) {
+  lookup(search?: string, signal?: AbortSignal) {
     return http
       .get<{ clients: LookupClient[] }>("/clients/lookup", {
         params: search ? { search } : undefined,
+        signal,
       })
       .then((response) => response.data.clients);
   },
