@@ -25,6 +25,18 @@ The CI baseline is `npm run verify`, which runs:
 
 CI also runs `npm audit --omit=dev` before verification.
 
+## Development Runtime Stability
+
+Vite uses one explicit optimized-dependency graph in development. This prevents
+lazy route navigation from discovering a new CommonJS dependency after startup
+and replacing the graph while the browser still holds modules from the previous
+graph. Such a mixed graph can leave React hooks connected to a different
+runtime dispatcher until the page is reloaded.
+
+When source code introduces another runtime package or a new CommonJS deep
+import, add it to `optimizedDependencies` in `vite.config.ts`. React, React DOM,
+and Scheduler must remain in `resolve.dedupe`.
+
 ## Architecture Baseline
 
 Steiger passes with narrowly scoped exceptions for architecture that predates
