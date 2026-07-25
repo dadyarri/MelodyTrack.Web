@@ -241,9 +241,13 @@ body {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: the OS-level reduced-motion preference must override component transitions. */
     scroll-behavior: auto !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the OS-level reduced-motion preference must override component transitions. */
     transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the OS-level reduced-motion preference must override component animations. */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: the OS-level reduced-motion preference must override looping component animations. */
     animation-iteration-count: 1 !important;
   }
 

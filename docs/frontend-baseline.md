@@ -172,3 +172,39 @@ Real `.env` variants are ignored. Copy `.env.example` to an appropriate local
 Vite environment file and configure the deployed value through the build
 environment. The test runner supplies `/api` without relying on an ignored
 file.
+
+## Stage 6 Performance And Usability Closeout
+
+Stage 6 completed on 2026-07-25. The mandatory production budgets now cover
+initial raw/gzip/Brotli JavaScript and CSS, the largest JavaScript chunk, and
+public assets. The closeout build transfers approximately 1,229 KiB raw /
+404 KiB gzip / 379 KiB Brotli of initial JavaScript. The largest JavaScript
+chunk is approximately 433 KiB raw.
+
+SCEditor and its theme are loaded only when a course lesson/homework editor is
+opened; the main course route is approximately 231 KiB raw and the deferred
+editor is approximately 111 KiB. Navigation intent prefetch deduplicates route
+module loads and warms only the dashboard and schedule default critical data.
+
+TanStack Query now has explicit freshness, cancellation, polling, pagination,
+and mutation invalidation behavior. Durable drafts and offline commands use
+validated, user-partitioned IndexedDB storage. Generic HTTP and secret-bearing
+Web Storage caches were removed.
+
+Usability closeout includes URL-backed working state, persistent retryable list
+errors, background-refresh feedback, responsive table priorities, a mobile
+schedule agenda, accessible icon actions, reduced motion, actionable empty
+states, explicit draft persistence state, and navigation protection after a
+failed durable save.
+
+The backend now negotiates Brotli/gzip for dynamic JSON and problem-details
+responses. Existing entity slices already consume purpose-specific list and
+lookup DTOs established in Stage 4. Conditional GET is intentionally deferred:
+the authenticated, frequently mutated list endpoints do not yet expose an
+authoritative version token, and synthesizing validators in the frontend would
+create stale-data risk rather than a transport optimization. Revisit ETags
+when backend entity/list version semantics are designed and integration-tested.
+
+The closeout suite contains 76 tests. `npm run verify` passes formatting,
+ESLint, Biome, Steiger FSD validation, asset checks, strict type checking,
+tests, production build, and bundle budgets.
