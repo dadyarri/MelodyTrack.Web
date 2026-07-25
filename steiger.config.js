@@ -22,6 +22,8 @@ const legacySegmentlessFeatureSlices = [
   "users",
 ];
 
+const intentionalRouteWidgets = ["course-workspace", "schedule-calendar"];
+
 export default defineConfig([
   ...fsd.configs.recommended,
   {
@@ -34,6 +36,12 @@ export default defineConfig([
     files: [`./src/features/${slice}/**`],
     rules: {
       "fsd/no-segmentless-slices": "off",
+    },
+  })),
+  ...intentionalRouteWidgets.map((slice) => ({
+    files: [`./src/widgets/${slice}/**`],
+    rules: {
+      "fsd/insignificant-slice": "off",
     },
   })),
 ]);

@@ -11,10 +11,14 @@ import {
 } from "@/shared/ui/icons";
 import { Button, Card, Descriptions, Empty, List, Pagination, Progress, Space, Tag, Typography } from "antd";
 import type { ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
-import { getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
-import { formatDate, formatDateTime } from "@/shared/lib";
-import { formatMoney } from "@/shared/lib";
-import { getClientContactValue, renderClientHistoryAppointmentStatus, renderClientPhoneLink, renderClientSocialLink } from "../lib/client";
+import {
+  getClientContactValue,
+  renderClientHistoryAppointmentStatus,
+  renderClientPhoneLink,
+  renderClientSocialLink,
+} from "@/entities/client";
+import { getAppointmentStatusTagColor } from "@/features/schedule";
+import { formatDate, formatDateTime, formatMoney } from "@/shared/lib";
 import styles from "./ClientHistoryPanel.module.css";
 
 type ClientHistoryPanelProps = {

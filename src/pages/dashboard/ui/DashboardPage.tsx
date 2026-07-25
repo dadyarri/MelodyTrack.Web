@@ -2,7 +2,8 @@ import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/s
 import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { Appointment } from "@/api/types";
-import { ClientHistoryDrawer, getPhoneUri, getSocialLinkHref } from "@/entities/client";
+import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
+import { ClientHistoryDrawer } from "@/widgets/client-history";
 import { type DashboardReminderListProps, useDashboardPageController } from "@/features/dashboard/useDashboardPageController";
 import { renderAppointmentStatusTag } from "@/features/schedule/appointmentStatus";
 import { PageLayout, ShortcutButton } from "@/shared/ui";

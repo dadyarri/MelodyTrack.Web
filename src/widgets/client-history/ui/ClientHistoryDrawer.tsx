@@ -1,7 +1,7 @@
 import { Drawer } from "antd";
 import type { Client, ClientHistory, CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/api/types";
+import { formatClientName } from "@/entities/client";
 import { QueryStateBlock } from "@/shared/ui";
-import { formatClientName } from "../lib/client";
 import { ClientHistoryPanel } from "./ClientHistoryPanel";
 
 type ClientHistoryDrawerProps = {

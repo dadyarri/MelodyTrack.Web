@@ -1,6 +1,7 @@
 export {
   formatClientName,
   getClientContactValue,
+  renderClientHistoryAppointmentStatus,
   renderClientPhoneLink,
   renderClientSocialLink,
 } from "./lib/client";
@@ -16,4 +17,3 @@ export {
   normalizePhone,
   normalizeSocialLink,
 } from "./lib/contact";
-export { ClientHistoryDrawer } from "./ui/ClientHistoryDrawer";

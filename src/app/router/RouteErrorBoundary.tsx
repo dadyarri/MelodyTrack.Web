@@ -1,8 +1,8 @@
 import { Button, Space, Typography } from "antd";
 import { useEffect } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router";
+import { clearChunkRetryMarker, isRecoverableChunkLoadError } from "@/shared/lib";
 import { StatusBanner } from "@/shared/ui";
-import { clearChunkRetryMarker, isRecoverableChunkLoadError } from "./chunkLoadRecovery";
 
 export function RouteErrorBoundary() {
   const error = useRouteError();

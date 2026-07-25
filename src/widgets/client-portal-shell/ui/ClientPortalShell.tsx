@@ -2,9 +2,9 @@ import { CalendarOutlined, LogoutOutlined } from "@/shared/ui/icons";
 import { Button, Space, Typography } from "antd";
 import { NavLink, Outlet } from "react-router";
 import { useAuth } from "@/features/auth/useAuth";
-import styles from "./ClientPortalLayout.module.css";
+import styles from "./ClientPortalShell.module.css";
 
-export function ClientPortalLayout() {
+export function ClientPortalShell() {
   const auth = useAuth();
 
   return (

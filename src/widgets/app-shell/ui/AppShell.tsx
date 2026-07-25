@@ -12,15 +12,14 @@ import {
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
 import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { useTheme } from "@/app/config";
-import { clearNavigationIntent, recoverableImport, rememberNavigationIntent } from "@/app/router";
-import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
-import { hasSuperuserAccess } from "../features/auth/access";
-import { useAuth } from "../features/auth/useAuth";
-import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
+import { OfflineQueueIndicator } from "@/components/OfflineQueueIndicator";
+import { hasSuperuserAccess } from "@/features/auth/access";
+import { useAuth } from "@/features/auth/useAuth";
+import { useTheme } from "@/shared/config";
+import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import { getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
-import styles from "./AppLayout.module.css";
+import styles from "./AppShell.module.css";
 
 const AppOnboarding = lazy(async () => {
   const module = await recoverableImport(() => import("@/features/onboarding/AppOnboarding"));
@@ -28,7 +27,7 @@ const AppOnboarding = lazy(async () => {
   return { default: module.AppOnboarding };
 });
 
-export function AppLayout({ children }: { children?: ReactNode }) {
+export function AppShell({ children }: { children?: ReactNode }) {
   const auth = useAuth();
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();

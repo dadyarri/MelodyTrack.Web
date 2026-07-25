@@ -11,7 +11,7 @@ import {
   RecurringDeleteModal,
   RecurringRescheduleModal,
 } from "@/features/schedule/ScheduleModals";
-import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
+import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
 import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import styles from "./SchedulePage.module.css";

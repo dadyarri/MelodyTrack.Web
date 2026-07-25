@@ -1,12 +1,13 @@
-import { createBrowserRouter, Navigate } from "react-router";
-import { ClientPortalThemeProvider } from "@/app/config";
-import { recoverableImport } from "./chunkLoadRecovery";
+import { createBrowserRouter, Navigate, Outlet } from "react-router";
+import { ClientPortalThemeProvider } from "@/shared/config";
+import { recoverableImport } from "@/shared/lib";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
 
-import { AdminRoute } from "@/layout/AdminRoute";
-import { ClientPortalRoute } from "@/layout/ClientPortalRoute";
-import { StatsRoute } from "@/layout/StatsRoute";
-import { SuperuserRoute } from "@/layout/SuperuserRoute";
+import { AdminRoute } from "./guards/AdminRoute";
+import { ClientPortalRoute } from "./guards/ClientPortalRoute";
+import { ProtectedRoute } from "./guards/ProtectedRoute";
+import { StatsRoute } from "./guards/StatsRoute";
+import { SuperuserRoute } from "./guards/SuperuserRoute";
 
 export const router = createBrowserRouter([
   {
@@ -76,13 +77,13 @@ export const router = createBrowserRouter([
     path: "/portal",
     errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { ClientPortalLayout } = await recoverableImport(() => import("@/layout/ClientPortalLayout"));
+      const { ClientPortalShell } = await recoverableImport(() => import("@/widgets/client-portal-shell"));
 
       return {
         Component: () => (
           <ClientPortalThemeProvider>
             <ClientPortalRoute>
-              <ClientPortalLayout />
+              <ClientPortalShell />
             </ClientPortalRoute>
           </ClientPortalThemeProvider>
         ),
@@ -109,10 +110,16 @@ export const router = createBrowserRouter([
     path: "/",
     errorElement: <RouteErrorBoundary />,
     lazy: async () => {
-      const { ProtectedAppShell } = await recoverableImport(() => import("@/layout/ProtectedAppShell"));
+      const { AppShell } = await recoverableImport(() => import("@/widgets/app-shell"));
 
       return {
-        Component: ProtectedAppShell,
+        Component: () => (
+          <ProtectedRoute>
+            <AppShell>
+              <Outlet />
+            </AppShell>
+          </ProtectedRoute>
+        ),
       };
     },
     children: [

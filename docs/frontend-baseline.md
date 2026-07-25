@@ -32,6 +32,9 @@ the migration:
 
 - 24 existing ungrouped page slices exceed Steiger's default recommendation;
 - 19 named legacy feature slices do not yet have FSD segments.
+- the course workspace and schedule calendar are intentionally route-specific
+  widgets: each is a substantial independently maintained UI section even
+  though it currently has one page consumer.
 
 The exact exceptions live in `steiger.config.js`. They are intentionally tied
 to existing paths so that new slices do not inherit them. Each exception should
@@ -51,9 +54,9 @@ offline replay, conflict resolution, or other business-critical behavior.
 
 ## Stage 2 Foundation
 
-The app layer is divided by purpose into `config`, `entrypoint`, `router`, and
-`styles`. Portal theming is composed at the router boundary, so pages no longer
-import from the app layer.
+The app layer is divided by purpose into `entrypoint`, `router`, and `styles`.
+Portal theming is composed at the router boundary, so pages no longer import
+from the app layer.
 
 Business-agnostic infrastructure now has stable shared public APIs:
 
@@ -68,6 +71,27 @@ Business-agnostic infrastructure now has stable shared public APIs:
 The remaining top-level `api`, `components`, and `utils` modules contain domain
 contracts or feature behavior and are intentionally deferred to the entity and
 feature migration stages.
+
+## Stage 3 Page Composition
+
+All route screens use page slices, and the old mixed-purpose `layout` directory
+has been removed. Authorization gates now live with router composition in
+`app/router`.
+
+Substantial reusable or independently maintained sections now have explicit
+widget boundaries:
+
+- `app-shell` owns staff navigation and shell presentation;
+- `client-portal-shell` owns the portal frame;
+- `client-history` owns the history drawer and timeline panel;
+- `schedule-calendar` owns the interactive calendar;
+- `course-workspace` owns the lazy-loaded course graph, authoring, and progress
+  surface, leaving the course route page as composition only.
+
+Theme composition and lazy-chunk recovery moved to `shared` because widgets
+need them and may not import upward from `app`. Every widget exposes a root
+public API, and Steiger reports no layer-direction, cross-slice, or private
+import violations.
 
 ## Production Bundle Baseline
 
