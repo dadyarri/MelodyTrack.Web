@@ -1,5 +1,6 @@
 const refreshTokenKey = "melodytrack.refreshToken";
 const legacyAccessTokenKey = "melodytrack.accessToken";
+const legacyPortalClientsKey = "melodytrack.portalClients";
 
 let accessToken: string | null = null;
 let currentUserId: string | null = null;
@@ -12,6 +13,8 @@ const listeners = new Set<(change: SessionChange) => void>();
 if (typeof window !== "undefined") {
   // Access tokens from older builds must not remain readable by injected scripts.
   window.localStorage.removeItem(legacyAccessTokenKey);
+  // Portal-link tokens are login capabilities and must never remain in browser persistence.
+  window.localStorage.removeItem(legacyPortalClientsKey);
   window.addEventListener("storage", (event) => {
     if (event.key === refreshTokenKey || event.key === null) {
       accessToken = null;
@@ -51,6 +54,7 @@ export const authStore = {
     currentUserId = null;
     localStorage.removeItem(refreshTokenKey);
     localStorage.removeItem(legacyAccessTokenKey);
+    localStorage.removeItem(legacyPortalClientsKey);
     notifyListeners("local");
   },
   subscribe(listener: (change: SessionChange) => void) {

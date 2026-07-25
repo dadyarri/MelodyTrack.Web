@@ -3,6 +3,7 @@ import axios from "axios";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 import { authExpiredEventName, configureHttpSession, http } from "@/shared/api";
+import { clearReferenceLabels } from "@/shared/lib";
 
 import { authQueryKeys } from "../api/queryKeys";
 import { authApi, type MeResponse } from "../api/sessionApi";
@@ -18,6 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [cachedUser, setCachedUser] = useState<MeResponse | null>(null);
 
   const clearSessionQueries = useCallback(() => {
+    clearReferenceLabels();
     setCachedUser(null);
     void queryClient.cancelQueries({ queryKey: authQueryKeys.me });
     void queryClient.cancelQueries({ queryKey: authQueryKeys.sessions });

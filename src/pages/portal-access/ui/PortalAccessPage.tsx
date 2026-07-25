@@ -1,9 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Result, Space, Spin, Typography } from "antd";
+import { Button, Form, Input, Result, Space, Spin, Typography } from "antd";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 
-import { authApi, type ClientPortalPinAuthInput, portalClientsStore, useAuth } from "@/entities/session";
+import { authApi, type ClientPortalPinAuthInput, useAuth } from "@/entities/session";
 import { getApiErrorMessage } from "@/shared/api";
 import { AuthScreenLayout } from "@/shared/ui";
 
@@ -24,7 +24,6 @@ function PortalAccessPageContent({ token }: { token?: string }) {
   const [form] = Form.useForm<PortalPinFormValues>();
   const [pinSetupStep, setPinSetupStep] = useState<"entry" | "confirmation">("entry");
   const [pendingPin, setPendingPin] = useState("");
-  const [savedClients, setSavedClients] = useState(() => portalClientsStore.list());
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinConfirmationError, setPinConfirmationError] = useState<string | null>(null);
 
@@ -38,15 +37,6 @@ function PortalAccessPageContent({ token }: { token?: string }) {
   const authenticateMutation = useMutation({
     mutationFn: (input: ClientPortalPinAuthInput) => authApi.authenticateClientPortalLink(input),
     onSuccess: async (response) => {
-      if (token) {
-        portalClientsStore.save({
-          token,
-          firstName: response.firstName,
-          lastName: response.lastName,
-        });
-        setSavedClients(portalClientsStore.list());
-      }
-
       await auth.establishSession(response.accessToken, response.refreshToken);
       await navigate("/portal", { replace: true });
     },
@@ -61,28 +51,13 @@ function PortalAccessPageContent({ token }: { token?: string }) {
     return <Navigate to={auth.user?.isClientPortal ? "/portal" : "/"} replace />;
   }
 
-  if (!token && savedClients.length === 0) {
+  if (!token) {
     return (
       <AuthScreenLayout title="Вход на портал ученика">
         <Result
           status="info"
-          title="Пока нет сохраненных пользователей"
-          subTitle="Откройте ссылку для входа один раз, и кабинет появится здесь для быстрого входа по PIN."
-        />
-      </AuthScreenLayout>
-    );
-  }
-
-  if (!token) {
-    return (
-      <AuthScreenLayout title="Вход на портал ученика">
-        <SavedClientsList
-          clients={savedClients}
-          onOpen={(savedToken) => void navigate(`/portal/access/${savedToken}`)}
-          onRemove={(savedToken) => {
-            portalClientsStore.remove(savedToken);
-            setSavedClients(portalClientsStore.list());
-          }}
+          title="Нужна ссылка для входа"
+          subTitle="Откройте персональную ссылку, которую вам прислал преподаватель. В целях безопасности приложение не сохраняет ссылки доступа на устройстве."
         />
       </AuthScreenLayout>
     );
@@ -287,51 +262,4 @@ function readApiErrorsByField(error: unknown) {
   }
 
   return normalized;
-}
-
-function SavedClientsList({
-  clients,
-  onOpen,
-  onRemove,
-  title = "Сохраненные пользователи",
-}: {
-  clients: Array<{ token: string; firstName: string; lastName: string; lastUsedAtUtc: string }>;
-  onOpen: (token: string) => void;
-  onRemove: (token: string) => void;
-  title?: string;
-}) {
-  if (clients.length === 0) {
-    return null;
-  }
-
-  return (
-    <Card size="small" title={title}>
-      <Space orientation="vertical" size={12} className="wide">
-        {clients.map((client) => (
-          <Space key={client.token} className="wide" style={{ justifyContent: "space-between" }}>
-            <div>
-              <Typography.Text strong>{[client.firstName, client.lastName].filter(Boolean).join(" ")}</Typography.Text>
-            </div>
-            <Space>
-              <Button
-                onClick={() => {
-                  onOpen(client.token);
-                }}
-              >
-                Открыть
-              </Button>
-              <Button
-                danger
-                onClick={() => {
-                  onRemove(client.token);
-                }}
-              >
-                Убрать
-              </Button>
-            </Space>
-          </Space>
-        ))}
-      </Space>
-    </Card>
-  );
 }

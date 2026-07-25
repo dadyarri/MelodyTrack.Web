@@ -1,68 +1,63 @@
-const referenceLabelStorageKeyPrefix = "melodytrack:reference-labels:";
+const legacyReferenceLabelStorageKeyPrefix = "melodytrack:reference-labels:";
+const maximumLabelsPerKind = 250;
 
 export type ReferenceLabelKind = "client" | "service" | "user" | "role" | "expense-category" | "client-source";
 
-export function getCachedReferenceLabel(kind: ReferenceLabelKind, id?: string) {
-  if (!id || typeof window === "undefined") {
-    return undefined;
-  }
+const labelsByKind = new Map<ReferenceLabelKind, Map<string, string>>();
 
-  return loadLabelCache(kind)[id];
+if (typeof window !== "undefined") {
+  discardLegacyReferenceLabels(window.localStorage);
+}
+
+export function getCachedReferenceLabel(kind: ReferenceLabelKind, id?: string) {
+  return id ? labelsByKind.get(kind)?.get(id) : undefined;
 }
 
 export function rememberReferenceLabel(kind: ReferenceLabelKind, id?: string, label?: string) {
-  if (!id || !label || typeof window === "undefined") {
+  if (!id || !label) {
     return;
   }
 
-  const cache = loadLabelCache(kind);
-  if (cache[id] === label) {
-    return;
+  const labels = getKindLabels(kind);
+  labels.delete(id);
+  labels.set(id, label);
+  while (labels.size > maximumLabelsPerKind) {
+    const oldestId = labels.keys().next().value;
+    if (typeof oldestId !== "string") {
+      break;
+    }
+    labels.delete(oldestId);
   }
-
-  cache[id] = label;
-  window.localStorage.setItem(getLabelStorageKey(kind), JSON.stringify(cache));
 }
 
 export function rememberReferenceLabels(kind: ReferenceLabelKind, items: Array<{ id: string; label: string }>) {
-  if (typeof window === "undefined" || items.length === 0) {
-    return;
-  }
-
-  const cache = loadLabelCache(kind);
-  let changed = false;
-
   for (const item of items) {
-    if (!item.id || !item.label || cache[item.id] === item.label) {
-      continue;
+    rememberReferenceLabel(kind, item.id, item.label);
+  }
+}
+
+export function clearReferenceLabels() {
+  labelsByKind.clear();
+}
+
+export function discardLegacyReferenceLabels(storage: Storage) {
+  const keysToRemove: string[] = [];
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key?.startsWith(legacyReferenceLabelStorageKeyPrefix)) {
+      keysToRemove.push(key);
     }
-
-    cache[item.id] = item.label;
-    changed = true;
   }
-
-  if (changed) {
-    window.localStorage.setItem(getLabelStorageKey(kind), JSON.stringify(cache));
+  for (const key of keysToRemove) {
+    storage.removeItem(key);
   }
 }
 
-function loadLabelCache(kind: ReferenceLabelKind) {
-  if (typeof window === "undefined") {
-    return {};
+function getKindLabels(kind: ReferenceLabelKind) {
+  let labels = labelsByKind.get(kind);
+  if (!labels) {
+    labels = new Map();
+    labelsByKind.set(kind, labels);
   }
-
-  const raw = window.localStorage.getItem(getLabelStorageKey(kind));
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(raw) as Record<string, string>;
-  } catch {
-    return {};
-  }
-}
-
-function getLabelStorageKey(kind: ReferenceLabelKind) {
-  return `${referenceLabelStorageKeyPrefix}${kind}`;
+  return labels;
 }

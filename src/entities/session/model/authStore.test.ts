@@ -28,10 +28,12 @@ describe("authStore", () => {
 
   it("removes a legacy persisted access token and does not treat it as a session", () => {
     localStorage.setItem("melodytrack.accessToken", "access");
+    localStorage.setItem("melodytrack.portalClients", JSON.stringify([{ token: "secret" }]));
 
     expect(authStore.hasSession()).toBe(false);
     authStore.clear();
     expect(localStorage.getItem("melodytrack.accessToken")).toBeNull();
+    expect(localStorage.getItem("melodytrack.portalClients")).toBeNull();
   });
 
   it("observes refresh rotation and logout performed by another tab", () => {

@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import { apiBaseUrl } from "../config";
 
@@ -27,7 +27,11 @@ export const http = axios.create({
 
 let refreshRequest: Promise<string | null> | null = null;
 let httpSession: HttpSession | null = null;
-const cacheStorageKeyPrefix = "melodytrack:http-cache:";
+const legacyCacheStorageKeyPrefix = "melodytrack:http-cache:";
+
+if (typeof window !== "undefined") {
+  discardLegacyHttpCache(window.localStorage);
+}
 
 export function configureHttpSession(session: HttpSession) {
   httpSession = session;
@@ -40,27 +44,14 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   }
 
   if (typeof navigator !== "undefined" && !navigator.onLine) {
-    const method = (config.method ?? "get").toLowerCase();
-    if (method === "get") {
-      const cachedResponse = tryGetCachedResponse(config);
-      if (cachedResponse) {
-        // eslint-disable-next-line @typescript-eslint/require-await -- Interface requires Promise-returning method.
-        config.adapter = async () => cachedResponse;
-        return config;
-      }
-    } else {
-      return Promise.reject(new AxiosError("Сеть недоступна", AxiosError.ERR_NETWORK, config));
-    }
+    return Promise.reject(new AxiosError("Сеть недоступна", AxiosError.ERR_NETWORK, config));
   }
 
   return config;
 });
 
 http.interceptors.response.use(
-  (response) => {
-    cacheSuccessfulGet(response);
-    return response;
-  },
+  (response) => response,
   async (error: AxiosError) => {
     const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     const publicAuthUrls = [
@@ -75,11 +66,6 @@ http.interceptors.response.use(
     const isPublicAuthRequest = Boolean(original?.url && publicAuthUrls.some((url) => original.url?.includes(url)));
 
     if (error.response?.status !== 401 || !original || original._retry || isPublicAuthRequest || original.url?.includes("/auth/refresh")) {
-      const cachedResponse = tryGetCachedResponse(original);
-      if (cachedResponse) {
-        return Promise.resolve(cachedResponse);
-      }
-
       return Promise.reject(error);
     }
 
@@ -100,79 +86,17 @@ http.interceptors.response.use(
   },
 );
 
-function cacheSuccessfulGet(response: AxiosResponse) {
-  if (
-    (response.config.method ?? "get").toLowerCase() !== "get" ||
-    response.config.responseType === "blob" ||
-    response.config.responseType === "arraybuffer" ||
-    isAuthenticatedRequest(response.config)
-  ) {
-    return;
-  }
-
-  try {
-    const cacheKey = buildCacheKey(response.config);
-    const headers = response.headers as Record<string, unknown>;
-    window.localStorage.setItem(
-      cacheKey,
-      JSON.stringify({ data: response.data as unknown, status: response.status, statusText: response.statusText, headers }),
-    );
-  } catch {
-    // Ignore cache failures.
-  }
-}
-
-function tryGetCachedResponse(config?: InternalAxiosRequestConfig) {
-  if (
-    !config ||
-    (config.method ?? "get").toLowerCase() !== "get" ||
-    config.responseType === "blob" ||
-    config.responseType === "arraybuffer" ||
-    isAuthenticatedRequest(config)
-  ) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(buildCacheKey(config));
-    if (!raw) {
-      return null;
+export function discardLegacyHttpCache(storage: Storage) {
+  const keysToRemove: string[] = [];
+  for (let index = 0; index < storage.length; index += 1) {
+    const key = storage.key(index);
+    if (key?.startsWith(legacyCacheStorageKeyPrefix)) {
+      keysToRemove.push(key);
     }
-
-    const cached = JSON.parse(raw) as { data: unknown; status: number; statusText: string; headers: Record<string, string> };
-    return {
-      data: cached.data,
-      status: cached.status,
-      statusText: cached.statusText,
-      headers: cached.headers,
-      config,
-      request: undefined,
-    } satisfies AxiosResponse;
-  } catch {
-    return null;
   }
-}
-
-function buildCacheKey(config: InternalAxiosRequestConfig) {
-  const url = new URL(config.url ?? "", new URL(apiBaseUrl, window.location.origin));
-  const params = new URLSearchParams();
-  const entries = Object.entries((config.params ?? {}) as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b));
-  for (const [key, value] of entries) {
-    if (value === undefined || value === null || value === "") {
-      continue;
-    }
-
-    params.append(key, serializeQueryParam(value));
+  for (const key of keysToRemove) {
+    storage.removeItem(key);
   }
-
-  const query = params.toString();
-  return `${cacheStorageKeyPrefix}${(config.method ?? "get").toLowerCase()}:${url.pathname}${query ? `?${query}` : ""}`;
-}
-
-function isAuthenticatedRequest(config: InternalAxiosRequestConfig) {
-  const headers = config.headers as Record<string, unknown>;
-  const authorizationHeader = headers.Authorization ?? headers.authorization;
-  return typeof authorizationHeader === "string" && authorizationHeader.trim().length > 0;
 }
 
 export async function probeBackendReachable() {
@@ -282,16 +206,4 @@ export function getStaleEntityConflict<TActivity = unknown>(error: unknown) {
   }
 
   return data as StaleEntityConflict<TActivity>;
-}
-
-function serializeQueryParam(value: unknown) {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
-    return String(value);
-  }
-
-  return JSON.stringify(value);
 }
