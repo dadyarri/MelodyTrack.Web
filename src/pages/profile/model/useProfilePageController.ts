@@ -184,6 +184,9 @@ export function useProfilePageController() {
     },
     onError: showErrors,
   });
+  const getRecoveryCodes = getRecoveryCodesMutation.mutate;
+  const regenerateRecoveryCodes = regenerateRecoveryCodesMutation.mutate;
+  const removeTwoFactorAuthentication = remove2FaMutation.mutate;
 
   const logoutAllMutation = useMutation({
     mutationFn: () => authApi.logoutAll(),
@@ -383,19 +386,19 @@ export function useProfilePageController() {
 
       if (matchesPlainKey(event, "r")) {
         event.preventDefault();
-        getRecoveryCodesMutation.mutate();
+        getRecoveryCodes();
         return;
       }
 
       if (matchesPlainKey(event, "g")) {
         event.preventDefault();
-        regenerateRecoveryCodesMutation.mutate();
+        regenerateRecoveryCodes();
         return;
       }
 
       if (matchesPlainKey(event, "o") && !isTwoFactorRequired) {
         event.preventDefault();
-        remove2FaMutation.mutate();
+        removeTwoFactorAuthentication();
       }
     };
 
@@ -403,7 +406,7 @@ export function useProfilePageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [getRecoveryCodesMutation, isTwoFactorEnabled, isTwoFactorRequired, regenerateRecoveryCodesMutation, remove2FaMutation]);
+  }, [getRecoveryCodes, isTwoFactorEnabled, isTwoFactorRequired, regenerateRecoveryCodes, removeTwoFactorAuthentication]);
 
   return {
     me,

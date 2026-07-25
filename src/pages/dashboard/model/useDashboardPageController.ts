@@ -55,6 +55,7 @@ export function useDashboardPageController() {
       downloadBlob(blob, `debtors_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
     },
   });
+  const exportDebtors = debtorsExportMutation.mutate;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -67,14 +68,14 @@ export function useDashboardPageController() {
       }
 
       event.preventDefault();
-      debtorsExportMutation.mutate();
+      exportDebtors();
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canSeeFinancialOverview, debtorsExportMutation]);
+  }, [canSeeFinancialOverview, exportDebtors]);
 
   const today = dayjs();
   const tomorrow = today.add(1, "day");

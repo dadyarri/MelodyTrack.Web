@@ -81,6 +81,7 @@ export function useClientsPageController() {
   };
 
   const canCreateClients = hasAdminAccess(auth.user);
+  const historyClientId = historyClient?.id;
 
   const query = useQuery({
     queryKey: clientQueryKeys.list(page, search),
@@ -97,32 +98,31 @@ export function useClientsPageController() {
   });
 
   const historyQuery = useQuery({
-    queryKey: clientQueryKeys.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
+    queryKey: clientQueryKeys.history(historyClientId, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
-      const clientId = historyClient?.id;
-      if (!clientId) {
+      if (!historyClientId) {
         throw new Error("History client is not selected.");
       }
 
-      return clientsApi.history(clientId, {
+      return clientsApi.history(historyClientId, {
         page: historyEventsPage,
         page_size: clientHistoryEventsPageSize,
       });
     },
-    enabled: Boolean(historyClient),
+    enabled: Boolean(historyClientId),
     placeholderData: keepPreviousData,
   });
 
   const courseEnrollmentsQuery = useQuery({
-    queryKey: courseQueryKeys.enrollments.list({ clientId: historyClient?.id }),
+    queryKey: courseQueryKeys.enrollments.list({ clientId: historyClientId }),
     queryFn: () => {
-      if (!historyClient) {
+      if (!historyClientId) {
         throw new Error("History client is not selected.");
       }
 
-      return courseEnrollmentsApi.list({ clientId: historyClient.id });
+      return courseEnrollmentsApi.list({ clientId: historyClientId });
     },
-    enabled: Boolean(historyClient),
+    enabled: Boolean(historyClientId),
   });
 
   const coursesCatalogQuery = useQuery({

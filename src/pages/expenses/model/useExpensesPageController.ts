@@ -161,6 +161,7 @@ export function useExpensesPageController() {
     },
     onError: showErrors,
   });
+  const exportExpenses = exportMutation.mutate;
 
   const createCategoryMutation = useMutation({
     mutationFn: (values: { name: string }) => expenseCategoriesApi.create(values),
@@ -202,7 +203,7 @@ export function useExpensesPageController() {
 
       if (matchesPlainKey(event, "x")) {
         event.preventDefault();
-        exportMutation.mutate();
+        exportExpenses();
       }
     };
 
@@ -210,7 +211,7 @@ export function useExpensesPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [exportMutation]);
+  }, [exportExpenses]);
 
   return {
     page,

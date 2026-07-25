@@ -92,6 +92,7 @@ export function usePaymentsPageController() {
     },
     onError: showErrors,
   });
+  const exportPayments = exportMutation.mutate;
 
   const openCreateModal = useCallback(() => {
     paymentCreate.openCreateModal();
@@ -119,7 +120,7 @@ export function usePaymentsPageController() {
 
       if (matchesPlainKey(event, "x")) {
         event.preventDefault();
-        exportMutation.mutate();
+        exportPayments();
       }
     };
 
@@ -127,7 +128,7 @@ export function usePaymentsPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [exportMutation, openCreateModal]);
+  }, [exportPayments, openCreateModal]);
 
   return {
     page,

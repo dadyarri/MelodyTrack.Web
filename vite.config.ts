@@ -1,10 +1,20 @@
 import { fileURLToPath, URL } from "node:url";
 
 import react from "@vitejs/plugin-react";
+import { visualizer } from "rollup-plugin-visualizer";
 import { defineConfig } from "vite";
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    mode === "analyze" &&
+      visualizer({
+        filename: "artifacts/bundle-stats.html",
+        gzipSize: true,
+        brotliSize: true,
+        open: false,
+      }),
+  ],
   resolve: {
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "scheduler"],
     alias: {
@@ -44,4 +54,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
