@@ -1,4 +1,5 @@
 const chunkRetryKey = "melodytrack:chunk-retry-path";
+const navigationIntentKey = "melodytrack:navigation-intent";
 
 const recoverableChunkPatterns = [
   /failed to fetch dynamically imported module/i,
@@ -25,7 +26,7 @@ export async function recoverableImport<T>(load: () => Promise<T>) {
     }
 
     if (markChunkRetryAttempt()) {
-      window.location.reload();
+      window.location.assign(getRecoveryPath());
       return await new Promise<T>(() => {});
     }
 
@@ -40,6 +41,27 @@ export function clearChunkRetryMarker() {
   }
 
   window.sessionStorage.removeItem(chunkRetryKey);
+  clearNavigationIntent();
+}
+
+export function rememberNavigationIntent(path: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(navigationIntentKey, path);
+}
+
+export function clearNavigationIntent(completedPath?: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (completedPath && window.sessionStorage.getItem(navigationIntentKey) !== completedPath) {
+    return;
+  }
+
+  window.sessionStorage.removeItem(navigationIntentKey);
 }
 
 function markChunkRetryAttempt() {
@@ -47,7 +69,7 @@ function markChunkRetryAttempt() {
     return false;
   }
 
-  const currentPath = window.location.pathname + window.location.search;
+  const currentPath = getRecoveryPath();
   const previousPath = window.sessionStorage.getItem(chunkRetryKey);
 
   if (previousPath === currentPath) {
@@ -56,6 +78,10 @@ function markChunkRetryAttempt() {
 
   window.sessionStorage.setItem(chunkRetryKey, currentPath);
   return true;
+}
+
+function getRecoveryPath() {
+  return window.sessionStorage.getItem(navigationIntentKey) ?? window.location.pathname + window.location.search;
 }
 
 function getErrorMessage(error: unknown) {

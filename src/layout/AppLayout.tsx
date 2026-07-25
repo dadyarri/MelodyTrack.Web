@@ -10,9 +10,9 @@ import {
   UserOutlined,
 } from "@/components/icons";
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { recoverableImport } from "../app/chunkLoadRecovery";
+import { clearNavigationIntent, recoverableImport, rememberNavigationIntent } from "../app/chunkLoadRecovery";
 import { useTheme } from "../app/useTheme";
 import { OfflineQueueIndicator } from "../components/OfflineQueueIndicator";
 import { hasSuperuserAccess } from "../features/auth/access";
@@ -59,14 +59,21 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
   ];
+  const navigateTo = useCallback(
+    (path: string) => {
+      rememberNavigationIntent(path);
+      void navigate(path);
+    },
+    [navigate],
+  );
   const handleUserAction = (key: ShellActionKey) => {
     if (key === "profile") {
-      void navigate("/profile");
+      navigateTo("/profile");
       return;
     }
 
     if (key === "audit") {
-      void navigate("/audit");
+      navigateTo("/audit");
       return;
     }
 
@@ -78,6 +85,10 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     void auth.logout();
   };
   const selectedKey = getSelectedNavKey(availableNavItems, location.pathname);
+
+  useEffect(() => {
+    clearNavigationIntent(location.pathname);
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -92,19 +103,19 @@ export function AppLayout({ children }: { children?: ReactNode }) {
       const navItem = availableNavItems.find((item) => matchesPlainKey(event, item.shortcut));
       if (navItem) {
         event.preventDefault();
-        void navigate(navItem.key);
+        navigateTo(navItem.key);
         return;
       }
 
       if (matchesPlainKey(event, "u")) {
         event.preventDefault();
-        void navigate("/profile");
+        navigateTo("/profile");
         return;
       }
 
       if (canViewAudit && matchesPlainKey(event, "i")) {
         event.preventDefault();
-        void navigate("/audit");
+        navigateTo("/audit");
         return;
       }
 
@@ -119,7 +130,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [availableNavItems, canViewAudit, location.pathname, navigate, toggleMode]);
+  }, [availableNavItems, canViewAudit, location.pathname, navigateTo, toggleMode]);
 
   return (
     <Layout className={styles.shell}>
@@ -145,7 +156,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             selectedKeys={[selectedKey]}
             items={menuItems}
             onClick={({ key }) => {
-              void navigate(key);
+              navigateTo(key);
             }}
           />
         </div>
@@ -232,7 +243,7 @@ export function AppLayout({ children }: { children?: ReactNode }) {
             selectedKeys={[selectedKey]}
             items={mobileMenuItems}
             onClick={({ key }) => {
-              void navigate(key);
+              navigateTo(key);
               setMobileNavOpen(false);
             }}
           />
