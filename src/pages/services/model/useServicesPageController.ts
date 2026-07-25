@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useEffect, useState } from "react";
 
@@ -67,6 +67,7 @@ export function useServicesPageController() {
   const query = useQuery({
     queryKey: serviceQueryKeys.list(page),
     queryFn: () => servicesApi.list({ page, page_size: 10 }),
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

@@ -15,6 +15,7 @@ import {
 import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
 import { downloadBlob } from "@/shared/lib";
+import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
 
 export type RecurringTaskRuleFormValues = {
@@ -59,8 +60,10 @@ export function useTasksPageController() {
   const query = useQuery({
     queryKey: taskQueryKeys.due(timezone, status, type === "all" ? null : type),
     queryFn: () => tasksApi.due({ timezone, status, type }),
-    refetchInterval: activeTab === "tasks" ? taskAutoRefreshMs : false,
-    refetchIntervalInBackground: false,
+    refetchInterval: getBackgroundRefetchInterval(
+      activeTab !== "tasks" || Boolean(editingRule || delayingTask) || isCustomTaskModalOpen,
+      taskAutoRefreshMs,
+    ),
   });
   const rulesQuery = useQuery({
     queryKey: taskQueryKeys.rules,

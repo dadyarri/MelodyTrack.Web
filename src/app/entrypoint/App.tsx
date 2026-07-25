@@ -4,14 +4,15 @@ import { App as AntdApp } from "antd";
 import { AppRouter } from "@/app/router";
 import { AuthProvider } from "@/entities/session";
 import { OfflineQueueSync } from "@/features/offline";
+import { defaultQueryStaleTimeMs } from "@/shared/lib";
 import { ApiErrorNotifier } from "@/shared/ui";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0,
-      refetchOnMount: "always",
-      refetchOnWindowFocus: false,
+      staleTime: defaultQueryStaleTimeMs,
+      refetchOnWindowFocus: true,
+      refetchIntervalInBackground: false,
       retry: 1,
     },
   },

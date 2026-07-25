@@ -90,7 +90,10 @@ export function useClientsPageController() {
         page_size: 10,
         search: search.trim() || undefined,
       }),
-    refetchInterval: getBackgroundRefetchInterval(isCreateOpen && Boolean(editing)),
+    placeholderData: keepPreviousData,
+    refetchInterval: getBackgroundRefetchInterval(
+      isCreateOpen || Boolean(editing || historyClient || vacationsClient) || isSourceCreateOpen || isEnrollmentCreateOpen,
+    ),
   });
 
   const historyQuery = useQuery({

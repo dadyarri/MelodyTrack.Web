@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
@@ -65,6 +65,7 @@ export function useExpensesPageController() {
         start: dateRange?.[0]?.startOf("day").toISOString(),
         end: dateRange?.[1]?.endOf("day").toISOString(),
       }),
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

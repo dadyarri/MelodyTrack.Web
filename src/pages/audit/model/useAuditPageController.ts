@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { auditLogApi, auditLogQueryKeys } from "@/entities/audit-log";
@@ -14,6 +14,7 @@ export function useAuditPageController() {
     queryKey: auditLogQueryKeys.list(page, search, timezone),
     queryFn: () => auditLogApi.list({ page, page_size: 20, search: search.trim() || undefined, timezone }),
     enabled: canViewAudit,
+    placeholderData: keepPreviousData,
   });
 
   return {
