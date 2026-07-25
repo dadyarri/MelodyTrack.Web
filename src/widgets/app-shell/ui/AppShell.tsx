@@ -1,5 +1,5 @@
 import { Button, Divider, Drawer, Layout, Menu, Popover, Space, Typography } from "antd";
-import { lazy, type ReactNode, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, type ReactNode, Suspense, type SyntheticEvent, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
@@ -28,7 +28,13 @@ const AppOnboarding = lazy(async () => {
   return { default: module.AppOnboarding };
 });
 
-export function AppShell({ children }: { children?: ReactNode }) {
+export function AppShell({
+  children,
+  onPrefetchRoute,
+}: {
+  children?: ReactNode;
+  onPrefetchRoute?: (path: string) => Promise<void> | void;
+}) {
   const auth = useAuth();
   const { mode, toggleMode } = useTheme();
   const navigate = useNavigate();
@@ -85,6 +91,19 @@ export function AppShell({ children }: { children?: ReactNode }) {
     void auth.logout();
   };
   const selectedKey = getSelectedNavKey(availableNavItems, location.pathname);
+  const prefetchNavigationTarget = useCallback(
+    (event: SyntheticEvent<HTMLElement>) => {
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      const path = event.target.closest<HTMLElement>("[data-nav-route]")?.dataset.navRoute;
+      if (path) {
+        void onPrefetchRoute?.(path);
+      }
+    },
+    [onPrefetchRoute],
+  );
 
   useEffect(() => {
     clearNavigationIntent(location.pathname);
@@ -149,7 +168,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
         {/* <div className={styles.brand} data-onboarding-id="shell-brand">
           MelodyTrack
         </div> */}
-        <div data-onboarding-id="shell-navigation">
+        <div
+          data-onboarding-id="shell-navigation"
+          onFocusCapture={prefetchNavigationTarget}
+          onPointerOver={prefetchNavigationTarget}
+          onTouchStart={prefetchNavigationTarget}
+        >
           <Menu
             mode="inline"
             inlineCollapsed={!desktopNavOpen}
@@ -237,16 +261,18 @@ export function AppShell({ children }: { children?: ReactNode }) {
         className={styles.mobileNavDrawer}
       >
         <Space orientation="vertical" size={16} className="wide">
-          <Menu
-            mode="inline"
-            className={styles.mobileNavMenu}
-            selectedKeys={[selectedKey]}
-            items={mobileMenuItems}
-            onClick={({ key }) => {
-              navigateTo(key);
-              setMobileNavOpen(false);
-            }}
-          />
+          <div onFocusCapture={prefetchNavigationTarget} onPointerOver={prefetchNavigationTarget} onTouchStart={prefetchNavigationTarget}>
+            <Menu
+              mode="inline"
+              className={styles.mobileNavMenu}
+              selectedKeys={[selectedKey]}
+              items={mobileMenuItems}
+              onClick={({ key }) => {
+                navigateTo(key);
+                setMobileNavOpen(false);
+              }}
+            />
+          </div>
           <Divider className="mobile-nav-divider" />
           <Menu
             mode="inline"

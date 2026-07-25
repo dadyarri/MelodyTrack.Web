@@ -57,7 +57,7 @@ function buildNavItem(item: AppNavItem, showShortcuts: boolean): ItemType {
     key: item.key,
     icon: item.icon,
     label: (
-      <span className="app-nav-label">
+      <span className="app-nav-label" data-nav-route={item.key}>
         <span>{item.label}</span>
         {showShortcuts ? <Shortcut keyb={item.shortcut} /> : null}
       </span>

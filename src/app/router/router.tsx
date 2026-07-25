@@ -9,6 +9,29 @@ import { ProtectedRoute } from "./guards/ProtectedRoute";
 import { StatsRoute } from "./guards/StatsRoute";
 import { SuperuserRoute } from "./guards/SuperuserRoute";
 import { RouteErrorBoundary } from "./RouteErrorBoundary";
+import { createRoutePrefetcher } from "./routePrefetch";
+
+const prefetchStaffRoute = createRoutePrefetcher({
+  "/": () => import("@/pages/dashboard"),
+  "/appointments-stats": () => import("@/pages/appointments-stats"),
+  "/audit": () => import("@/pages/audit"),
+  "/client-sources": () => import("@/pages/client-sources"),
+  "/clients": () => import("@/pages/clients"),
+  "/clients-stats": () => import("@/pages/clients-stats"),
+  "/courses": () => import("@/pages/courses"),
+  "/expense-categories": () => import("@/pages/expense-categories"),
+  "/expenses": () => import("@/pages/expenses"),
+  "/expenses-dashboard": () => import("@/pages/expenses-stats"),
+  "/payments": () => import("@/pages/payments"),
+  "/payments-stats": () => import("@/pages/payments-stats"),
+  "/price-changes": () => import("@/pages/price-changes"),
+  "/profile": () => import("@/pages/profile"),
+  "/revenue": () => import("@/pages/revenue"),
+  "/schedule": () => import("@/pages/schedule"),
+  "/services": () => import("@/pages/services"),
+  "/tasks": () => import("@/pages/tasks"),
+  "/users": () => import("@/pages/users"),
+});
 
 export const router = createBrowserRouter([
   {
@@ -116,7 +139,7 @@ export const router = createBrowserRouter([
       return {
         Component: () => (
           <ProtectedRoute>
-            <AppShell>
+            <AppShell onPrefetchRoute={prefetchStaffRoute}>
               <Outlet />
             </AppShell>
           </ProtectedRoute>
