@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 
 import { clientQueryKeys } from "@/entities/client";
 import { paymentQueryKeys, paymentsApi } from "@/entities/payment";
@@ -11,16 +11,38 @@ import { formatDateTime } from "@/shared/lib";
 import { downloadBlob } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
+import { readPositiveInteger, useUrlState } from "@/shared/lib/react";
 
 const getDefaultPaymentsDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function usePaymentsPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const paymentCreate = usePaymentCreateController({ useRouteIntent: true });
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [clientId, setClientId] = useState<string | undefined>();
-  const [serviceId, setServiceId] = useState<string | undefined>();
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultPaymentsDateRange());
+  const page = readPositiveInteger(searchParams.get("page"));
+  const search = searchParams.get("q") ?? "";
+  const clientId = searchParams.get("client") ?? undefined;
+  const serviceId = searchParams.get("service") ?? undefined;
+  const dateRange = readDateRange(searchParams, getDefaultPaymentsDateRange);
+  const setPage = (nextPage: number) => {
+    setUrlState({ page: nextPage === 1 ? null : nextPage });
+  };
+  const setSearch = (value: string) => {
+    setUrlState({ page: null, q: value.trim() || null });
+  };
+  const setClientId = (value?: string) => {
+    setUrlState({ page: null, client: value });
+  };
+  const setServiceId = (value?: string) => {
+    setUrlState({ page: null, service: value });
+  };
+  const setDateRange = (value: [Dayjs | null, Dayjs | null] | null) => {
+    setUrlState({
+      page: null,
+      period: value ? null : "all",
+      from: value?.[0]?.format("YYYY-MM-DD"),
+      to: value?.[1]?.format("YYYY-MM-DD"),
+    });
+  };
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
@@ -99,12 +121,8 @@ export function usePaymentsPageController() {
   }, [paymentCreate]);
 
   const resetFilters = useCallback(() => {
-    setSearch("");
-    setClientId(undefined);
-    setServiceId(undefined);
-    setDateRange(getDefaultPaymentsDateRange());
-    setPage(1);
-  }, []);
+    setUrlState({ page: null, q: null, client: null, service: null, period: null, from: null, to: null });
+  }, [setUrlState]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -148,6 +166,15 @@ export function usePaymentsPageController() {
     ...paymentCreate,
     openCreateModal,
   };
+}
+
+function readDateRange(searchParams: URLSearchParams, defaultRange: () => [Dayjs, Dayjs]): [Dayjs | null, Dayjs | null] | null {
+  if (searchParams.get("period") === "all") {
+    return null;
+  }
+  const from = dayjs(searchParams.get("from") ?? "");
+  const to = dayjs(searchParams.get("to") ?? "");
+  return from.isValid() && to.isValid() ? [from, to] : defaultRange();
 }
 
 export function formatOptionalDateTime(value?: string | null) {

@@ -17,6 +17,7 @@ import { getApiErrorMessages } from "@/shared/api";
 import { downloadBlob } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
+import { useUrlState } from "@/shared/lib/react";
 
 export type RecurringTaskRuleFormValues = {
   isEnabled: boolean;
@@ -42,11 +43,21 @@ export type CustomTaskFormValues = {
 };
 
 export function useTasksPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const taskAutoRefreshMs = 30_000;
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
-  const [status, setStatus] = useState<RecurringTaskListStatus>("open");
-  const [type, setType] = useState<RecurringTaskType | "all">("all");
-  const [activeTab, setActiveTab] = useState<"tasks" | "rules">("tasks");
+  const status = readTaskStatus(searchParams.get("status"));
+  const type = readTaskType(searchParams.get("type"));
+  const activeTab = searchParams.get("tab") === "rules" ? "rules" : "tasks";
+  const setStatus = (nextStatus: RecurringTaskListStatus) => {
+    setUrlState({ status: nextStatus === "open" ? null : nextStatus });
+  };
+  const setType = (nextType: RecurringTaskType | "all") => {
+    setUrlState({ type: nextType === "all" ? null : nextType });
+  };
+  const setActiveTab = (nextTab: "tasks" | "rules") => {
+    setUrlState({ tab: nextTab === "tasks" ? null : nextTab });
+  };
   const [editingRule, setEditingRule] = useState<RecurringTaskRule | null>(null);
   const [editingRuleBaselineActivityId, setEditingRuleBaselineActivityId] = useState<Ulid | null | undefined>();
   const [ruleForm] = Form.useForm<RecurringTaskRuleFormValues>();
@@ -447,6 +458,25 @@ export function useTasksPageController() {
       });
     },
   };
+}
+
+const taskStatuses = new Set<RecurringTaskListStatus>(["open", "completed", "cancelled", "delayed"]);
+const taskTypes = new Set<RecurringTaskType>([
+  "appointment-reminder",
+  "birthday-greeting",
+  "trial-follow-up",
+  "inactive-client-reminder",
+  "teacher-daily-schedule",
+  "debtor-reminder",
+  "custom-task",
+]);
+
+function readTaskStatus(value: string | null): RecurringTaskListStatus {
+  return value && taskStatuses.has(value as RecurringTaskListStatus) ? (value as RecurringTaskListStatus) : "open";
+}
+
+function readTaskType(value: string | null): RecurringTaskType | "all" {
+  return value && taskTypes.has(value as RecurringTaskType) ? (value as RecurringTaskType) : "all";
 }
 
 function buildTelegramLink(value: string, message: string) {

@@ -51,6 +51,7 @@ export function PaymentsPage() {
               <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Введите имя клиента, услугу или текст описания"
                 onSearch={(value) => {
                   controller.setSearch(value);

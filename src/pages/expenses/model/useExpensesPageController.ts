@@ -13,7 +13,7 @@ import { useCreatedReferenceOptions } from "@/shared/lib";
 import { downloadBlob } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
-import { useDraftFormState } from "@/shared/lib/react";
+import { readPositiveInteger, useDraftFormState, useUrlState } from "@/shared/lib/react";
 
 export type ExpenseFormValues = {
   description?: string;
@@ -35,6 +35,7 @@ const isExpenseDraft = (value: unknown): value is ExpenseDraftValues => v.safePa
 const getDefaultExpensesDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function useExpensesPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
     replayKeyRef,
@@ -43,12 +44,26 @@ export function useExpensesPageController() {
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
   } = useDraftFormState<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, isExpenseDraft);
-  const [page, setPage] = useState(1);
+  const page = readPositiveInteger(searchParams.get("page"));
+  const setPage = (nextPage: number) => {
+    setUrlState({ page: nextPage === 1 ? null : nextPage });
+  };
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
   const isOpen = isCreateRequestedOpen || hasCreateDraft;
-  const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(() => getDefaultExpensesDateRange());
+  const search = searchParams.get("q") ?? "";
+  const setSearch = (value: string) => {
+    setUrlState({ page: null, q: value.trim() || null });
+  };
+  const dateRange = readExpenseDateRange(searchParams);
+  const setDateRange = (value: [Dayjs | null, Dayjs | null] | null) => {
+    setUrlState({
+      page: null,
+      period: value ? null : "all",
+      from: value?.[0]?.format("YYYY-MM-DD"),
+      to: value?.[1]?.format("YYYY-MM-DD"),
+    });
+  };
   const [form] = Form.useForm<ExpenseFormValues>();
   const [editForm] = Form.useForm<ExpenseFormValues>();
   const [editingExpense, setEditingExpense] = useState<{ id: string; expectedActivityId?: string } | null>(null);
@@ -247,9 +262,7 @@ export function useExpensesPageController() {
     createCategoryMutation,
     createdCategoryOptions: createdCategoryOptions.createdOptions,
     resetFilters: () => {
-      setSearch("");
-      setDateRange(getDefaultExpensesDateRange());
-      setPage(1);
+      setUrlState({ page: null, q: null, period: null, from: null, to: null });
     },
     handleClearCreateDraft: () => {
       resetStoredDraft(() => {
@@ -294,6 +307,15 @@ export function useExpensesPageController() {
       createCategoryMutation.mutate(values);
     },
   };
+}
+
+function readExpenseDateRange(searchParams: URLSearchParams): [Dayjs | null, Dayjs | null] | null {
+  if (searchParams.get("period") === "all") {
+    return null;
+  }
+  const from = dayjs(searchParams.get("from") ?? "");
+  const to = dayjs(searchParams.get("to") ?? "");
+  return from.isValid() && to.isValid() ? [from, to] : getDefaultExpensesDateRange();
 }
 
 function toExpenseRequest(values: ExpenseFormValues) {

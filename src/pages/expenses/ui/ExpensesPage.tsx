@@ -50,6 +50,7 @@ export function ExpensesPage() {
               <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Введите часть описания или название статьи"
                 onSearch={(value) => {
                   controller.setSearch(value);
