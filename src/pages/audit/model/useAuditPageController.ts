@@ -1,13 +1,14 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 
 import { auditLogApi, auditLogQueryKeys } from "@/entities/audit-log";
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
+import { readPositiveInteger, useUrlState } from "@/shared/lib/react";
 
 export function useAuditPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const auth = useAuth();
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const page = readPositiveInteger(searchParams.get("page"));
+  const search = searchParams.get("q") ?? "";
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const canViewAudit = hasSuperuserAccess(auth.user);
   const query = useQuery({
@@ -20,11 +21,13 @@ export function useAuditPageController() {
   return {
     canViewAudit,
     page,
+    search,
     query,
-    setPage,
+    setPage: (nextPage: number) => {
+      setUrlState({ page: nextPage === 1 ? null : nextPage });
+    },
     handleSearch: (value: string) => {
-      setSearch(value);
-      setPage(1);
+      setUrlState({ page: null, q: value.trim() || null });
     },
   };
 }

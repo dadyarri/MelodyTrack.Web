@@ -8,7 +8,7 @@ import { type Service, serviceQueryKeys, servicesApi } from "@/entities/service"
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import { getApiErrorMessages } from "@/shared/api";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
-import { useDraftFormState } from "@/shared/lib/react";
+import { readPositiveInteger, useDraftFormState, useUrlState } from "@/shared/lib/react";
 
 type ServiceDraftValues = {
   name?: string;
@@ -48,6 +48,7 @@ const serviceDraftSchema = v.object({
 const isServiceDraft = (value: unknown): value is ServiceDraftValues => v.safeParse(serviceDraftSchema, value).success;
 
 export function useServicesPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const auth = useAuth();
   const {
     hasSavedDraft,
@@ -57,7 +58,10 @@ export function useServicesPageController() {
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
   } = useDraftFormState<ServiceDraftValues>(SERVICE_CREATE_DRAFT_KEY, isServiceDraft);
-  const [page, setPage] = useState(1);
+  const page = readPositiveInteger(searchParams.get("page"));
+  const setPage = (nextPage: number) => {
+    setUrlState({ page: nextPage === 1 ? null : nextPage });
+  };
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setCreateOpen] = useState(false);
   const isCreateOpen = isCreateRequestedOpen || hasCreateDraft;

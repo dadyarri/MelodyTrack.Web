@@ -18,7 +18,7 @@ import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { useDraftFormState } from "@/shared/lib/react";
+import { readPositiveInteger, useDraftFormState, useUrlState } from "@/shared/lib/react";
 import { getClientHistoryActions } from "@/widgets/client-history";
 
 type ClientSubmitInput = {
@@ -57,6 +57,7 @@ const isClientDraft = (value: unknown): value is ClientDraftValues => v.safePars
 const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
+  const { searchParams, setUrlState } = useUrlState();
   const {
     hasSavedDraft,
     replayKeyRef: draftReplayKeyRef,
@@ -66,8 +67,14 @@ export function useClientsPageController() {
     resetStoredDraft,
     saveDraftValues: saveDraftFormValues,
   } = useDraftFormState<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, isClientDraft);
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
+  const page = readPositiveInteger(searchParams.get("page"));
+  const search = searchParams.get("q") ?? "";
+  const setPage = useCallback(
+    (nextPage: number) => {
+      setUrlState({ page: nextPage === 1 ? null : nextPage });
+    },
+    [setUrlState],
+  );
   const [editing, setEditing] = useState<Client | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const hasCreateDraft = hasSavedDraft;
@@ -310,39 +317,36 @@ export function useClientsPageController() {
     onError: showErrors,
   });
 
-  const openEditor = useCallback(
-    (client?: Client) => {
-      if (client) {
-        setEditing(client);
-        setEditingBaselineActivityId(client.lastActivity?.id ?? null);
-        setCreateOpen(true);
-        withHydration(() => {
-          form.resetFields();
-          form.setFieldsValue({
-            ...client,
-            telegram: getClientContactValue(client, "telegram"),
-            vk: getClientContactValue(client, "vk"),
-            phone: getClientContactValue(client, "phone"),
-          });
-        });
-        return;
-      }
-
-      if (!canCreateClients) {
-        return;
-      }
-
-      const draftValues = loadDraftValues();
-      setEditing(null);
-      setEditingBaselineActivityId(undefined);
+  const openEditor = (client?: Client) => {
+    if (client) {
+      setEditing(client);
+      setEditingBaselineActivityId(client.lastActivity?.id ?? null);
       setCreateOpen(true);
       withHydration(() => {
         form.resetFields();
-        form.setFieldsValue(draftValues ?? {});
+        form.setFieldsValue({
+          ...client,
+          telegram: getClientContactValue(client, "telegram"),
+          vk: getClientContactValue(client, "vk"),
+          phone: getClientContactValue(client, "phone"),
+        });
       });
-    },
-    [canCreateClients, form, loadDraftValues, withHydration],
-  );
+      return;
+    }
+
+    if (!canCreateClients) {
+      return;
+    }
+
+    const draftValues = loadDraftValues();
+    setEditing(null);
+    setEditingBaselineActivityId(undefined);
+    setCreateOpen(true);
+    withHydration(() => {
+      form.resetFields();
+      form.setFieldsValue(draftValues ?? {});
+    });
+  };
 
   const createSourceMutation = useMutation({
     mutationFn: (values: { name: string }) => clientSourcesApi.create(values),
@@ -390,21 +394,23 @@ export function useClientsPageController() {
 
   const clientHistoryActions = getClientHistoryActions(auth.user, navigate);
 
-  const handleSearch = useCallback((value: string) => {
-    setSearch(value);
-    setPage(1);
-  }, []);
+  const handleSearch = useCallback(
+    (value: string) => {
+      setUrlState({ page: null, q: value.trim() || null });
+    },
+    [setUrlState],
+  );
 
-  const openHistoryClient = useCallback((client: Client) => {
+  const openHistoryClient = (client: Client) => {
     setHistoryEventsPage(1);
     setHistoryClient(client);
-  }, []);
+  };
 
-  const closeHistoryClient = useCallback(() => {
+  const closeHistoryClient = () => {
     setHistoryClient(null);
     setHistoryEventsPage(1);
     setEnrollmentCreateOpen(false);
-  }, []);
+  };
 
   const handleClearCreateDraft = useCallback(() => {
     resetStoredDraft(() => {
@@ -412,11 +418,11 @@ export function useClientsPageController() {
     });
   }, [form, resetStoredDraft]);
 
-  const closeEditor = useCallback(() => {
+  const closeEditor = () => {
     setCreateOpen(false);
     setEditing(null);
     setEditingBaselineActivityId(undefined);
-  }, []);
+  };
 
   useLayoutEffect(() => {
     if (isCreateOpen && !editing) {
@@ -441,7 +447,14 @@ export function useClientsPageController() {
         }
 
         event.preventDefault();
-        openEditor();
+        const draftValues = loadDraftValues();
+        setEditing(null);
+        setEditingBaselineActivityId(undefined);
+        setCreateOpen(true);
+        withHydration(() => {
+          form.resetFields();
+          form.setFieldsValue(draftValues ?? {});
+        });
       }
     };
 
@@ -449,12 +462,13 @@ export function useClientsPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canCreateClients, openEditor]);
+  }, [canCreateClients, form, loadDraftValues, withHydration]);
 
   return {
     canCreateClients,
     page,
     setPage,
+    search,
     query,
     clients: query.data?.data,
     pagination: {

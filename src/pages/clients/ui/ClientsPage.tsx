@@ -42,6 +42,7 @@ export function ClientsPage() {
             <div className={filterFieldWideClassName}>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Поиск по ФИО"
                 onSearch={controller.handleSearch}
                 onChange={(event) => {

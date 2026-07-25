@@ -171,6 +171,7 @@ export function AuditPage() {
             <Typography.Text type="secondary">Поиск по пользователю, действию или деталям</Typography.Text>
             <Input.Search
               allowClear
+              value={controller.search}
               placeholder="Например: платеж, Иванова, вход, цена"
               onSearch={controller.handleSearch}
               onChange={(event) => {
