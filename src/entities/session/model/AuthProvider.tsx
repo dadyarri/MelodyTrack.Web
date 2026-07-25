@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
-import { authExpiredEventName, configureHttpSession, http } from "@/shared/api";
+import { authExpiredEventName, configureHttpSession, http, restoreAccessToken } from "@/shared/api";
 import { clearReferenceLabels } from "@/shared/lib";
 
 import { authQueryKeys } from "../api/queryKeys";
@@ -12,6 +12,18 @@ import { authStore } from "./authStore";
 import { logoutSession } from "./logoutSession";
 
 configureHttpSession(authStore);
+
+class SessionRestoreError extends Error {}
+
+async function loadCurrentUser() {
+  if (!authStore.getAccessToken() && !(await restoreAccessToken())) {
+    throw new SessionRestoreError("Не удалось восстановить сессию.");
+  }
+
+  const me = await authApi.getMe();
+  authStore.setUserId(me.id);
+  return me;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -34,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const meQuery = useQuery({
     queryKey: authQueryKeys.me,
-    queryFn: () => authApi.getMe(),
+    queryFn: loadCurrentUser,
     enabled: hasSession,
     retry: false,
     gcTime: 0,
@@ -65,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (axios.isAxiosError(meQuery.error) && meQuery.error.response?.status === 401) {
+    if (meQuery.error instanceof SessionRestoreError || (axios.isAxiosError(meQuery.error) && meQuery.error.response?.status === 401)) {
       const timeoutId = window.setTimeout(() => {
         handleSessionExpired();
       }, 0);
@@ -81,22 +93,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasSession(true);
       const me = await queryClient.fetchQuery<MeResponse>({
         queryKey: authQueryKeys.me,
-        queryFn: () => authApi.getMe(),
+        queryFn: loadCurrentUser,
         staleTime: 0,
         gcTime: 0,
       });
-      authStore.setUserId(me.id);
       setCachedUser(me);
       return me;
     },
     [queryClient],
   );
-
-  useEffect(() => {
-    if (meQuery.data) {
-      authStore.setUserId(meQuery.data.id);
-    }
-  }, [meQuery.data]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

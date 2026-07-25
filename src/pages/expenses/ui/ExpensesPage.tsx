@@ -56,12 +56,10 @@ export function ExpensesPage() {
                 placeholder="Введите часть описания или название статьи"
                 onSearch={(value) => {
                   controller.setSearch(value);
-                  controller.setPage(1);
                 }}
                 onChange={(event) => {
                   if (!event.target.value) {
                     controller.setSearch("");
-                    controller.setPage(1);
                   }
                 }}
               />
@@ -73,7 +71,6 @@ export function ExpensesPage() {
                 format={DATE_FORMAT}
                 onChange={(value) => {
                   controller.setDateRange(value);
-                  controller.setPage(1);
                 }}
               />
             </div>

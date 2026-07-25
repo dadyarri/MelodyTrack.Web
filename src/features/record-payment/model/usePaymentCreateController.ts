@@ -78,7 +78,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
   const routePrefillServiceId = useRouteIntent && routeIntent.hasOpenCreateIntent ? routeIntent.prefillServiceId : undefined;
   const createPrefillClientId = localPrefill?.clientId ?? routePrefillClientId;
   const createPrefillServiceId = localPrefill?.serviceId ?? routePrefillServiceId;
-  const isCreateModalOpen = isOpen || hasSavedDraft || (useRouteIntent && routeIntent.hasOpenCreateIntent);
+  const isCreateModalOpen = isOpen || (useRouteIntent && routeIntent.hasOpenCreateIntent);
   const currentEditingPayment = editingPayment;
   const isEditingPaymentStale = currentEditingPayment
     ? isActivityStale(currentEditingPayment.lastActivity?.id, editingBaselineActivityId)
@@ -86,6 +86,10 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
 
   const saveMutation = useMutation<{ offline: boolean }, unknown, { values: PaymentCreateFormValues; expectedActivityId?: Ulid }>({
     mutationFn: ({ values, expectedActivityId }) => {
+      if (!values.date) {
+        throw new Error("Укажите дату платежа.");
+      }
+
       const input = {
         clientId: values.clientId,
         serviceId: values.serviceId,
@@ -300,7 +304,7 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
 
       saveDraftValues({
         ...values,
-        date: values.date.toISOString(),
+        date: values.date?.toISOString(),
       });
     },
     onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {

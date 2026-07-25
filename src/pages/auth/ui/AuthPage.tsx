@@ -167,7 +167,13 @@ export function AuthPage() {
                   </Form.Item>
                 )}
                 <Space orientation="vertical" size={12} className="wide">
-                  <Button block type="primary" htmlType="submit" loading={controller.loginSecondFactorMutation.isPending}>
+                  <Button
+                    block
+                    type="primary"
+                    htmlType="submit"
+                    loading={controller.loginSecondFactorMutation.isPending}
+                    disabled={controller.loginSecondFactorMutation.isPending}
+                  >
                     Подтвердить вход
                   </Button>
                   <Button block onClick={controller.resetLoginChallenge}>
@@ -190,7 +196,13 @@ export function AuthPage() {
                 <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
                   <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
                 </Form.Item>
-                <Button block type="primary" htmlType="submit" loading={controller.loginMutation.isPending}>
+                <Button
+                  block
+                  type="primary"
+                  htmlType="submit"
+                  loading={controller.loginMutation.isPending}
+                  disabled={controller.loginMutation.isPending}
+                >
                   Продолжить
                 </Button>
               </Form>

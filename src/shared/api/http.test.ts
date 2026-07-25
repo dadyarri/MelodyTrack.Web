@@ -1,7 +1,7 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { authExpiredEventName, configureHttpSession, discardLegacyHttpCache, getApiErrorMessages, http } from "./index";
+import { authExpiredEventName, configureHttpSession, discardLegacyHttpCache, getApiErrorMessages, http, restoreAccessToken } from "./index";
 
 describe("shared HTTP transport", () => {
   afterEach(() => {
@@ -85,6 +85,25 @@ describe("shared HTTP transport", () => {
     expect(setTokens).toHaveBeenCalledWith("fresh-access", "refresh-2");
     expect(retriedAuthorization).toBe("Bearer fresh-access");
     expect(attempt).toBe(2);
+  });
+
+  it("restores an access token before the first authenticated request", async () => {
+    let accessToken: string | null = null;
+    const setTokens = vi.fn((nextAccessToken: string) => {
+      accessToken = nextAccessToken;
+    });
+    configureHttpSession({
+      clear: vi.fn(),
+      getAccessToken: () => accessToken,
+      getRefreshToken: () => "refresh-1",
+      setTokens,
+    });
+    vi.spyOn(axios, "post").mockResolvedValue({
+      data: { accessToken: "fresh-access", refreshToken: "refresh-2" },
+    });
+
+    await expect(restoreAccessToken()).resolves.toBe("fresh-access");
+    expect(setTokens).toHaveBeenCalledWith("fresh-access", "refresh-2");
   });
 
   it("clears and publishes expiry when refresh fails", async () => {

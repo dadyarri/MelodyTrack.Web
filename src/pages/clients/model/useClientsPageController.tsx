@@ -13,7 +13,7 @@ import { clientSourcesApi } from "@/entities/reference-book";
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import type { ClientFormValues, ClientVacationsFormValues } from "@/features/manage-client";
 import { useUpdateCourseProgress } from "@/features/update-course-progress";
-import { getApiErrorMessages, type Ulid } from "@/shared/api";
+import { getApiErrorMessages, type PaginatedResponse, type Ulid } from "@/shared/api";
 import { useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
@@ -80,7 +80,7 @@ export function useClientsPageController() {
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setCreateOpen] = useState(false);
-  const isCreateOpen = isCreateRequestedOpen || hasCreateDraft;
+  const isCreateOpen = isCreateRequestedOpen;
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
@@ -157,85 +157,124 @@ export function useClientsPageController() {
     ? isActivityStale(currentEditingClient.lastActivity?.id, editingBaselineActivityId)
     : false;
 
-  const saveMutation = useMutation<{ offline: boolean }, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>({
-    mutationFn: ({ values, expectedActivityId }) => {
-      const input = prepareClientInput(values);
-      if (editing) {
-        return clientsApi.update(editing.id, input, { expectedActivityId }).then(() => ({ offline: false as const, response: null }));
-      }
+  const saveMutation = useMutation<{ offline: boolean; tempId?: string }, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>(
+    {
+      mutationFn: ({ values, expectedActivityId }) => {
+        const input = prepareClientInput(values);
+        if (editing) {
+          return clientsApi.update(editing.id, input, { expectedActivityId }).then(() => ({ offline: false as const, response: null }));
+        }
 
-      return createOrQueueOffline({
-        input,
-        replayKey: draftReplayKeyRef.current,
-        create: (createInput) =>
-          clientsApi.create(createInput, {
-            replayKey: draftReplayKeyRef.current,
+        return createOrQueueOffline({
+          input,
+          replayKey: draftReplayKeyRef.current,
+          create: (createInput) =>
+            clientsApi.create(createInput, {
+              replayKey: draftReplayKeyRef.current,
+            }),
+          buildQueueItem: (createInput, replayKey) => ({
+            kind: "clients:create",
+            replayKey,
+            tempId: createOfflineTempId("client"),
+            payload: createInput,
           }),
-        buildQueueItem: (createInput, replayKey) => ({
-          kind: "clients:create",
-          replayKey,
-          tempId: createOfflineTempId("client"),
-          payload: createInput,
-        }),
-      }).then((result) => ({ offline: result.offline }));
-    },
-    onSuccess: async (result) => {
-      message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
-      setCreateOpen(false);
-      setEditing(null);
-      setEditingBaselineActivityId(undefined);
-      resetStoredDraft(() => {
-        form.resetFields();
-      });
-      if (!result.offline) {
-        await queryClient.invalidateQueries({
-          queryKey: clientQueryKeys.all,
+        }).then((result) => ({
+          offline: result.offline,
+          tempId: result.offline ? result.queuedItem.tempId : undefined,
+        }));
+      },
+      onSuccess: async (result, variables) => {
+        message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
+        if (result.offline && result.tempId && page === 1) {
+          const input = prepareClientInput(variables.values);
+          const tempId = result.tempId;
+          queryClient.setQueryData<PaginatedResponse<Client>>(clientQueryKeys.list(page, search), (current) => {
+            if (!current) {
+              return current;
+            }
+
+            const optimisticClient: Client = {
+              id: tempId,
+              firstName: input.firstName,
+              lastName: input.lastName,
+              patronymic: input.patronymic,
+              dateOfBirth: input.dateOfBirth,
+              contacts: {
+                phone: input.phone,
+                telegram: input.telegram,
+                vk: input.vk,
+              },
+              sourceId: input.sourceId,
+              createdAtUtc: new Date().toISOString(),
+              isLeadClosed: false,
+              vacations: [],
+              balance: 0,
+              lifecycleStatus: 1,
+              lastActivity: null,
+            };
+
+            return {
+              data: [optimisticClient, ...current.data.filter((client) => client.id !== optimisticClient.id)],
+              info: { ...current.info, total: current.info.total + 1 },
+            };
+          });
+        }
+        setCreateOpen(false);
+        setEditing(null);
+        setEditingBaselineActivityId(undefined);
+        resetStoredDraft(() => {
+          form.resetFields();
         });
-      }
-    },
-    onError: async (error, variables) => {
-      if (!editing) {
-        showErrors(error);
-        return;
-      }
-
-      await handleStaleEntityConflict({
-        error,
-        modal,
-        queryClient,
-        invalidateQueryKey: clientQueryKeys.all,
-        showErrors,
-        title: "Клиент уже изменен",
-        okText: "Перезаписать",
-        cancelText: "Обновить форму",
-        onConfirm: (conflict) => {
-          saveMutation.mutate({
-            values: variables.values,
-            expectedActivityId: conflict.currentActivity?.id,
+        if (!result.offline) {
+          await queryClient.invalidateQueries({
+            queryKey: clientQueryKeys.all,
           });
-        },
-        onReload: () => {
-          const freshClient =
-            findItemInQueryData(queryClient, clientQueryKeys.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
-            currentEditingClient;
-          if (!freshClient) {
-            return;
-          }
+        }
+      },
+      onError: async (error, variables) => {
+        if (!editing) {
+          showErrors(error);
+          return;
+        }
 
-          setEditing(freshClient);
-          setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
-          withHydration(() => {
-            form.setFieldsValue({
-              ...freshClient,
-              telegram: getClientContactValue(freshClient, "telegram"),
-              vk: getClientContactValue(freshClient, "vk"),
-              phone: getClientContactValue(freshClient, "phone"),
+        await handleStaleEntityConflict({
+          error,
+          modal,
+          queryClient,
+          invalidateQueryKey: clientQueryKeys.all,
+          showErrors,
+          title: "Клиент уже изменен",
+          okText: "Перезаписать",
+          cancelText: "Обновить форму",
+          onConfirm: (conflict) => {
+            saveMutation.mutate({
+              values: variables.values,
+              expectedActivityId: conflict.currentActivity?.id,
             });
-          });
-        },
-      });
+          },
+          onReload: () => {
+            const freshClient =
+              findItemInQueryData(queryClient, clientQueryKeys.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
+              currentEditingClient;
+            if (!freshClient) {
+              return;
+            }
+
+            setEditing(freshClient);
+            setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
+            withHydration(() => {
+              form.setFieldsValue({
+                ...freshClient,
+                telegram: getClientContactValue(freshClient, "telegram"),
+                vk: getClientContactValue(freshClient, "vk"),
+                phone: getClientContactValue(freshClient, "phone"),
+              });
+            });
+          },
+        });
+      },
     },
-  });
+  );
 
   const vacationsMutation = useMutation({
     mutationFn: ({ client, values }: { client: Client; values: ClientVacationsFormValues }) =>

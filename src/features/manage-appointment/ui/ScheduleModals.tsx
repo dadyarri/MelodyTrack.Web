@@ -45,7 +45,7 @@ export type AppointmentFormValues = {
   providerId?: string;
   courseThemeId?: string;
   lessonNotes?: string;
-  startDate: Dayjs;
+  startDate: Dayjs | null;
   recurrenceTypeId?: string;
   patternEndDate?: Dayjs;
   weeklyDays?: number[];
@@ -344,7 +344,7 @@ export function AppointmentCreateModal({
                 format={DATE_FORMAT}
                 className="wide"
                 disabledDate={(current) => {
-                  return current.isBefore(startDate.startOf("day"));
+                  return startDate ? current.isBefore(startDate.startOf("day")) : false;
                 }}
               />
             </Form.Item>
@@ -709,7 +709,7 @@ export function AppointmentDetailsModal({
   );
 }
 
-function getRecurrenceSummary(key: RecurrenceType["key"], startDate?: Dayjs, weeklyDays?: number[]) {
+function getRecurrenceSummary(key: RecurrenceType["key"], startDate?: Dayjs | null, weeklyDays?: number[]) {
   if (key === "daily") {
     return "Будет создаваться каждый день в это же время.";
   }
@@ -730,8 +730,8 @@ function getRecurrenceSummary(key: RecurrenceType["key"], startDate?: Dayjs, wee
   return `Будет создаваться ${String(startDate.date())} числа каждого месяца в это же время.`;
 }
 
-function getWeeklyBitmaskValue(date: Dayjs) {
-  const day = date.day();
+function getWeeklyBitmaskValue(date?: Dayjs | null) {
+  const day = (date ?? dayjs()).day();
 
   if (day === 0) {
     return 64;

@@ -37,6 +37,18 @@ export function configureHttpSession(session: HttpSession) {
   httpSession = session;
 }
 
+export function restoreAccessToken() {
+  const accessToken = httpSession?.getAccessToken();
+  if (accessToken) {
+    return Promise.resolve(accessToken);
+  }
+
+  refreshRequest ??= refreshAccessToken().finally(() => {
+    refreshRequest = null;
+  });
+  return refreshRequest;
+}
+
 http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = httpSession?.getAccessToken();
   if (accessToken) {

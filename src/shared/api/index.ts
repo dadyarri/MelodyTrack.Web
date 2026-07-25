@@ -7,6 +7,7 @@ export {
   getStaleEntityConflict,
   http,
   probeBackendReachable,
+  restoreAccessToken,
   type HttpSession,
   type StaleEntityConflict,
 } from "./http";

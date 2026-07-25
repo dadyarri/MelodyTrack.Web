@@ -51,7 +51,7 @@ export function useExpensesPageController() {
   };
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
-  const isOpen = isCreateRequestedOpen || hasCreateDraft;
+  const isOpen = isCreateRequestedOpen;
   const search = searchParams.get("q") ?? "";
   const setSearch = (value: string) => {
     setUrlState({ page: null, q: value.trim() || null });

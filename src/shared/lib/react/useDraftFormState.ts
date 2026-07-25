@@ -9,6 +9,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
   const [draft, setDraft] = useState<Awaited<ReturnType<typeof loadDraft<TValues>>>>(null);
   const [saveStatus, setSaveStatus] = useState<DraftSaveStatus>("loading");
   const replayKeyRef = useRef(createReplayKey());
+  const draftRef = useRef(draft);
   const isHydratingRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
   const pendingValuesRef = useRef<TValues | null>(null);
@@ -21,6 +22,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
           return;
         }
         setDraft(loadedDraft);
+        draftRef.current = loadedDraft;
         replayKeyRef.current = loadedDraft?.replayKey ?? createReplayKey();
         setSaveStatus("saved");
       })
@@ -46,7 +48,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
     [storageKey],
   );
 
-  const loadDraftValues = useCallback(() => draft?.values, [draft]);
+  const loadDraftValues = useCallback(() => draftRef.current?.values, []);
 
   const withHydration = useCallback((action: () => void) => {
     withDraftHydration(isHydratingRef, action);
@@ -60,6 +62,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
       }
       pendingValuesRef.current = null;
       setDraft(null);
+      draftRef.current = null;
       replayKeyRef.current = createReplayKey();
       setSaveStatus("saved");
       void clearDraft(storageKey).catch(() => {
@@ -93,6 +96,7 @@ export function useDraftFormState<TValues>(storageKey: string, validateValues: (
           .then((savedDraft) => {
             pendingValuesRef.current = null;
             setDraft(savedDraft);
+            draftRef.current = savedDraft;
             setSaveStatus("saved");
           })
           .catch(() => {

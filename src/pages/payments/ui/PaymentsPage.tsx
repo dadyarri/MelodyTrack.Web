@@ -57,12 +57,10 @@ export function PaymentsPage() {
                 placeholder="Введите имя клиента, услугу или текст описания"
                 onSearch={(value) => {
                   controller.setSearch(value);
-                  controller.setPage(1);
                 }}
                 onChange={(event) => {
                   if (!event.target.value) {
                     controller.setSearch("");
-                    controller.setPage(1);
                   }
                 }}
               />
@@ -73,7 +71,6 @@ export function PaymentsPage() {
                 value={controller.clientId}
                 onChange={(value) => {
                   controller.setClientId(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -84,7 +81,6 @@ export function PaymentsPage() {
                 value={controller.serviceId}
                 onChange={(value) => {
                   controller.setServiceId(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -95,7 +91,6 @@ export function PaymentsPage() {
                 format={DATE_FORMAT}
                 onChange={(value) => {
                   controller.setDateRange(value);
-                  controller.setPage(1);
                 }}
               />
             </div>

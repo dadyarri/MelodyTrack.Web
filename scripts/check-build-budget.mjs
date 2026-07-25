@@ -4,8 +4,14 @@ import { extname, join } from "node:path";
 
 const distDirectory = new URL("../dist/", import.meta.url);
 const indexHtml = readFileSync(new URL("index.html", distDirectory), "utf8");
-const initialAssetPaths = [...indexHtml.matchAll(/(?:href|src)="\/([^"]+\.(?:css|js))"/g)].map((match) => match[1]);
-const uniqueInitialAssetPaths = [...new Set(initialAssetPaths)];
+const htmlInitialAssetPaths = [...indexHtml.matchAll(/(?:href|src)="\/([^"]+\.(?:css|js))"/g)].map((match) => match[1]);
+const bootstrapDependencyPaths = htmlInitialAssetPaths
+  .filter((assetPath) => extname(assetPath) === ".js")
+  .flatMap((assetPath) => {
+    const contents = readFileSync(new URL(assetPath, distDirectory), "utf8");
+    return [...contents.matchAll(/["'`](assets\/[^"'`]+\.(?:css|js))["'`]/g)].map((match) => match[1]);
+  });
+const uniqueInitialAssetPaths = [...new Set([...htmlInitialAssetPaths, ...bootstrapDependencyPaths])];
 
 const budget = {
   initialJavaScriptRaw: 1_300 * 1024,

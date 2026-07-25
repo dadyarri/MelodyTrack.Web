@@ -2,6 +2,7 @@ import { Table, type TableProps } from "antd";
 import type { ReactNode } from "react";
 
 import { ListQueryStatus, type ListQueryStatusProps } from "./ListQueryStatus";
+import styles from "./ListTable.module.css";
 
 type ListTableProps<RecordType extends object> = TableProps<RecordType> & {
   emptyText?: ReactNode;
@@ -17,19 +18,24 @@ export function ListTable<RecordType extends object>({
   scroll,
   ...props
 }: ListTableProps<RecordType>) {
+  const showBackgroundRefresh = Boolean(queryStatus?.isFetching && !queryStatus.isError && !props.loading);
+
   return (
-    <Table<RecordType>
-      {...props}
-      title={
-        queryStatus?.isError || queryStatus?.isFetching
-          ? () => <ListQueryStatus {...queryStatus} isFetching={queryStatus.isFetching && !props.loading} />
-          : props.title
-      }
-      scroll={scroll ?? { x: "max-content", y: scrollY }}
-      locale={{
-        ...locale,
-        emptyText: locale?.emptyText ?? emptyText,
-      }}
-    />
+    <div className={styles.root}>
+      {queryStatus?.isError ? <ListQueryStatus {...queryStatus} isFetching={false} /> : null}
+      {showBackgroundRefresh ? (
+        <div className={styles.backgroundStatus}>
+          <ListQueryStatus {...queryStatus} isFetching />
+        </div>
+      ) : null}
+      <Table<RecordType>
+        {...props}
+        scroll={scroll ?? { x: "max-content", y: scrollY }}
+        locale={{
+          ...locale,
+          emptyText: locale?.emptyText ?? emptyText,
+        }}
+      />
+    </div>
   );
 }

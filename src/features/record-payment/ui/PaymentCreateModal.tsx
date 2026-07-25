@@ -14,7 +14,7 @@ export type PaymentCreateFormValues = {
   serviceId?: string;
   quantity?: number;
   amount: number;
-  date: dayjs.Dayjs;
+  date: dayjs.Dayjs | null;
   description?: string;
 };
 
@@ -85,11 +85,14 @@ export function PaymentCreateModal({
           }
 
           const quantity = typeof values.quantity === "number" ? values.quantity : 1;
+          let valuesToPersist = values;
           if (values.serviceId && selectedServicePrice !== undefined && ("serviceId" in changedValues || "quantity" in changedValues)) {
-            form.setFieldValue("amount", selectedServicePrice * quantity);
+            const amount = selectedServicePrice * quantity;
+            form.setFieldValue("amount", amount);
+            valuesToPersist = { ...values, amount };
           }
 
-          onValuesChange(changedValues, values);
+          onValuesChange(changedValues, valuesToPersist);
         }}
       >
         <Form.Item label="Клиент">

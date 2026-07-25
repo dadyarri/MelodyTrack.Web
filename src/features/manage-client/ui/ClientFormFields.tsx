@@ -15,8 +15,6 @@ export function ClientFormFields({
   onCreateSource?: () => void;
   onSourceLabelChange?: (label?: string) => void;
 }) {
-  const form = Form.useFormInstance();
-
   return (
     <>
       <Form.Item name="lastName" label="Фамилия" rules={[{ required: true }]}>
@@ -81,60 +79,35 @@ export function ClientFormFields({
       </Form.Item>
     </>
   );
+}
 
-  function BirthDateInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
-    return (
-      <DatePicker
-        className="wide"
-        format={DATE_FORMAT}
-        value={value ? dayjs(value, "YYYY-MM-DD") : null}
-        onChange={(date: Dayjs | null) => {
-          const nextValue = date ? date.format("YYYY-MM-DD") : undefined;
-          if (onChange) {
-            onChange(nextValue);
-          } else {
-            form.setFieldValue("dateOfBirth", nextValue);
-          }
-        }}
-      />
-    );
-  }
+function BirthDateInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
+  return (
+    <DatePicker
+      className="wide"
+      format={DATE_FORMAT}
+      value={value ? dayjs(value, "YYYY-MM-DD") : null}
+      onChange={(date: Dayjs | null) => {
+        onChange?.(date ? date.format("YYYY-MM-DD") : undefined);
+      }}
+    />
+  );
+}
 
-  function PhoneInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
-    return (
-      <Input
-        value={value ?? ""}
-        inputMode="tel"
-        autoComplete="tel"
-        placeholder="+49 1512 3456789"
-        onChange={(event) => {
-          const nextValue = formatPhoneInput(event.target.value);
-          if (onChange) {
-            onChange(nextValue || undefined);
-          } else {
-            form.setFieldValue("phone", nextValue || undefined);
-          }
-        }}
-        onBlur={(event) => {
-          const normalized = normalizePhone(event.target.value);
-          if (normalized) {
-            const formatted = formatPhone(normalized);
-            if (onChange) {
-              onChange(formatted || undefined);
-            } else {
-              form.setFieldValue("phone", formatted || undefined);
-            }
-            return;
-          }
-
-          const formatted = formatPhoneInput(event.target.value);
-          if (onChange) {
-            onChange(formatted || undefined);
-          } else {
-            form.setFieldValue("phone", formatted || undefined);
-          }
-        }}
-      />
-    );
-  }
+function PhoneInput({ value, onChange }: { value?: string | null; onChange?: (value?: string) => void }) {
+  return (
+    <Input
+      value={value ?? ""}
+      inputMode="tel"
+      autoComplete="tel"
+      placeholder="+49 1512 3456789"
+      onChange={(event) => {
+        onChange?.(formatPhoneInput(event.target.value) || undefined);
+      }}
+      onBlur={(event) => {
+        const normalized = normalizePhone(event.target.value);
+        onChange?.((normalized ? formatPhone(normalized) : formatPhoneInput(event.target.value)) || undefined);
+      }}
+    />
+  );
 }

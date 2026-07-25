@@ -241,10 +241,14 @@ export function useAuthPageController() {
       registerMutation.mutate(values);
     },
     onLoginSubmit: (values: LoginInput) => {
-      loginMutation.mutate(values);
+      if (!loginMutation.isPending) {
+        loginMutation.mutate(values);
+      }
     },
     onLoginSecondFactorSubmit: (values: Pick<LoginInput, "otp" | "recoveryCode">) => {
-      loginSecondFactorMutation.mutate(values);
+      if (!loginSecondFactorMutation.isPending) {
+        loginSecondFactorMutation.mutate(values);
+      }
     },
     resetLoginChallenge: () => {
       setLoginChallenge(null);

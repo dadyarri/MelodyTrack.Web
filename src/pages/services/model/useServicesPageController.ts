@@ -65,7 +65,7 @@ export function useServicesPageController() {
   };
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setCreateOpen] = useState(false);
-  const isCreateOpen = isCreateRequestedOpen || hasCreateDraft;
+  const isCreateOpen = isCreateRequestedOpen;
   const [editing, setEditing] = useState<Service | null>(null);
   const [pricing, setPricing] = useState<Service | null>(null);
   const [form] = Form.useForm<ServiceDraftValues>();

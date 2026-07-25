@@ -78,7 +78,7 @@ export function useSchedulePageController() {
   );
   const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
-  const isOpen = isCreateRequestedOpen || hasCreateDraft;
+  const isOpen = isCreateRequestedOpen;
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedAppointmentBaselineActivityId, setSelectedAppointmentBaselineActivityId] = useState<Ulid | null | undefined>();
   const [appointmentToEdit, setAppointmentToEdit] = useState<Appointment | null>(null);
@@ -799,6 +799,9 @@ export function useSchedulePageController() {
 
 function buildCreateAppointmentPayload(values: AppointmentFormValues, recurrenceTypes: RecurrenceType[], timezone: string) {
   const recurrenceType = recurrenceTypes.find((item) => item.id === values.recurrenceTypeId);
+  if (!values.startDate) {
+    throw new Error("Укажите дату и время начала записи.");
+  }
 
   return {
     clientId: values.clientId,
@@ -833,7 +836,7 @@ function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDr
     providerId: values.providerId,
     courseThemeId: values.courseThemeId,
     lessonNotes: values.lessonNotes,
-    startDate: values.startDate.toISOString(),
+    startDate: values.startDate?.toISOString(),
     recurrenceTypeId: values.recurrenceTypeId,
     patternEndDate: values.patternEndDate?.toISOString(),
     weeklyDays: values.weeklyDays,
