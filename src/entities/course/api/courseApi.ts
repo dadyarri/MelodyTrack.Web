@@ -15,7 +15,7 @@ export const coursesApi = {
     return http.post<CreateEntityResponse>("/courses", input).then((response) => response.data);
   },
   update(id: Ulid, input: CourseStructureInput, options?: { expectedActivityId?: Ulid }) {
-    return http.put<unknown>(`/courses/${id}`, { id, ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
+    return http.patch<unknown>(`/courses/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http
@@ -41,6 +41,6 @@ export const courseEnrollmentsApi = {
     return http.delete<unknown>(`/course-enrollments/${id}`).then(() => undefined);
   },
   updateThemeProgress(themeId: Ulid, action: CourseEnrollmentThemeProgressAction) {
-    return http.post<unknown>(`/course-enrollment-themes/${themeId}/actions`, { id: themeId, action }).then(() => undefined);
+    return http.patch<unknown>(`/course-enrollment-themes/${themeId}/progress`, { action }).then(() => undefined);
   },
 };

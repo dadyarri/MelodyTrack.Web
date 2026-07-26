@@ -15,14 +15,14 @@ export const appointmentsApi = {
   },
   mini(timezone: string) {
     return http
-      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/mini", {
+      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/agenda", {
         params: { timezone },
       })
       .then((response) => response.data.appointments);
   },
   recurrenceTypes() {
     return http
-      .get<{ recurrenceTypes: RecurrenceType[] }>("/appointments/recurrenceTypes")
+      .get<{ recurrenceTypes: RecurrenceType[] }>("/appointment-recurrence-types/options")
       .then((response) => response.data.recurrenceTypes);
   },
   create(input: CreateAppointmentInput, options?: { idempotencyKey?: string; signal?: AbortSignal }) {

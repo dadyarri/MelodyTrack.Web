@@ -13,7 +13,7 @@ export const expensesApi = {
     return http.get<ExpensesResponse>("/expenses", { params }).then((response) => response.data);
   },
   export(params: ExpenseListParams) {
-    return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
+    return http.get<Blob>("/exports/expenses", { params, responseType: "blob" }).then((response) => response.data);
   },
   create(input: ExpenseInput, options?: { idempotencyKey?: string }) {
     return http
@@ -21,7 +21,7 @@ export const expensesApi = {
       .then((response) => response.data);
   },
   update(id: Ulid, input: ExpenseInput, options?: { expectedActivityId?: Ulid }) {
-    return http.put<unknown>(`/expenses/${id}`, { id, ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
+    return http.patch<unknown>(`/expenses/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
   },
   remove(id: Ulid, options?: { expectedActivityId?: Ulid }) {
     return http

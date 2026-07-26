@@ -17,7 +17,7 @@ export const paymentsApi = {
     return http.get<PaymentsResponse>("/payments", { params }).then((response) => response.data);
   },
   export(params: PaymentListParams) {
-    return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
+    return http.get<Blob>("/exports/payments", { params, responseType: "blob" }).then((response) => response.data);
   },
   create(input: PaymentInput, options?: { idempotencyKey?: string }) {
     return http
@@ -26,7 +26,7 @@ export const paymentsApi = {
   },
   update(id: Ulid, input: PaymentInput, options?: { expectedActivityId?: Ulid }) {
     return http
-      .put<unknown>(`/payments/${id}`, {
+      .patch<unknown>(`/payments/${id}`, {
         ...input,
         expectedActivityId: options?.expectedActivityId,
       })

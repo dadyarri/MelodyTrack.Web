@@ -145,13 +145,13 @@ export interface CreatePasswordResetLinkResponse {
 
 export const authApi = {
   getInviteInfo(inviteCode: string) {
-    return http.get<InviteInfo>("/auth/invite", { params: { inviteCode } }).then((response) => response.data);
+    return http.get<InviteInfo>("/auth/invites", { params: { inviteCode } }).then((response) => response.data);
   },
   createInvite(input: CreateInviteInput) {
-    return http.post<CreateInviteResponse>("/auth/invite", input).then((response) => response.data);
+    return http.post<CreateInviteResponse>("/auth/invites", input).then((response) => response.data);
   },
   createPasswordResetLink(userId: string) {
-    return http.post<CreatePasswordResetLinkResponse>(`/users/${userId}/password-reset-link`, {}).then((response) => response.data);
+    return http.post<CreatePasswordResetLinkResponse>(`/users/${userId}/password-reset-links`, {}).then((response) => response.data);
   },
   register(input: RegisterInput) {
     return http.post<RegisterResponse>("/auth/register", input).then((response) => response.data);
@@ -188,25 +188,25 @@ export const authApi = {
     return http.post<Recover2FaResponse>("/auth/2fa/recover", input).then((response) => response.data);
   },
   resetPassword(input: ResetPasswordInput) {
-    return http.post<unknown>("/auth/resetPassword", input).then(() => undefined);
+    return http.post<unknown>("/auth/password-reset", input).then(() => undefined);
   },
   setup2Fa(input: Setup2FaInput) {
     return http.post<Setup2FaResponse>("/auth/2fa/setup", input).then((response) => response.data);
   },
   getRecoveryCodes() {
-    return http.get<RecoveryCodesResponse>("/auth/recoveryCodes").then((response) => response.data);
+    return http.get<RecoveryCodesResponse>("/auth/recovery-codes").then((response) => response.data);
   },
   regenerateRecoveryCodes() {
-    return http.post<RecoveryCodesResponse>("/auth/recoveryCodes").then((response) => response.data);
+    return http.post<RecoveryCodesResponse>("/auth/recovery-codes").then((response) => response.data);
   },
   remove2Fa() {
-    return http.delete<unknown>("/auth/2fa/delete").then(() => undefined);
+    return http.delete<unknown>("/auth/2fa").then(() => undefined);
   },
   getMe() {
     return http.get<MeResponse>("/auth/me").then((response) => response.data);
   },
   changePassword(input: ChangePasswordInput) {
-    return http.post<unknown>("/auth/changePassword", input).then(() => undefined);
+    return http.post<unknown>("/auth/password-change", input).then(() => undefined);
   },
   getSessions() {
     return http.get<SessionsResponse>("/auth/sessions").then((response) => response.data);
@@ -215,6 +215,6 @@ export const authApi = {
     return http.delete<unknown>(`/auth/sessions/${id}`).then(() => undefined);
   },
   logoutAll() {
-    return http.post<unknown>("/auth/logoutAll").then(() => undefined);
+    return http.post<unknown>("/auth/logout-all").then(() => undefined);
   },
 };

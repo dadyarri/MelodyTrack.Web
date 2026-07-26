@@ -24,7 +24,7 @@ export const clientsApi = {
   },
   lookup(search?: string, signal?: AbortSignal) {
     return http
-      .get<{ clients: LookupClient[] }>("/clients/lookup", {
+      .get<{ clients: LookupClient[] }>("/clients/options", {
         params: search ? { search } : undefined,
         signal,
       })
@@ -37,7 +37,7 @@ export const clientsApi = {
   },
   update(id: Ulid, input: UpdateClientInput, options?: { expectedActivityId?: Ulid }) {
     return http
-      .put<unknown>(`/clients/${id}`, {
+      .patch<unknown>(`/clients/${id}`, {
         ...input,
         expectedActivityId: options?.expectedActivityId,
       })
@@ -54,19 +54,19 @@ export const clientsApi = {
     return http.patch<unknown>(`/clients/${id}/lead-status`, { isClosed }).then(() => undefined);
   },
   debtors() {
-    return http.get<{ debtors: ClientWithBalance[] }>("/clients/inDebt").then((response) => response.data.debtors);
+    return http.get<{ debtors: ClientWithBalance[] }>("/client-debts").then((response) => response.data.debtors);
   },
   exportDebtors() {
-    return http.get<Blob>("/clients/inDebt/export", { responseType: "blob" }).then((response) => response.data);
+    return http.get<Blob>("/exports/client-debts", { responseType: "blob" }).then((response) => response.data);
   },
   createPortalLink(id: Ulid) {
-    return http.post<{ url: string }>(`/clients/${id}/portal-link`, {}).then((response) => response.data);
+    return http.post<{ url: string }>(`/clients/${id}/portal-links`, {}).then((response) => response.data);
   },
   regenerateCalendarSubscription(id: Ulid) {
-    return http.post<ClientCalendarSubscription>(`/calendar-subscriptions/clients/${id}/regenerate`, {}).then((response) => response.data);
+    return http.post<ClientCalendarSubscription>(`/clients/${id}/calendar-subscriptions`, {}).then((response) => response.data);
   },
   resetPortalPin(id: Ulid) {
-    return http.post<unknown>(`/clients/${id}/portal-pin/reset`, {}).then(() => undefined);
+    return http.post<unknown>(`/clients/${id}/portal-pin-resets`, {}).then(() => undefined);
   },
 };
 

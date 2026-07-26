@@ -90,10 +90,10 @@ http.interceptors.response.use(
       "/client-portal/auth/link",
       "/auth/login",
       "/auth/register",
-      "/auth/invite",
+      "/auth/invites",
       "/auth/2fa/verify",
       "/auth/2fa/recover",
-      "/auth/resetPassword",
+      "/auth/password-reset",
     ];
     const isPublicAuthRequest = Boolean(original?.url && publicAuthUrls.some((url) => original.url?.includes(url)));
 

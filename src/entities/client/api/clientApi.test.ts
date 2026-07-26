@@ -76,7 +76,7 @@ describe("clientsApi", () => {
     httpMock.post.mockResolvedValue({ data: subscription });
 
     await expect(clientsApi.regenerateCalendarSubscription("client-1")).resolves.toBe(subscription);
-    expect(httpMock.post).toHaveBeenCalledWith("/calendar-subscriptions/clients/client-1/regenerate", {});
+    expect(httpMock.post).toHaveBeenCalledWith("/clients/client-1/calendar-subscriptions", {});
   });
 
   it("preserves the existing query-key shape", () => {

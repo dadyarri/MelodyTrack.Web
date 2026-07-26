@@ -11,7 +11,7 @@ export const usersApi = {
     input: { firstName: string; lastName: string; phone?: string; telegram?: string; vk?: string },
     options?: { expectedActivityId?: Ulid },
   ) {
-    return http.put<unknown>(`/users/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
+    return http.patch<unknown>(`/users/${id}`, { ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
   },
   listAvailabilities() {
     return http.get<{ availabilities: UserAvailability[] }>("/users/availability").then((response) => response.data.availabilities);
@@ -32,12 +32,12 @@ export const usersApi = {
 
 export const rolesApi = {
   lookup() {
-    return http.get<{ roles: Role[] }>("/roles/lookup").then((response) => response.data.roles);
+    return http.get<{ roles: Role[] }>("/roles/options").then((response) => response.data.roles);
   },
 };
 
 export const calendarSubscriptionsApi = {
   regenerateUser(userId: Ulid) {
-    return http.post<CalendarSubscription>(`/calendar-subscriptions/users/${userId}/regenerate`, {}).then((response) => response.data);
+    return http.post<CalendarSubscription>(`/users/${userId}/calendar-subscriptions`, {}).then((response) => response.data);
   },
 };

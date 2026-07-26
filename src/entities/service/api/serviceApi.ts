@@ -10,7 +10,7 @@ export const servicesApi = {
     return http.get<Service>(`/services/${id}`).then((response) => response.data);
   },
   lookup() {
-    return http.get<{ services: LookupService[] }>("/services/lookup").then((response) => response.data.services);
+    return http.get<{ services: LookupService[] }>("/services/options").then((response) => response.data.services);
   },
   create(input: ServiceInput & { price: number }, options?: { idempotencyKey?: string }) {
     return http
@@ -19,8 +19,7 @@ export const servicesApi = {
   },
   update(id: Ulid, input: ServiceInput, options?: { expectedActivityId?: Ulid }) {
     return http
-      .put<unknown>(`/services/${id}`, {
-        id,
+      .patch<unknown>(`/services/${id}`, {
         ...input,
         expectedActivityId: options?.expectedActivityId,
       })
