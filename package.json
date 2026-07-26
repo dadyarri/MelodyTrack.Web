@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {
+    "node": ">=26 <27"
+  },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsgo -b && vite build",
@@ -24,7 +27,8 @@
     "test:webkit": "node ./scripts/run-webkit-tests.mjs",
     "test:webkit:direct": "vitest run --config vitest.webkit.config.ts",
     "test:watch": "vitest",
-    "verify": "npm run format && npm run lint:fix && npm run lint:biome && npm run lint:architecture && npm run check:assets && npm run check:css-compat && npm run check:security && npm run typecheck && npm run test && npm run test:browser && npm run test:webkit && npm run build && npm run check:bundle"
+    "verify": "npm run format:check && npm run lint:biome && npm run lint && npm run lint:architecture && npm run check:assets && npm run check:css-compat && npm run check:security && npm run typecheck && npm run test && npm run test:browser && npm run test:webkit && npm run build && npm run check:bundle",
+    "verify:fix": "npm run format && npm run lint:fix && npm run verify"
   },
   "browserslist": [
     "iOS >= 16.4",
@@ -55,7 +59,7 @@
     "@tanstack/eslint-plugin-query": "^5.101.4",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.8.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260421.2",
