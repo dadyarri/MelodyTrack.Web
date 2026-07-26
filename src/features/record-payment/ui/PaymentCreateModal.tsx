@@ -9,6 +9,8 @@ import { DATE_TIME_FORMAT, TIME_FORMAT } from "@/shared/lib";
 import type { DurableFormStatus } from "@/shared/lib/react";
 import { DraftFormModal } from "@/shared/ui";
 
+import styles from "./PaymentCreateModal.module.css";
+
 export type PaymentCreateFormValues = {
   clientId: string;
   serviceId?: string;
@@ -114,12 +116,12 @@ export function PaymentCreateModal({
             <Button onClick={onCreateClient}>Новый клиент</Button>
           </Space>
         </Form.Item>
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-start", width: "100%" }}>
-          <Form.Item name="quantity" label="Кол-во" style={{ width: "20%", minWidth: 120, marginBottom: 0 }}>
+        <div className={styles.serviceRow}>
+          <Form.Item name="quantity" label="Кол-во" className={styles.quantityField}>
             <InputNumber min={1} precision={0} className="wide" disabled={!selectedCreateServiceId} />
           </Form.Item>
           <div style={{ display: "flex", alignItems: "center", paddingTop: 30 }}>x</div>
-          <Form.Item name="serviceId" label="Услуга" style={{ width: "80%", marginBottom: 0 }}>
+          <Form.Item name="serviceId" label="Услуга" className={styles.serviceField}>
             <ServiceSelect
               showPrice
               onResolvedLabelChange={onServiceLabelChange}

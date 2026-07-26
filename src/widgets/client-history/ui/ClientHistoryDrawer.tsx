@@ -58,7 +58,7 @@ export function ClientHistoryDrawer({
   return (
     <Drawer
       title={client ? `История клиента: ${formatClientName(client)}` : "История клиента"}
-      size="large"
+      size={736}
       open={Boolean(client)}
       onClose={onClose}
       destroyOnHidden

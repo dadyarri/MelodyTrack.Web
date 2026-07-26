@@ -74,13 +74,30 @@ Business storage schemas belong to the entity or feature that owns the data.
 Shared code may provide storage mechanics but must not become a global
 business-data cache.
 
+## Mobile Browser Support
+
+Follow [`docs/mobile-browser-support.md`](docs/mobile-browser-support.md).
+The supported baseline is iOS Safari and Safari 16.4+, Chrome and Edge 109+,
+and Firefox 115+. Keep Browserslist, Vite JavaScript/CSS targets, PostCSS, and
+the Lightning CSS compatibility check aligned when changing that baseline.
+
+Mobile fixes shared by multiple routes belong in
+`src/app/styles/mobile-compatibility.css` or the visual-viewport hook. Prefer
+standards-based fallbacks and capability queries; do not add user-agent checks
+or scatter WebKit workarounds across route styles. At compact widths, preserve
+16px form-control text, 44px primary touch targets, bounded internal scrollers,
+safe-area padding, and zero document-level horizontal overflow.
+
 ## Verification
 
 Run `npm run verify` before handing off frontend changes. It checks formatting,
-Biome, ESLint, FSD architecture boundaries, strict TypeScript, unit and browser
-tests, and the production build. Browser tests use Playwright with a system
-Chromium when available; otherwise install it with `npx playwright install
-chromium` or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+Biome, ESLint, FSD architecture boundaries, browser-targeted CSS, strict
+TypeScript, unit tests, Chromium viewport/visual tests, WebKit interaction
+tests, and the production build. Chromium uses a system executable when
+available; otherwise install it with `npx playwright install chromium` or set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. On Arch-based hosts, the WebKit command
+runs the exact matching official Playwright container because upstream WebKit
+binaries target supported Linux distributions.
 
 Use `npm run test:watch` while developing tests. New business rules, storage
 migrations, auth/session behavior, and durable-form behavior require tests.

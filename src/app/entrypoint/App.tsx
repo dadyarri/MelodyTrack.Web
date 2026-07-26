@@ -7,6 +7,9 @@ import { defaultQueryStaleTimeMs } from "@/shared/lib/refetch";
 import { configureDraftOwner } from "@/shared/lib/storage";
 import { ApiErrorNotifier } from "@/shared/ui";
 
+import { useMobileOverlayKeyboardPolicy } from "../lib/useMobileOverlayKeyboardPolicy";
+import { useVisualViewportCssVariables } from "../lib/useVisualViewportCssVariables";
+
 configureDraftOwner(() => authStore.getUserId());
 
 const queryClient = new QueryClient({
@@ -21,6 +24,9 @@ const queryClient = new QueryClient({
 });
 
 export function App() {
+  useMobileOverlayKeyboardPolicy();
+  useVisualViewportCssVariables();
+
   return (
     <QueryClientProvider client={queryClient}>
       <AntdApp>

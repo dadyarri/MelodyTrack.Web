@@ -1,8 +1,9 @@
 .authScreen {
-  min-height: 100vh;
+  min-height: var(--visual-viewport-height);
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(24px, var(--safe-area-top)) max(24px, var(--safe-area-right)) max(24px, var(--safe-area-bottom))
+    max(24px, var(--safe-area-left));
   background: var(--bg-app);
 }
 
@@ -59,5 +60,13 @@
 @media (max-width: 900px) {
   .recoveryCodesGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .authScreen {
+    place-items: start center;
+    padding: max(12px, var(--safe-area-top)) max(12px, var(--safe-area-right)) max(12px, var(--safe-area-bottom))
+      max(12px, var(--safe-area-left));
   }
 }

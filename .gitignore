@@ -80,6 +80,12 @@ web_modules/
 
 # dotenv environment variable files
 .env
+
+# Local browser-test output
+.playwright-cli/
+.vitest-attachments/
+output/playwright/
+src/app/mobile/__screenshots__/
 .env.*
 !.env.example
 

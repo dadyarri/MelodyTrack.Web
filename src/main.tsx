@@ -1,5 +1,6 @@
 import "dayjs/locale/ru";
 import "@/app/styles/index.css";
+import "@/app/styles/mobile-compatibility.css";
 
 import dayjs from "dayjs";
 import { StrictMode } from "react";

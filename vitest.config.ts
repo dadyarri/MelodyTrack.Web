@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
-    exclude: [...configDefaults.exclude, "**/*.browser.test.tsx"],
+    exclude: [...configDefaults.exclude, "**/*.browser.test.tsx", "**/*.webkit.test.tsx"],
     clearMocks: true,
     restoreMocks: true,
   },

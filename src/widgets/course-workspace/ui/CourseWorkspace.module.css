@@ -111,7 +111,7 @@
 }
 
 .themeEditorModal :global(.ant-modal-body) {
-  max-height: min(720px, calc(100vh - 220px));
+  max-height: min(720px, calc(var(--visual-viewport-height) - 220px));
   overflow-y: auto;
   padding-right: 18px;
 }
@@ -949,6 +949,30 @@
 }
 
 @media (max-width: 760px) {
+  .editorHeader,
+  .editorActions,
+  .modalFooter,
+  .modalFooterSecondary,
+  .moveButtons {
+    width: 100%;
+  }
+
+  .headerTitle {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .enrollmentSelect {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .editorActions > *,
+  .modalFooter > *,
+  .modalFooterSecondary > * {
+    flex: 1 1 auto;
+  }
+
   .unsavedWarning {
     right: 14px;
     bottom: 154px;
@@ -983,7 +1007,8 @@
   }
 
   .flowShell {
-    height: 580px;
+    height: min(580px, calc(var(--visual-viewport-height) - 180px));
+    min-height: 420px;
   }
 
   .flowLegend {
@@ -991,5 +1016,24 @@
     right: 14px;
     bottom: 14px;
     min-width: 0;
+  }
+
+  .contextMenuItem,
+  .contextMenuClose {
+    min-height: 44px;
+  }
+
+  .contextMenuClose {
+    width: 44px;
+    height: 44px;
+    right: 2px;
+    top: 2px;
+  }
+
+  .contextMenuClose::before,
+  .contextMenuClose::after {
+    left: 14px;
+    top: 21px;
+    width: 16px;
   }
 }

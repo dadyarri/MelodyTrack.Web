@@ -17,11 +17,14 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["**/*.browser.test.tsx"],
+    include: ["**/*.browser.test.tsx", "**/*.webkit.test.tsx"],
     browser: {
       enabled: true,
       headless: true,
-      provider: playwright({ launchOptions: { executablePath } }),
+      provider: playwright({
+        launchOptions: { executablePath },
+        contextOptions: { hasTouch: true, reducedMotion: "reduce" },
+      }),
       instances: [{ browser: "chromium" }],
     },
   },

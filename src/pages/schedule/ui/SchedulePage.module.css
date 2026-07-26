@@ -1,5 +1,5 @@
 .pageShell {
-  height: calc(100dvh - 64px - 48px);
+  height: calc(var(--visual-viewport-height) - var(--shell-header-height, 64px) - 48px);
   min-height: 0;
   display: flex;
   flex-direction: column;

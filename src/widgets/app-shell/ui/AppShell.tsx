@@ -254,7 +254,7 @@ export function AppShell({
       <Drawer
         open={mobileNavOpen}
         placement="left"
-        size="large"
+        size={296}
         onClose={() => {
           setMobileNavOpen(false);
         }}
