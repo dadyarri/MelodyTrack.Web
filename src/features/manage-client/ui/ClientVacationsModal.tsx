@@ -1,8 +1,10 @@
-import { Button, DatePicker, Form, Modal, Space, Typography } from "antd";
+import { Button, DatePicker, Form, Space, Typography } from "antd";
 import type { Dayjs } from "dayjs";
 
 import type { Client } from "@/entities/client";
 import { DATE_FORMAT } from "@/shared/lib";
+import type { DurableFormStatus } from "@/shared/lib/react";
+import { DraftFormModal } from "@/shared/ui";
 
 export type ClientVacationsFormValues = {
   vacations?: Array<{ period?: [Dayjs, Dayjs] }>;
@@ -14,17 +16,40 @@ export function ClientVacationsModal({
   saving,
   onCancel,
   onSubmit,
+  draftStatus,
+  draftRestored,
+  hasDraft,
+  onDiscardDraft,
+  onValuesChange,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
 }: {
   client: Client | null;
   form: ReturnType<typeof Form.useForm<ClientVacationsFormValues>>[0];
   saving: boolean;
   onCancel: () => void;
   onSubmit: (values: ClientVacationsFormValues) => void;
+  draftStatus: DurableFormStatus;
+  draftRestored: boolean;
+  hasDraft: boolean;
+  onDiscardDraft: () => void;
+  onValuesChange?: (_: Partial<ClientVacationsFormValues>, values: ClientVacationsFormValues) => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
 }) {
   return (
-    <Modal
+    <DraftFormModal
       open={client !== null}
       title="Отпуск клиента"
+      restored={draftRestored}
+      saveStatus={draftStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onDiscardDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
@@ -32,7 +57,7 @@ export function ClientVacationsModal({
       confirmLoading={saving}
     >
       <Typography.Paragraph type="secondary">Встречи в эти даты не будут показаны или созданы.</Typography.Paragraph>
-      <Form form={form} layout="vertical" onFinish={onSubmit}>
+      <Form form={form} layout="vertical" onFinish={onSubmit} onValuesChange={onValuesChange}>
         <Form.List name="vacations">
           {(fields, { add, remove }) => (
             <Space orientation="vertical" className="wide">
@@ -62,6 +87,6 @@ export function ClientVacationsModal({
           )}
         </Form.List>
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }

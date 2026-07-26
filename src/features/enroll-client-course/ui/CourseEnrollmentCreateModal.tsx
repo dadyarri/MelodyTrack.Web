@@ -1,6 +1,9 @@
-import { Form, Modal, Select, Switch, Typography } from "antd";
+import { Form, Select, Switch, Typography } from "antd";
+import * as v from "valibot";
 
 import type { Ulid } from "@/shared/api";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+import { DraftFormModal } from "@/shared/ui";
 
 type CourseEnrollmentCreateValues = {
   courseId?: Ulid;
@@ -9,6 +12,7 @@ type CourseEnrollmentCreateValues = {
 
 type CourseEnrollmentCreateModalProps = {
   open: boolean;
+  clientId?: Ulid;
   clientName?: string;
   options: Array<{
     value: Ulid;
@@ -19,11 +23,15 @@ type CourseEnrollmentCreateModalProps = {
   }>;
   confirmLoading: boolean;
   onCancel: () => void;
-  onSubmit: (values: { courseId: Ulid; openProgress: boolean }) => void;
+  onSubmit: (values: { courseId: Ulid; openProgress: boolean }, clearAfterSuccess: () => Promise<void>) => void;
 };
+
+const enrollmentDraftSchema = v.object({ courseId: v.optional(v.string()), openProgress: v.optional(v.boolean()) });
+const enrollmentDraftCodec = jsonDurableFormCodec<CourseEnrollmentCreateValues>();
 
 export function CourseEnrollmentCreateModal({
   open,
+  clientId,
   clientName,
   options,
   confirmLoading,
@@ -31,17 +39,30 @@ export function CourseEnrollmentCreateModal({
   onSubmit,
 }: CourseEnrollmentCreateModalProps) {
   const [form] = Form.useForm<CourseEnrollmentCreateValues>();
+  const draft = useDurableForm({
+    key: clientId ? `draft:course-enrollments:create:${clientId}` : null,
+    schema: enrollmentDraftSchema,
+    form,
+    codec: enrollmentDraftCodec,
+    enabled: open && Boolean(clientId),
+  });
   const selectedCourseId = Form.useWatch("courseId", form);
   const selectedCourse = options.find((option) => option.value === selectedCourseId) ?? null;
 
   return (
-    <Modal
+    <DraftFormModal
       open={open}
       title={clientName ? `Записать на курс: ${clientName}` : "Записать на курс"}
-      onCancel={() => {
-        form.resetFields();
-        onCancel();
+      restored={draft.restored}
+      saveStatus={draft.status}
+      showClearDraft={draft.hasDraft}
+      onClearDraft={() => {
+        void draft.discard().then(() => {
+          form.resetFields();
+        });
       }}
+      onRetryDraft={draft.retry}
+      onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
@@ -55,10 +76,13 @@ export function CourseEnrollmentCreateModal({
         layout="vertical"
         requiredMark={false}
         initialValues={{ openProgress: true }}
+        onValuesChange={draft.formProps.onValuesChange}
         onFinish={(values) => {
           if (values.courseId) {
-            onSubmit({ courseId: values.courseId, openProgress: values.openProgress ?? true });
-            form.resetFields();
+            onSubmit({ courseId: values.courseId, openProgress: values.openProgress ?? true }, async () => {
+              await draft.clearAfterSuccess();
+              form.resetFields();
+            });
           }
         }}
       >
@@ -100,6 +124,6 @@ export function CourseEnrollmentCreateModal({
         </Form.Item>
         {options.length === 0 ? <Typography.Text type="secondary">Этот клиент уже записан на все доступные курсы.</Typography.Text> : null}
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }

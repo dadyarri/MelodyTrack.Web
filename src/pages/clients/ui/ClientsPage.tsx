@@ -5,11 +5,11 @@ import { CourseEnrollmentCreateModal } from "@/features/enroll-client-course";
 import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-client";
 import { formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
-import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 import { ClientHistoryDrawer } from "@/widgets/client-history";
 
@@ -17,7 +17,6 @@ import { useClientsPageController } from "../model/useClientsPageController";
 
 export function ClientsPage() {
   const controller = useClientsPageController();
-  useUnsavedDraftGuard(controller.isCreateOpen, controller.createDraftSaveStatus);
 
   return (
     <PageLayout
@@ -212,13 +211,19 @@ export function ClientsPage() {
         onValuesChange={controller.onValuesChange}
         onCreateSource={controller.canCreateClients ? controller.openSourceCreate : undefined}
         onSourceLabelChange={controller.onSourceLabelChange}
+        draftStale={controller.editorDraft.isStale}
+        onReapplyDraft={controller.editorDraft.reapply}
+        onRetryDraft={controller.editorDraft.retry}
       />
       <ReferenceBookCreateModal
         open={controller.isSourceCreateOpen}
         title="Новый источник клиента"
+        draftKey="draft:client-sources:create"
         confirmLoading={controller.createSourceMutation.isPending}
         onCancel={controller.closeSourceCreate}
-        onSubmit={controller.onCreateSource}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createSourceMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
       <ClientHistoryDrawer
         client={controller.historyClient}
@@ -246,16 +251,31 @@ export function ClientsPage() {
       />
       <CourseEnrollmentCreateModal
         open={controller.isEnrollmentCreateOpen}
+        clientId={controller.historyClient?.id}
         clientName={controller.historyClient ? formatClientName(controller.historyClient) : undefined}
         options={controller.availableEnrollmentCourses}
         confirmLoading={controller.createEnrollmentMutation.isPending}
         onCancel={controller.closeEnrollmentCreate}
-        onSubmit={controller.onCreateEnrollment}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createEnrollmentMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
       <ClientVacationsModal
         client={controller.vacationsClient}
         form={controller.vacationsForm}
         saving={controller.vacationsMutation.isPending}
+        draftStatus={controller.vacationsDraft.status}
+        draftRestored={controller.vacationsDraft.restored}
+        hasDraft={controller.vacationsDraft.hasDraft}
+        onDiscardDraft={() => {
+          void controller.vacationsDraft.discard().then(() => {
+            controller.vacationsForm.resetFields();
+          });
+        }}
+        onValuesChange={controller.vacationsDraft.formProps.onValuesChange}
+        draftStale={controller.vacationsDraft.isStale}
+        onReapplyDraft={controller.vacationsDraft.reapply}
+        onRetryDraft={controller.vacationsDraft.retry}
         onCancel={controller.closeVacationsEditor}
         onSubmit={controller.saveVacations}
       />

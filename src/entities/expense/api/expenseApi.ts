@@ -15,8 +15,10 @@ export const expensesApi = {
   export(params: ExpenseListParams) {
     return http.get<Blob>("/expenses/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: ExpenseInput, options?: { replayKey?: string }) {
-    return http.post<CreateEntityResponse>("/expenses", input, replayConfig(options?.replayKey)).then((response) => response.data);
+  create(input: ExpenseInput, options?: { idempotencyKey?: string }) {
+    return http
+      .post<CreateEntityResponse>("/expenses", input, idempotencyConfig(options?.idempotencyKey))
+      .then((response) => response.data);
   },
   update(id: Ulid, input: ExpenseInput, options?: { expectedActivityId?: Ulid }) {
     return http.put<unknown>(`/expenses/${id}`, { id, ...input, expectedActivityId: options?.expectedActivityId }).then(() => undefined);
@@ -30,6 +32,6 @@ export const expensesApi = {
   },
 };
 
-function replayConfig(replayKey?: string) {
-  return replayKey ? { headers: { "Idempotency-Key": replayKey } } : undefined;
+function idempotencyConfig(idempotencyKey?: string) {
+  return idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined;
 }

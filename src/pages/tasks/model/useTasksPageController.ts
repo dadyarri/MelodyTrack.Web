@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
-import type { Dayjs } from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import { useMemo, useState } from "react";
+import * as v from "valibot";
 
 import { getSocialHandle } from "@/entities/client";
 import {
@@ -17,7 +18,7 @@ import { getApiErrorMessages } from "@/shared/api";
 import { downloadBlob } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { useUrlState } from "@/shared/lib/react";
+import { jsonDurableFormCodec, useDurableForm, useUrlState } from "@/shared/lib/react";
 
 export type RecurringTaskRuleFormValues = {
   isEnabled: boolean;
@@ -40,6 +41,33 @@ export type CustomTaskFormValues = {
   title: string;
   messageText: string;
   dueAt: Dayjs;
+};
+
+type CustomTaskDraftValues = Partial<Omit<CustomTaskFormValues, "dueAt">> & { dueAt?: string };
+const taskRuleDraftSchema = v.object({
+  isEnabled: v.boolean(),
+  messageTemplate: v.string(),
+  offsetMinutes: v.optional(v.nullable(v.number())),
+  cooldownDays: v.optional(v.nullable(v.number())),
+});
+const customTaskDraftSchema = v.object({
+  recipientMode: v.picklist(["client", "external"]),
+  clientId: v.optional(v.string()),
+  recipientName: v.optional(v.string()),
+  phone: v.optional(v.string()),
+  telegram: v.optional(v.string()),
+  vk: v.optional(v.string()),
+  title: v.optional(v.string()),
+  messageText: v.optional(v.string()),
+  dueAt: v.optional(v.string()),
+});
+const taskRuleDraftCodec = jsonDurableFormCodec<RecurringTaskRuleFormValues>();
+export const customTaskDraftCodec = {
+  serialize: (values: Partial<CustomTaskFormValues>): CustomTaskDraftValues => ({ ...values, dueAt: values.dueAt?.toISOString() }),
+  deserialize: (values: CustomTaskDraftValues): Partial<CustomTaskFormValues> => ({
+    ...values,
+    dueAt: values.dueAt ? dayjs(values.dueAt) : undefined,
+  }),
 };
 
 export function useTasksPageController() {
@@ -65,6 +93,21 @@ export function useTasksPageController() {
   const [delayTaskForm] = Form.useForm<DelayTaskFormValues>();
   const [delayingTask, setDelayingTask] = useState<RecurringTask | null>(null);
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
+  const ruleDraft = useDurableForm({
+    key: editingRule ? `draft:tasks:rules:edit:${editingRule.id}` : null,
+    schema: taskRuleDraftSchema,
+    form: ruleForm,
+    codec: taskRuleDraftCodec,
+    enabled: editingRule !== null,
+    entity: editingRule ? { id: editingRule.id, baselineVersion: editingRuleBaselineActivityId ?? null } : undefined,
+  });
+  const customTaskDraft = useDurableForm({
+    key: "draft:tasks:custom:create",
+    schema: customTaskDraftSchema,
+    form: customTaskForm,
+    codec: customTaskDraftCodec,
+    enabled: isCustomTaskModalOpen,
+  });
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
 
@@ -168,6 +211,7 @@ export function useTasksPageController() {
       ),
     onSuccess: async () => {
       void message.success("Правило обновлено");
+      await ruleDraft.clearAfterSuccess();
       setEditingRule(null);
       setEditingRuleBaselineActivityId(undefined);
       ruleForm.resetFields();
@@ -228,6 +272,7 @@ export function useTasksPageController() {
       }),
     onSuccess: async () => {
       void message.success("Пользовательская задача создана");
+      await customTaskDraft.clearAfterSuccess();
       setIsCustomTaskModalOpen(false);
       customTaskForm.resetFields();
       await queryClient.invalidateQueries({ queryKey: taskQueryKeys.all });
@@ -272,33 +317,37 @@ export function useTasksPageController() {
     rules: rulesQuery.data ?? [],
     ruleForm,
     customTaskForm,
+    ruleDraft,
+    customTaskDraft,
     editingRule,
     currentEditingRule,
-    isEditingRuleStale,
+    isEditingRuleStale: isEditingRuleStale || ruleDraft.isStale,
     updateRuleMutation,
     createCustomTaskMutation,
     isCustomTaskModalOpen,
     openCustomTaskModal: () => {
       setIsCustomTaskModalOpen(true);
-      customTaskForm.setFieldsValue({
-        recipientMode: "client",
-        clientId: undefined,
-        recipientName: undefined,
-        phone: undefined,
-        telegram: undefined,
-        vk: undefined,
-        title: "",
-        messageText: "",
-        dueAt: undefined,
-      });
+      if (!customTaskDraft.hasDraft)
+        customTaskForm.setFieldsValue({
+          recipientMode: "client",
+          clientId: undefined,
+          recipientName: undefined,
+          phone: undefined,
+          telegram: undefined,
+          vk: undefined,
+          title: "",
+          messageText: "",
+          dueAt: undefined,
+        });
     },
     closeCustomTaskModal: () => {
       setIsCustomTaskModalOpen(false);
-      customTaskForm.resetFields();
     },
     submitCustomTask: async (values: CustomTaskFormValues) => {
       await createCustomTaskMutation.mutateAsync(values);
     },
+    onRuleValuesChange: ruleDraft.formProps.onValuesChange,
+    onCustomTaskValuesChange: customTaskDraft.formProps.onValuesChange,
     completeTask: (task: RecurringTask) => completeMutation.mutateAsync(task),
     cancelTask: (task: RecurringTask) => cancelMutation.mutateAsync(task),
     openDelayTask: (task: RecurringTask) => {
@@ -444,7 +493,6 @@ export function useTasksPageController() {
     closeRuleEditor: () => {
       setEditingRule(null);
       setEditingRuleBaselineActivityId(undefined);
-      ruleForm.resetFields();
     },
     submitRuleEditor: (values: RecurringTaskRuleFormValues) => {
       if (!editingRule) {

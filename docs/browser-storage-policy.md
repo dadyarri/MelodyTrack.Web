@@ -1,174 +1,72 @@
 # Browser Storage Policy
 
-This is the storage standard for MelodyTrack Web. It distinguishes credentials,
-preferences, recoverable user work, offline domain data, and application
-assets. Those classes must not share one generic cache or lifecycle.
+MelodyTrack is online-only. The server is authoritative for every business
+record; local storage may preserve unfinished user input, but it must never
+represent a completed operation or trigger automatic submission.
 
-## Current Inventory
+## Storage inventory
 
-| Data | Current location | Current behavior | Main problem |
-| --- | --- | --- | --- |
-| Access token | Memory | Recreated through refresh after reload | Correct target |
-| Refresh token | `localStorage`, `melodytrack.refreshToken` | Rotated by the HTTP interceptor and shared across tabs | JavaScript-readable credential; transitional until the backend supports an HttpOnly cookie |
-| Portal link tokens | Route memory only | Used for the current link authentication flow and then discarded | Correct until the backend provides a remembered-device HttpOnly credential |
-| Theme | `localStorage`, `melodytrack.theme` | Device-wide light/dark preference | Appropriate data class, but not expressed through a standard preference adapter |
-| Create-form drafts | IndexedDB `drafts` store | User-partitioned, runtime-validated, debounced, and expired after 30 days | Durable recoverable work; valid legacy drafts migrate after authentication |
-| Offline commands | IndexedDB `offlineCommands` and `offlineIdMappings` stores | User-partitioned, versioned and validated; transactional completion/ID mapping | Durable until replay or explicit removal; the legacy queue is discarded |
-| Reference labels | Bounded memory map | Supports selected-option labels and is cleared at session boundaries | Correct for transient lookup presentation; server/query data remains authoritative |
-| Generic HTTP responses | Not persisted | Legacy `melodytrack:http-cache:*` entries are removed on startup | Correct; offline read models must be explicit domain repositories |
-| Chunk retry/navigation intent | Two `sessionStorage` keys | Survives one reload in the current tab and is then cleared | Appropriate data class |
-| React Query data | Memory | Lost on reload | Correct for online-only data; insufficient for the future offline working set |
-| Offline sync status | Memory | Recomputed from queue/connectivity activity | Correct target |
-| App shell/assets | Browser HTTP cache only | Normal Vite asset loading | No service worker or explicit offline shell cache exists |
-| IndexedDB | Versioned `melodytrack` database | Stores drafts, offline commands, and ID mappings; reserves domain stores for later working sets | Current durable user-work target |
+| Data | Location | Policy |
+| --- | --- | --- |
+| Access token | Memory | Recreated through refresh after reload |
+| Refresh token | `localStorage`, `melodytrack.refreshToken` | Transitional until the backend supports a Secure, HttpOnly cookie |
+| Theme | `localStorage`, `melodytrack.theme` | Non-sensitive device preference |
+| Durable form drafts | IndexedDB `drafts` | User-partitioned, versioned, runtime-validated, and expired 30 days after the last write |
+| React Query data and reference labels | Memory | Server data is never presented as an offline working set |
+| Chunk retry/navigation intent | `sessionStorage` | Small, non-sensitive, one-tab recovery markers |
+| Static assets | Browser HTTP cache | No application service worker or explicit application-shell cache |
 
-The generic HTTP cache currently excludes requests carrying an Authorization
-header. It therefore is not an offline CRM cache. Its most notable eligible
-request is the public portal-link status call, whose token can become part of a
-`localStorage` key. It should be removed rather than expanded.
+IndexedDB version 2 deletes the former `offlineCommands` and
+`offlineIdMappings` stores. Existing commands and mappings are deliberately
+discarded and cannot be replayed. Valid version-1 form drafts are upgraded;
+queue data is not migrated.
 
-## Storage Selection
+## Mandatory rules
 
-| Storage | Allowed use |
-| --- | --- |
-| Memory | Access tokens, transient UI state, sync activity, request deduplication, and ordinary React Query data |
-| Secure HttpOnly cookie | Refresh credentials and future remembered-device portal credentials |
-| `sessionStorage` | Small, non-sensitive, tab-scoped recovery markers that may disappear when the tab closes |
-| `localStorage` | Small, non-sensitive device preferences only |
-| IndexedDB | User-scoped drafts, offline commands, ID mappings, reference data, and persisted domain read models |
-| Cache Storage through a service worker | Versioned application shell and immutable build assets only |
-| Server database | Authoritative business records, credential/session state, audit history, and synchronization truth |
+1. Application code does not call browser persistence APIs ad hoc.
+2. `shared` owns generic database and durable-form mechanics. Business keys,
+   schemas, codecs, baselines, mutations, and invalidation stay with their
+   owning slice.
+3. Draft records contain a schema version, stable authenticated-user owner,
+   timestamps, expiry, and runtime-validated values. Edit drafts also use an
+   entity-scoped key and authoritative baseline where one exists.
+4. A stale edit draft is not applied over newer server state automatically.
+   The user may deliberately reapply or discard it.
+5. Passwords, OTP and recovery codes, invite/portal/reset tokens,
+   authentication forms, destructive confirmations, search fields, and
+   URL-owned filters are never persisted.
+6. Validation errors, request errors, modal close, navigation, refresh, and
+   browser restart retain eligible drafts. Only confirmed server success or
+   explicit discard clears them.
+7. Storage failures are visible. Pending or failed writes protect unload and
+   navigation; a draft is never described as saved when persistence failed.
+8. Drafts never submit themselves and never fabricate domain entities.
+9. Account switching cannot expose one user's drafts to another user.
+10. Web Storage and IndexedDB are not security boundaries; do not store
+    credentials or secret-bearing URLs in them.
 
-Web Storage, IndexedDB, and Cache Storage are not security boundaries. Any
-JavaScript executing in the origin can access them. Moving data to IndexedDB
-improves capacity, transactions, and structure; it does not make credentials
-safe.
-
-## Mandatory Rules
-
-1. Application code must not call browser persistence APIs ad hoc. Each stored
-   data class has one owning repository or adapter.
-2. Business repositories belong to their entity or feature slice. `shared`
-   may provide storage mechanics, codecs, clocks, and error types, but it must
-   not own MelodyTrack business schemas or keys.
-3. Every durable business record has:
-   - an explicit schema version;
-   - runtime validation at the read boundary;
-   - a documented migration or explicit discard policy;
-   - an owner/user partition where the data is user-specific;
-   - `createdAtUtc` or `updatedAtUtc`;
-   - a retention and cleanup rule.
-4. Data from one user must never be displayed or replayed while another user
-   is authenticated. Queue records and drafts must include the stable user ID,
-   not an email or role label.
-5. Credentials, password-reset codes, invite codes, recovery codes, portal
-   link tokens, and raw Authorization headers must never be written to Web
-   Storage, IndexedDB, Cache Storage, logs, query persistence, or storage keys.
-6. Persistent cache keys must never contain secrets or raw URLs with sensitive
-   query parameters.
-7. Failed parsing must not produce partially trusted data. Invalid data is
-   discarded or quarantined according to the repository policy and must never
-   be replayed as a command.
-8. Quota and write failures must be observable. Unsaved drafts or commands
-   cannot be reported as saved locally.
-9. Offline commands are never removed by age. They remain until synchronized
-   or explicitly discarded by the owning user.
-10. Logging out clears credentials, memory caches, and visible user state.
-    Unsynchronized commands may remain only in a locked user partition; they
-    must not become visible to or replay under a different account.
-
-## Standard Durable Shape
-
-Repositories may use separate IndexedDB columns instead of a JSON envelope,
-but the logical fields are the same:
+## Draft record
 
 ```ts
-type PersistedRecord<T> = {
-  schemaVersion: number;
+type DraftRecord<TPersisted> = {
+  schemaVersion: 2;
   ownerUserId: string;
+  key: string;
   createdAtUtc: string;
   updatedAtUtc: string;
-  expiresAtUtc?: string;
-  data: T;
+  expiresAtUtc: string;
+  data: {
+    updatedAtUtc: string;
+    values: TPersisted;
+    entityId?: string;
+    baselineVersion?: string | null;
+  };
 };
 ```
 
-Storage keys use `melodytrack:<owner>:<record>` and must not encode a schema
-version or user identity into a secret-bearing string. IndexedDB primary keys
-should use structured tuples such as `[ownerUserId, entityId]`.
+Draft keys are namespaced by domain and operation, for example
+`draft:payments:create` or `draft:payments:edit:<payment-id>`. The IndexedDB
+primary key is `[ownerUserId+key]`.
 
-## Retention
-
-| Data | Retention |
-| --- | --- |
-| Theme and other non-sensitive preferences | Until explicitly reset |
-| Tab recovery markers | Current tab only; clear immediately after recovery |
-| Drafts | 30 days after the last edit, unless converted into a queued command |
-| Offline commands | Until successful replay or explicit user-confirmed discard |
-| Temporary-ID mappings | Until no queued command references them, with a bounded cleanup grace period |
-| Reference data and labels | Domain freshness policy; revalidate online and purge records unused for 30 days |
-| Persisted CRM read models | Domain-specific working-set window and freshness marker; never silently present stale data as current |
-| Saved portal identity label | At most 180 days since use; no portal token |
-| Refresh credential | Server-controlled session lifetime in an HttpOnly cookie |
-| Static build assets | Current deployment plus one rollback-safe version |
-
-## Target IndexedDB Layout
-
-Use one database, `melodytrack`, upgraded through explicit database versions.
-Initial object stores should be:
-
-- `offlineCommands`
-- `offlineIdMappings`
-- `drafts`
-- `referenceData`
-- `readModels`
-- `storageMetadata`
-
-Writes that complete a command and create an ID mapping must use one
-transaction. Database opening and migrations belong to shared storage
-infrastructure; record schemas and repository behavior remain domain-owned.
-
-## Logout And Account Switching
-
-- Revoke the server session and remove the refresh cookie.
-- Clear the in-memory access token and React Query state.
-- Close active synchronization for the outgoing user.
-- Keep pending commands only under that user's stable ID and mark the
-  partition locked.
-- Do not expose cached names, drafts, records, or queued changes after another
-  account signs in.
-- Provide an explicit “remove offline data from this device” action. If pending
-  commands exist, require confirmation and explain that the action is
-  destructive.
-
-## Migration Priorities
-
-### P0: Security And Data Isolation
-
-1. Remove the generic `localStorage` HTTP cache and delete its existing key
-   prefix.
-2. Stop persisting portal link tokens. Replace quick portal login with a
-   backend-issued, HttpOnly remembered-device credential; retain only
-   non-secret display metadata locally.
-3. Partition drafts, reference data, and offline commands by authenticated user
-   before supporting account switching with pending local work.
-4. Move the refresh token to a Secure, HttpOnly, SameSite cookie through a
-   coordinated backend contract.
-
-### P1: Offline Persistence
-
-1. Introduce the versioned IndexedDB database and shared transaction/validation
-   primitives.
-2. Move commands and ID mappings first, preserving replay semantics.
-3. Move drafts into their owning feature repositories with runtime schemas and
-   expiry.
-4. Replace label fragments and generic response caching with domain-owned
-   reference/read-model repositories.
-5. Add a service worker for a versioned app shell and immutable build assets.
-
-### P2: Operations
-
-1. Add storage usage/quota diagnostics.
-2. Add user-facing offline-data inspection and removal.
-3. Add migration, quota failure, account isolation, logout, and deployment
-   upgrade tests.
+See [Durable forms](./durable-forms.md) for the form inventory and developer
+checklist.

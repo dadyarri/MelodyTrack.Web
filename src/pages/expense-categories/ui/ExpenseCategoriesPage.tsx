@@ -3,9 +3,10 @@ import { Button } from "antd";
 import { expenseQueryKeys } from "@/entities/expense";
 import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
 import { useReferenceBookPageController } from "@/features/manage-reference-book";
-import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 export function ExpenseCategoriesPage() {
   const controller = useReferenceBookPageController({
@@ -95,11 +96,14 @@ export function ExpenseCategoriesPage() {
       <ReferenceBookCreateModal
         open={controller.isCreateOpen}
         title="Новая категория расхода"
+        draftKey="draft:expense-categories:create"
         confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
-        onSubmit={controller.onCreate}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

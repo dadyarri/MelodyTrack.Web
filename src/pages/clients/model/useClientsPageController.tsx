@@ -1,24 +1,23 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import dayjs from "dayjs";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import * as v from "valibot";
 
 import { type Client, clientQueryKeys, clientsApi, getClientContactValue, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import type { CourseEnrollment, CourseEnrollmentThemeProgressAction } from "@/entities/course";
 import { courseEnrollmentsApi, courseQueryKeys, coursesApi } from "@/entities/course";
-import { createOfflineTempId, createOrQueueOffline } from "@/entities/offline-queue";
 import { clientSourcesApi } from "@/entities/reference-book";
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import type { ClientFormValues, ClientVacationsFormValues } from "@/features/manage-client";
 import { useUpdateCourseProgress } from "@/features/update-course-progress";
-import { getApiErrorMessages, type PaginatedResponse, type Ulid } from "@/shared/api";
-import { useCreatedReferenceOptions } from "@/shared/lib";
+import { getApiErrorMessages, type Ulid } from "@/shared/api";
+import { createIdempotencyKey, useCreatedReferenceOptions } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { readPositiveInteger, useDraftFormState, useUrlState } from "@/shared/lib/react";
+import { readPositiveInteger, useDurableForm, useUrlState } from "@/shared/lib/react";
 import { getClientHistoryActions } from "@/widgets/client-history";
 
 type ClientSubmitInput = {
@@ -41,6 +40,7 @@ type ClientDraftValues = {
   telegram?: string | null;
   vk?: string | null;
   phone?: string | null;
+  sourceId?: string;
 };
 
 const CLIENT_CREATE_DRAFT_KEY = "draft:clients:create";
@@ -52,23 +52,41 @@ const clientDraftSchema = v.object({
   telegram: v.optional(v.nullable(v.string())),
   vk: v.optional(v.nullable(v.string())),
   phone: v.optional(v.nullable(v.string())),
+  sourceId: v.optional(v.string()),
 });
-const isClientDraft = (value: unknown): value is ClientDraftValues => v.safeParse(clientDraftSchema, value).success;
+const clientDraftCodec = {
+  serialize: (values: ClientFormValues): ClientDraftValues => ({
+    firstName: values.firstName,
+    lastName: values.lastName,
+    patronymic: values.patronymic,
+    dateOfBirth: values.dateOfBirth,
+    telegram: values.telegram,
+    vk: values.vk,
+    phone: values.phone,
+    sourceId: values.sourceId ?? undefined,
+  }),
+  deserialize: (values: ClientDraftValues): Partial<ClientFormValues> => values,
+};
+type ClientVacationsDraftValues = { vacations?: Array<{ period?: [string, string] }> };
+const clientVacationsDraftSchema = v.object({
+  vacations: v.optional(v.array(v.object({ period: v.optional(v.tuple([v.string(), v.string()])) }))),
+});
+const clientVacationsDraftCodec = {
+  serialize: (values: ClientVacationsFormValues): ClientVacationsDraftValues => ({
+    vacations: values.vacations?.map((vacation) => ({
+      period: vacation.period ? [vacation.period[0].toISOString(), vacation.period[1].toISOString()] : undefined,
+    })),
+  }),
+  deserialize: (values: ClientVacationsDraftValues): Partial<ClientVacationsFormValues> => ({
+    vacations: values.vacations?.map((vacation) => ({
+      period: vacation.period ? [dayjs(vacation.period[0]), dayjs(vacation.period[1])] : undefined,
+    })),
+  }),
+};
 const clientHistoryEventsPageSize = 8;
 
 export function useClientsPageController() {
   const { searchParams, setUrlState } = useUrlState();
-  const {
-    hasSavedDraft,
-    isDraftRestored,
-    saveStatus: createDraftSaveStatus,
-    replayKeyRef: draftReplayKeyRef,
-    isHydratingRef: isDraftHydratingRef,
-    loadDraftValues,
-    withHydration,
-    resetStoredDraft,
-    saveDraftValues: saveDraftFormValues,
-  } = useDraftFormState<ClientDraftValues>(CLIENT_CREATE_DRAFT_KEY, isClientDraft);
   const page = readPositiveInteger(searchParams.get("page"));
   const search = searchParams.get("q") ?? "";
   const setPage = useCallback(
@@ -79,7 +97,6 @@ export function useClientsPageController() {
   );
   const [editing, setEditing] = useState<Client | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
-  const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setCreateOpen] = useState(false);
   const isCreateOpen = isCreateRequestedOpen;
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
@@ -90,6 +107,29 @@ export function useClientsPageController() {
   const [form] = Form.useForm<ClientFormValues>();
   const [vacationsForm] = Form.useForm<ClientVacationsFormValues>();
   const [vacationsClient, setVacationsClient] = useState<Client | null>(null);
+  const createDraft = useDurableForm({
+    key: CLIENT_CREATE_DRAFT_KEY,
+    schema: clientDraftSchema,
+    form,
+    codec: clientDraftCodec,
+    enabled: isCreateOpen && editing === null,
+  });
+  const editDraft = useDurableForm({
+    key: editing ? `draft:clients:edit:${editing.id}` : null,
+    schema: clientDraftSchema,
+    form,
+    codec: clientDraftCodec,
+    enabled: isCreateOpen && editing !== null,
+    entity: editing ? { id: editing.id, baselineVersion: editingBaselineActivityId ?? null } : undefined,
+  });
+  const vacationsDraft = useDurableForm({
+    key: vacationsClient ? `draft:clients:vacations:${vacationsClient.id}` : null,
+    schema: clientVacationsDraftSchema,
+    form: vacationsForm,
+    codec: clientVacationsDraftCodec,
+    enabled: vacationsClient !== null,
+    entity: vacationsClient ? { id: vacationsClient.id, baselineVersion: vacationsClient.lastActivity?.id ?? null } : undefined,
+  });
   const navigate = useNavigate();
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -157,131 +197,74 @@ export function useClientsPageController() {
   const isEditingClientStale = currentEditingClient
     ? isActivityStale(currentEditingClient.lastActivity?.id, editingBaselineActivityId)
     : false;
+  const hasStaleClientDraft = editDraft.isStale;
 
-  const saveMutation = useMutation<{ offline: boolean; tempId?: string }, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>(
-    {
-      mutationFn: ({ values, expectedActivityId }) => {
-        const input = prepareClientInput(values);
-        if (editing) {
-          return clientsApi.update(editing.id, input, { expectedActivityId }).then(() => ({ offline: false as const, response: null }));
-        }
+  const saveMutation = useMutation<unknown, unknown, { values: ClientFormValues; expectedActivityId?: Ulid }>({
+    mutationFn: ({ values, expectedActivityId }) => {
+      const input = prepareClientInput(values);
+      if (editing) {
+        return clientsApi.update(editing.id, input, { expectedActivityId });
+      }
 
-        return createOrQueueOffline({
-          input,
-          replayKey: draftReplayKeyRef.current,
-          create: (createInput) =>
-            clientsApi.create(createInput, {
-              replayKey: draftReplayKeyRef.current,
-            }),
-          buildQueueItem: (createInput, replayKey) => ({
-            kind: "clients:create",
-            replayKey,
-            tempId: createOfflineTempId("client"),
-            payload: createInput,
-          }),
-        }).then((result) => ({
-          offline: result.offline,
-          tempId: result.offline ? result.queuedItem.tempId : undefined,
-        }));
-      },
-      onSuccess: async (result, variables) => {
-        message.success(result.offline ? "Клиент сохранен локально" : "Клиент сохранен");
-        if (result.offline && result.tempId && page === 1) {
-          const input = prepareClientInput(variables.values);
-          const tempId = result.tempId;
-          queryClient.setQueryData<PaginatedResponse<Client>>(clientQueryKeys.list(page, search), (current) => {
-            if (!current) {
-              return current;
-            }
-
-            const optimisticClient: Client = {
-              id: tempId,
-              firstName: input.firstName,
-              lastName: input.lastName,
-              patronymic: input.patronymic,
-              dateOfBirth: input.dateOfBirth,
-              contacts: {
-                phone: input.phone,
-                telegram: input.telegram,
-                vk: input.vk,
-              },
-              sourceId: input.sourceId,
-              createdAtUtc: new Date().toISOString(),
-              isLeadClosed: false,
-              vacations: [],
-              balance: 0,
-              lifecycleStatus: 1,
-              lastActivity: null,
-            };
-
-            return {
-              data: [optimisticClient, ...current.data.filter((client) => client.id !== optimisticClient.id)],
-              info: { ...current.info, total: current.info.total + 1 },
-            };
-          });
-        }
-        setCreateOpen(false);
-        setEditing(null);
-        setEditingBaselineActivityId(undefined);
-        resetStoredDraft(() => {
-          form.resetFields();
-        });
-        if (!result.offline) {
-          await queryClient.invalidateQueries({
-            queryKey: clientQueryKeys.all,
-          });
-        }
-      },
-      onError: async (error, variables) => {
-        if (!editing) {
-          showErrors(error);
-          return;
-        }
-
-        await handleStaleEntityConflict({
-          error,
-          modal,
-          queryClient,
-          invalidateQueryKey: clientQueryKeys.all,
-          showErrors,
-          title: "Клиент уже изменен",
-          okText: "Перезаписать",
-          cancelText: "Обновить форму",
-          onConfirm: (conflict) => {
-            saveMutation.mutate({
-              values: variables.values,
-              expectedActivityId: conflict.currentActivity?.id,
-            });
-          },
-          onReload: () => {
-            const freshClient =
-              findItemInQueryData(queryClient, clientQueryKeys.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
-              currentEditingClient;
-            if (!freshClient) {
-              return;
-            }
-
-            setEditing(freshClient);
-            setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
-            withHydration(() => {
-              form.setFieldsValue({
-                ...freshClient,
-                telegram: getClientContactValue(freshClient, "telegram"),
-                vk: getClientContactValue(freshClient, "vk"),
-                phone: getClientContactValue(freshClient, "phone"),
-              });
-            });
-          },
-        });
-      },
+      return clientsApi.create(input, { idempotencyKey: createIdempotencyKey() }).then(() => undefined);
     },
-  );
+    onSuccess: async () => {
+      message.success("Клиент сохранен");
+      await (editing ? editDraft : createDraft).clearAfterSuccess();
+      setCreateOpen(false);
+      setEditing(null);
+      setEditingBaselineActivityId(undefined);
+      form.resetFields();
+      await queryClient.invalidateQueries({ queryKey: clientQueryKeys.all });
+    },
+    onError: async (error, variables) => {
+      if (!editing) {
+        showErrors(error);
+        return;
+      }
+
+      await handleStaleEntityConflict({
+        error,
+        modal,
+        queryClient,
+        invalidateQueryKey: clientQueryKeys.all,
+        showErrors,
+        title: "Клиент уже изменен",
+        okText: "Перезаписать",
+        cancelText: "Обновить форму",
+        onConfirm: (conflict) => {
+          saveMutation.mutate({
+            values: variables.values,
+            expectedActivityId: conflict.currentActivity?.id,
+          });
+        },
+        onReload: () => {
+          const freshClient =
+            findItemInQueryData(queryClient, clientQueryKeys.all, (data) => (data as { data: Client[] } | undefined)?.data, editing.id) ??
+            currentEditingClient;
+          if (!freshClient) {
+            return;
+          }
+
+          setEditing(freshClient);
+          setEditingBaselineActivityId(freshClient.lastActivity?.id ?? null);
+          form.setFieldsValue({
+            ...freshClient,
+            telegram: getClientContactValue(freshClient, "telegram"),
+            vk: getClientContactValue(freshClient, "vk"),
+            phone: getClientContactValue(freshClient, "phone"),
+          });
+        },
+      });
+    },
+  });
 
   const vacationsMutation = useMutation({
     mutationFn: ({ client, values }: { client: Client; values: ClientVacationsFormValues }) =>
       clientsApi.update(client.id, prepareClientVacationUpdate(client, values), { expectedActivityId: client.lastActivity?.id }),
     onSuccess: async () => {
       message.success("Периоды отсутствия сохранены");
+      await vacationsDraft.clearAfterSuccess();
       setVacationsClient(null);
       vacationsForm.resetFields();
       await queryClient.invalidateQueries({ queryKey: clientQueryKeys.all });
@@ -363,14 +346,12 @@ export function useClientsPageController() {
       setEditing(client);
       setEditingBaselineActivityId(client.lastActivity?.id ?? null);
       setCreateOpen(true);
-      withHydration(() => {
-        form.resetFields();
-        form.setFieldsValue({
-          ...client,
-          telegram: getClientContactValue(client, "telegram"),
-          vk: getClientContactValue(client, "vk"),
-          phone: getClientContactValue(client, "phone"),
-        });
+      form.resetFields();
+      form.setFieldsValue({
+        ...client,
+        telegram: getClientContactValue(client, "telegram"),
+        vk: getClientContactValue(client, "vk"),
+        phone: getClientContactValue(client, "phone"),
       });
       return;
     }
@@ -379,14 +360,10 @@ export function useClientsPageController() {
       return;
     }
 
-    const draftValues = loadDraftValues();
     setEditing(null);
     setEditingBaselineActivityId(undefined);
     setCreateOpen(true);
-    withHydration(() => {
-      form.resetFields();
-      form.setFieldsValue(draftValues ?? {});
-    });
+    form.resetFields();
   };
 
   const createSourceMutation = useMutation({
@@ -453,28 +430,26 @@ export function useClientsPageController() {
     setEnrollmentCreateOpen(false);
   };
 
-  const handleClearCreateDraft = useCallback(() => {
-    resetStoredDraft(() => {
+  const handleClearCreateDraft = () => {
+    const activeDraft = editing ? editDraft : createDraft;
+    void activeDraft.discard().then(() => {
       form.resetFields();
+      if (editing) {
+        form.setFieldsValue({
+          ...editing,
+          telegram: getClientContactValue(editing, "telegram"),
+          vk: getClientContactValue(editing, "vk"),
+          phone: getClientContactValue(editing, "phone"),
+        });
+      }
     });
-  }, [form, resetStoredDraft]);
+  };
 
   const closeEditor = () => {
     setCreateOpen(false);
     setEditing(null);
     setEditingBaselineActivityId(undefined);
   };
-
-  useLayoutEffect(() => {
-    if (isCreateOpen && !editing) {
-      const draftValues = loadDraftValues();
-      if (draftValues) {
-        withHydration(() => {
-          form.setFieldsValue(draftValues);
-        });
-      }
-    }
-  }, [editing, form, isCreateOpen, loadDraftValues, withHydration]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -488,14 +463,10 @@ export function useClientsPageController() {
         }
 
         event.preventDefault();
-        const draftValues = loadDraftValues();
         setEditing(null);
         setEditingBaselineActivityId(undefined);
         setCreateOpen(true);
-        withHydration(() => {
-          form.resetFields();
-          form.setFieldsValue(draftValues ?? {});
-        });
+        form.resetFields();
       }
     };
 
@@ -503,7 +474,7 @@ export function useClientsPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canCreateClients, form, loadDraftValues, withHydration]);
+  }, [canCreateClients, form]);
 
   return {
     canCreateClients,
@@ -527,14 +498,16 @@ export function useClientsPageController() {
     closeHistoryClient,
     vacationsForm,
     vacationsClient,
+    vacationsDraft,
     editing,
     isCreateOpen,
-    hasCreateDraft,
-    isCreateDraftRestored: isDraftRestored,
-    createDraftSaveStatus,
+    hasCreateDraft: (editing ? editDraft : createDraft).hasDraft,
+    isCreateDraftRestored: (editing ? editDraft : createDraft).restored,
+    createDraftSaveStatus: (editing ? editDraft : createDraft).status,
+    editorDraft: editing ? editDraft : createDraft,
     form,
     currentEditingClient,
-    isEditingClientStale,
+    isEditingClientStale: isEditingClientStale || hasStaleClientDraft,
     editingBaselineActivityId,
     isSourceCreateOpen,
     isEnrollmentCreateOpen,
@@ -561,11 +534,7 @@ export function useClientsPageController() {
       });
     },
     onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => {
-      if (editing || isDraftHydratingRef.current) {
-        return;
-      }
-
-      saveDraftFormValues(values);
+      (editing ? editDraft : createDraft).formProps.onValuesChange?.(_, values);
     },
     clientHistoryActions,
     openVacationsEditor: (client: Client) => {

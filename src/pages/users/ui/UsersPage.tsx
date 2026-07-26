@@ -3,7 +3,15 @@ import { Button, Form, Input, Modal, Space } from "antd";
 import { formatPhone } from "@/entities/client";
 import { RoleSelect } from "@/entities/user";
 import { UserEditorModal } from "@/features/edit-user";
-import { AccessDeniedNotice, ActionableEmptyState, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import {
+  AccessDeniedNotice,
+  ActionableEmptyState,
+  DraftFormModal,
+  ListPageScaffold,
+  ListTable,
+  PageLayout,
+  ShortcutButton,
+} from "@/shared/ui";
 import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 import { useUsersPageController } from "../model/useUsersPageController";
@@ -115,12 +123,35 @@ export function UsersPage() {
         savePending={controller.updateUserMutation.isPending}
         isStale={controller.isEditingUserStale}
         staleActivity={controller.currentEditingUser?.lastActivity}
+        draftStatus={controller.editDraft.status}
+        draftRestored={controller.editDraft.restored}
+        hasDraft={controller.editDraft.hasDraft}
+        onDiscardDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            if (controller.editing) {
+              controller.openEditor(controller.editing);
+            }
+          });
+        }}
+        onValuesChange={controller.onEditValuesChange}
+        draftStale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
         onCancel={controller.closeEditor}
         onSubmit={controller.onEditSubmit}
       />
-      <Modal
+      <DraftFormModal
         open={controller.isInviteOpen}
         title="Создать приглашение"
+        restored={controller.inviteDraft.restored}
+        saveStatus={controller.inviteDraft.status}
+        showClearDraft={controller.inviteDraft.hasDraft && !controller.inviteUrl}
+        onClearDraft={() => {
+          void controller.inviteDraft.discard().then(() => {
+            controller.form.resetFields();
+          });
+        }}
+        onRetryDraft={controller.inviteDraft.retry}
         onCancel={controller.closeInviteModal}
         onOk={() => {
           controller.form.submit();
@@ -130,7 +161,13 @@ export function UsersPage() {
         confirmLoading={controller.createInviteMutation.isPending}
       >
         <Space orientation="vertical" size={16} className="wide">
-          <Form form={controller.form} layout="vertical" requiredMark={false} onFinish={controller.onInviteSubmit}>
+          <Form
+            form={controller.form}
+            layout="vertical"
+            requiredMark={false}
+            onFinish={controller.onInviteSubmit}
+            onValuesChange={controller.onInviteValuesChange}
+          >
             <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
               <Input placeholder="Необязательно" />
             </Form.Item>
@@ -151,7 +188,7 @@ export function UsersPage() {
             </Space.Compact>
           </Form.Item>
         </Space>
-      </Modal>
+      </DraftFormModal>
       <Modal
         open={Boolean(controller.passwordResetUser)}
         title="Ссылка на восстановление пароля"

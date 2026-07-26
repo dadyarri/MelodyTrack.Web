@@ -4,7 +4,6 @@ import { lazy, type ReactNode, Suspense, type SyntheticEvent, useCallback, useEf
 import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
-import { OfflineQueueIndicator } from "@/features/offline";
 import { useTheme } from "@/shared/config";
 import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
@@ -211,7 +210,6 @@ export function AppShell({
             }}
           />
           <div className={styles.headerSpacer} />
-          <OfflineQueueIndicator />
           <Popover
             trigger={["hover", "click"]}
             placement="bottomRight"

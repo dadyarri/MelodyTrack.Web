@@ -1,16 +1,16 @@
 import { useCallback, useEffect } from "react";
 import { useBeforeUnload, useBlocker } from "react-router";
 
-import type { DraftSaveStatus } from "./useDraftFormState";
+import type { DurableFormStatus } from "./useDurableForm";
 
-export function getDraftGuardState(isActive: boolean, saveStatus: DraftSaveStatus) {
+export function getDraftGuardState(isActive: boolean, saveStatus: DurableFormStatus) {
   return {
-    blockClientNavigation: isActive && saveStatus === "failed",
-    warnBeforeUnload: isActive && (saveStatus === "pending" || saveStatus === "failed"),
+    blockClientNavigation: isActive && (saveStatus === "saving" || saveStatus === "failed"),
+    warnBeforeUnload: isActive && (saveStatus === "saving" || saveStatus === "failed"),
   };
 }
 
-export function useUnsavedDraftGuard(isActive: boolean, saveStatus: DraftSaveStatus) {
+export function useUnsavedDraftGuard(isActive: boolean, saveStatus: DurableFormStatus) {
   const guard = getDraftGuardState(isActive, saveStatus);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -33,10 +33,14 @@ export function useUnsavedDraftGuard(isActive: boolean, saveStatus: DraftSaveSta
       return;
     }
 
-    if (window.confirm("Черновик не удалось сохранить. Покинуть страницу и потерять последние изменения?")) {
+    const message =
+      saveStatus === "saving"
+        ? "Черновик ещё сохраняется. Всё равно покинуть страницу?"
+        : "Черновик не удалось сохранить. Покинуть страницу и потерять последние изменения?";
+    if (window.confirm(message)) {
       blocker.proceed();
     } else {
       blocker.reset();
     }
-  }, [blocker]);
+  }, [blocker, saveStatus]);
 }

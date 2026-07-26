@@ -14,7 +14,6 @@ import {
   type RecurrenceType,
 } from "@/entities/appointment";
 import { type CourseEnrollment, courseEnrollmentsApi, courseQueryKeys, type CourseThemeProgressState } from "@/entities/course";
-import { createOrQueueOffline } from "@/entities/offline-queue";
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import { userQueryKeys, usersApi } from "@/entities/user";
 import { getVisibleScheduleHours } from "@/entities/user";
@@ -23,10 +22,11 @@ import { usePaymentCreateController } from "@/features/record-payment";
 import { getApiErrorMessages, isHttpRequestCanceled, type Ulid } from "@/shared/api";
 import { useOpenCreateRouteIntent } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
+import { createIdempotencyKey } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { useDraftFormState, useUrlState } from "@/shared/lib/react";
+import { useDurableForm, useUrlState } from "@/shared/lib/react";
 
 const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 const APPOINTMENT_CREATE_DRAFT_KEY = "draft:appointments:create";
@@ -53,20 +53,33 @@ const appointmentDraftSchema = v.object({
   patternEndDate: v.optional(v.string()),
   weeklyDays: v.optional(v.array(v.number())),
 });
-const isAppointmentDraft = (value: unknown): value is AppointmentDraftValues => v.safeParse(appointmentDraftSchema, value).success;
+const appointmentDraftCodec = {
+  serialize: serializeAppointmentDraft,
+  deserialize: (values: AppointmentDraftValues): Partial<AppointmentFormValues> => ({
+    ...values,
+    startDate: values.startDate ? dayjs(values.startDate) : null,
+    patternEndDate: values.patternEndDate ? dayjs(values.patternEndDate) : undefined,
+  }),
+};
+const appointmentEditDraftSchema = v.object({
+  clientId: v.string(),
+  serviceId: v.string(),
+  providerId: v.optional(v.string()),
+  courseThemeId: v.optional(v.string()),
+  lessonNotes: v.optional(v.string()),
+  startDate: v.string(),
+});
+type AppointmentEditDraftValues = Omit<AppointmentEditFormValues, "startDate"> & { startDate: string };
+const appointmentEditDraftCodec = {
+  serialize: (values: AppointmentEditFormValues): AppointmentEditDraftValues => ({ ...values, startDate: values.startDate.toISOString() }),
+  deserialize: (values: AppointmentEditDraftValues): Partial<AppointmentEditFormValues> => ({
+    ...values,
+    startDate: dayjs(values.startDate),
+  }),
+};
 
 export function useSchedulePageController() {
   const { searchParams, setUrlState } = useUrlState();
-  const {
-    hasSavedDraft,
-    isDraftRestored,
-    saveStatus: createDraftSaveStatus,
-    replayKeyRef: draftReplayKeyRef,
-    loadDraftValues,
-    withHydration,
-    resetStoredDraft,
-    saveDraftValues: saveCreateDraftValues,
-  } = useDraftFormState<AppointmentDraftValues>(APPOINTMENT_CREATE_DRAFT_KEY, isAppointmentDraft);
   const requestedWeekStart = dayjs(searchParams.get("week") ?? "");
   const weekStart = requestedWeekStart.isValid() ? requestedWeekStart.startOf("week") : dayjs().startOf("week");
   const setWeekStart = useCallback(
@@ -77,7 +90,6 @@ export function useSchedulePageController() {
     },
     [setUrlState],
   );
-  const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
   const isOpen = isCreateRequestedOpen;
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -100,9 +112,9 @@ export function useSchedulePageController() {
   );
   const [pendingCreateStartDate, setPendingCreateStartDate] = useState<Dayjs | null>(null);
   const [pendingCreateProviderId, setPendingCreateProviderId] = useState<string | undefined>();
-  const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
-  const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
-  const [createProviderLabel, setCreateProviderLabel] = useState<string | undefined>();
+  const [, setCreateClientLabel] = useState<string | undefined>();
+  const [, setCreateServiceLabel] = useState<string | undefined>();
+  const [, setCreateProviderLabel] = useState<string | undefined>();
   const auth = useAuth();
   const [form] = Form.useForm<AppointmentFormValues>();
   const createRequestControllerRef = useRef<AbortController | null>(null);
@@ -126,6 +138,21 @@ export function useSchedulePageController() {
   const lockedProviderId = isSpecialistFilterLocked ? auth.user?.id : undefined;
   const createPrefillClientId = createRouteIntent.prefillClientId;
   const isCreateModalOpen = canCreateAppointments && (isOpen || createRouteIntent.hasOpenCreateIntent);
+  const createDraft = useDurableForm({
+    key: APPOINTMENT_CREATE_DRAFT_KEY,
+    schema: appointmentDraftSchema,
+    form,
+    codec: appointmentDraftCodec,
+    enabled: isCreateModalOpen,
+  });
+  const editDraft = useDurableForm({
+    key: appointmentToEdit ? `draft:appointments:edit:${appointmentToEdit.id}` : null,
+    schema: appointmentEditDraftSchema,
+    form: editForm,
+    codec: appointmentEditDraftCodec,
+    enabled: appointmentToEdit !== null,
+    entity: appointmentToEdit ? { id: appointmentToEdit.id, baselineVersion: appointmentToEditBaselineActivityId ?? null } : undefined,
+  });
 
   const openCreateModal = () => {
     if (!canCreateAppointments) {
@@ -334,55 +361,22 @@ export function useSchedulePageController() {
     mutationFn: (values: AppointmentFormValues) => {
       const requestController = new AbortController();
       createRequestControllerRef.current = requestController;
-      return createOrQueueOffline({
-        input: buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone),
-        replayKey: draftReplayKeyRef.current,
-        create: (input) =>
-          appointmentsApi.create(input, {
-            replayKey: draftReplayKeyRef.current,
-            signal: requestController.signal,
-          }),
-        buildQueueItem: (input, replayKey) => ({
-          kind: "appointments:create",
-          replayKey,
-          payload: {
-            ...input,
-            clientLabel: createClientLabel,
-            serviceLabel: createServiceLabel,
-            providerLabel: createProviderLabel,
-          },
-        }),
-      }).finally(() => {
-        if (createRequestControllerRef.current === requestController) {
-          createRequestControllerRef.current = null;
-        }
-      });
-    },
-    onSuccess: async (result) => {
-      message.success(result.offline ? "Запись сохранена локально" : "Запись создана");
-      if (result.offline) {
-        queryClient.setQueriesData<Appointment[]>({ queryKey: appointmentQueryKeys.appointmentsAll }, (current) => {
-          if (!current) {
-            return current;
+      return appointmentsApi
+        .create(buildCreateAppointmentPayload(values, recurrenceTypesQuery.data ?? [], timezone), {
+          idempotencyKey: createIdempotencyKey(),
+          signal: requestController.signal,
+        })
+        .finally(() => {
+          if (createRequestControllerRef.current === requestController) {
+            createRequestControllerRef.current = null;
           }
-
-          const optimisticAppointment = buildOptimisticOfflineAppointment(
-            result.input,
-            draftReplayKeyRef.current,
-            recurrenceTypesQuery.data?.find((item) => item.id === result.input.recurrenceTypeId)?.key,
-            createClientLabel,
-            createServiceLabel,
-            createProviderLabel,
-          );
-
-          return [...current, optimisticAppointment];
         });
-      }
+    },
+    onSuccess: async () => {
+      message.success("Запись создана");
+      await createDraft.clearAfterSuccess();
       closeCreateModal();
-      resetStoredDraft();
-      if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
-      }
+      await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
     },
     onError: (error) => {
       if (!isHttpRequestCanceled(error)) {
@@ -460,6 +454,7 @@ export function useSchedulePageController() {
     },
     onSuccess: async () => {
       message.success("Запись обновлена");
+      await editDraft.clearAfterSuccess();
       setAppointmentToEdit(null);
       setAppointmentToEditBaselineActivityId(undefined);
       await queryClient.invalidateQueries({ queryKey: appointmentQueryKeys.appointmentsAll });
@@ -652,8 +647,8 @@ export function useSchedulePageController() {
     },
   });
 
-  const handleCreateDraftChange = (values: AppointmentFormValues) => {
-    saveCreateDraftValues(serializeAppointmentDraft(values));
+  const handleCreateDraftChange = (_values: AppointmentFormValues) => {
+    createDraft.formProps.onValuesChange?.({}, _values);
   };
 
   const openCreateModalAt = (startDate: Dayjs) => {
@@ -671,33 +666,18 @@ export function useSchedulePageController() {
       return;
     }
 
-    const draftValues = loadDraftValues();
-    const startDate = draftValues?.startDate ? dayjs(draftValues.startDate) : (pendingCreateStartDate ?? dayjs());
-    const providerId = pendingCreateProviderId ?? lockedProviderId ?? draftValues?.providerId;
-
-    withHydration(() => {
-      form.setFieldsValue({
-        clientId: draftValues?.clientId ?? createPrefillClientId,
-        serviceId: draftValues?.serviceId,
-        providerId,
-        courseThemeId: draftValues?.courseThemeId,
-        lessonNotes: draftValues?.lessonNotes,
-        startDate,
-        recurrenceTypeId: draftValues?.recurrenceTypeId,
-        patternEndDate: draftValues?.patternEndDate ? dayjs(draftValues.patternEndDate) : undefined,
-        weeklyDays: draftValues?.weeklyDays,
-      });
+    form.setFieldsValue({
+      clientId: createPrefillClientId,
+      serviceId: undefined,
+      providerId: pendingCreateProviderId ?? lockedProviderId,
+      courseThemeId: undefined,
+      lessonNotes: undefined,
+      startDate: pendingCreateStartDate ?? dayjs(),
+      recurrenceTypeId: undefined,
+      patternEndDate: undefined,
+      weeklyDays: undefined,
     });
-  }, [
-    createPrefillClientId,
-    form,
-    isCreateModalOpen,
-    loadDraftValues,
-    lockedProviderId,
-    pendingCreateProviderId,
-    pendingCreateStartDate,
-    withHydration,
-  ]);
+  }, [createPrefillClientId, form, isCreateModalOpen, lockedProviderId, pendingCreateProviderId, pendingCreateStartDate]);
 
   function closeCreateModal() {
     createRequestControllerRef.current?.abort();
@@ -705,14 +685,12 @@ export function useSchedulePageController() {
     setOpen(false);
     setPendingCreateStartDate(null);
     setPendingCreateProviderId(undefined);
-    withHydration(() => {
-      form.resetFields();
-    });
+    form.resetFields();
     createRouteIntent.clearOpenCreateIntent();
   }
 
   function handleClearCreateDraft() {
-    resetStoredDraft(() => {
+    void createDraft.discard().then(() => {
       form.setFieldsValue({
         clientId: createPrefillClientId,
         serviceId: undefined,
@@ -746,7 +724,7 @@ export function useSchedulePageController() {
     currentReschedulingAppointment,
     appointmentToRescheduleStartDate,
     isSelectedAppointmentStale,
-    isEditingAppointmentStale,
+    isEditingAppointmentStale: isEditingAppointmentStale || editDraft.isStale,
     isDeletingAppointmentStale,
     isReschedulingAppointmentStale,
     selectedAppointment,
@@ -764,9 +742,10 @@ export function useSchedulePageController() {
     lockedProviderId,
     form,
     editForm,
-    hasCreateDraft,
-    isCreateDraftRestored: isDraftRestored,
-    createDraftSaveStatus,
+    hasCreateDraft: createDraft.hasDraft,
+    isCreateDraftRestored: createDraft.restored,
+    createDraftSaveStatus: createDraft.status,
+    createDraftRetry: createDraft.retry,
     isCreateModalOpen,
     createMutation,
     updateMutation,
@@ -777,6 +756,8 @@ export function useSchedulePageController() {
     openCreateModalAt,
     closeCreateModal,
     handleCreateDraftChange,
+    onEditDraftChange: editDraft.formProps.onValuesChange,
+    editDraft,
     handleClearCreateDraft,
     setSelectedAppointment,
     setSelectedAppointmentBaselineActivityId,
@@ -793,11 +774,10 @@ export function useSchedulePageController() {
     openPaymentCreateForAppointment,
     paymentCreate,
     createPrefillClientId,
-    onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
+    onQuickClientCreated: (client: { id: string; displayName: string }) => {
       createdClientOptions.addCreatedOption({
         id: client.id,
         label: client.displayName,
-        optionLabel: client.isOffline ? `${client.displayName} (локально)` : client.displayName,
       });
       setCreateClientLabel(client.displayName);
 
@@ -860,65 +840,6 @@ function serializeAppointmentDraft(values: AppointmentFormValues): AppointmentDr
     recurrenceTypeId: values.recurrenceTypeId,
     patternEndDate: values.patternEndDate?.toISOString(),
     weeklyDays: values.weeklyDays,
-  };
-}
-
-function buildOptimisticOfflineAppointment(
-  input: ReturnType<typeof buildCreateAppointmentPayload>,
-  replayKey: string,
-  recurrenceKey: RecurrenceType["key"] | undefined,
-  clientLabel?: string,
-  serviceLabel?: string,
-  providerLabel?: string,
-): Appointment {
-  const clientNameParts = (clientLabel ?? input.clientId).split(" ");
-  const serviceName = serviceLabel ?? input.serviceId;
-  const providerNameParts = (providerLabel ?? "").split(" ").filter(Boolean);
-  const startDate = dayjs(input.startDate);
-  const endDate = startDate.add(1, "hour");
-
-  return {
-    id: `offline:${replayKey}`,
-    client: {
-      id: input.clientId,
-      firstName: clientNameParts[1] ?? clientNameParts[0],
-      lastName: clientNameParts[0] ?? "Клиент",
-      patronymic: clientNameParts.slice(2).join(" ") || undefined,
-    },
-    service: {
-      id: input.serviceId,
-      name: serviceName,
-    },
-    provider: providerNameParts.length
-      ? {
-          id: input.providerId ?? "offline-provider",
-          firstName: providerNameParts[1] ?? providerNameParts[0],
-          lastName: providerNameParts[0] ?? "Преподаватель",
-          roleDisplayName: "",
-        }
-      : undefined,
-    courseTheme: input.courseThemeId
-      ? {
-          id: input.courseThemeId,
-          title: input.courseThemeId,
-          courseId: "offline-course",
-          courseName: "Курс",
-        }
-      : null,
-    lessonNotes: input.lessonNotes ?? null,
-    startDate: input.startDate,
-    endDate: endDate.toISOString(),
-    status: "planned",
-    recurringRule: input.recurrenceTypeId
-      ? {
-          id: `offline-rule:${replayKey}`,
-          startDate: input.startDate,
-          endDate: input.patternEndDate ?? null,
-          key: recurrenceKey ?? "daily",
-          recurrencePattern: input.recurrencePattern ?? null,
-        }
-      : null,
-    lastActivity: null,
   };
 }
 

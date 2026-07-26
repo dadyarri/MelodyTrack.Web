@@ -30,8 +30,10 @@ export const clientsApi = {
       })
       .then((response) => response.data.clients);
   },
-  create(input: CreateClientInput, options?: { replayKey?: string }) {
-    return http.post<CreateEntityResponse>("/clients", input, buildReplayConfig(options?.replayKey)).then((response) => response.data);
+  create(input: CreateClientInput, options?: { idempotencyKey?: string }) {
+    return http
+      .post<CreateEntityResponse>("/clients", input, buildIdempotencyConfig(options?.idempotencyKey))
+      .then((response) => response.data);
   },
   update(id: Ulid, input: UpdateClientInput, options?: { expectedActivityId?: Ulid }) {
     return http
@@ -68,11 +70,11 @@ export const clientsApi = {
   },
 };
 
-function buildReplayConfig(replayKey?: string) {
-  return replayKey
+function buildIdempotencyConfig(idempotencyKey?: string) {
+  return idempotencyKey
     ? {
         headers: {
-          "Idempotency-Key": replayKey,
+          "Idempotency-Key": idempotencyKey,
         },
       }
     : undefined;

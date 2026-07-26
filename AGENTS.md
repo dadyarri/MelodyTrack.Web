@@ -65,8 +65,8 @@ New code must not use browser persistence APIs ad hoc.
 - Keep access tokens and transient query/UI state in memory.
 - Use `sessionStorage` only for small, non-sensitive tab recovery markers.
 - Use `localStorage` only for small, non-sensitive device preferences.
-- Put durable user work and offline domain data behind user-scoped, versioned,
-  runtime-validated repositories; the target backend is IndexedDB.
+- Put durable user work behind the user-scoped, versioned,
+  runtime-validated `useDurableForm` adapter backed by IndexedDB.
 - Never persist credentials or secret-bearing URLs outside a Secure, HttpOnly
   cookie.
 
@@ -77,11 +77,13 @@ business-data cache.
 ## Verification
 
 Run `npm run verify` before handing off frontend changes. It checks formatting,
-Biome, ESLint, FSD architecture boundaries, strict TypeScript, tests, and the
-production build.
+Biome, ESLint, FSD architecture boundaries, strict TypeScript, unit and browser
+tests, and the production build. Browser tests use Playwright with a system
+Chromium when available; otherwise install it with `npx playwright install
+chromium` or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
 
 Use `npm run test:watch` while developing tests. New business rules, storage
-migrations, auth/session behavior, and offline replay behavior require tests.
+migrations, auth/session behavior, and durable-form behavior require tests.
 
 Architecture violations are checked with Steiger. A new violation must be fixed
 in code, not silenced in configuration.

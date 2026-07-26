@@ -1,2 +1,2 @@
 export { configureDraftOwner } from "./owner";
-export { createReplayKey } from "./replayKey";
+export { createIdempotencyKey } from "./idempotencyKey";

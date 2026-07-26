@@ -49,7 +49,7 @@ describe("clientsApi", () => {
         firstName: "Иван",
         lastName: "Иванов",
       },
-      { replayKey: "replay-1" },
+      { idempotencyKey: "replay-1" },
     );
 
     expect(httpMock.post).toHaveBeenCalledWith(

@@ -22,6 +22,7 @@ import {
 import { Alert, App as AntdApp, Button, Empty, Form, Input, InputNumber, Modal, Select, Space, Tag, Typography } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
+import * as v from "valibot";
 
 import type {
   CourseEnrollment,
@@ -34,7 +35,8 @@ import { useUpdateCourseProgress } from "@/features/update-course-progress";
 import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
 import { pluralizeRu } from "@/shared/lib";
-import { PageLayout } from "@/shared/ui";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+import { DraftFormModal, DraftModalTitle, PageLayout } from "@/shared/ui";
 import { BbcodeContent } from "@/shared/ui/editors";
 import { BbcodeEditor } from "@/shared/ui/editors";
 import {
@@ -62,6 +64,8 @@ const branchRowGap = 36;
 const branchLabelToTopicGap = 12;
 const topicGap = 62;
 const canvasInset = 36;
+const courseNodeDraftSchema = v.record(v.string(), v.unknown());
+const courseNodeDraftCodec = jsonDurableFormCodec<Record<string, unknown>>();
 
 type Controller = ReturnType<typeof useCoursesPageController>;
 type EditorCourse = NonNullable<Controller["draftCourse"]>;
@@ -286,7 +290,14 @@ export function CourseWorkspace() {
             <>
               <div className={styles.editorHeader}>
                 <div className={styles.headerTitle}>
-                  <Typography.Title level={3}>{controller.draftCourse.name || "Курс без названия"}</Typography.Title>
+                  <Typography.Title level={3}>
+                    <DraftModalTitle
+                      title={controller.draftCourse.name || "Курс без названия"}
+                      restored={controller.courseDraft.restored}
+                      saveStatus={controller.courseDraft.status}
+                      onRetry={controller.courseDraft.retry}
+                    />
+                  </Typography.Title>
                 </div>
                 <div className={styles.editorActions}>
                   <Select
@@ -314,6 +325,13 @@ export function CourseWorkspace() {
                   />
                   {!isProgressMode ? (
                     <>
+                      {controller.courseDraft.isStale ? <Button onClick={controller.courseDraft.reapply}>Применить черновик</Button> : null}
+                      {controller.courseDraft.status === "failed" ? (
+                        <Button onClick={controller.courseDraft.retry}>Повторить сохранение</Button>
+                      ) : null}
+                      {controller.courseDraft.hasDraft ? (
+                        <Button onClick={() => void controller.discardCourseDraft()}>Отбросить черновик</Button>
+                      ) : null}
                       <Button
                         icon={<BookOutlined />}
                         onClick={() => {
@@ -446,9 +464,18 @@ export function CourseWorkspace() {
         )
       ) : null}
 
-      <Modal
+      <DraftFormModal
         open={controller.canManageCourses && controller.isCreateOpen}
         title="Новый курс"
+        restored={controller.createDraft.restored}
+        saveStatus={controller.createDraft.status}
+        showClearDraft={controller.createDraft.hasDraft}
+        onClearDraft={() => {
+          void controller.createDraft.discard().then(() => {
+            controller.createForm.resetFields();
+          });
+        }}
+        onRetryDraft={controller.createDraft.retry}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
@@ -457,7 +484,12 @@ export function CourseWorkspace() {
         }}
         confirmLoading={controller.createMutation.isPending}
       >
-        <Form form={controller.createForm} layout="vertical" onFinish={controller.submitCreate}>
+        <Form
+          form={controller.createForm}
+          layout="vertical"
+          onFinish={controller.submitCreate}
+          onValuesChange={controller.createDraft.formProps.onValuesChange}
+        >
           <Form.Item name="name" label="Название" rules={[{ required: true, message: "Укажите название курса" }]}>
             <Input />
           </Form.Item>
@@ -465,7 +497,7 @@ export function CourseWorkspace() {
             <Input.TextArea autoSize={{ minRows: 2, maxRows: 4 }} />
           </Form.Item>
         </Form>
-      </Modal>
+      </DraftFormModal>
     </PageLayout>
   );
 }
@@ -991,8 +1023,16 @@ function CourseNodeModal({
   onDelete: (selection: Exclude<DiagramNodeSelection, { kind: "course" }>) => void;
 }) {
   const course = controller.draftCourse;
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<Record<string, unknown>>();
   const selected = useMemo(() => (course && selection ? getSelectedEditorNode(course, selection) : null), [course, selection]);
+  const nodeDraft = useDurableForm({
+    key: course && selection ? `draft:courses:node:${course.id}:${getSelectionDraftIdentity(selection)}` : null,
+    schema: courseNodeDraftSchema,
+    form,
+    codec: courseNodeDraftCodec,
+    enabled: Boolean(course && selection),
+    entity: course ? { id: course.id } : undefined,
+  });
 
   useEffect(() => {
     if (selected == null) {
@@ -1014,7 +1054,7 @@ function CourseNodeModal({
       open
       width={selected.kind === "theme" || selected.kind === "course" ? 760 : 560}
       className={selected.kind === "theme" || selected.kind === "course" ? styles.themeEditorModal : undefined}
-      title={title}
+      title={<DraftModalTitle title={title} restored={nodeDraft.restored} saveStatus={nodeDraft.status} onRetry={nodeDraft.retry} />}
       onCancel={onClose}
       onOk={() => {
         form.submit();
@@ -1022,6 +1062,17 @@ function CourseNodeModal({
       footer={(_, { OkBtn, CancelBtn }) => (
         <div className={styles.modalFooter}>
           <div className={styles.modalFooterSecondary}>
+            {nodeDraft.hasDraft ? (
+              <Button
+                onClick={() =>
+                  void nodeDraft.discard().then(() => {
+                    form.setFieldsValue(getSelectionFormValues(selected));
+                  })
+                }
+              >
+                Отбросить черновик
+              </Button>
+            ) : null}
             {selected.kind === "block" ? (
               <Button
                 icon={<PlusOutlined />}
@@ -1071,8 +1122,10 @@ function CourseNodeModal({
       <Form
         form={form}
         layout="vertical"
+        onValuesChange={nodeDraft.formProps.onValuesChange}
         onFinish={() => {
           applySelectionValues(controller, selected, form.getFieldsValue(true) as Record<string, unknown>);
+          void nodeDraft.clearAfterSuccess();
           onClose();
         }}
       >
@@ -1158,6 +1211,7 @@ function CourseNodeModal({
                     value={readFormString(form.getFieldValue("lessonContent"))}
                     onChange={(value) => {
                       form.setFieldValue("lessonContent", value);
+                      nodeDraft.formProps.onValuesChange?.({ lessonContent: value }, form.getFieldsValue());
                     }}
                     helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
                   />
@@ -1166,6 +1220,7 @@ function CourseNodeModal({
                     value={readFormString(form.getFieldValue("homeworkContent"))}
                     onChange={(value) => {
                       form.setFieldValue("homeworkContent", value);
+                      nodeDraft.formProps.onValuesChange?.({ homeworkContent: value }, form.getFieldsValue());
                     }}
                     helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
                   />
@@ -1394,7 +1449,15 @@ function ThemeProgressDetails({
 }
 
 function AddNodeModal({ controller, intent, onClose }: { controller: Controller; intent: AddNodeIntent | null; onClose: () => void }) {
-  const [form] = Form.useForm();
+  const [form] = Form.useForm<Record<string, unknown>>();
+  const addDraft = useDurableForm({
+    key: intent && controller.draftCourse ? `draft:courses:add:${controller.draftCourse.id}:${getAddIntentDraftIdentity(intent)}` : null,
+    schema: courseNodeDraftSchema,
+    form,
+    codec: courseNodeDraftCodec,
+    enabled: Boolean(intent && controller.draftCourse),
+    entity: controller.draftCourse ? { id: controller.draftCourse.id } : undefined,
+  });
 
   if (intent == null || controller.draftCourse == null) {
     return null;
@@ -1404,17 +1467,21 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
   const targetBlock = intent.kind === "theme" ? controller.draftCourse.blocks.find((block) => block.localId === intent.blockId) : null;
 
   return (
-    <Modal
+    <DraftFormModal
       open
       width={intent.kind === "theme" ? 760 : 560}
       className={intent.kind === "theme" ? styles.themeEditorModal : undefined}
       title={title}
-      onCancel={onClose}
-      afterOpenChange={(open) => {
-        if (open) {
+      restored={addDraft.restored}
+      saveStatus={addDraft.status}
+      showClearDraft={addDraft.hasDraft}
+      onClearDraft={() => {
+        void addDraft.discard().then(() => {
           form.resetFields();
-        }
+        });
       }}
+      onRetryDraft={addDraft.retry}
+      onCancel={onClose}
       onOk={() => {
         form.submit();
       }}
@@ -1422,8 +1489,10 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
       <Form
         form={form}
         layout="vertical"
+        onValuesChange={addDraft.formProps.onValuesChange}
         onFinish={() => {
           addEditorNode(controller, intent, form.getFieldsValue(true) as Record<string, unknown>);
+          void addDraft.clearAfterSuccess();
           onClose();
         }}
       >
@@ -1473,6 +1542,7 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
                     value={readFormString(form.getFieldValue("lessonContent"))}
                     onChange={(value) => {
                       form.setFieldValue("lessonContent", value);
+                      addDraft.formProps.onValuesChange?.({ lessonContent: value }, form.getFieldsValue());
                     }}
                     helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
                   />
@@ -1481,6 +1551,7 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
                     value={readFormString(form.getFieldValue("homeworkContent"))}
                     onChange={(value) => {
                       form.setFieldValue("homeworkContent", value);
+                      addDraft.formProps.onValuesChange?.({ homeworkContent: value }, form.getFieldsValue());
                     }}
                     helper="Используйте BBCode для форматирования текста, списков, ссылок, цитат и вставок кода."
                   />
@@ -1490,8 +1561,32 @@ function AddNodeModal({ controller, intent, onClose }: { controller: Controller;
           </>
         ) : null}
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
+}
+
+function getSelectionDraftIdentity(selection: DiagramNodeSelection) {
+  switch (selection.kind) {
+    case "course":
+      return "course";
+    case "block":
+      return `block:${selection.blockId}`;
+    case "branch":
+      return `branch:${selection.blockId}:${selection.branchId}`;
+    case "theme":
+      return `theme:${selection.blockId}:${selection.branchId}:${selection.themeId}`;
+  }
+}
+
+function getAddIntentDraftIdentity(intent: AddNodeIntent) {
+  switch (intent.kind) {
+    case "block":
+      return "block";
+    case "branch":
+      return `branch:${intent.blockId}`;
+    case "theme":
+      return `theme:${intent.blockId}:${intent.branchId}`;
+  }
 }
 
 function MoveButtons({ onUp, onDown }: { onUp: () => void; onDown: () => void }) {

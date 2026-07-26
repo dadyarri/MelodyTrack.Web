@@ -1,20 +1,19 @@
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
+import { Button, DatePicker, Form, Input, InputNumber, Space, Typography } from "antd";
 
 import { ExpenseCategorySelect } from "@/entities/reference-book";
 import { DATE_FORMAT, formatDate } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
-import { useUnsavedDraftGuard } from "@/shared/lib/react";
-import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState } from "@/shared/ui";
 import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { MoneyListSummaryCards } from "@/shared/ui";
 import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 import { useExpensesPageController } from "../model/useExpensesPageController";
 
 export function ExpensesPage() {
   const controller = useExpensesPageController();
-  useUnsavedDraftGuard(controller.isOpen, controller.createDraftSaveStatus);
 
   return (
     <PageLayout
@@ -182,6 +181,7 @@ export function ExpensesPage() {
         saveStatus={controller.createDraftSaveStatus}
         showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}
+        onRetryDraft={controller.createDraftRetry}
         onCancel={() => {
           controller.setOpen(false);
         }}
@@ -222,16 +222,33 @@ export function ExpensesPage() {
           </Form.Item>
         </Form>
       </DraftFormModal>
-      <Modal
+      <DraftFormModal
         open={controller.editingExpense !== null}
         title="Редактировать расход"
+        restored={controller.editDraft.restored}
+        saveStatus={controller.editDraft.status}
+        showClearDraft={controller.editDraft.hasDraft}
+        onClearDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            controller.editForm.resetFields();
+          });
+        }}
+        stale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
         onCancel={controller.closeEdit}
         onOk={() => {
           controller.editForm.submit();
         }}
         confirmLoading={controller.editMutation.isPending}
       >
-        <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
+        <Form
+          form={controller.editForm}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={controller.onEditSubmit}
+          onValuesChange={controller.onEditValuesChange}
+        >
           <Form.Item name="categoryId" label="Категория">
             <ExpenseCategorySelect extraOptions={controller.createdCategoryOptions} />
           </Form.Item>
@@ -245,15 +262,18 @@ export function ExpensesPage() {
             <DatePicker format={DATE_FORMAT} className="wide" />
           </Form.Item>
         </Form>
-      </Modal>
+      </DraftFormModal>
       <ReferenceBookCreateModal
         open={controller.isCategoryCreateOpen}
         title="Новая категория расхода"
+        draftKey="draft:expense-categories:create"
         confirmLoading={controller.createCategoryMutation.isPending}
         onCancel={() => {
           controller.setCategoryCreateOpen(false);
         }}
-        onSubmit={controller.onCreateCategory}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createCategoryMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

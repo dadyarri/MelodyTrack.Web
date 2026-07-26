@@ -12,8 +12,10 @@ export const servicesApi = {
   lookup() {
     return http.get<{ services: LookupService[] }>("/services/lookup").then((response) => response.data.services);
   },
-  create(input: ServiceInput & { price: number }, options?: { replayKey?: string }) {
-    return http.post<CreateEntityResponse>("/services", input, replayConfig(options?.replayKey)).then((response) => response.data);
+  create(input: ServiceInput & { price: number }, options?: { idempotencyKey?: string }) {
+    return http
+      .post<CreateEntityResponse>("/services", input, idempotencyConfig(options?.idempotencyKey))
+      .then((response) => response.data);
   },
   update(id: Ulid, input: ServiceInput, options?: { expectedActivityId?: Ulid }) {
     return http
@@ -41,6 +43,6 @@ export const servicesApi = {
   },
 };
 
-function replayConfig(replayKey?: string) {
-  return replayKey ? { headers: { "Idempotency-Key": replayKey } } : undefined;
+function idempotencyConfig(idempotencyKey?: string) {
+  return idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined;
 }

@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useDeferredValue, useMemo, useState } from "react";
+import * as v from "valibot";
 
 import { type Course, courseQueryKeys, coursesApi } from "@/entities/course";
 import { hasAdminAccess, useAuth } from "@/entities/session";
 import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
 
 type EditorTheme = {
   localId: string;
@@ -52,6 +54,14 @@ type CreateCourseValues = {
   name: string;
   description?: string;
 };
+
+const createCourseDraftSchema = v.object({ name: v.optional(v.string()), description: v.optional(v.string()) });
+const editorCourseDraftSchema = v.custom<EditorCourse>(isEditorCourseDraft, "Некорректный черновик курса.");
+const createCourseDraftCodec = {
+  serialize: (values: CreateCourseValues): Partial<CreateCourseValues> => values,
+  deserialize: (values: Partial<CreateCourseValues>): Partial<CreateCourseValues> => values,
+};
+const editorCourseDraftCodec = jsonDurableFormCodec<EditorCourse>();
 
 type ThemeOption = {
   key: string;
@@ -211,6 +221,7 @@ export function useCoursesPageController() {
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const [createForm] = Form.useForm<CreateCourseValues>();
+  const [courseDraftForm] = Form.useForm<EditorCourse>();
   const [isCreateOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
@@ -249,6 +260,22 @@ export function useCoursesPageController() {
     },
     enabled: Boolean(selectedCourseId),
   });
+  const createDraft = useDurableForm({
+    key: "draft:courses:create",
+    schema: createCourseDraftSchema,
+    form: createForm,
+    codec: createCourseDraftCodec,
+    enabled: isCreateOpen,
+  });
+  const courseDraft = useDurableForm({
+    key: selectedCourseId ? `draft:courses:edit:${selectedCourseId}` : null,
+    schema: editorCourseDraftSchema,
+    form: courseDraftForm,
+    codec: editorCourseDraftCodec,
+    enabled: Boolean(selectedCourseId && canManageCourses),
+    entity: selectedCourseId ? { id: selectedCourseId, baselineVersion: selectedCourseQuery.data?.updatedAtUtc ?? null } : undefined,
+    onRestore: setDraftCourseState,
+  });
 
   const draftCourse = useMemo(() => {
     if (draftCourseState && draftCourseState.id === selectedCourseId) {
@@ -261,7 +288,9 @@ export function useCoursesPageController() {
   const applyDraft = (transform: (course: EditorCourse) => EditorCourse) => {
     setDraftCourseState((current) => {
       const base = current ?? draftCourse;
-      return base ? transform(base) : base;
+      const next = base ? transform(base) : base;
+      if (next) courseDraft.formProps.onValuesChange?.({}, next);
+      return next;
     });
   };
 
@@ -273,6 +302,7 @@ export function useCoursesPageController() {
       }),
     onSuccess: async (result) => {
       void message.success("Курс создан");
+      await createDraft.clearAfterSuccess();
       setCreateOpen(false);
       createForm.resetFields();
       setRequestedCourseId(result.id);
@@ -320,6 +350,7 @@ export function useCoursesPageController() {
     },
     onSuccess: async () => {
       void message.success("Курс сохранен");
+      await courseDraft.clearAfterSuccess();
       setDraftCourseState(null);
       await queryClient.invalidateQueries({ queryKey: courseQueryKeys.all });
       await queryClient.invalidateQueries({ queryKey: courseQueryKeys.selected(selectedCourseId ?? undefined) });
@@ -361,6 +392,12 @@ export function useCoursesPageController() {
   return {
     canManageCourses,
     createForm,
+    createDraft,
+    courseDraft,
+    discardCourseDraft: async () => {
+      await courseDraft.discard();
+      setDraftCourseState(null);
+    },
     coursesQuery,
     selectedCourseQuery,
     selectedCourseId,
@@ -381,7 +418,7 @@ export function useCoursesPageController() {
       setDraftCourseState(null);
     },
     submitCreate: (values: CreateCourseValues) => {
-      createMutation.mutate(values);
+      if (values.name) createMutation.mutate(values);
     },
     saveCourse: () => {
       if (!draftCourse) {
@@ -583,6 +620,41 @@ export function useCoursesPageController() {
       });
     },
   };
+}
+
+function isEditorCourseDraft(value: unknown): value is EditorCourse {
+  if (!value || typeof value !== "object") return false;
+  const course = value as Partial<EditorCourse>;
+  return (
+    typeof course.id === "string" &&
+    typeof course.name === "string" &&
+    Array.isArray(course.levels) &&
+    course.levels.every(
+      (level) => typeof level.localId === "string" && typeof level.title === "string" && typeof level.requiredExperiencePoints === "number",
+    ) &&
+    Array.isArray(course.blocks) &&
+    course.blocks.every(
+      (block) =>
+        typeof block.localId === "string" &&
+        typeof block.title === "string" &&
+        Array.isArray(block.branches) &&
+        block.branches.every(
+          (branch) =>
+            typeof branch.localId === "string" &&
+            typeof branch.title === "string" &&
+            Array.isArray(branch.themes) &&
+            branch.themes.every(
+              (theme) =>
+                typeof theme.localId === "string" &&
+                typeof theme.title === "string" &&
+                typeof theme.key === "string" &&
+                typeof theme.experiencePointsReward === "number" &&
+                Array.isArray(theme.dependencyKeys) &&
+                theme.dependencyKeys.every((key) => typeof key === "string"),
+            ),
+        ),
+    )
+  );
 }
 
 function insertTheme(themes: EditorTheme[], patch?: EditorThemePatch, insertIndex?: number) {

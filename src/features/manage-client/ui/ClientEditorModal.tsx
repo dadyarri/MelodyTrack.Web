@@ -1,11 +1,11 @@
 import type { FormInstance } from "antd";
-import { Form, Modal } from "antd";
+import { Form } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 
 import type { Client } from "@/entities/client";
 import { formatRecordActivitySummary } from "@/shared/lib";
-import type { DraftSaveStatus } from "@/shared/lib/react";
-import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
+import type { DurableFormStatus } from "@/shared/lib/react";
+import { DraftFormModal, StatusBanner } from "@/shared/ui";
 
 import { ClientFormFields } from "./ClientFormFields";
 
@@ -33,12 +33,15 @@ export function ClientEditorModal({
   onValuesChange,
   onCreateSource,
   onSourceLabelChange,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
 }: {
   open: boolean;
   editing: boolean;
   hasDraft: boolean;
   draftRestored: boolean;
-  draftSaveStatus: DraftSaveStatus;
+  draftSaveStatus: DurableFormStatus;
   form: FormInstance<ClientFormValues>;
   savePending: boolean;
   isStale: boolean;
@@ -50,25 +53,26 @@ export function ClientEditorModal({
   onValuesChange: (_: Partial<ClientFormValues>, values: ClientFormValues) => void;
   onCreateSource?: () => void;
   onSourceLabelChange: (label?: string) => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
 }) {
   return (
-    <Modal
+    <DraftFormModal
       open={open}
-      title={
-        editing ? "Редактировать клиента" : <DraftModalTitle title="Новый клиент" restored={draftRestored} saveStatus={draftSaveStatus} />
-      }
+      title={editing ? "Редактировать клиента" : "Новый клиент"}
+      restored={draftRestored}
+      saveStatus={draftSaveStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onClearDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
       confirmLoading={savePending}
-      footer={
-        editing
-          ? undefined
-          : (_, { CancelBtn, OkBtn }) => {
-              return <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={hasDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />;
-            }
-      }
     >
       <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit} onValuesChange={onValuesChange}>
         {editing && isStale ? (
@@ -80,6 +84,6 @@ export function ClientEditorModal({
         ) : null}
         <ClientFormFields sourceOptions={sourceOptions} onCreateSource={onCreateSource} onSourceLabelChange={onSourceLabelChange} />
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }

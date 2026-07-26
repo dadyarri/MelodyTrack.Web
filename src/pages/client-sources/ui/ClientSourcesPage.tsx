@@ -3,9 +3,10 @@ import { Button } from "antd";
 import { clientQueryKeys } from "@/entities/client";
 import { clientSourcesApi } from "@/entities/reference-book";
 import { useReferenceBookPageController } from "@/features/manage-reference-book";
-import { ActionableEmptyState, ReferenceBookCreateModal } from "@/shared/ui";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 export function ClientSourcesPage() {
   const controller = useReferenceBookPageController({
@@ -95,11 +96,14 @@ export function ClientSourcesPage() {
       <ReferenceBookCreateModal
         open={controller.isCreateOpen}
         title="Новый источник клиента"
+        draftKey="draft:client-sources:create"
         confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
-        onSubmit={controller.onCreate}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

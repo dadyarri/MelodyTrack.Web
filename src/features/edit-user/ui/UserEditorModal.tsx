@@ -1,10 +1,11 @@
 import type { FormInstance } from "antd";
-import { Form, Input, Modal } from "antd";
+import { Form, Input } from "antd";
 
 import { formatPhoneInput, isValidPhone, normalizePhone, normalizeSocialLink } from "@/entities/client";
 import type { User } from "@/entities/user";
 import { formatRecordActivitySummary } from "@/shared/lib";
-import { StatusBanner } from "@/shared/ui";
+import type { DurableFormStatus } from "@/shared/lib/react";
+import { DraftFormModal, StatusBanner } from "@/shared/ui";
 
 export type UserFormValues = {
   firstName: string;
@@ -22,6 +23,14 @@ export function UserEditorModal({
   staleActivity,
   onCancel,
   onSubmit,
+  draftStatus,
+  draftRestored,
+  hasDraft,
+  onDiscardDraft,
+  onValuesChange,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
 }: {
   open: boolean;
   form: FormInstance<UserFormValues>;
@@ -30,18 +39,33 @@ export function UserEditorModal({
   staleActivity?: User["lastActivity"];
   onCancel: () => void;
   onSubmit: (values: UserFormValues) => void;
+  draftStatus: DurableFormStatus;
+  draftRestored: boolean;
+  hasDraft: boolean;
+  onDiscardDraft: () => void;
+  onValuesChange?: (_: Partial<UserFormValues>, values: UserFormValues) => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
 }) {
   return (
-    <Modal
+    <DraftFormModal
       open={open}
       title="Редактировать пользователя"
+      restored={draftRestored}
+      saveStatus={draftStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onDiscardDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
       confirmLoading={savePending}
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit} onValuesChange={onValuesChange}>
         {isStale ? (
           <StatusBanner
             type="warning"
@@ -96,7 +120,7 @@ export function UserEditorModal({
           <Input placeholder="nickname или https://vk.com/nickname" />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }
 

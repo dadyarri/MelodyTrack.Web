@@ -7,12 +7,12 @@ function createReferenceBookApi(collection: string, responseKey: "sources" | "ca
     list() {
       return http.get<Record<string, ReferenceBookItem[]>>(collection).then((response) => response.data[responseKey] ?? []);
     },
-    create(input: { name: string }, options?: { replayKey?: string }) {
+    create(input: { name: string }, options?: { idempotencyKey?: string }) {
       return http
         .post<CreateEntityResponse>(
           collection,
           input,
-          options?.replayKey ? { headers: { "Idempotency-Key": options.replayKey } } : undefined,
+          options?.idempotencyKey ? { headers: { "Idempotency-Key": options.idempotencyKey } } : undefined,
         )
         .then((response) => response.data);
     },

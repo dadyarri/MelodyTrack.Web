@@ -25,7 +25,8 @@ import { getPhoneUri, getSocialHandle } from "@/entities/client";
 import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, RecurringTaskType } from "@/entities/task";
 import { getRecurringTaskTypeLabel } from "@/entities/task";
 import { formatRecordActivitySummary } from "@/shared/lib";
-import { PageLayout } from "@/shared/ui";
+import type { DurableFormStatus } from "@/shared/lib/react";
+import { DraftFormModal, PageLayout } from "@/shared/ui";
 import {
   CalendarCheckOutlined,
   CheckOutlined,
@@ -183,6 +184,18 @@ export function TasksPage() {
         isStale={controller.isEditingRuleStale}
         onCancel={controller.closeRuleEditor}
         onSubmit={controller.submitRuleEditor}
+        draftStatus={controller.ruleDraft.status}
+        draftRestored={controller.ruleDraft.restored}
+        hasDraft={controller.ruleDraft.hasDraft}
+        onDiscardDraft={() => {
+          void controller.ruleDraft.discard().then(() => {
+            if (controller.editingRule) controller.openRuleEditor(controller.editingRule);
+          });
+        }}
+        onValuesChange={controller.onRuleValuesChange}
+        draftStale={controller.ruleDraft.isStale}
+        onReapplyDraft={controller.ruleDraft.reapply}
+        onRetryDraft={controller.ruleDraft.retry}
       />
       <DelayTaskModal
         open={Boolean(controller.delayingTask)}
@@ -198,6 +211,16 @@ export function TasksPage() {
         savePending={controller.createCustomTaskMutation.isPending}
         onCancel={controller.closeCustomTaskModal}
         onSubmit={controller.submitCustomTask}
+        draftStatus={controller.customTaskDraft.status}
+        draftRestored={controller.customTaskDraft.restored}
+        hasDraft={controller.customTaskDraft.hasDraft}
+        onDiscardDraft={() => {
+          void controller.customTaskDraft.discard().then(() => {
+            controller.customTaskForm.resetFields();
+          });
+        }}
+        onValuesChange={controller.onCustomTaskValuesChange}
+        onRetryDraft={controller.customTaskDraft.retry}
       />
     </PageLayout>
   );
@@ -388,6 +411,14 @@ function RuleEditorModal({
   isStale,
   onCancel,
   onSubmit,
+  draftStatus,
+  draftRestored,
+  hasDraft,
+  onDiscardDraft,
+  onValuesChange,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
 }: {
   open: boolean;
   form: ReturnType<typeof Form.useForm<RecurringTaskRuleFormValues>>[0];
@@ -396,6 +427,14 @@ function RuleEditorModal({
   isStale: boolean;
   onCancel: () => void;
   onSubmit: (values: RecurringTaskRuleFormValues) => void;
+  draftStatus: DurableFormStatus;
+  draftRestored: boolean;
+  hasDraft: boolean;
+  onDiscardDraft: () => void;
+  onValuesChange?: (_: Partial<RecurringTaskRuleFormValues>, values: RecurringTaskRuleFormValues) => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
 }) {
   const messageTemplateInputRef = useRef<TextAreaRef>(null);
   const availableTokens = rule ? getAvailableTemplateTokens(rule.type) : [];
@@ -423,9 +462,16 @@ function RuleEditorModal({
   };
 
   return (
-    <Modal
+    <DraftFormModal
       open={open}
       title={rule ? `Правило: ${rule.name}` : "Правило"}
+      restored={draftRestored}
+      saveStatus={draftStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onDiscardDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
@@ -434,7 +480,7 @@ function RuleEditorModal({
       okText="Сохранить"
       cancelText="Отмена"
     >
-      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+      <Form form={form} layout="vertical" requiredMark={false} onFinish={onSubmit} onValuesChange={onValuesChange}>
         <Space orientation="vertical" size={12} className="wide">
           {isStale && rule?.lastActivity ? (
             <Typography.Text type="warning">{formatRecordActivitySummary(rule.lastActivity)}</Typography.Text>
@@ -482,7 +528,7 @@ function RuleEditorModal({
           ) : null}
         </Space>
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }
 
@@ -533,19 +579,36 @@ function CustomTaskModal({
   savePending,
   onCancel,
   onSubmit,
+  draftStatus,
+  draftRestored,
+  hasDraft,
+  onDiscardDraft,
+  onValuesChange,
+  onRetryDraft,
 }: {
   open: boolean;
   form: ReturnType<typeof Form.useForm<CustomTaskFormValues>>[0];
   savePending: boolean;
   onCancel: () => void;
   onSubmit: (values: CustomTaskFormValues) => void | Promise<void>;
+  draftStatus: DurableFormStatus;
+  draftRestored: boolean;
+  hasDraft: boolean;
+  onDiscardDraft: () => void;
+  onValuesChange?: (_: Partial<CustomTaskFormValues>, values: CustomTaskFormValues) => void;
+  onRetryDraft: () => void;
 }) {
   const recipientMode = Form.useWatch("recipientMode", form);
 
   return (
-    <Modal
+    <DraftFormModal
       open={open}
       title="Новая пользовательская задача"
+      restored={draftRestored}
+      saveStatus={draftStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onDiscardDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
@@ -555,7 +618,14 @@ function CustomTaskModal({
       cancelText="Отмена"
       destroyOnHidden
     >
-      <Form form={form} layout="vertical" requiredMark={false} initialValues={{ recipientMode: "client" }} onFinish={onSubmit}>
+      <Form
+        form={form}
+        layout="vertical"
+        requiredMark={false}
+        initialValues={{ recipientMode: "client" }}
+        onFinish={onSubmit}
+        onValuesChange={onValuesChange}
+      >
         <Form.Item name="recipientMode" label="Кому задача" rules={[{ required: true }]}>
           <Radio.Group
             optionType="button"
@@ -598,7 +668,7 @@ function CustomTaskModal({
           <Input.TextArea rows={5} />
         </Form.Item>
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }
 

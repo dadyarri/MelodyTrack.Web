@@ -42,7 +42,7 @@ The current suite contains 28 tests covering:
 - injected HTTP authentication and basic API error normalization.
 
 The next migration stages must expand this baseline before moving HTTP refresh,
-offline replay, conflict resolution, or other business-critical behavior.
+durable-form recovery, conflict resolution, or other business-critical behavior.
 
 ## Stage 2 Foundation
 
@@ -107,9 +107,9 @@ defined by `DeleteAppointmentRequest`.
 
 Stage 4 is complete. Cohesive entity slices now own services, courses and
 enrollments, payments, expenses, users and availability, recurring tasks,
-reference books, dashboard analytics, audit records, session state, and the
-offline queue in addition to clients and appointments. Their API contracts and
-query keys are exposed only through slice public APIs.
+reference books, dashboard analytics, audit records, and session state in
+addition to clients and appointments. Their API contracts and query keys are
+exposed only through slice public APIs.
 
 Reusable client, service, user, role, expense-category, and client-source
 selectors live with their entities. Appointment status representation, user
@@ -120,29 +120,31 @@ Route-specific controllers now live in page or widget `model` segments.
 Reusable actions are explicit feature slices, including client management,
 appointment management, payment recording, course enrollment, course-progress
 updates, user editing, and reference-book management. Authentication UI actions
-are separated from the session entity, and onboarding, portal access, and
-offline synchronization have segmented public APIs.
+are separated from the session entity, and onboarding and portal access have
+segmented public APIs.
 
 The monolithic `crm.ts`, `types.ts`, and global query-key registry no longer
 exist. The legacy segmentless-feature allowlist was removed, and Steiger
 reports no architecture violations.
 
-## Stage 5 Offline And Session Boundaries
+## Online-only execution and durable forms
 
-The durable offline-command contract is versioned and validated at its storage
-boundary; the old unversioned queue is intentionally discarded. Replay is a
-pure model operation rather than React component logic, and it preserves
-retries, partial progress, conflicts, and temporary-ID replacement across
-reloads. The UI feature is limited to scheduling replay, reporting state, and
-invalidating successfully changed queries.
+Offline commands, replay, temporary IDs, optimistic local domain records,
+queue UI, and the application-shell service worker were removed. IndexedDB
+version 2 deletes old queue stores without replaying or migrating their data.
+Normal mutations succeed only after the server confirms them.
+
+Meaningful business forms use the shared `useDurableForm` adapter. Drafts are
+user-partitioned, versioned, runtime-validated, ordered, expiring recovery data;
+they never submit automatically or masquerade as server records. See
+[`durable-forms.md`](./durable-forms.md).
 
 Authentication state is isolated behind the session adapter consumed by the
 shared HTTP transport. Access tokens are memory-only, refresh rotation and
 logout propagate across tabs, and legacy persisted access tokens are removed.
 The backend still accepts refresh tokens in JSON request bodies, so the
-remaining refresh-token `localStorage` risk and the coordinated HttpOnly-cookie
-migration are recorded in
-[`offline-and-session-boundaries.md`](./offline-and-session-boundaries.md).
+remaining refresh-token `localStorage` risk and coordinated HttpOnly-cookie
+migration remain documented in the browser-storage policy.
 
 ## Production Bundle Baseline
 
@@ -187,9 +189,9 @@ editor is approximately 111 KiB. Navigation intent prefetch deduplicates route
 module loads and warms only the dashboard and schedule default critical data.
 
 TanStack Query now has explicit freshness, cancellation, polling, pagination,
-and mutation invalidation behavior. Durable drafts and offline commands use
-validated, user-partitioned IndexedDB storage. Generic HTTP and secret-bearing
-Web Storage caches were removed.
+and mutation invalidation behavior. Durable drafts use validated,
+user-partitioned IndexedDB storage. Generic HTTP and secret-bearing Web Storage
+caches were removed.
 
 Usability closeout includes URL-backed working state, persistent retryable list
 errors, background-refresh feedback, responsive table priorities, a mobile

@@ -8,7 +8,7 @@ export * from "./react/useOpenCreateRouteIntent";
 export * from "./refetch";
 export * from "./shortcuts";
 export * from "./storage";
-export { createReplayKey } from "./storage/replayKey";
+export { createIdempotencyKey } from "./storage/idempotencyKey";
 export * from "./referenceLabels";
 export * from "./staleEntity";
 export {

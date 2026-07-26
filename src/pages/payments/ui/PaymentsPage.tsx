@@ -6,7 +6,6 @@ import { ClientQuickCreateModal } from "@/features/manage-client";
 import { PaymentCreateModal } from "@/features/record-payment";
 import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
-import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { ActionableEmptyState, MoneyListSummaryCards } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
@@ -16,7 +15,6 @@ import { formatOptionalDateTime, usePaymentsPageController } from "../model/useP
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();
-  useUnsavedDraftGuard(controller.isCreateModalOpen && !controller.editingPayment, controller.createDraftSaveStatus);
   const { modal } = AntdApp.useApp();
 
   return (
@@ -210,6 +208,9 @@ export function PaymentsPage() {
         selectedServicePrice={controller.selectedServicePrice}
         onCancel={controller.closeCreateModal}
         onClearDraft={controller.handleClearCreateDraft}
+        draftStale={controller.activeDraft.isStale}
+        onReapplyDraft={controller.activeDraft.reapply}
+        onRetryDraft={controller.activeDraft.retry}
         onSubmit={(values) => {
           controller.saveMutation.mutate({
             values,

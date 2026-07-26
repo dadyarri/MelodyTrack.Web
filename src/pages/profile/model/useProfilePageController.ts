@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import dayjs, { type Dayjs } from "dayjs";
 import { useEffect, useState } from "react";
+import * as v from "valibot";
 
 import { normalizePhone, normalizeSocialLink } from "@/entities/client";
 import {
@@ -21,6 +22,7 @@ import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
 
@@ -46,6 +48,50 @@ export type PersonalInfoFormValues = {
   phone?: string | null;
   telegram?: string | null;
   vk?: string | null;
+};
+
+type AvailabilityDraftValues = {
+  workingHours: Array<{ dayOfWeek: WeekdayKey; isWorkingDay: boolean; timeRange?: [string, string] }>;
+  vacations: Array<{ period: [string, string] }>;
+};
+
+const personalInfoDraftSchema = v.object({
+  firstName: v.string(),
+  lastName: v.string(),
+  phone: v.optional(v.nullable(v.string())),
+  telegram: v.optional(v.nullable(v.string())),
+  vk: v.optional(v.nullable(v.string())),
+});
+const availabilityDraftSchema = v.object({
+  workingHours: v.array(
+    v.object({
+      dayOfWeek: v.picklist(weekdayOrder),
+      isWorkingDay: v.boolean(),
+      timeRange: v.optional(v.tuple([v.string(), v.string()])),
+    }),
+  ),
+  vacations: v.array(v.object({ period: v.tuple([v.string(), v.string()]) })),
+});
+const personalInfoDraftCodec = jsonDurableFormCodec<PersonalInfoFormValues>();
+const availabilityDraftCodec = {
+  serialize: (values: AvailabilityFormValues): AvailabilityDraftValues => ({
+    workingHours: values.workingHours.map((item) => ({
+      ...item,
+      timeRange: item.timeRange ? [item.timeRange[0].toISOString(), item.timeRange[1].toISOString()] : undefined,
+    })),
+    vacations: values.vacations
+      .filter((item) => hasVacationPeriod(item.period))
+      .map((item) => ({
+        period: [item.period[0].toISOString(), item.period[1].toISOString()],
+      })),
+  }),
+  deserialize: (values: AvailabilityDraftValues): Partial<AvailabilityFormValues> => ({
+    workingHours: values.workingHours.map((item) => ({
+      ...item,
+      timeRange: item.timeRange ? [dayjs(item.timeRange[0]), dayjs(item.timeRange[1])] : undefined,
+    })),
+    vacations: values.vacations.map((item) => ({ period: [dayjs(item.period[0]), dayjs(item.period[1])] })),
+  }),
 };
 
 type SavePersonalInfoInput = {
@@ -117,6 +163,24 @@ export function useProfilePageController() {
       return usersApi.getAvailability(userId);
     },
     enabled: Boolean(meQuery.data?.id),
+  });
+  const personalInfoDraft = useDurableForm({
+    key: meQuery.data ? `draft:profile:personal:${meQuery.data.id}` : null,
+    schema: personalInfoDraftSchema,
+    form: personalInfoForm,
+    codec: personalInfoDraftCodec,
+    enabled: Boolean(meQuery.data),
+    entity: meQuery.data ? { id: meQuery.data.id, baselineVersion: meQuery.data.lastActivity?.id ?? null } : undefined,
+  });
+  const availabilityDraft = useDurableForm({
+    key: availabilityQuery.data ? `draft:profile:availability:${availabilityQuery.data.userId}` : null,
+    schema: availabilityDraftSchema,
+    form: availabilityForm,
+    codec: availabilityDraftCodec,
+    enabled: Boolean(availabilityQuery.data),
+    entity: availabilityQuery.data
+      ? { id: availabilityQuery.data.userId, baselineVersion: availabilityQuery.data.lastActivity?.id ?? null }
+      : undefined,
   });
 
   const changePasswordMutation = useMutation({
@@ -238,6 +302,7 @@ export function useProfilePageController() {
     },
     onSuccess: async () => {
       message.success("Данные профиля сохранены");
+      await personalInfoDraft.clearAfterSuccess();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: authQueryKeys.me }),
         queryClient.invalidateQueries({ queryKey: userQueryKeys.all }),
@@ -297,6 +362,7 @@ export function useProfilePageController() {
     },
     onSuccess: async () => {
       message.success("График работы сохранен");
+      await availabilityDraft.clearAfterSuccess();
       await queryClient.invalidateQueries({
         queryKey: userQueryKeys.availability(meQuery.data?.id),
       });
@@ -414,6 +480,26 @@ export function useProfilePageController() {
     recoveryCodes,
     personalInfoForm,
     availabilityForm,
+    personalInfoDraft,
+    availabilityDraft,
+    discardPersonalInfoDraft: async () => {
+      await personalInfoDraft.discard();
+      if (meQuery.data) {
+        personalInfoForm.setFieldsValue({
+          firstName: meQuery.data.firstName,
+          lastName: meQuery.data.lastName,
+          phone: meQuery.data.phone ?? undefined,
+          telegram: meQuery.data.telegram ?? undefined,
+          vk: meQuery.data.vk ?? undefined,
+        });
+      }
+    },
+    discardAvailabilityDraft: async () => {
+      await availabilityDraft.discard();
+      if (availabilityQuery.data) {
+        availabilityForm.setFieldsValue(mapAvailabilityToForm(availabilityQuery.data));
+      }
+    },
     meQuery,
     sessionsQuery,
     availabilityQuery,

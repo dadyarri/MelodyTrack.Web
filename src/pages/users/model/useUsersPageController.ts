@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { App as AntdApp, Form } from "antd";
 import { useEffect, useState } from "react";
+import * as v from "valibot";
 
 import { normalizePhone, normalizeSocialLink } from "@/entities/client";
 import { authApi, type CreateInviteInput, hasAdminAccess, useAuth } from "@/entities/session";
@@ -10,6 +11,18 @@ import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+
+const inviteDraftSchema = v.object({ email: v.optional(v.string()), role: v.string() });
+const userDraftSchema = v.object({
+  firstName: v.string(),
+  lastName: v.string(),
+  phone: v.optional(v.nullable(v.string())),
+  telegram: v.optional(v.nullable(v.string())),
+  vk: v.optional(v.nullable(v.string())),
+});
+const inviteDraftCodec = jsonDurableFormCodec<CreateInviteInput>();
+const userDraftCodec = jsonDurableFormCodec<UserFormValues>();
 
 export function useUsersPageController() {
   const auth = useAuth();
@@ -21,6 +34,21 @@ export function useUsersPageController() {
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const [form] = Form.useForm<CreateInviteInput>();
   const [editForm] = Form.useForm<UserFormValues>();
+  const inviteDraft = useDurableForm({
+    key: "draft:users:invite",
+    schema: inviteDraftSchema,
+    form,
+    codec: inviteDraftCodec,
+    enabled: isInviteOpen && !inviteUrl,
+  });
+  const editDraft = useDurableForm({
+    key: editing ? `draft:users:edit:${editing.id}` : null,
+    schema: userDraftSchema,
+    form: editForm,
+    codec: userDraftCodec,
+    enabled: editing !== null,
+    entity: editing ? { id: editing.id, baselineVersion: editingBaselineActivityId ?? null } : undefined,
+  });
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
   const canManageUsers = hasAdminAccess(auth.user);
@@ -34,11 +62,14 @@ export function useUsersPageController() {
     queryFn: () => usersApi.list(),
   });
   const currentEditingUser = editing ? (query.data?.find((user) => user.id === editing.id) ?? editing) : null;
-  const isEditingUserStale = currentEditingUser ? isActivityStale(currentEditingUser.lastActivity?.id, editingBaselineActivityId) : false;
+  const isEditingUserStale = currentEditingUser
+    ? isActivityStale(currentEditingUser.lastActivity?.id, editingBaselineActivityId) || editDraft.isStale
+    : false;
 
   const createInviteMutation = useMutation({
     mutationFn: (input: CreateInviteInput) => authApi.createInvite(input),
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      await inviteDraft.clearAfterSuccess();
       setInviteUrl(data.url);
       message.success("Приглашение создано");
     },
@@ -71,6 +102,7 @@ export function useUsersPageController() {
     },
     onSuccess: async () => {
       message.success("Данные пользователя сохранены");
+      await editDraft.clearAfterSuccess();
       setEditing(null);
       setEditingBaselineActivityId(undefined);
       editForm.resetFields();
@@ -141,6 +173,8 @@ export function useUsersPageController() {
     currentEditingUser,
     isEditingUserStale,
     editForm,
+    editDraft,
+    inviteDraft,
     updateUserMutation,
     isInviteOpen,
     setInviteOpen,
@@ -153,7 +187,6 @@ export function useUsersPageController() {
     closeInviteModal: () => {
       setInviteOpen(false);
       setInviteUrl("");
-      form.resetFields();
     },
     closePasswordResetModal: () => {
       setPasswordResetUser(null);
@@ -203,5 +236,7 @@ export function useUsersPageController() {
         expectedActivityId: editingBaselineActivityId ?? undefined,
       });
     },
+    onInviteValuesChange: inviteDraft.formProps.onValuesChange,
+    onEditValuesChange: editDraft.formProps.onValuesChange,
   };
 }

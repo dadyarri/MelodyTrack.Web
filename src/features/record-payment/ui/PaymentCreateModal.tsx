@@ -6,7 +6,7 @@ import type dayjs from "dayjs";
 import { ClientSelect } from "@/entities/client";
 import { ServiceSelect } from "@/entities/service";
 import { DATE_TIME_FORMAT, TIME_FORMAT } from "@/shared/lib";
-import type { DraftSaveStatus } from "@/shared/lib/react";
+import type { DurableFormStatus } from "@/shared/lib/react";
 import { DraftFormModal } from "@/shared/ui";
 
 export type PaymentCreateFormValues = {
@@ -32,6 +32,9 @@ export function PaymentCreateModal({
   selectedServicePrice,
   onCancel,
   onClearDraft,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
   onSubmit,
   onValuesChange,
   onCreateClient,
@@ -43,7 +46,7 @@ export function PaymentCreateModal({
   editing: boolean;
   hasDraft: boolean;
   draftRestored: boolean;
-  draftSaveStatus: DraftSaveStatus;
+  draftSaveStatus: DurableFormStatus;
   form: FormInstance<PaymentCreateFormValues>;
   createPending: boolean;
   createdClientOptions: DefaultOptionType[];
@@ -52,6 +55,9 @@ export function PaymentCreateModal({
   selectedServicePrice?: number;
   onCancel: () => void;
   onClearDraft: () => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
   onSubmit: (values: PaymentCreateFormValues) => void;
   onValuesChange: (changedValues: Partial<PaymentCreateFormValues>, values: PaymentCreateFormValues) => void;
   onCreateClient: () => void;
@@ -65,9 +71,12 @@ export function PaymentCreateModal({
       title={editing ? "Редактировать платеж" : "Новый платеж"}
       restored={!editing && draftRestored}
       saveStatus={draftSaveStatus}
-      showClearDraft={!editing && hasDraft}
-      showDraftState={!editing}
+      showClearDraft={hasDraft}
+      showDraftState
       onClearDraft={onClearDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();

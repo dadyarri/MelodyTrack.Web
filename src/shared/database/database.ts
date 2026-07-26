@@ -11,14 +11,15 @@ export class MelodyTrackDatabase extends Dexie {
       readModels: "[ownerUserId+key], ownerUserId, updatedAtUtc, expiresAtUtc",
       storageMetadata: "key, updatedAtUtc",
     });
+    this.version(2).stores({
+      offlineCommands: null,
+      offlineIdMappings: null,
+      drafts: "[ownerUserId+key], ownerUserId, updatedAtUtc, expiresAtUtc",
+      referenceData: "[ownerUserId+key], ownerUserId, updatedAtUtc, expiresAtUtc",
+      readModels: "[ownerUserId+key], ownerUserId, updatedAtUtc, expiresAtUtc",
+      storageMetadata: "key, updatedAtUtc",
+    });
   }
 }
 
 export const melodyTrackDatabase = new MelodyTrackDatabase();
-
-type ReadWriteTransaction = (mode: "rw", stores: string[], scope: () => Promise<void>) => Promise<void>;
-
-export function runReadWriteTransaction(database: MelodyTrackDatabase, stores: string[], scope: () => Promise<void>) {
-  const transaction = database.transaction.bind(database) as unknown as ReadWriteTransaction;
-  return transaction("rw", stores, scope);
-}

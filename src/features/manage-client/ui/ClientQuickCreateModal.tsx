@@ -1,20 +1,21 @@
 import { useMutation } from "@tanstack/react-query";
-import { App as AntdApp, Form, Modal } from "antd";
-import { useEffect, useRef, useState } from "react";
+import { App as AntdApp, Form } from "antd";
+import { useState } from "react";
+import * as v from "valibot";
 
 import { clientsApi, normalizePhone, normalizeSocialLink } from "@/entities/client";
-import { createOfflineTempId, createOrQueueOffline, isQueuedClientCreate } from "@/entities/offline-queue";
 import { clientSourcesApi } from "@/entities/reference-book";
 import { getApiErrorMessages } from "@/shared/api";
 import { useCreatedReferenceOptions } from "@/shared/lib";
-import { createReplayKey } from "@/shared/lib";
-import { ReferenceBookCreateModal } from "@/shared/ui";
+import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+import { DraftFormModal } from "@/shared/ui";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 import { ClientFormFields } from "./ClientFormFields";
 
 type ClientQuickCreateValues = {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   patronymic?: string;
   phone?: string;
   telegram?: string;
@@ -25,14 +26,31 @@ type ClientQuickCreateValues = {
 type ClientQuickCreateModalProps = {
   open: boolean;
   onCancel: () => void;
-  onCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => void;
+  onCreated: (client: { id: string; displayName: string }) => void;
 };
+
+const clientQuickCreateSchema = v.object({
+  firstName: v.optional(v.string()),
+  lastName: v.optional(v.string()),
+  patronymic: v.optional(v.string()),
+  phone: v.optional(v.string()),
+  telegram: v.optional(v.string()),
+  vk: v.optional(v.string()),
+  sourceId: v.optional(v.string()),
+});
+const clientQuickCreateCodec = jsonDurableFormCodec<ClientQuickCreateValues>();
 
 export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuickCreateModalProps) {
   const [form] = Form.useForm<ClientQuickCreateValues>();
   const [isSourceCreateOpen, setSourceCreateOpen] = useState(false);
   const createdSourceOptions = useCreatedReferenceOptions("client-source");
-  const replayKeyRef = useRef(createReplayKey());
+  const draft = useDurableForm({
+    key: "draft:clients:quick-create",
+    schema: clientQuickCreateSchema,
+    form,
+    codec: clientQuickCreateCodec,
+    enabled: open,
+  });
   const { message } = AntdApp.useApp();
   const showErrors = (error: unknown) => {
     for (const errorMessage of getApiErrorMessages(error)) {
@@ -40,44 +58,24 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
     }
   };
 
-  useEffect(() => {
-    if (open) {
-      replayKeyRef.current = createReplayKey();
-    }
-  }, [open]);
-
   const createMutation = useMutation({
-    mutationFn: (values: ClientQuickCreateValues) => {
-      const tempId = createOfflineTempId("client");
-      return createOrQueueOffline({
-        input: {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          patronymic: values.patronymic?.trim() || undefined,
-          phone: normalizePhone(values.phone),
-          telegram: normalizeSocialLink(values.telegram, "telegram"),
-          vk: normalizeSocialLink(values.vk, "vk"),
-          sourceId: values.sourceId,
-        },
-        replayKey: replayKeyRef.current,
-        create: (input) => clientsApi.create(input, { replayKey: replayKeyRef.current }),
-        buildQueueItem: (input, replayKey) => ({
-          kind: "clients:create",
-          replayKey,
-          tempId,
-          payload: input,
-        }),
-      });
-    },
-    onSuccess: (result, values) => {
-      message.success(result.offline ? "Клиент сохранен локально" : "Клиент создан");
+    mutationFn: (values: ClientQuickCreateValues) =>
+      clientsApi.create({
+        firstName: values.firstName ?? "",
+        lastName: values.lastName ?? "",
+        patronymic: values.patronymic?.trim() || undefined,
+        phone: normalizePhone(values.phone),
+        telegram: normalizeSocialLink(values.telegram, "telegram"),
+        vk: normalizeSocialLink(values.vk, "vk"),
+        sourceId: values.sourceId,
+      }),
+    onSuccess: async (result, values) => {
+      message.success("Клиент создан");
+      await draft.clearAfterSuccess();
       form.resetFields();
-      replayKeyRef.current = createReplayKey();
-      const createdId = result.offline && isQueuedClientCreate(result.queuedItem) ? result.queuedItem.tempId : (result.response?.id ?? "");
       onCreated({
-        id: createdId,
+        id: result.id,
         displayName: formatClientName(values),
-        isOffline: result.offline,
       });
     },
     onError: showErrors,
@@ -95,11 +93,19 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
   });
 
   return (
-    <Modal
+    <DraftFormModal
       open={open}
       title="Новый клиент"
+      restored={draft.restored}
+      saveStatus={draft.status}
+      showClearDraft={draft.hasDraft}
+      onClearDraft={() => {
+        void draft.discard().then(() => {
+          form.resetFields();
+        });
+      }}
+      onRetryDraft={draft.retry}
       onCancel={() => {
-        form.resetFields();
         onCancel();
       }}
       onOk={() => {
@@ -112,6 +118,7 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
         form={form}
         layout="vertical"
         requiredMark={false}
+        onValuesChange={draft.formProps.onValuesChange}
         onFinish={(values) => {
           createMutation.mutate(values);
         }}
@@ -126,15 +133,16 @@ export function ClientQuickCreateModal({ open, onCancel, onCreated }: ClientQuic
       <ReferenceBookCreateModal
         open={isSourceCreateOpen}
         title="Новый источник клиента"
+        draftKey="draft:client-sources:create"
         confirmLoading={createSourceMutation.isPending}
         onCancel={() => {
           setSourceCreateOpen(false);
         }}
-        onSubmit={(values) => {
-          createSourceMutation.mutate(values);
+        onSubmit={(values, clearAfterSuccess) => {
+          createSourceMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
         }}
       />
-    </Modal>
+    </DraftFormModal>
   );
 }
 

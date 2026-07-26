@@ -5,14 +5,14 @@ import { useCallback, useEffect, useState } from "react";
 import * as v from "valibot";
 
 import { clientQueryKeys } from "@/entities/client";
-import { createOrQueueOffline } from "@/entities/offline-queue";
 import { type Payment, paymentQueryKeys, paymentsApi } from "@/entities/payment";
 import type { Ulid } from "@/shared/api";
 import { getApiErrorMessages } from "@/shared/api";
 import { useOpenCreateRouteIntent } from "@/shared/lib";
 import { useCreatedReferenceOptions } from "@/shared/lib";
+import { createIdempotencyKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
-import { useDraftFormState } from "@/shared/lib/react";
+import { useDurableForm } from "@/shared/lib/react";
 
 import type { PaymentCreateFormValues } from "../ui/PaymentCreateModal";
 
@@ -39,28 +39,23 @@ const paymentDraftSchema = v.object({
   date: v.optional(v.string()),
   description: v.optional(v.string()),
 });
-const isPaymentDraft = (value: unknown): value is PaymentDraftValues => v.safeParse(paymentDraftSchema, value).success;
+const paymentDraftCodec = {
+  serialize: (values: PaymentCreateFormValues): PaymentDraftValues => ({ ...values, date: values.date?.toISOString() }),
+  deserialize: (values: PaymentDraftValues): Partial<PaymentCreateFormValues> => ({
+    ...values,
+    date: values.date ? dayjs(values.date) : undefined,
+  }),
+};
 
 export function usePaymentCreateController({ useRouteIntent = false }: { useRouteIntent?: boolean } = {}) {
-  const {
-    hasSavedDraft,
-    isDraftRestored,
-    saveStatus: createDraftSaveStatus,
-    replayKeyRef,
-    isHydratingRef,
-    loadDraftValues,
-    withHydration,
-    resetStoredDraft,
-    saveDraftValues,
-  } = useDraftFormState<PaymentDraftValues>(PAYMENT_CREATE_DRAFT_KEY, isPaymentDraft);
   const [isOpen, setOpen] = useState(false);
   const [localPrefill, setLocalPrefill] = useState<PaymentCreatePrefill | null>(null);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const [isQuickClientCreateOpen, setQuickClientCreateOpen] = useState(false);
   const createdClientOptions = useCreatedReferenceOptions("client");
-  const [createClientLabel, setCreateClientLabel] = useState<string | undefined>();
-  const [createServiceLabel, setCreateServiceLabel] = useState<string | undefined>();
+  const [, setCreateClientLabel] = useState<string | undefined>();
+  const [, setCreateServiceLabel] = useState<string | undefined>();
   const [selectedServicePrice, setSelectedServicePrice] = useState<number | undefined>();
   const [form] = Form.useForm<PaymentCreateFormValues>();
   const selectedCreateServiceId = Form.useWatch("serviceId", form);
@@ -80,12 +75,27 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
   const createPrefillClientId = localPrefill?.clientId ?? routePrefillClientId;
   const createPrefillServiceId = localPrefill?.serviceId ?? routePrefillServiceId;
   const isCreateModalOpen = isOpen || (useRouteIntent && routeIntent.hasOpenCreateIntent);
+  const createDraft = useDurableForm({
+    key: PAYMENT_CREATE_DRAFT_KEY,
+    schema: paymentDraftSchema,
+    form,
+    codec: paymentDraftCodec,
+    enabled: isCreateModalOpen && editingPayment === null,
+  });
+  const editDraft = useDurableForm({
+    key: editingPayment ? `draft:payments:edit:${editingPayment.id}` : null,
+    schema: paymentDraftSchema,
+    form,
+    codec: paymentDraftCodec,
+    enabled: isCreateModalOpen && editingPayment !== null,
+    entity: editingPayment ? { id: editingPayment.id, baselineVersion: editingBaselineActivityId ?? null } : undefined,
+  });
   const currentEditingPayment = editingPayment;
   const isEditingPaymentStale = currentEditingPayment
     ? isActivityStale(currentEditingPayment.lastActivity?.id, editingBaselineActivityId)
     : false;
 
-  const saveMutation = useMutation<{ offline: boolean }, unknown, { values: PaymentCreateFormValues; expectedActivityId?: Ulid }>({
+  const saveMutation = useMutation<unknown, unknown, { values: PaymentCreateFormValues; expectedActivityId?: Ulid }>({
     mutationFn: ({ values, expectedActivityId }) => {
       if (!values.date) {
         throw new Error("Укажите дату платежа.");
@@ -100,31 +110,20 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
       };
 
       if (editingPayment) {
-        return paymentsApi.update(editingPayment.id, input, { expectedActivityId }).then(() => ({ offline: false }));
+        return paymentsApi.update(editingPayment.id, input, { expectedActivityId });
       }
 
-      return createOrQueueOffline({
-        input,
-        replayKey: replayKeyRef.current,
-        create: (createInput) => paymentsApi.create(createInput, { replayKey: replayKeyRef.current }),
-        buildQueueItem: (createInput, replayKey) => ({
-          kind: "payments:create",
-          replayKey,
-          payload: { ...createInput, clientLabel: createClientLabel, serviceLabel: createServiceLabel },
-        }),
-      });
+      return paymentsApi.create(input, { idempotencyKey: createIdempotencyKey() }).then(() => undefined);
     },
-    onSuccess: async (result) => {
-      message.success(result.offline ? "Платеж сохранен локально" : "Платеж сохранен");
+    onSuccess: async () => {
+      message.success("Платеж сохранен");
+      await (editingPayment ? editDraft : createDraft).clearAfterSuccess();
       closeCreateModal();
-      resetStoredDraft();
-      if (!result.offline) {
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
-          queryClient.invalidateQueries({ queryKey: clientQueryKeys.history() }),
-        ]);
-      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: paymentQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: clientQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: clientQueryKeys.history() }),
+      ]);
     },
     onError: async (error, variables) => {
       if (!editingPayment) {
@@ -163,15 +162,13 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
           setEditingPayment(freshPayment);
           setEditingBaselineActivityId(freshPayment.lastActivity?.id ?? null);
           setSelectedServicePrice(undefined);
-          withHydration(() => {
-            form.setFieldsValue({
-              clientId: freshPayment.client.id,
-              serviceId: freshPayment.service?.id,
-              quantity: 1,
-              amount: freshPayment.amount,
-              date: dayjs(freshPayment.date),
-              description: freshPayment.description ?? undefined,
-            });
+          form.setFieldsValue({
+            clientId: freshPayment.client.id,
+            serviceId: freshPayment.service?.id,
+            quantity: 1,
+            amount: freshPayment.amount,
+            date: dayjs(freshPayment.date),
+            description: freshPayment.description ?? undefined,
           });
         },
       });
@@ -192,18 +189,16 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
       setLocalPrefill(null);
       setSelectedServicePrice(undefined);
       setOpen(true);
-      withHydration(() => {
-        form.setFieldsValue({
-          clientId: payment.client.id,
-          serviceId: payment.service?.id,
-          quantity: 1,
-          amount: payment.amount,
-          date: dayjs(payment.date),
-          description: payment.description ?? undefined,
-        });
+      form.setFieldsValue({
+        clientId: payment.client.id,
+        serviceId: payment.service?.id,
+        quantity: 1,
+        amount: payment.amount,
+        date: dayjs(payment.date),
+        description: payment.description ?? undefined,
       });
     },
-    [form, withHydration],
+    [form],
   );
 
   useEffect(() => {
@@ -215,41 +210,36 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
       return;
     }
 
-    const draftValues = loadDraftValues() ?? {};
-    withHydration(() => {
-      form.setFieldsValue({
-        clientId: draftValues.clientId ?? createPrefillClientId,
-        serviceId: draftValues.serviceId ?? createPrefillServiceId,
-        quantity: draftValues.quantity ?? 1,
-        amount: draftValues.amount,
-        date: draftValues.date ? dayjs(draftValues.date) : dayjs(),
-        description: draftValues.description,
-      });
+    form.setFieldsValue({
+      clientId: createPrefillClientId,
+      serviceId: createPrefillServiceId,
+      quantity: 1,
+      amount: undefined,
+      date: dayjs(),
+      description: undefined,
     });
-  }, [createPrefillClientId, createPrefillServiceId, editingPayment, form, isCreateModalOpen, loadDraftValues, withHydration]);
+  }, [createPrefillClientId, createPrefillServiceId, editingPayment, form, isCreateModalOpen]);
 
   useEffect(() => {
-    if (!selectedCreateServiceId || selectedServicePrice === undefined || isHydratingRef.current) {
+    if (!selectedCreateServiceId || selectedServicePrice === undefined || createDraft.isHydratingRef.current) {
       return;
     }
 
     form.setFieldValue("amount", selectedServicePrice * selectedCreateQuantity);
-  }, [form, isHydratingRef, selectedCreateQuantity, selectedCreateServiceId, selectedServicePrice]);
+  }, [createDraft.isHydratingRef, form, selectedCreateQuantity, selectedCreateServiceId, selectedServicePrice]);
 
   function closeCreateModal() {
     setOpen(false);
     setLocalPrefill(null);
     setEditingPayment(null);
     setEditingBaselineActivityId(undefined);
-    withHydration(() => {
-      form.setFieldsValue({
-        clientId: undefined,
-        serviceId: undefined,
-        quantity: 1,
-        amount: undefined,
-        date: dayjs(),
-        description: undefined,
-      });
+    form.setFieldsValue({
+      clientId: undefined,
+      serviceId: undefined,
+      quantity: 1,
+      amount: undefined,
+      date: dayjs(),
+      description: undefined,
     });
     setSelectedServicePrice(undefined);
     if (useRouteIntent) {
@@ -258,18 +248,14 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
   }
 
   function handleClearCreateDraft() {
-    if (editingPayment) {
-      return;
-    }
-
-    resetStoredDraft(() => {
+    void (editingPayment ? editDraft : createDraft).discard().then(() => {
       form.setFieldsValue({
-        clientId: createPrefillClientId,
-        serviceId: createPrefillServiceId,
+        clientId: editingPayment?.client.id ?? createPrefillClientId,
+        serviceId: editingPayment?.service?.id ?? createPrefillServiceId,
         quantity: 1,
-        amount: undefined,
-        date: dayjs(),
-        description: undefined,
+        amount: editingPayment?.amount,
+        date: editingPayment ? dayjs(editingPayment.date) : dayjs(),
+        description: editingPayment?.description ?? undefined,
       });
     });
     setSelectedServicePrice(undefined);
@@ -277,18 +263,19 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
 
   return {
     form,
-    draftHydrationRef: isHydratingRef,
+    draftHydrationRef: createDraft.isHydratingRef,
     selectedCreateServiceId,
     selectedServicePrice,
     setSelectedServicePrice,
     createdClientOptions: createdClientOptions.createdOptions,
-    hasCreateDraft: hasSavedDraft,
-    isCreateDraftRestored: isDraftRestored,
-    createDraftSaveStatus,
+    hasCreateDraft: (editingPayment ? editDraft : createDraft).hasDraft,
+    isCreateDraftRestored: (editingPayment ? editDraft : createDraft).restored,
+    createDraftSaveStatus: (editingPayment ? editDraft : createDraft).status,
+    activeDraft: editingPayment ? editDraft : createDraft,
     isCreateModalOpen,
     editingPayment,
     currentEditingPayment,
-    isEditingPaymentStale,
+    isEditingPaymentStale: isEditingPaymentStale || editDraft.isStale,
     editingBaselineActivityId,
     isQuickClientCreateOpen,
     setQuickClientCreateOpen,
@@ -300,20 +287,12 @@ export function usePaymentCreateController({ useRouteIntent = false }: { useRout
     setCreateClientLabel,
     setCreateServiceLabel,
     onCreateValuesChange: (_: Partial<PaymentCreateFormValues>, values: PaymentCreateFormValues) => {
-      if (editingPayment) {
-        return;
-      }
-
-      saveDraftValues({
-        ...values,
-        date: values.date?.toISOString(),
-      });
+      (editingPayment ? editDraft : createDraft).formProps.onValuesChange?.(_, values);
     },
-    onQuickClientCreated: (client: { id: string; displayName: string; isOffline?: boolean }) => {
+    onQuickClientCreated: (client: { id: string; displayName: string }) => {
       createdClientOptions.addCreatedOption({
         id: client.id,
         label: client.displayName,
-        optionLabel: client.isOffline ? `${client.displayName} (локально)` : client.displayName,
       });
       setCreateClientLabel(client.displayName);
       form.setFieldValue("clientId", client.id);

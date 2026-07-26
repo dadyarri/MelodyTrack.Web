@@ -1,5 +1,6 @@
 import "fake-indexeddb/auto";
 
+import * as v from "valibot";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { melodyTrackDatabase } from "@/shared/database";
@@ -8,8 +9,7 @@ import { loadDraft, saveDraftValues } from "./drafts";
 import { configureDraftOwner } from "./owner";
 
 const key = "draft:test:create";
-const isTestDraft = (value: unknown): value is { name?: string } =>
-  typeof value === "object" && value !== null && !Array.isArray(value) && (!("name" in value) || typeof value.name === "string");
+const testDraftSchema = v.object({ name: v.optional(v.string()) });
 let ownerUserId = "user-1";
 
 beforeEach(async () => {
@@ -26,14 +26,14 @@ afterEach(async () => {
 
 describe("draft persistence", () => {
   it("partitions drafts by authenticated user", async () => {
-    await saveDraftValues(key, "replay-1", { name: "First user" });
+    await saveDraftValues(key, { name: "First user" });
 
     ownerUserId = "user-2";
-    expect(await loadDraft(key, isTestDraft)).toBeNull();
-    await saveDraftValues(key, "replay-2", { name: "Second user" });
+    expect(await loadDraft(key, testDraftSchema)).toBeNull();
+    await saveDraftValues(key, { name: "Second user" });
 
     ownerUserId = "user-1";
-    expect(await loadDraft(key, isTestDraft)).toMatchObject({ replayKey: "replay-1", values: { name: "First user" } });
+    expect(await loadDraft(key, testDraftSchema)).toMatchObject({ values: { name: "First user" } });
   });
 
   it("migrates a valid legacy draft into the current user partition", async () => {
@@ -46,10 +46,7 @@ describe("draft persistence", () => {
       }),
     );
 
-    expect(await loadDraft(key, isTestDraft)).toMatchObject({
-      replayKey: "legacy-replay",
-      values: { name: "Recovered" },
-    });
+    expect(await loadDraft(key, testDraftSchema)).toMatchObject({ values: { name: "Recovered" } });
     expect(localStorage.getItem(key)).toBeNull();
     expect(await melodyTrackDatabase.table("drafts").count()).toBe(1);
   });
@@ -63,10 +60,10 @@ describe("draft persistence", () => {
         values: { name: 42 },
       }),
     );
-    expect(await loadDraft(key, isTestDraft)).toBeNull();
+    expect(await loadDraft(key, testDraftSchema)).toBeNull();
 
-    await saveDraftValues(key, "expired", { name: "Old" });
+    await saveDraftValues(key, { name: "Old" });
     await melodyTrackDatabase.table("drafts").where({ ownerUserId, key }).modify({ expiresAtUtc: "2020-01-01T00:00:00.000Z" });
-    expect(await loadDraft(key, isTestDraft)).toBeNull();
+    expect(await loadDraft(key, testDraftSchema)).toBeNull();
   });
 });

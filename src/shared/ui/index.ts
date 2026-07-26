@@ -15,7 +15,6 @@ export { ListTable } from "./ListTable";
 export { MoneyListSummaryCards } from "./MoneyListSummaryCards";
 export { PageHeader } from "./PageHeader";
 export { PageLayout } from "./PageLayout";
-export { ReferenceBookCreateModal } from "./ReferenceBookCreateModal";
 export { QueryStateBlock } from "./QueryStateBlock";
 export { ShortcutButton } from "./ShortcutButton";
 export { StatusBanner } from "./StatusBanner";

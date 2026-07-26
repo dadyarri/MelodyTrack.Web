@@ -12,11 +12,17 @@
 .titleState {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-subtle);
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
+}
+
+button.titleState {
+  cursor: pointer;
 }
 
 .titleStateRestored {
@@ -25,13 +31,4 @@
 
 .titleStateFailed {
   color: var(--ant-color-error);
-}
-
-@media (max-width: 520px) {
-  .titleState span {
-    max-width: 112px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 }

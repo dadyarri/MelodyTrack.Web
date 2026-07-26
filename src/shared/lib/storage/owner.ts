@@ -5,9 +5,13 @@ export function configureDraftOwner(provider: () => string | null) {
 }
 
 export function requireStorageOwnerUserId() {
-  const ownerUserId = ownerUserIdProvider();
+  const ownerUserId = getStorageOwnerUserId();
   if (!ownerUserId) {
     throw new Error("Durable storage requires an authenticated user.");
   }
   return ownerUserId;
+}
+
+export function getStorageOwnerUserId() {
+  return ownerUserIdProvider();
 }

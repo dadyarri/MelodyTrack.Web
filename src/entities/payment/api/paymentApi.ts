@@ -19,8 +19,10 @@ export const paymentsApi = {
   export(params: PaymentListParams) {
     return http.get<Blob>("/payments/export", { params, responseType: "blob" }).then((response) => response.data);
   },
-  create(input: PaymentInput, options?: { replayKey?: string }) {
-    return http.post<CreateEntityResponse>("/payments", input, replayConfig(options?.replayKey)).then((response) => response.data);
+  create(input: PaymentInput, options?: { idempotencyKey?: string }) {
+    return http
+      .post<CreateEntityResponse>("/payments", input, idempotencyConfig(options?.idempotencyKey))
+      .then((response) => response.data);
   },
   update(id: Ulid, input: PaymentInput, options?: { expectedActivityId?: Ulid }) {
     return http
@@ -39,6 +41,6 @@ export const paymentsApi = {
   },
 };
 
-function replayConfig(replayKey?: string) {
-  return replayKey ? { headers: { "Idempotency-Key": replayKey } } : undefined;
+function idempotencyConfig(idempotencyKey?: string) {
+  return idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined;
 }

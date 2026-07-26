@@ -113,6 +113,10 @@ Follow [the browser-storage policy](./browser-storage-policy.md). Domain slices
 own durable schemas; shared code only supplies mechanics. Do not add ad-hoc
 `localStorage` caches.
 
+Every eligible business form uses `useDurableForm`; follow the
+[durable-form inventory and checklist](./durable-forms.md). Do not wire Dexie,
+timers, hydration refs, modal status, or navigation guards in controllers.
+
 Keep route-only charts, editors, diagrams, and modal bodies behind lazy
 boundaries. Use the existing query cache for intent prefetch and the existing
 bundle/public-asset budgets instead of adding a second caching or loading

@@ -1,7 +1,6 @@
-import { App as AntdApp, Button, Form, Input, InputNumber, Modal, Space, Switch, Tag } from "antd";
+import { App as AntdApp, Button, Form, Input, InputNumber, Space, Switch, Tag } from "antd";
 
 import { formatMoney } from "@/shared/lib";
-import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { ActionableEmptyState, DraftFormModal, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { DeleteOutlined, DollarOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
 
@@ -9,7 +8,6 @@ import { useServicesPageController } from "../model/useServicesPageController";
 
 export function ServicesPage() {
   const controller = useServicesPageController();
-  useUnsavedDraftGuard(controller.isCreateOpen, controller.createDraftSaveStatus);
   const { modal } = AntdApp.useApp();
 
   return (
@@ -150,6 +148,7 @@ export function ServicesPage() {
         saveStatus={controller.createDraftSaveStatus}
         showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}
+        onRetryDraft={controller.createDraftRetry}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
@@ -186,9 +185,20 @@ export function ServicesPage() {
           </Form.Item>
         </Form>
       </DraftFormModal>
-      <Modal
+      <DraftFormModal
         open={controller.canManageServices && Boolean(controller.editing)}
         title="Редактировать услугу"
+        restored={controller.editDraft.restored}
+        saveStatus={controller.editDraft.status}
+        showClearDraft={controller.editDraft.hasDraft}
+        onClearDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            controller.editForm.resetFields();
+          });
+        }}
+        stale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
         onCancel={() => {
           controller.setEditing(null);
         }}
@@ -197,7 +207,13 @@ export function ServicesPage() {
         }}
         confirmLoading={controller.updateMutation.isPending}
       >
-        <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
+        <Form
+          form={controller.editForm}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={controller.onEditSubmit}
+          onValuesChange={controller.onEditValuesChange}
+        >
           <Form.Item name="name" label="Название" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
@@ -211,10 +227,21 @@ export function ServicesPage() {
             <Switch />
           </Form.Item>
         </Form>
-      </Modal>
-      <Modal
+      </DraftFormModal>
+      <DraftFormModal
         open={controller.canManageServices && Boolean(controller.pricing)}
         title="Обновить цену"
+        restored={controller.priceDraft.restored}
+        saveStatus={controller.priceDraft.status}
+        showClearDraft={controller.priceDraft.hasDraft}
+        onClearDraft={() => {
+          void controller.priceDraft.discard().then(() => {
+            controller.priceForm.resetFields();
+          });
+        }}
+        stale={controller.priceDraft.isStale}
+        onReapplyDraft={controller.priceDraft.reapply}
+        onRetryDraft={controller.priceDraft.retry}
         onCancel={() => {
           controller.setPricing(null);
         }}
@@ -223,12 +250,17 @@ export function ServicesPage() {
         }}
         confirmLoading={controller.priceMutation.isPending}
       >
-        <Form form={controller.priceForm} layout="vertical" onFinish={controller.onPriceSubmit}>
+        <Form
+          form={controller.priceForm}
+          layout="vertical"
+          onFinish={controller.onPriceSubmit}
+          onValuesChange={controller.onPriceValuesChange}
+        >
           <Form.Item name="price" label="Цена" rules={[{ required: true }]}>
             <InputNumber min={0} className="wide" />
           </Form.Item>
         </Form>
-      </Modal>
+      </DraftFormModal>
     </PageLayout>
   );
 }

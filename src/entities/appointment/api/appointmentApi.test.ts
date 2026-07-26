@@ -40,7 +40,7 @@ describe("appointmentsApi", () => {
       timezone: "Europe/Moscow",
     };
 
-    await appointmentsApi.create(input, { replayKey: "replay-1" });
+    await appointmentsApi.create(input, { idempotencyKey: "replay-1" });
 
     expect(httpMock.post).toHaveBeenCalledWith("/appointments", input, {
       headers: {

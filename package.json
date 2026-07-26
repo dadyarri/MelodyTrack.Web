@@ -18,8 +18,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
     "test:watch": "vitest",
-    "verify": "npm run format && npm run lint:fix && npm run lint:biome && npm run lint:architecture && npm run check:assets && npm run typecheck && npm run test && npm run build && npm run check:bundle"
+    "verify": "npm run format && npm run lint:fix && npm run lint:biome && npm run lint:architecture && npm run check:assets && npm run typecheck && npm run test && npm run test:browser && npm run build && npm run check:bundle"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.10",
@@ -48,6 +49,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "^7.0.0-dev.20260421.2",
     "@vitejs/plugin-react": "^6.0.2",
+    "@vitest/browser-playwright": "^4.1.10",
     "eslint": "^10.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -59,6 +61,7 @@
     "steiger": "^0.6.0",
     "typescript-eslint": "^8.59.3",
     "vite": "^8.0.13",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "vitest-browser-react": "^2.2.0"
   }
 }

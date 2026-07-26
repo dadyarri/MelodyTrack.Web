@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import * as v from "valibot";
 
 import { expenseQueryKeys, expensesApi } from "@/entities/expense";
-import { createOrQueueOffline } from "@/entities/offline-queue";
 import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
 import { getApiErrorMessages } from "@/shared/api";
@@ -13,7 +12,8 @@ import { useCreatedReferenceOptions } from "@/shared/lib";
 import { downloadBlob } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
-import { readPositiveInteger, useDraftFormState, useUrlState } from "@/shared/lib/react";
+import { createIdempotencyKey } from "@/shared/lib";
+import { readPositiveInteger, useDurableForm, useUrlState } from "@/shared/lib/react";
 
 export type ExpenseFormValues = {
   description?: string;
@@ -31,26 +31,21 @@ const expenseDraftSchema = v.object({
   date: v.optional(v.string()),
   categoryId: v.optional(v.string()),
 });
-const isExpenseDraft = (value: unknown): value is ExpenseDraftValues => v.safeParse(expenseDraftSchema, value).success;
+const expenseDraftCodec = {
+  serialize: (values: ExpenseFormValues): ExpenseDraftValues => ({ ...values, date: values.date?.toISOString() }),
+  deserialize: (values: ExpenseDraftValues): Partial<ExpenseFormValues> => ({
+    ...values,
+    date: values.date ? dayjs(values.date) : undefined,
+  }),
+};
 const getDefaultExpensesDateRange = (): [Dayjs, Dayjs] => [dayjs().startOf("month"), dayjs().endOf("month")];
 
 export function useExpensesPageController() {
   const { searchParams, setUrlState } = useUrlState();
-  const {
-    hasSavedDraft,
-    isDraftRestored,
-    saveStatus: createDraftSaveStatus,
-    replayKeyRef,
-    loadDraftValues,
-    withHydration,
-    resetStoredDraft,
-    saveDraftValues: saveDraftFormValues,
-  } = useDraftFormState<ExpenseDraftValues>(EXPENSE_CREATE_DRAFT_KEY, isExpenseDraft);
   const page = readPositiveInteger(searchParams.get("page"));
   const setPage = (nextPage: number) => {
     setUrlState({ page: nextPage === 1 ? null : nextPage });
   };
-  const hasCreateDraft = hasSavedDraft;
   const [isCreateRequestedOpen, setOpen] = useState(false);
   const isOpen = isCreateRequestedOpen;
   const search = searchParams.get("q") ?? "";
@@ -69,6 +64,21 @@ export function useExpensesPageController() {
   const [form] = Form.useForm<ExpenseFormValues>();
   const [editForm] = Form.useForm<ExpenseFormValues>();
   const [editingExpense, setEditingExpense] = useState<{ id: string; expectedActivityId?: string } | null>(null);
+  const createDraft = useDurableForm({
+    key: EXPENSE_CREATE_DRAFT_KEY,
+    schema: expenseDraftSchema,
+    form,
+    codec: expenseDraftCodec,
+    enabled: isOpen,
+  });
+  const editDraft = useDurableForm({
+    key: editingExpense ? `draft:expenses:edit:${editingExpense.id}` : null,
+    schema: expenseDraftSchema,
+    form: editForm,
+    codec: expenseDraftCodec,
+    enabled: editingExpense !== null,
+    entity: editingExpense ? { id: editingExpense.id, baselineVersion: editingExpense.expectedActivityId ?? null } : undefined,
+  });
   const [isCategoryCreateOpen, setCategoryCreateOpen] = useState(false);
   const createdCategoryOptions = useCreatedReferenceOptions("expense-category");
   const queryClient = useQueryClient();
@@ -95,26 +105,13 @@ export function useExpensesPageController() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (values: ExpenseFormValues) =>
-      createOrQueueOffline({
-        input: toExpenseRequest(values),
-        replayKey: replayKeyRef.current,
-        create: (input) => expensesApi.create(input, { replayKey: replayKeyRef.current }),
-        buildQueueItem: (input, replayKey) => ({
-          kind: "expenses:create",
-          replayKey,
-          payload: input,
-        }),
-      }),
-    onSuccess: async (result) => {
-      message.success(result.offline ? "Расход сохранен локально" : "Расход создан");
+    mutationFn: (values: ExpenseFormValues) => expensesApi.create(toExpenseRequest(values), { idempotencyKey: createIdempotencyKey() }),
+    onSuccess: async () => {
+      message.success("Расход создан");
       setOpen(false);
-      resetStoredDraft(() => {
-        form.resetFields();
-      });
-      if (!result.offline) {
-        await queryClient.invalidateQueries({ queryKey: expenseQueryKeys.all });
-      }
+      await createDraft.clearAfterSuccess();
+      form.resetFields();
+      await queryClient.invalidateQueries({ queryKey: expenseQueryKeys.all });
     },
     onError: showErrors,
   });
@@ -124,6 +121,7 @@ export function useExpensesPageController() {
       expensesApi.update(id, toExpenseRequest(values), { expectedActivityId }),
     onSuccess: async () => {
       message.success("Расход изменен");
+      await editDraft.clearAfterSuccess();
       setEditingExpense(null);
       editForm.resetFields();
       await queryClient.invalidateQueries({ queryKey: expenseQueryKeys.all });
@@ -206,14 +204,8 @@ export function useExpensesPageController() {
       return;
     }
 
-    const draftValues = loadDraftValues();
-    withHydration(() => {
-      form.setFieldsValue({
-        ...draftValues,
-        date: draftValues?.date ? dayjs(draftValues.date) : dayjs(),
-      });
-    });
-  }, [form, isOpen, loadDraftValues, withHydration]);
+    form.setFieldValue("date", form.getFieldValue("date") ?? dayjs());
+  }, [form, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -246,9 +238,10 @@ export function useExpensesPageController() {
     setSearch,
     dateRange,
     setDateRange,
-    hasCreateDraft,
-    isCreateDraftRestored: isDraftRestored,
-    createDraftSaveStatus,
+    hasCreateDraft: createDraft.hasDraft,
+    isCreateDraftRestored: createDraft.restored,
+    createDraftSaveStatus: createDraft.status,
+    createDraftRetry: createDraft.retry,
     isOpen,
     setOpen,
     form,
@@ -269,7 +262,7 @@ export function useExpensesPageController() {
       setUrlState({ page: null, q: null, period: null, from: null, to: null });
     },
     handleClearCreateDraft: () => {
-      resetStoredDraft(() => {
+      void createDraft.discard().then(() => {
         form.resetFields();
       });
     },
@@ -301,12 +294,9 @@ export function useExpensesPageController() {
         editMutation.mutate({ ...editingExpense, values });
       }
     },
-    onCreateValuesChange: (_: Partial<ExpenseFormValues>, values: ExpenseFormValues) => {
-      saveDraftFormValues({
-        ...values,
-        date: values.date?.toISOString(),
-      });
-    },
+    onCreateValuesChange: createDraft.formProps.onValuesChange,
+    onEditValuesChange: editDraft.formProps.onValuesChange,
+    editDraft,
     onCreateCategory: (values: { name: string }) => {
       createCategoryMutation.mutate(values);
     },

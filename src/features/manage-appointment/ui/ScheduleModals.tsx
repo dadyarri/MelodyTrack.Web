@@ -1,4 +1,4 @@
-import type { FormInstance } from "antd";
+import type { FormInstance, FormProps } from "antd";
 import { Button, Checkbox, DatePicker, Form, Input, Modal, Select, Space, Typography } from "antd";
 import type { DefaultOptionType } from "antd/es/select";
 import dayjs, { type Dayjs } from "dayjs";
@@ -12,8 +12,8 @@ import { ServiceSelect } from "@/entities/service";
 import { UserSelect } from "@/entities/user";
 import { DATE_FORMAT, DATE_TIME_FORMAT, formatDateTime, TIME_FORMAT } from "@/shared/lib";
 import { formatRecordActivitySummary } from "@/shared/lib";
-import type { DraftSaveStatus } from "@/shared/lib/react";
-import { DraftModalFooter, DraftModalTitle, StatusBanner } from "@/shared/ui";
+import type { DurableFormStatus } from "@/shared/lib/react";
+import { DraftFormModal, StatusBanner } from "@/shared/ui";
 import {
   CheckOutlined,
   ClockCircleOutlined,
@@ -81,6 +81,14 @@ export function AppointmentEditModal({
   onCreateClient,
   onCancel,
   onSubmit,
+  onValuesChange,
+  draftStatus,
+  draftRestored,
+  hasDraft,
+  onDiscardDraft,
+  draftStale,
+  onReapplyDraft,
+  onRetryDraft,
 }: {
   appointment: Appointment | null;
   createdClientOptions: DefaultOptionType[];
@@ -94,6 +102,14 @@ export function AppointmentEditModal({
   onCreateClient: () => void;
   onCancel: () => void;
   onSubmit: (values: AppointmentEditFormValues) => void;
+  onValuesChange?: FormProps<AppointmentEditFormValues>["onValuesChange"];
+  draftStatus: DurableFormStatus;
+  draftRestored: boolean;
+  hasDraft: boolean;
+  onDiscardDraft: () => void;
+  draftStale: boolean;
+  onReapplyDraft: () => void;
+  onRetryDraft: () => void;
 }) {
   useEffect(() => {
     if (!appointment) {
@@ -112,9 +128,16 @@ export function AppointmentEditModal({
   }, [appointment, form, lockedProviderId]);
 
   return (
-    <Modal
+    <DraftFormModal
       open={appointment !== null}
       title="Редактировать запись"
+      restored={draftRestored}
+      saveStatus={draftStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onDiscardDraft}
+      stale={draftStale}
+      onReapplyDraft={onReapplyDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
@@ -123,7 +146,13 @@ export function AppointmentEditModal({
       destroyOnHidden
     >
       {appointment ? (
-        <Form<AppointmentEditFormValues> form={form} layout="vertical" requiredMark={false} onFinish={onSubmit}>
+        <Form<AppointmentEditFormValues>
+          form={form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={onSubmit}
+          onValuesChange={onValuesChange}
+        >
           {isStale ? (
             <StatusBanner
               type="warning"
@@ -175,7 +204,7 @@ export function AppointmentEditModal({
           ) : null}
         </Form>
       ) : null}
-    </Modal>
+    </DraftFormModal>
   );
 }
 
@@ -197,6 +226,7 @@ export function AppointmentCreateModal({
   onSubmit,
   open,
   onClearDraft,
+  onRetryDraft,
   recurrenceTypes,
   recurrenceTypesLoading,
   courseThemeOptions,
@@ -206,7 +236,7 @@ export function AppointmentCreateModal({
   createdClientOptions: DefaultOptionType[];
   hasDraft: boolean;
   draftRestored: boolean;
-  draftSaveStatus: DraftSaveStatus;
+  draftSaveStatus: DurableFormStatus;
   form: FormInstance<AppointmentFormValues>;
   lockedProviderId?: string;
   canCreateClient?: boolean;
@@ -219,6 +249,7 @@ export function AppointmentCreateModal({
   onSubmit: (values: AppointmentFormValues) => void;
   open: boolean;
   onClearDraft: () => void;
+  onRetryDraft: () => void;
   recurrenceTypes: RecurrenceType[];
   recurrenceTypesLoading: boolean;
   courseThemeOptions: DefaultOptionType[];
@@ -264,18 +295,20 @@ export function AppointmentCreateModal({
   };
 
   return (
-    <Modal
+    <DraftFormModal
       open={open}
-      title={<DraftModalTitle title="Новая запись" restored={draftRestored} saveStatus={draftSaveStatus} />}
+      title="Новая запись"
+      restored={draftRestored}
+      saveStatus={draftSaveStatus}
+      showClearDraft={hasDraft}
+      onClearDraft={onClearDraft}
+      onRetryDraft={onRetryDraft}
       onCancel={onCancel}
       onOk={() => {
         form.submit();
       }}
       confirmLoading={createPending}
       destroyOnHidden
-      footer={(_, { CancelBtn, OkBtn }) => (
-        <DraftModalFooter onClearDraft={onClearDraft} showClearDraft={hasDraft} CancelBtn={CancelBtn} OkBtn={OkBtn} />
-      )}
     >
       <Form<AppointmentFormValues>
         form={form}
@@ -372,7 +405,7 @@ export function AppointmentCreateModal({
           </>
         ) : null}
       </Form>
-    </Modal>
+    </DraftFormModal>
   );
 }
 

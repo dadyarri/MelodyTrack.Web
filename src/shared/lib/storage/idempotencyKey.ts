@@ -1,4 +1,4 @@
-export function createReplayKey() {
+export function createIdempotencyKey() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
   }

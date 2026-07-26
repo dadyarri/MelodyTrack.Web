@@ -11,7 +11,6 @@ import {
 } from "@/features/manage-appointment";
 import { ClientQuickCreateModal } from "@/features/manage-client";
 import { PaymentCreateModal } from "@/features/record-payment";
-import { useUnsavedDraftGuard } from "@/shared/lib/react";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { LeftOutlined, PlusOutlined, RightOutlined } from "@/shared/ui/icons";
 import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
@@ -21,12 +20,6 @@ import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
   const controller = useSchedulePageController();
-  const activeDraftSaveStatus = controller.isCreateModalOpen
-    ? controller.createDraftSaveStatus
-    : controller.paymentCreate.createDraftSaveStatus;
-  const isDraftEditorOpen =
-    controller.isCreateModalOpen || (controller.paymentCreate.isCreateModalOpen && !controller.paymentCreate.editingPayment);
-  useUnsavedDraftGuard(isDraftEditorOpen, activeDraftSaveStatus);
   const weekRangeLabel = formatScheduleWeekRange(controller.weekStart);
 
   return (
@@ -259,6 +252,7 @@ export function SchedulePage() {
         onProviderLabelChange={controller.setCreateProviderLabel}
         open={controller.isCreateModalOpen}
         onClearDraft={controller.handleClearCreateDraft}
+        onRetryDraft={controller.createDraftRetry}
         recurrenceTypes={controller.recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={controller.recurrenceTypesQuery.isLoading}
         courseThemeOptions={controller.createCourseThemeOptions}
@@ -292,6 +286,28 @@ export function SchedulePage() {
             expectedActivityId: controller.appointmentToEditBaselineActivityId ?? undefined,
           });
         }}
+        onValuesChange={controller.onEditDraftChange}
+        draftStatus={controller.editDraft.status}
+        draftRestored={controller.editDraft.restored}
+        hasDraft={controller.editDraft.hasDraft}
+        draftStale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
+        onDiscardDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            const appointment = controller.currentEditingAppointment;
+            if (appointment) {
+              controller.editForm.setFieldsValue({
+                clientId: appointment.client.id,
+                serviceId: appointment.service.id,
+                providerId: controller.lockedProviderId ?? appointment.provider?.id,
+                courseThemeId: appointment.courseTheme?.id,
+                lessonNotes: appointment.lessonNotes ?? undefined,
+                startDate: dayjs(appointment.startDate),
+              });
+            }
+          });
+        }}
       />
       <ClientQuickCreateModal
         open={controller.isQuickClientCreateOpen}
@@ -314,6 +330,9 @@ export function SchedulePage() {
         selectedServicePrice={controller.paymentCreate.selectedServicePrice}
         onCancel={controller.paymentCreate.closeCreateModal}
         onClearDraft={controller.paymentCreate.handleClearCreateDraft}
+        draftStale={controller.paymentCreate.activeDraft.isStale}
+        onReapplyDraft={controller.paymentCreate.activeDraft.reapply}
+        onRetryDraft={controller.paymentCreate.activeDraft.retry}
         onSubmit={(values) => {
           controller.paymentCreate.saveMutation.mutate({
             values,
