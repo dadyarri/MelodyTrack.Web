@@ -7,13 +7,11 @@ import styles from "./ListTable.module.css";
 type ListTableProps<RecordType extends object> = TableProps<RecordType> & {
   emptyText?: ReactNode;
   queryStatus?: ListQueryStatusProps;
-  scrollY?: number;
 };
 
 export function ListTable<RecordType extends object>({
   emptyText = "Нет данных",
   queryStatus,
-  scrollY = 520,
   locale,
   scroll,
   ...props
@@ -30,7 +28,7 @@ export function ListTable<RecordType extends object>({
       ) : null}
       <Table<RecordType>
         {...props}
-        scroll={scroll ?? { x: "max-content", y: scrollY }}
+        scroll={scroll ?? { x: "max-content" }}
         locale={{
           ...locale,
           emptyText: locale?.emptyText ?? emptyText,
