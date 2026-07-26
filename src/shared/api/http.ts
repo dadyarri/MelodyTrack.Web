@@ -9,10 +9,26 @@ export type HttpSession = {
   setTokens: (accessToken: string, refreshToken: string) => void;
 };
 
-export type StaleEntityConflict<TActivity = unknown> = {
+export type ApiValidationError = {
+  path: string;
+  code: string;
+  message: string;
+};
+
+export type ApiProblemDetails = {
+  type: string;
+  title: string;
+  status: number;
+  detail?: string;
+  instance: string;
+  code: string;
+  traceId: string;
+  errors: ApiValidationError[];
+};
+
+export type StaleEntityConflict<TActivity = unknown> = ApiProblemDetails & {
   entityType: string;
   entityId: string;
-  message: string;
   currentActivity?: TActivity | null;
 };
 
@@ -154,12 +170,24 @@ async function refreshAccessToken() {
   }
 }
 
-type ApiErrorData = {
-  title?: string;
-  detail?: string;
-  message?: string;
-  errors?: Array<string | { reason?: string; message?: string }> | Record<string, string[] | string>;
-};
+export function getApiProblemDetails(error: unknown) {
+  if (!axios.isAxiosError(error) || !isApiProblemDetails(error.response?.data)) {
+    return null;
+  }
+
+  return error.response.data;
+}
+
+export function getApiFieldErrors(error: unknown) {
+  const problem = getApiProblemDetails(error);
+  const errorsByField: Record<string, string[]> = {};
+  for (const validationError of problem?.errors ?? []) {
+    const key = validationError.path.toLowerCase();
+    errorsByField[key] ??= [];
+    errorsByField[key].push(validationError.message);
+  }
+  return errorsByField;
+}
 
 export function getApiErrorMessages(error: unknown) {
   if (!axios.isAxiosError(error)) {
@@ -170,41 +198,22 @@ export function getApiErrorMessages(error: unknown) {
     return ["Не удалось подключиться к серверу. Проверьте соединение или попробуйте позже."];
   }
 
-  const data = error.response.data as ApiErrorData | string | undefined;
-  if (typeof data === "string") {
-    return [data];
+  const problem = getApiProblemDetails(error);
+  if (!problem) {
+    return [`Сервер не смог обработать запрос (HTTP ${String(error.response.status)}).`];
   }
-
   const messages = new Set<string>();
-  if (Array.isArray(data?.errors)) {
-    for (const item of data.errors) {
-      const message = typeof item === "string" ? item : (item.reason ?? item.message);
-      if (message) {
-        messages.add(message);
-      }
-    }
-  } else if (data?.errors) {
-    for (const value of Object.values(data.errors)) {
-      const fieldMessages = Array.isArray(value) ? value : [value];
-      for (const message of fieldMessages) {
-        if (typeof message === "string" && message) {
-          messages.add(message);
-        }
-      }
-    }
+  for (const validationError of problem.errors) {
+    messages.add(validationError.message);
+  }
+  if (problem.detail) {
+    messages.add(problem.detail);
+  }
+  if (messages.size === 0) {
+    messages.add(problem.title);
   }
 
-  if (data?.detail) {
-    messages.add(data.detail);
-  }
-  if (data?.message) {
-    messages.add(data.message);
-  }
-  if (data?.title && messages.size === 0) {
-    messages.add(data.title);
-  }
-
-  return messages.size > 0 ? [...messages] : [error.message];
+  return [[...messages].join("\n")];
 }
 
 export function getApiErrorMessage(error: unknown) {
@@ -216,10 +225,45 @@ export function getStaleEntityConflict<TActivity = unknown>(error: unknown) {
     return null;
   }
 
-  const data = error.response.data as Partial<StaleEntityConflict<TActivity>> | undefined;
-  if (!data?.entityType || !data.entityId || !data.message) {
+  const data: unknown = error.response.data;
+  if (
+    !isApiProblemDetails(data) ||
+    data.type !== "urn:melody-track:problem:stale-entity" ||
+    !hasString(data, "entityType") ||
+    !hasString(data, "entityId")
+  ) {
     return null;
   }
 
   return data as StaleEntityConflict<TActivity>;
+}
+
+function isApiProblemDetails(value: unknown): value is ApiProblemDetails {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return (
+    hasString(value, "type") &&
+    hasString(value, "title") &&
+    hasNumber(value, "status") &&
+    hasString(value, "instance") &&
+    hasString(value, "code") &&
+    hasString(value, "traceId") &&
+    "errors" in value &&
+    Array.isArray(value.errors) &&
+    value.errors.every(isApiValidationError)
+  );
+}
+
+function isApiValidationError(value: unknown): value is ApiValidationError {
+  return Boolean(value && typeof value === "object" && hasString(value, "path") && hasString(value, "code") && hasString(value, "message"));
+}
+
+function hasString(value: object, key: string) {
+  return key in value && typeof value[key as keyof typeof value] === "string";
+}
+
+function hasNumber(value: object, key: string) {
+  return key in value && typeof value[key as keyof typeof value] === "number";
 }

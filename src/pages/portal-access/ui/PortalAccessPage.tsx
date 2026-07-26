@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
 
 import { authApi, type ClientPortalPinAuthInput, useAuth } from "@/entities/session";
-import { getApiErrorMessage } from "@/shared/api";
+import { getApiErrorMessage, getApiFieldErrors } from "@/shared/api";
 import { AuthScreenLayout } from "@/shared/ui";
 
 type PortalPinFormValues = {
@@ -199,7 +199,7 @@ function PinCodeInput({ autoFocus = false, value, onChange }: { autoFocus?: bool
 }
 
 function getPortalPinFieldErrors(error: unknown, hasPin: boolean, step: "entry" | "confirmation", fallbackMessage: string) {
-  const errorsByField = readApiErrorsByField(error);
+  const errorsByField = getApiFieldErrors(error);
   const pinErrors = getFieldErrors(errorsByField, "pin");
   const pinConfirmationErrors = !hasPin ? getFieldErrors(errorsByField, "pinConfirmation") : [];
   const tokenErrors = getFieldErrors(errorsByField, "token");
@@ -230,36 +230,4 @@ function getPortalPinFieldErrors(error: unknown, hasPin: boolean, step: "entry" 
 
 function getFieldErrors(errorsByField: Record<string, string[]>, fieldName: string) {
   return errorsByField[fieldName.toLowerCase()] ?? [];
-}
-
-function readApiErrorsByField(error: unknown) {
-  if (!error || typeof error !== "object") {
-    return {};
-  }
-
-  const response = "response" in error ? error.response : undefined;
-  if (!response || typeof response !== "object") {
-    return {};
-  }
-
-  const data = "data" in response ? response.data : undefined;
-  if (!data || typeof data !== "object" || !("errors" in data)) {
-    return {};
-  }
-
-  const apiErrors = data.errors;
-  if (!apiErrors || typeof apiErrors !== "object" || Array.isArray(apiErrors)) {
-    return {};
-  }
-
-  const normalized: Record<string, string[]> = {};
-  for (const [key, value] of Object.entries(apiErrors)) {
-    const messages = Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
-    if (messages.length > 0) {
-      normalized[key] = messages;
-      normalized[key.toLowerCase()] = messages;
-    }
-  }
-
-  return normalized;
 }

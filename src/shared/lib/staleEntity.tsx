@@ -36,7 +36,7 @@ export function openStaleEntityConflictModal({
     title,
     content: (
       <Space orientation="vertical" size={8}>
-        <Typography.Text>{conflict.message}</Typography.Text>
+        <Typography.Text>{conflict.detail ?? conflict.title}</Typography.Text>
         <Typography.Text type="secondary">{formatRecordActivitySummary(conflict.currentActivity)}</Typography.Text>
       </Space>
     ),

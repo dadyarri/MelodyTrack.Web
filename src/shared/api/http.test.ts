@@ -1,7 +1,15 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { authExpiredEventName, configureHttpSession, discardLegacyHttpCache, getApiErrorMessages, http, restoreAccessToken } from "./index";
+import {
+  authExpiredEventName,
+  configureHttpSession,
+  discardLegacyHttpCache,
+  getApiErrorMessages,
+  getApiFieldErrors,
+  http,
+  restoreAccessToken,
+} from "./index";
 
 describe("shared HTTP transport", () => {
   afterEach(() => {
@@ -36,6 +44,38 @@ describe("shared HTTP transport", () => {
   it("normalizes non-HTTP errors", () => {
     expect(getApiErrorMessages(new Error("Something failed"))).toEqual(["Something failed"]);
     expect(getApiErrorMessages("unknown")).toEqual(["Произошла неизвестная ошибка"]);
+  });
+
+  it("parses only the canonical Problem Details contract", () => {
+    const config = {} as InternalAxiosRequestConfig;
+    const canonical = new AxiosError("Bad Request", "ERR_BAD_REQUEST", config, undefined, {
+      config,
+      data: {
+        type: "urn:melody-track:problem:validation",
+        title: "Request validation failed",
+        status: 400,
+        detail: "Correct the highlighted fields.",
+        instance: "/test",
+        code: "validation_failed",
+        traceId: "trace-1",
+        errors: [{ path: "Pin", code: "NotEmptyValidator", message: "Введите PIN-код" }],
+      },
+      headers: {},
+      status: 400,
+      statusText: "Bad Request",
+    });
+    const legacy = new AxiosError("Bad Request", "ERR_BAD_REQUEST", config, undefined, {
+      config,
+      data: { message: "legacy error", errors: { pin: ["legacy field error"] } },
+      headers: {},
+      status: 400,
+      statusText: "Bad Request",
+    });
+
+    expect(getApiErrorMessages(canonical)).toEqual(["Введите PIN-код\nCorrect the highlighted fields."]);
+    expect(getApiFieldErrors(canonical)).toEqual({ pin: ["Введите PIN-код"] });
+    expect(getApiErrorMessages(legacy)).toEqual(["Сервер не смог обработать запрос (HTTP 400)."]);
+    expect(getApiFieldErrors(legacy)).toEqual({});
   });
 
   it("refreshes an expired access token and retries the original request once", async () => {
