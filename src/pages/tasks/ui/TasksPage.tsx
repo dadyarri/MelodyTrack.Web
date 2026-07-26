@@ -603,7 +603,7 @@ function CustomTaskModal({
   return (
     <DraftFormModal
       open={open}
-      title="Новая пользовательская задача"
+      title="Новая задача"
       restored={draftRestored}
       saveStatus={draftStatus}
       showClearDraft={hasDraft}
