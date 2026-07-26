@@ -15,13 +15,13 @@ migration.
 
 The CI baseline is `npm run verify`, which runs:
 
-1. Biome formatting
-2. ESLint auto-fix
-3. Biome lint
-4. Steiger architecture validation
-5. strict TypeScript checking
-6. Vitest
-7. the Vite production build
+1. Biome formatting and linting plus ESLint auto-fix
+2. Steiger architecture and public-asset validation
+3. browser-targeted CSS compatibility compilation
+4. strict TypeScript checking and unit tests
+5. Chromium responsive, visual, and overflow tests
+6. WebKit form and overlay interaction tests
+7. the Vite production build and bundle-budget validation
 
 CI also runs `npm audit --omit=dev` before verification.
 
@@ -146,6 +146,23 @@ The backend still accepts refresh tokens in JSON request bodies, so the
 remaining refresh-token `localStorage` risk and coordinated HttpOnly-cookie
 migration remain documented in the browser-storage policy.
 
+## Mobile browser baseline
+
+The supported baseline is iOS Safari and Safari 16.4+, Chrome and Edge 109+,
+and Firefox 115+. Browserslist, Autoprefixer, the Vite JavaScript/CSS targets,
+Lightning CSS minification, and source compatibility compilation enforce the
+same matrix.
+
+The shared visual-viewport compatibility layer handles dynamic viewport
+dimensions, software-keyboard offsets, safe areas, contained overlays,
+compact 16px form text, and primary 44px touch targets. Responsive browser
+tests cover authentication, list, analytics, schedule, course workspace,
+profile, and portal route families at 320, 375, 390, and 430px portrait plus
+compact landscape. Chromium owns viewport and visual regression coverage;
+WebKit owns modal, form, picker, dropdown, and drawer interaction coverage.
+The ongoing physical-iPhone release checklist is documented in
+[`mobile-browser-support.md`](./mobile-browser-support.md).
+
 ## Production Bundle Baseline
 
 The production build succeeds with route-level code splitting. The largest
@@ -169,6 +186,12 @@ paths.
 `VITE_API_BASE_URL` is validated before the HTTP client is created. It accepts
 an HTTP(S) URL for a separate API origin or a root-relative path for same-origin
 deployments.
+
+Local development uses `/api`; Vite proxies that prefix to
+`MELODY_TRACK_API_PROXY_TARGET` (default `http://localhost:5000`) and removes
+the prefix before forwarding. A phone or other LAN device therefore sends API
+requests back through the same Vite origin instead of trying to connect to a
+backend port that is bound only on the development machine.
 
 Real `.env` variants are ignored. Copy `.env.example` to an appropriate local
 Vite environment file and configure the deployed value through the build
