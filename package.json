@@ -14,6 +14,7 @@
     "check:assets": "node ./scripts/check-public-assets.mjs",
     "check:bundle": "node ./scripts/check-build-budget.mjs",
     "check:css-compat": "node ./scripts/check-css-compatibility.mjs",
+    "check:security": "node ./scripts/check-security-baseline.mjs",
     "analyze": "vite build --mode analyze",
     "typecheck": "tsgo -b",
     "lint": "eslint .",
@@ -23,7 +24,7 @@
     "test:webkit": "node ./scripts/run-webkit-tests.mjs",
     "test:webkit:direct": "vitest run --config vitest.webkit.config.ts",
     "test:watch": "vitest",
-    "verify": "npm run format && npm run lint:fix && npm run lint:biome && npm run lint:architecture && npm run check:assets && npm run check:css-compat && npm run typecheck && npm run test && npm run test:browser && npm run test:webkit && npm run build && npm run check:bundle"
+    "verify": "npm run format && npm run lint:fix && npm run lint:biome && npm run lint:architecture && npm run check:assets && npm run check:css-compat && npm run check:security && npm run typecheck && npm run test && npm run test:browser && npm run test:webkit && npm run build && npm run check:bundle"
   },
   "browserslist": [
     "iOS >= 16.4",
