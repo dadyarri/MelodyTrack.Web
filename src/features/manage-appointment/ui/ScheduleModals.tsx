@@ -610,6 +610,8 @@ export function AppointmentDetailsModal({
   const end = dayjs(appointment.endDate);
   const clientName = [appointment.client.lastName, appointment.client.firstName, appointment.client.patronymic].filter(Boolean).join(" ");
   const recurrenceSummary = appointment.recurringRule ? formatRecurringRuleSummary(appointment.recurringRule) : null;
+  const telegramHref = getSocialLinkHref(appointment.client.contacts?.telegram, "telegram");
+  const vkHref = getSocialLinkHref(appointment.client.contacts?.vk, "vk");
 
   return (
     <Modal open title="Запись" onCancel={onClose} footer={null}>
@@ -638,26 +640,10 @@ export function AppointmentDetailsModal({
                   title={appointment.client.contacts.phone}
                 />
               ) : null}
-              {appointment.client.contacts?.telegram ? (
-                <Button
-                  shape="circle"
-                  icon={<SendOutlined />}
-                  href={getSocialLinkHref(appointment.client.contacts.telegram, "telegram")}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Telegram"
-                />
+              {telegramHref ? (
+                <Button shape="circle" icon={<SendOutlined />} href={telegramHref} target="_blank" rel="noreferrer" title="Telegram" />
               ) : null}
-              {appointment.client.contacts?.vk ? (
-                <Button
-                  shape="circle"
-                  icon={<LinkOutlined />}
-                  href={appointment.client.contacts.vk}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="VK"
-                />
-              ) : null}
+              {vkHref ? <Button shape="circle" icon={<LinkOutlined />} href={vkHref} target="_blank" rel="noreferrer" title="VK" /> : null}
             </Space>
           ) : null}
         </div>

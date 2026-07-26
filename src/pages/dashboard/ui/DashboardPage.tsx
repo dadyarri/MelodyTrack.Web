@@ -174,13 +174,18 @@ function ReminderList({ appointments, emptyDescription, showTimeOnly = false }: 
   }
 
   return (
-    <List dataSource={appointments} renderItem={(appointment) => <ScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />} />
+    <List
+      dataSource={appointments}
+      renderItem={(appointment) => <DashboardScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />}
+    />
   );
 }
 
-function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appointment; showTimeOnly?: boolean }) {
+export function DashboardScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appointment; showTimeOnly?: boolean }) {
   const start = dayjs(appointment.startDate);
   const status = renderAppointmentStatusTag(appointment.status);
+  const telegramHref = getSocialLinkHref(appointment.client.contacts?.telegram, "telegram");
+  const vkHref = getSocialLinkHref(appointment.client.contacts?.vk, "vk");
 
   return (
     <List.Item>
@@ -200,27 +205,19 @@ function ScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appo
                 title={appointment.client.contacts.phone}
               />
             ) : null}
-            {appointment.client.contacts?.telegram ? (
+            {telegramHref ? (
               <Button
                 shape="circle"
                 size="small"
                 icon={<SendOutlined />}
-                href={getSocialLinkHref(appointment.client.contacts.telegram, "telegram")}
+                href={telegramHref}
                 target="_blank"
                 rel="noreferrer"
                 title="Telegram"
               />
             ) : null}
-            {appointment.client.contacts?.vk ? (
-              <Button
-                shape="circle"
-                size="small"
-                icon={<LinkOutlined />}
-                href={appointment.client.contacts.vk}
-                target="_blank"
-                rel="noreferrer"
-                title="VK"
-              />
+            {vkHref ? (
+              <Button shape="circle" size="small" icon={<LinkOutlined />} href={vkHref} target="_blank" rel="noreferrer" title="VK" />
             ) : null}
           </Space>
         </Space>
