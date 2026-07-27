@@ -395,7 +395,7 @@ export function useProfilePageController() {
   const resetOnboardingMutation = useMutation({
     mutationFn: () => onboardingApi.reset(),
     onSuccess: async () => {
-      message.success("Экскурсия сброшена и снова появится в приложении.");
+      message.success("Экскурсия начнётся сначала.");
       await queryClient.invalidateQueries({
         queryKey: onboardingQueryKeys.state,
       });

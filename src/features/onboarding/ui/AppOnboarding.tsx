@@ -1,211 +1,93 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Tour } from "antd";
-import { useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { App, Button, Tour, Typography } from "antd";
 
-import { useAuth } from "@/entities/session";
-
-import { onboardingApi, type OnboardingStateResponse } from "../api/onboardingApi";
-import { onboardingQueryKeys } from "../api/queryKeys";
-import { canAccessOnboardingStep, onboardingSteps } from "../model/tourSteps";
+import { findOnboardingTarget } from "../model/targets";
+import { type OnboardingController, useOnboardingController } from "../model/useOnboardingController";
+import styles from "./AppOnboarding.module.css";
 
 export function AppOnboarding() {
-  const auth = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const latestProgressRequestRef = useRef(0);
-  const pendingStepIdRef = useRef<string | null>(null);
-  const pendingPathRef = useRef<string | null>(null);
-
-  const onboardingQuery = useQuery({
-    queryKey: onboardingQueryKeys.state,
-    queryFn: () => onboardingApi.getState(),
-    enabled: auth.isAuthenticated,
-  });
-  const visibleSteps = useMemo(() => onboardingSteps.filter((step) => canAccessOnboardingStep(step, auth.user)), [auth.user]);
-
-  const setState = (state: OnboardingStateResponse) => {
-    queryClient.setQueryData(onboardingQueryKeys.state, state);
-  };
-
-  const setActiveStep = (currentStep: string, currentPath: string) => {
-    setState({
-      status: "active",
-      currentStep,
-      currentPath,
-      shouldLaunch: true,
-      updatedAtUtc: new Date().toISOString(),
-      completedAtUtc: null,
-    });
-  };
-
-  const progressMutation = useMutation({
-    mutationFn: async (input: { currentStep: string; currentPath: string; requestId: number }) => {
-      const state = await onboardingApi.updateProgress({
-        currentStep: input.currentStep,
-        currentPath: input.currentPath,
-      });
-
-      return { state, requestId: input.requestId };
-    },
-    onSuccess: ({ state, requestId }) => {
-      if (requestId !== latestProgressRequestRef.current) {
-        return;
-      }
-
-      pendingStepIdRef.current = null;
-      pendingPathRef.current = null;
-      setState(state);
+  const { message } = App.useApp();
+  const controller = useOnboardingController({
+    onCompleted: () => {
+      void message.success("Готово! Теперь можно начинать работу.");
     },
   });
+  return <OnboardingTour controller={controller} />;
+}
 
-  const completeMutation = useMutation({
-    mutationFn: () => onboardingApi.complete(),
-    onSuccess: (state) => {
-      setState(state);
-    },
+export function OnboardingTour({ controller }: { controller: OnboardingController }) {
+  const steps = controller.steps.map((step) => {
+    const targetId = step.targetId;
+    return {
+      title: step.title,
+      description: step.description,
+      placement: step.placement,
+      target: targetId ? findOnboardingTarget(targetId) : null,
+    };
   });
-
-  const skipMutation = useMutation({
-    mutationFn: () => onboardingApi.skip(),
-    onSuccess: (state) => {
-      setState(state);
-    },
-  });
-
-  const currentState = onboardingQuery.data;
-  const currentStepIndex = useMemo(() => {
-    const stateStep = currentState?.currentStep;
-    const index = visibleSteps.findIndex((step) => step.id === stateStep);
-    return index >= 0 ? index : 0;
-  }, [currentState?.currentStep, visibleSteps]);
-
-  useEffect(() => {
-    if (!currentState?.shouldLaunch) {
-      pendingStepIdRef.current = null;
-      pendingPathRef.current = null;
-      return;
-    }
-
-    const targetStep = pendingStepIdRef.current
-      ? visibleSteps.find((step) => step.id === pendingStepIdRef.current)
-      : visibleSteps[currentStepIndex];
-
-    if (!targetStep || location.pathname === targetStep.path) {
-      if (pendingPathRef.current === location.pathname) {
-        pendingPathRef.current = null;
-      }
-
-      return;
-    }
-
-    void navigate(targetStep.path);
-  }, [currentState?.shouldLaunch, currentStepIndex, location.pathname, navigate, visibleSteps]);
-
-  const steps = visibleSteps.map((step, index) => ({
-    title: step.title,
-    description: step.description,
-    placement: step.placement,
-    target: () => document.querySelector<HTMLElement>(`[data-onboarding-id="${step.targetId}"]`) ?? document.body,
-    nextButtonProps: {
-      children: index === visibleSteps.length - 1 ? "Завершить" : "Далее",
-    },
-    prevButtonProps: {
-      children: "Назад",
-    },
-  }));
-
-  const open = Boolean(currentState?.shouldLaunch);
-
-  const handleChange = (nextIndex: number) => {
-    const nextStep = visibleSteps.at(nextIndex);
-    if (!nextStep || progressMutation.isPending) {
-      return;
-    }
-
-    const requestId = latestProgressRequestRef.current + 1;
-    latestProgressRequestRef.current = requestId;
-    pendingStepIdRef.current = nextStep.id;
-    pendingPathRef.current = nextStep.path !== location.pathname ? nextStep.path : null;
-    setActiveStep(nextStep.id, nextStep.path);
-    progressMutation.mutate({ currentStep: nextStep.id, currentPath: nextStep.path, requestId });
-    if (location.pathname !== nextStep.path) {
-      void navigate(nextStep.path);
-    }
-  };
-
-  const handleClose = () => {
-    if (!skipMutation.isPending) {
-      skipMutation.mutate();
-    }
-  };
 
   return (
     <Tour
-      open={open}
-      current={currentStepIndex}
+      rootClassName={styles.tour}
+      open={controller.open}
+      current={controller.currentStepIndex}
       steps={steps}
-      onClose={handleClose}
-      onChange={handleChange}
+      onClose={controller.skip}
+      onChange={controller.changeStep}
       mask
+      closable={{ "aria-label": "Пропустить экскурсию" }}
       disabledInteraction={false}
-      indicatorsRender={(_current, _total) => <></>}
+      scrollIntoViewOptions={false}
+      indicatorsRender={() => null}
       actionsRender={(_, info) => {
         const isLastStep = info.current === info.total - 1;
-        const isBusy = progressMutation.isPending || completeMutation.isPending || skipMutation.isPending;
 
         return (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto 1fr",
-              alignItems: "center",
-              gap: 2,
-              width: "100%",
-            }}
-          >
-            <div>
-              Шаг {info.current + 1} из {info.total}
-            </div>
-
-            <div>
-              <Button onClick={handleClose} disabled={skipMutation.isPending}>
-                Пропустить
-              </Button>
-            </div>
-
-            <div style={{ justifySelf: "end", display: "flex", gap: 2 }}>
-              {info.current > 0 ? (
-                <Button
-                  onClick={() => {
-                    handleChange(info.current - 1);
-                  }}
-                  disabled={isBusy}
-                >
-                  Назад
+          <div className={styles.footer}>
+            {controller.hasError ? (
+              <div className={styles.error} role="alert">
+                <Typography.Text type="danger">Не получилось продолжить экскурсию.</Typography.Text>
+                <Button size="small" onClick={controller.retry}>
+                  Повторить
                 </Button>
-              ) : null}
-              <Button
-                type="primary"
-                onClick={() => {
-                  if (isLastStep) {
-                    completeMutation.mutate();
-                    return;
-                  }
+              </div>
+            ) : null}
 
-                  handleChange(info.current + 1);
-                }}
-                disabled={isBusy}
-              >
-                {isLastStep ? "Завершить" : "Далее"}
-              </Button>
+            <div className={styles.footerRow}>
+              <Typography.Text type="secondary" className={styles.progress}>
+                {info.current + 1} из {info.total}
+              </Typography.Text>
+
+              <div className={styles.actions}>
+                <Button onClick={controller.skip} disabled={controller.isBusy}>
+                  Пропустить
+                </Button>
+                {info.current > 0 ? (
+                  <Button
+                    onClick={() => {
+                      controller.changeStep(info.current - 1);
+                    }}
+                    disabled={controller.isBusy}
+                  >
+                    Назад
+                  </Button>
+                ) : null}
+                <Button
+                  type="primary"
+                  onClick={() => {
+                    if (isLastStep) {
+                      controller.complete();
+                    } else {
+                      controller.changeStep(info.current + 1);
+                    }
+                  }}
+                  disabled={controller.isBusy}
+                >
+                  {isLastStep ? "Готово" : "Далее"}
+                </Button>
+              </div>
             </div>
           </div>
         );
-      }}
-      onFinish={() => {
-        completeMutation.mutate();
       }}
     />
   );

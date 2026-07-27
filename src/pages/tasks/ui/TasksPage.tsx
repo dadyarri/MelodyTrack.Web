@@ -76,6 +76,7 @@ export function TasksPage() {
       }
     >
       <Tabs
+        data-onboarding-id="tasks-content"
         activeKey={controller.activeTab}
         onChange={(key) => {
           controller.setActiveTab(key as "tasks" | "rules");

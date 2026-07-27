@@ -236,7 +236,7 @@ export function CourseWorkspace() {
         ) : undefined
       }
     >
-      <div className={styles.layout}>
+      <div className={styles.layout} data-onboarding-id="courses-workspace">
         <section className={styles.sidebarPanel}>
           <div className={styles.listHeader}>
             <Input

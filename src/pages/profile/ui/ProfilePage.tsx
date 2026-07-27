@@ -112,16 +112,14 @@ export function ProfilePage() {
         </div>
         <Card
           data-onboarding-id="profile-onboarding-reset"
-          title="Экскурсия по приложению"
+          title="Знакомство с MelodyTrack"
           extra={
             <Button icon={<ReloadOutlined />} loading={controller.resetOnboardingMutation.isPending} onClick={controller.resetOnboarding}>
-              Сбросить
+              Пройти ещё раз
             </Button>
           }
         >
-          <Typography.Text type="secondary">
-            Если хотите пройти онбординг заново, сбросьте прогресс. После этого гид снова откроется поверх приложения.
-          </Typography.Text>
+          <Typography.Text type="secondary">Короткая экскурсия напомнит об основных возможностях для вашей роли.</Typography.Text>
         </Card>
       </div>
 

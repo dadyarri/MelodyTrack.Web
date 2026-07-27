@@ -4,6 +4,7 @@ export interface OnboardingStateResponse {
   status: "active" | "completed" | "skipped";
   currentStep: string;
   currentPath: string;
+  definitionVersion: number;
   shouldLaunch: boolean;
   updatedAtUtc: string;
   completedAtUtc?: string | null;
