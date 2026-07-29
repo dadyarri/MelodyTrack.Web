@@ -1,6 +1,12 @@
 name: Frontend CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version to publish from merged release metadata
+        required: true
+        type: string
   pull_request:
   push:
     branches:
@@ -50,7 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: verify
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: write
       packages: write
@@ -72,6 +78,7 @@ jobs:
         id: release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: echo "version=$(dotnet run scripts/ReleaseWorkflow.cs -- current-version)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
@@ -104,4 +111,5 @@ jobs:
       - name: Publish release tag and notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ inputs.version }}
         run: dotnet run scripts/ReleaseWorkflow.cs -- publish

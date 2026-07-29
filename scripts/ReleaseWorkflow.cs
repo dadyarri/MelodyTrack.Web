@@ -15,7 +15,10 @@ if (command == "help")
 
 var repository = Required("GITHUB_REPOSITORY");
 var commit = Required("GITHUB_SHA");
-var release = FindReleasePullRequest(repository, commit);
+var requestedVersion = Optional("RELEASE_VERSION");
+var release = requestedVersion is null
+    ? FindReleasePullRequestForCommit(repository, commit)
+    : FindReleasePullRequestForVersion(repository, commit, requestedVersion);
 
 if (command == "current-version")
 {
@@ -36,7 +39,7 @@ if (release is null)
 
 Publish(release, commit);
 
-static ReleasePullRequest? FindReleasePullRequest(string repository, string commit)
+static ReleasePullRequest? FindReleasePullRequestForCommit(string repository, string commit)
 {
     using var document = JsonDocument.Parse(Output("gh", ["api", $"repos/{repository}/commits/{commit}/pulls"]));
     var pulls = document.RootElement.EnumerateArray().Where(pull =>
@@ -47,10 +50,69 @@ static ReleasePullRequest? FindReleasePullRequest(string repository, string comm
     if (pulls.Length != 1) throw new InvalidOperationException("Merge commit is associated with multiple release pull requests.");
 
     var pull = pulls[0];
-    var version = pull.GetProperty("title").GetString()?.Trim() ?? string.Empty;
-    var body = NormalizeBody(pull.GetProperty("body").GetString() ?? string.Empty);
-    var branch = pull.GetProperty("head").GetProperty("ref").GetString();
-    if (!Regex.IsMatch(version, @"^\d{4}\.(0[1-9]|1[0-2])\.[1-9]\d*(?:\.[1-9]\d*)?$") || branch != $"release/{version}")
+    return ParseReleasePullRequest(
+        pull.GetProperty("title").GetString(),
+        pull.GetProperty("body").GetString(),
+        pull.GetProperty("head").GetProperty("ref").GetString());
+}
+
+static ReleasePullRequest FindReleasePullRequestForVersion(string repository, string commit, string requestedVersion)
+{
+    if (!IsValidVersion(requestedVersion))
+    {
+        throw new InvalidOperationException("RELEASE_VERSION is invalid.");
+    }
+
+    using var document = JsonDocument.Parse(Output(
+        "gh",
+        [
+            "pr", "list",
+            "--repo", repository,
+            "--state", "merged",
+            "--base", "master",
+            "--head", $"release/{requestedVersion}",
+            "--limit", "2",
+            "--json", "title,body,headRefName,baseRefName,mergedAt,mergeCommit"
+        ]));
+    var pulls = document.RootElement.EnumerateArray().Where(pull =>
+        pull.GetProperty("mergedAt").ValueKind != JsonValueKind.Null
+        && pull.GetProperty("baseRefName").GetString() == "master"
+        && pull.GetProperty("headRefName").GetString() == $"release/{requestedVersion}").ToArray();
+    if (pulls.Length == 0)
+    {
+        throw new InvalidOperationException($"No merged release/{requestedVersion} pull request was found.");
+    }
+
+    if (pulls.Length != 1)
+    {
+        throw new InvalidOperationException($"Multiple merged release/{requestedVersion} pull requests were found.");
+    }
+
+    var pull = pulls[0];
+    var release = ParseReleasePullRequest(
+        pull.GetProperty("title").GetString(),
+        pull.GetProperty("body").GetString(),
+        pull.GetProperty("headRefName").GetString());
+    if (release.Version != requestedVersion)
+    {
+        throw new InvalidOperationException("Merged release pull request does not match RELEASE_VERSION.");
+    }
+
+    var mergeCommit = pull.GetProperty("mergeCommit").GetProperty("oid").GetString()
+        ?? throw new InvalidOperationException("Merged release pull request has no merge commit.");
+    if (!Success("git", ["merge-base", "--is-ancestor", mergeCommit, commit]))
+    {
+        throw new InvalidOperationException($"release/{requestedVersion} is not contained in the current master commit.");
+    }
+
+    return release;
+}
+
+static ReleasePullRequest ParseReleasePullRequest(string? title, string? pullBody, string? branch)
+{
+    var version = title?.Trim() ?? string.Empty;
+    var body = NormalizeBody(pullBody ?? string.Empty);
+    if (!IsValidVersion(version) || branch != $"release/{version}")
     {
         throw new InvalidOperationException("Release pull request title or branch is invalid.");
     }
@@ -64,6 +126,9 @@ static ReleasePullRequest? FindReleasePullRequest(string repository, string comm
 
     return new ReleasePullRequest(version, heading[prefix.Length..].Trim(), body);
 }
+
+static bool IsValidVersion(string version) =>
+    Regex.IsMatch(version, @"^\d{4}\.(0[1-9]|1[0-2])\.[1-9]\d*(?:\.[1-9]\d*)?$");
 
 static void Publish(ReleasePullRequest release, string commit)
 {
@@ -117,6 +182,10 @@ static void Publish(ReleasePullRequest release, string commit)
 static string Required(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
     ? value
     : throw new InvalidOperationException($"{name} is required.");
+
+static string? Optional(string name) => Environment.GetEnvironmentVariable(name)?.Trim() is { Length: > 0 } value
+    ? value
+    : null;
 
 static string NormalizeBody(string value) => value.Trim().TrimStart('\uFEFF');
 
