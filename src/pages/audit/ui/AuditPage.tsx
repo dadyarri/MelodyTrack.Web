@@ -1,73 +1,14 @@
 import { Input, Typography } from "antd";
-import { useAuditPageController } from "@/features/audit/useAuditPageController";
-import { getRecurringTaskTypeLabel } from "@/features/tasks/taskTypeLabels";
-import { AccessDeniedNotice, ListFilters, ListTable, PageLayout } from "@/shared/ui";
+
+import type { RecurringTaskType } from "@/entities/task";
+import { getRecurringTaskTypeLabel } from "@/entities/task";
+import { formatDateTime } from "@/shared/lib";
+import { AccessDeniedNotice, ActionableEmptyState, ListFilters, ListTable, PageLayout } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { formatDateTime } from "@/utils/date";
-import type { RecurringTaskType } from "@/api/types";
+
+import { auditActionLabels, auditCategoryLabels, formatAuditLabel } from "../lib/auditLabels";
+import { useAuditPageController } from "../model/useAuditPageController";
 import styles from "./AuditPage.module.css";
-
-const categoryLabels: Record<string, string> = {
-  auth: "Авторизация",
-  security: "Безопасность",
-  clients: "Клиенты",
-  services: "Услуги",
-  payments: "Платежи",
-  expenses: "Расходы",
-  expense_category: "Статьи расходов",
-  schedule: "Расписание",
-  users: "Пользователи",
-  recurring_tasks: "Регулярные задачи",
-};
-
-const actionLabels: Record<string, string> = {
-  invite_created: "Создано приглашение",
-  superuser_bootstrap_invite_available: "Доступно bootstrap-приглашение суперпользователя",
-  user_registered: "Пользователь зарегистрирован",
-  login_succeeded: "Вход выполнен",
-  logout_succeeded: "Выход из сессии",
-  logout_all_succeeded: "Выход из всех сессий",
-  session_revoked: "Сессия завершена",
-  password_changed: "Пароль изменен",
-  password_reset_link_created: "Создана ссылка на восстановление пароля",
-  password_reset_completed: "Пароль восстановлен",
-  two_factor_removed: "2FA отключена",
-  recovery_codes_regenerated: "Коды восстановления обновлены",
-  client_created: "Клиент создан",
-  client_updated: "Клиент обновлен",
-  client_deleted: "Клиент удален",
-  service_created: "Услуга создана",
-  service_updated: "Услуга обновлена",
-  service_deleted: "Услуга удалена",
-  service_price_updated: "Цена услуги изменена",
-  payment_created: "Платеж создан",
-  payment_deleted: "Платеж удален",
-  expense_created: "Расход создан",
-  expense_updated: "Расход изменен",
-  expense_deleted: "Расход удален",
-  expense_category_created: "Статья расхода создана",
-  expense_category_deleted: "Статья расхода удалена",
-  client_source_created: "Источник клиента создан",
-  client_source_deleted: "Источник клиента удален",
-  appointment_created: "Встреча создана",
-  recurring_appointment_created: "Повторяющаяся встреча создана",
-  appointment_updated: "Встреча обновлена",
-  recurring_appointment_detached_and_updated: "Повторяющаяся встреча изменена отдельно",
-  appointment_deleted: "Встреча удалена",
-  recurring_appointments_rescheduled: "Вся серия перенесена",
-  recurring_appointments_split_and_rescheduled: "Серия разделена и перенесена",
-  appointments_deleted_this_and_following: "Удалены эта и следующие встречи",
-  appointments_deleted_all: "Удалена вся серия",
-  appointments_deleted_selected_weekday_this_and_following: "Удалены выбранный день и следующие",
-  appointments_deleted_selected_weekday_all: "Удален выбранный день серии",
-  user_updated: "Пользователь обновлен",
-  user_availability_updated: "Доступность пользователя обновлена",
-  recurring_task_rule_updated: "Правило регулярной задачи обновлено",
-  custom_task_created: "Пользовательская задача создана",
-  task_completed: "Регулярная задача завершена",
-  task_cancelled: "Регулярная задача отменена",
-  task_delayed: "Регулярная задача отложена",
-};
 
 const recurringTaskAuditTypes = new Set<RecurringTaskType>([
   "appointment-reminder",
@@ -78,10 +19,6 @@ const recurringTaskAuditTypes = new Set<RecurringTaskType>([
   "debtor-reminder",
   "custom-task",
 ]);
-
-function formatAuditLabel(value: string, labels: Record<string, string>) {
-  return labels[value] ?? value;
-}
 
 function formatActorLabel(displayName?: string | null, email?: string | null) {
   if (displayName?.trim()) {
@@ -169,6 +106,7 @@ export function AuditPage() {
             <Typography.Text type="secondary">Поиск по пользователю, действию или деталям</Typography.Text>
             <Input.Search
               allowClear
+              value={controller.search}
               placeholder="Например: платеж, Иванова, вход, цена"
               onSearch={controller.handleSearch}
               onChange={(event) => {
@@ -181,7 +119,15 @@ export function AuditPage() {
         </ListFilters>
         <ListTable
           rowKey="id"
+          emptyText={<ActionableEmptyState description="Действий по выбранным условиям не найдено" />}
           loading={controller.query.isLoading}
+          queryStatus={{
+            isError: controller.query.isError,
+            isFetching: controller.query.isFetching,
+            onRetry: () => {
+              void controller.query.refetch();
+            },
+          }}
           dataSource={controller.query.data?.data}
           pagination={{ current: controller.page, pageSize: 20, total: controller.query.data?.info.total, onChange: controller.setPage }}
           columns={[
@@ -195,8 +141,13 @@ export function AuditPage() {
                 </div>
               ),
             },
-            { title: "Категория", dataIndex: "category", width: 160, render: (value: string) => formatAuditLabel(value, categoryLabels) },
-            { title: "Действие", dataIndex: "action", width: 160, render: (value: string) => formatAuditLabel(value, actionLabels) },
+            {
+              title: "Категория",
+              dataIndex: "category",
+              width: 160,
+              render: (value: string) => formatAuditLabel(value, auditCategoryLabels),
+            },
+            { title: "Действие", dataIndex: "action", width: 160, render: (value: string) => formatAuditLabel(value, auditActionLabels) },
             {
               title: "Детали",
               dataIndex: "details",

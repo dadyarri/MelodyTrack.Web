@@ -1,4 +1,5 @@
 import { Empty, Typography } from "antd";
+
 import { StatusBanner } from "./StatusBanner";
 
 type QueryStateBlockProps = {

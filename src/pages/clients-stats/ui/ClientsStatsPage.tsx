@@ -1,21 +1,27 @@
-import { InfoCircleOutlined } from "@/components/icons";
 import { Card, DatePicker, Flex, Space, Table, Tag, Tooltip, Typography } from "antd";
 import type { ReactNode } from "react";
-import { queryKeys } from "@/api/queryKeys";
-import { dashboardApi } from "@/api/crm";
-import type { ClientAnalytics, ClientRfmAnalytics, ClientSourceAnalytics, ClientsAnalyticsResponse } from "@/api/types";
-import { StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { SummaryCard } from "@/components/SummaryGrid";
-import { useDashboardDateRangeQuery } from "@/features/stats/useDashboardStatsQuery";
-import { PageLayout, ListFilters } from "@/shared/ui";
+
+import {
+  analyticsQueryKeys,
+  type ClientAnalytics,
+  type ClientRfmAnalytics,
+  type ClientsAnalyticsResponse,
+  type ClientSourceAnalytics,
+  dashboardApi,
+} from "@/entities/dashboard";
+import { useDashboardDateRangeQuery } from "@/entities/dashboard";
+import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { SummaryCard } from "@/shared/ui";
+import { ListFilters, PageLayout } from "@/shared/ui";
+import { StatsDonutChart, StatsHorizontalBarChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { InfoCircleOutlined } from "@/shared/ui/icons";
 
 export function ClientsStatsPage() {
   const controller = useDashboardDateRangeQuery({
-    getQueryKey: ({ timezone, dateRange }) => queryKeys.dashboard.clients(timezone, dateRange[0], dateRange[1]),
+    getQueryKey: ({ timezone, dateRange }) => analyticsQueryKeys.clients(timezone, dateRange[0], dateRange[1]),
     queryFn: ({ timezone, dateRange }) =>
       dashboardApi.clients({
         timezone,

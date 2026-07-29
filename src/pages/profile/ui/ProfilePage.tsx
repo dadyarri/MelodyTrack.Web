@@ -1,16 +1,13 @@
-import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/components/icons";
 import { Alert, Button, Card, DatePicker, Divider, Form, Input, List, Space, Switch, Tag, TimePicker, Typography } from "antd";
-import type { MeResponse } from "@/api/auth";
-import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
-import { TotpSecretPanel } from "@/components/TotpSecretPanel";
+
 import { formatPhoneInput, isValidPhone, normalizeSocialLink } from "@/entities/client";
-import {
-  type AvailabilityFormValues,
-  type PersonalInfoFormValues,
-  useProfilePageController,
-} from "@/features/profile/useProfilePageController";
-import { PageLayout, ShortcutButton } from "@/shared/ui";
-import { weekdayLabels, weekdayOrder } from "@/utils/userAvailability";
+import type { MeResponse } from "@/entities/session";
+import { RecoveryCodesCard, TotpSecretPanel } from "@/entities/session";
+import { weekdayLabels, weekdayOrder } from "@/entities/user";
+import { DraftModalTitle, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
+
+import { type AvailabilityFormValues, type PersonalInfoFormValues, useProfilePageController } from "../model/useProfilePageController";
 import styles from "./ProfilePage.module.css";
 
 function getWorkingHoursValue(values: AvailabilityFormValues | undefined, index: number) {
@@ -28,13 +25,28 @@ export function ProfilePage() {
     <PageLayout title="Профиль" description="Управление паролем, 2FA, кодами восстановления и активными сессиями." size={20}>
       <div className="profile-grid">
         <div data-onboarding-id="profile-account-card">
-          <Card title="Аккаунт">
+          <Card
+            title={
+              <DraftModalTitle
+                title="Аккаунт"
+                restored={controller.personalInfoDraft.restored}
+                saveStatus={controller.personalInfoDraft.status}
+                onRetry={controller.personalInfoDraft.retry}
+              />
+            }
+            extra={
+              controller.personalInfoDraft.hasDraft ? (
+                <Button onClick={() => void controller.discardPersonalInfoDraft()}>Отбросить черновик</Button>
+              ) : null
+            }
+          >
             {controller.me ? (
               <Form<PersonalInfoFormValues>
                 form={controller.personalInfoForm}
                 layout="vertical"
                 requiredMark={false}
                 onFinish={controller.onPersonalInfoSubmit}
+                onValuesChange={controller.personalInfoDraft.formProps.onValuesChange}
               >
                 <Space orientation="vertical" size={16} className="wide">
                   <ProfileSummary me={controller.me} />
@@ -100,16 +112,14 @@ export function ProfilePage() {
         </div>
         <Card
           data-onboarding-id="profile-onboarding-reset"
-          title="Экскурсия по приложению"
+          title="Знакомство с MelodyTrack"
           extra={
             <Button icon={<ReloadOutlined />} loading={controller.resetOnboardingMutation.isPending} onClick={controller.resetOnboarding}>
-              Сбросить
+              Пройти ещё раз
             </Button>
           }
         >
-          <Typography.Text type="secondary">
-            Если хотите пройти онбординг заново, сбросьте прогресс. После этого гид снова откроется поверх приложения.
-          </Typography.Text>
+          <Typography.Text type="secondary">Короткая экскурсия напомнит об основных возможностях для вашей роли.</Typography.Text>
         </Card>
       </div>
 
@@ -130,12 +140,29 @@ export function ProfilePage() {
         </Space>
       </Card>
 
-      <Card title="График работы и отпуск" loading={controller.availabilityQuery.isLoading} data-onboarding-id="profile-availability">
+      <Card
+        title={
+          <DraftModalTitle
+            title="График работы и отпуск"
+            restored={controller.availabilityDraft.restored}
+            saveStatus={controller.availabilityDraft.status}
+            onRetry={controller.availabilityDraft.retry}
+          />
+        }
+        extra={
+          controller.availabilityDraft.hasDraft ? (
+            <Button onClick={() => void controller.discardAvailabilityDraft()}>Отбросить черновик</Button>
+          ) : null
+        }
+        loading={controller.availabilityQuery.isLoading}
+        data-onboarding-id="profile-availability"
+      >
         <Form<AvailabilityFormValues>
           form={controller.availabilityForm}
           layout="vertical"
           requiredMark={false}
           onFinish={controller.onAvailabilitySubmit}
+          onValuesChange={controller.availabilityDraft.formProps.onValuesChange}
         >
           <Space orientation="vertical" size={18} className="wide">
             <div>

@@ -1,13 +1,15 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { App as AntdApp, Button, Card, Space, Tag, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
-import { calendarSubscriptionsApi, clientPortalApi } from "@/api/crm";
-import { getApiErrorMessages } from "@/api/http";
-import { queryKeys } from "@/api/queryKeys";
-import { CalendarCheckOutlined } from "@/components/icons";
-import { useAuth } from "@/features/auth/useAuth";
-import { getAppointmentStatusLabel, getAppointmentStatusTagColor } from "@/features/schedule/appointmentStatus";
-import { formatMoney } from "@/utils/money";
+
+import { getAppointmentStatusLabel, getAppointmentStatusTagColor } from "@/entities/appointment";
+import { clientsApi } from "@/entities/client";
+import { useAuth } from "@/entities/session";
+import { clientPortalApi, clientPortalQueryKeys } from "@/features/client-portal";
+import { getApiErrorMessages } from "@/shared/api";
+import { formatMoney } from "@/shared/lib";
+import { CalendarCheckOutlined } from "@/shared/ui/icons";
+
 import styles from "./ClientPortalSchedulePage.module.css";
 
 export function ClientPortalSchedulePage() {
@@ -19,12 +21,12 @@ export function ClientPortalSchedulePage() {
   const linkedClientId = auth.user?.linkedClientId ?? null;
 
   const query = useQuery({
-    queryKey: queryKeys.portal.schedule(linkedClientId, startDate, endDate, timezone),
+    queryKey: clientPortalQueryKeys.schedule(linkedClientId, startDate, endDate, timezone),
     queryFn: () => clientPortalApi.schedule({ timezone, startDate, endDate }),
     enabled: Boolean(linkedClientId),
   });
   const calendarSubscriptionMutation = useMutation({
-    mutationFn: (clientId: string) => calendarSubscriptionsApi.regenerateClient(clientId),
+    mutationFn: (clientId: string) => clientsApi.regenerateCalendarSubscription(clientId),
     onSuccess: async (subscription) => {
       await navigator.clipboard.writeText(subscription.url);
       message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
@@ -43,7 +45,7 @@ export function ClientPortalSchedulePage() {
 
   return (
     <Space vertical size={16} className={styles.stack}>
-      <div className={styles.summaryGrid}>
+      <div className={styles.summaryGrid} data-onboarding-id="portal-schedule-summary">
         <Card loading={query.isLoading} className={styles.heroCard} title="Ближайшее занятие">
           <Space vertical size={10} className={styles.heroCardContent}>
             {appointments.length > 0 ? (
@@ -77,7 +79,7 @@ export function ClientPortalSchedulePage() {
           </Space>
         </Card>
 
-        <Card className={styles.heroCard} title="Подписка на календарь">
+        <Card className={styles.heroCard} title="Подписка на календарь" data-onboarding-id="portal-calendar-subscription">
           <Space vertical size={10} className={styles.heroCardContent}>
             <Typography.Text type="secondary">Добавьте занятия в свой календарь и получайте привычные напоминания.</Typography.Text>
             <Tooltip title="Вы можете добавить свои занятия в любой удобный календарь: Apple Calendar, Google Calendar и другие.">

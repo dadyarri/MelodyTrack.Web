@@ -1,0 +1,107 @@
+name: Frontend CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+env:
+  VITE_API_BASE_URL: /api
+
+concurrency:
+  group: frontend-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 26
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install WebKit browser
+        run: npx playwright install --with-deps webkit
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Verify frontend
+        run: npm run verify
+
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Read release version
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "version=$(dotnet run scripts/ReleaseWorkflow.cs -- current-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            RELEASE_VERSION=${{ steps.release.outputs.version }}
+            VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }}
+          provenance: mode=max
+          sbom: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/melody-track-frontend:latest
+            ghcr.io/${{ github.repository_owner }}/melody-track-frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/melody-track-frontend:${{ steps.release.outputs.version }}
+
+      - name: Publish release tag and notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet run scripts/ReleaseWorkflow.cs -- publish

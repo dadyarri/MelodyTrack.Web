@@ -1,10 +1,12 @@
-import { DeleteOutlined, PlusOutlined } from "@/components/icons";
 import { Button } from "antd";
-import { clientSourcesApi } from "@/api/crm";
-import { queryKeys } from "@/api/queryKeys";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useReferenceBookPageController } from "@/features/reference-books";
+
+import { clientQueryKeys } from "@/entities/client";
+import { clientSourcesApi } from "@/entities/reference-book";
+import { useReferenceBookPageController } from "@/features/manage-reference-book";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 export function ClientSourcesPage() {
   const controller = useReferenceBookPageController({
@@ -19,9 +21,9 @@ export function ClientSourcesPage() {
     },
     createItem: (values) => clientSourcesApi.create(values),
     deleteItem: (id, options) => clientSourcesApi.remove(id, options),
-    listQueryKey: queryKeys.clients.sources,
+    listQueryKey: clientQueryKeys.sources,
     listQueryFn: () => clientSourcesApi.list(),
-    invalidateQueryKeys: [queryKeys.clients.all],
+    invalidateQueryKeys: [clientQueryKeys.all],
   });
 
   return (
@@ -44,7 +46,23 @@ export function ClientSourcesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Источники клиентов пока не созданы"
+                actionLabel="Добавить источник"
+                onAction={() => {
+                  controller.setCreateOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.query.data}
             pagination={false}
             columns={[
@@ -56,6 +74,9 @@ export function ClientSourcesPage() {
                   <Button
                     danger
                     icon={<DeleteOutlined />}
+                    aria-label="Удалить источник клиентов"
+                    title="Удалить"
+                    loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                     onClick={() => {
                       controller.modal.confirm({
                         title: "Удалить источник?",
@@ -75,11 +96,14 @@ export function ClientSourcesPage() {
       <ReferenceBookCreateModal
         open={controller.isCreateOpen}
         title="Новый источник клиента"
+        draftKey="draft:client-sources:create"
         confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
-        onSubmit={controller.onCreate}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

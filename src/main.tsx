@@ -1,10 +1,13 @@
+import "dayjs/locale/ru";
+import "@/app/styles/index.css";
+import "@/app/styles/mobile-compatibility.css";
+
 import dayjs from "dayjs";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "dayjs/locale/ru";
-import { App } from "./app/App";
-import { ThemeProvider } from "./app/ThemeProvider";
-import "./styles.css";
+
+import { App } from "@/app/entrypoint";
+import { ThemeProvider } from "@/shared/config";
 
 dayjs.locale("ru");
 

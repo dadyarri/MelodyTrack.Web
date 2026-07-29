@@ -1,5 +1,4 @@
-import type { Client, ClientHistory } from "@/api/types";
-import { getAppointmentStatusLabel } from "@/features/schedule/appointmentStatus";
+import type { Client, ClientHistory, ClientHistoryAppointmentStatus } from "../model/types";
 import { formatPhone, getPhoneUri, getSocialHandle, getSocialLinkHref } from "./contact";
 
 export type ClientWithOptionalContacts = Client;
@@ -36,5 +35,18 @@ export function renderClientSocialLink(value: string | null | undefined, type: "
 }
 
 export function renderClientHistoryAppointmentStatus(status: NonNullable<ClientHistory["events"]["data"][number]["appointmentStatus"]>) {
-  return getAppointmentStatusLabel(status);
+  return getClientHistoryAppointmentStatusLabel(status);
+}
+
+function getClientHistoryAppointmentStatusLabel(status: ClientHistoryAppointmentStatus) {
+  switch (status) {
+    case "completed":
+      return "Завершено";
+    case "cancelled":
+      return "Отменено";
+    case "burned":
+      return "Сгорело";
+    default:
+      return "Запланировано";
+  }
 }

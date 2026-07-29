@@ -1,17 +1,19 @@
-import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/components/icons";
 import { Button, Input, Popconfirm, Space, Tag } from "antd";
-import type { Client, ClientLifecycleStatus } from "@/api/types";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { ClientHistoryDrawer, formatClientName } from "@/entities/client";
-import { ClientEditorModal } from "@/features/clients/ClientEditorModal";
-import { CourseEnrollmentCreateModal } from "@/features/clients/CourseEnrollmentCreateModal";
-import { ClientVacationsModal } from "@/features/clients/ClientVacationsModal";
-import { useClientsPageController } from "@/features/clients/useClientsPageController";
+
+import { type Client, type ClientLifecycleStatus, formatClientName } from "@/entities/client";
+import { CourseEnrollmentCreateModal } from "@/features/enroll-client-course";
+import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-client";
+import { formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
+import { ClientHistoryDrawer } from "@/widgets/client-history";
+
+import { useClientsPageController } from "../model/useClientsPageController";
 
 export function ClientsPage() {
   const controller = useClientsPageController();
@@ -41,6 +43,7 @@ export function ClientsPage() {
             <div className={filterFieldWideClassName}>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Поиск по ФИО"
                 onSearch={controller.handleSearch}
                 onChange={(event) => {
@@ -55,7 +58,21 @@ export function ClientsPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Клиентов по выбранным условиям пока нет"
+                actionLabel={controller.canCreateClients ? "Добавить клиента" : undefined}
+                onAction={controller.canCreateClients ? controller.openEditor : undefined}
+              />
+            }
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.clients}
             pagination={{
               current: controller.pagination.current,
@@ -81,19 +98,23 @@ export function ClientsPage() {
               {
                 title: "Статус",
                 width: 118,
+                responsive: ["sm"],
                 render: (_, row) => <ClientLifecycleTag client={row} />,
               },
               {
                 title: "Последняя запись",
+                responsive: ["lg"],
                 render: (_, row) => (row.lastAppointmentAtUtc ? formatDateTime(row.lastAppointmentAtUtc) : "Нет"),
               },
               {
                 title: "Следующая запись",
+                responsive: ["md"],
                 render: (_, row) => (row.nextAppointmentAtUtc ? formatDateTime(row.nextAppointmentAtUtc) : "Нет"),
               },
               {
                 title: "Баланс",
                 dataIndex: "balance",
+                responsive: ["sm"],
                 render: (_, row) => <Tag color={row.balance < 0 ? "red" : "green"}>{formatMoney(row.balance)}</Tag>,
               },
               {
@@ -103,6 +124,8 @@ export function ClientsPage() {
                   <Space>
                     <Button
                       icon={<ProfileOutlined />}
+                      aria-label="Открыть карточку клиента"
+                      title="Открыть карточку"
                       onClick={() => {
                         controller.setHistoryClient(row);
                       }}
@@ -118,7 +141,13 @@ export function ClientsPage() {
                           controller.setLeadClosed(row, true);
                         }}
                       >
-                        <Button danger icon={<CloseOutlined />} loading={controller.leadStatusMutation.isPending} />
+                        <Button
+                          danger
+                          icon={<CloseOutlined />}
+                          aria-label="Закрыть лид"
+                          title="Закрыть лид"
+                          loading={controller.leadStatusMutation.isPending && controller.leadStatusMutation.variables.id === row.id}
+                        />
                       </Popconfirm>
                     ) : null}
                     {controller.canCreateClients && row.lifecycleStatus === 3 ? (
@@ -132,11 +161,18 @@ export function ClientsPage() {
                           controller.setLeadClosed(row, false);
                         }}
                       >
-                        <Button icon={<ReloadOutlined />} loading={controller.leadStatusMutation.isPending} />
+                        <Button
+                          icon={<ReloadOutlined />}
+                          aria-label="Вернуть лид в работу"
+                          title="Вернуть лид в работу"
+                          loading={controller.leadStatusMutation.isPending && controller.leadStatusMutation.variables.id === row.id}
+                        />
                       </Popconfirm>
                     ) : null}
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать клиента"
+                      title="Редактировать"
                       onClick={() => {
                         controller.openEditor(row);
                       }}
@@ -144,6 +180,9 @@ export function ClientsPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить клиента"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() => {
                         controller.confirmDelete(row);
                       }}
@@ -158,7 +197,9 @@ export function ClientsPage() {
       <ClientEditorModal
         open={controller.isCreateOpen}
         editing={Boolean(controller.editing)}
-        draftRestored={controller.hasCreateDraft && controller.isCreateOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         savePending={controller.saveMutation.isPending}
         isStale={controller.isEditingClientStale}
@@ -170,13 +211,19 @@ export function ClientsPage() {
         onValuesChange={controller.onValuesChange}
         onCreateSource={controller.canCreateClients ? controller.openSourceCreate : undefined}
         onSourceLabelChange={controller.onSourceLabelChange}
+        draftStale={controller.editorDraft.isStale}
+        onReapplyDraft={controller.editorDraft.reapply}
+        onRetryDraft={controller.editorDraft.retry}
       />
       <ReferenceBookCreateModal
         open={controller.isSourceCreateOpen}
         title="Новый источник клиента"
+        draftKey="draft:client-sources:create"
         confirmLoading={controller.createSourceMutation.isPending}
         onCancel={controller.closeSourceCreate}
-        onSubmit={controller.onCreateSource}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createSourceMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
       <ClientHistoryDrawer
         client={controller.historyClient}
@@ -192,6 +239,8 @@ export function ClientsPage() {
         onCreateCourseEnrollment={controller.canCreateClients ? controller.openEnrollmentCreate : undefined}
         onCreatePortalLink={controller.canCreateClients ? controller.onCreatePortalLink : undefined}
         isCreatingPortalLink={controller.createPortalLinkMutation.isPending}
+        onRevokePortalLink={controller.canCreateClients ? controller.onRevokePortalLink : undefined}
+        isRevokingPortalLink={controller.revokePortalLinkMutation.isPending}
         onCreateCalendarSubscription={controller.canCreateClients ? controller.onCreateCalendarSubscription : undefined}
         isCreatingCalendarSubscription={controller.createCalendarSubscriptionMutation.isPending}
         onResetPortalPin={controller.canCreateClients ? controller.onResetPortalPin : undefined}
@@ -204,16 +253,31 @@ export function ClientsPage() {
       />
       <CourseEnrollmentCreateModal
         open={controller.isEnrollmentCreateOpen}
+        clientId={controller.historyClient?.id}
         clientName={controller.historyClient ? formatClientName(controller.historyClient) : undefined}
         options={controller.availableEnrollmentCourses}
         confirmLoading={controller.createEnrollmentMutation.isPending}
         onCancel={controller.closeEnrollmentCreate}
-        onSubmit={controller.onCreateEnrollment}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createEnrollmentMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
       <ClientVacationsModal
         client={controller.vacationsClient}
         form={controller.vacationsForm}
         saving={controller.vacationsMutation.isPending}
+        draftStatus={controller.vacationsDraft.status}
+        draftRestored={controller.vacationsDraft.restored}
+        hasDraft={controller.vacationsDraft.hasDraft}
+        onDiscardDraft={() => {
+          void controller.vacationsDraft.discard().then(() => {
+            controller.vacationsForm.resetFields();
+          });
+        }}
+        onValuesChange={controller.vacationsDraft.formProps.onValuesChange}
+        draftStale={controller.vacationsDraft.isStale}
+        onReapplyDraft={controller.vacationsDraft.reapply}
+        onRetryDraft={controller.vacationsDraft.retry}
         onCancel={controller.closeVacationsEditor}
         onSubmit={controller.saveVacations}
       />

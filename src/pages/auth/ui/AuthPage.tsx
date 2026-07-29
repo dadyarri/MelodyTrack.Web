@@ -1,13 +1,11 @@
-import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/components/icons";
 import { Button, Card, Form, Input, Segmented, Space, Typography } from "antd";
 import { Navigate } from "react-router";
-import type { LoginInput, RecoveryCodeItem } from "@/api/auth";
-import { AuthScreenLayout } from "@/components/AuthScreenLayout";
-import authStyles from "@/components/AuthStyles.module.css";
-import { RecoveryCodesCard } from "@/components/RecoveryCodesCard";
-import { TotpSecretPanel } from "@/components/TotpSecretPanel";
-import { type AuthMode, type SecondFactorMode, useAuthPageController } from "@/features/auth/useAuthPageController";
-import { StatusBanner } from "@/shared/ui";
+
+import type { LoginInput, RecoveryCodeItem } from "@/entities/session";
+import { RecoveryCodesCard, TotpSecretPanel } from "@/entities/session";
+import { type AuthMode, type SecondFactorMode, useAuthPageController } from "@/features/auth";
+import { AuthScreenLayout, authScreenStyles as authStyles, StatusBanner } from "@/shared/ui";
+import { KeyOutlined, LockOutlined, MailOutlined, UserOutlined } from "@/shared/ui/icons";
 
 export function AuthPage() {
   const controller = useAuthPageController();
@@ -169,7 +167,13 @@ export function AuthPage() {
                   </Form.Item>
                 )}
                 <Space orientation="vertical" size={12} className="wide">
-                  <Button block type="primary" htmlType="submit" loading={controller.loginSecondFactorMutation.isPending}>
+                  <Button
+                    block
+                    type="primary"
+                    htmlType="submit"
+                    loading={controller.loginSecondFactorMutation.isPending}
+                    disabled={controller.loginSecondFactorMutation.isPending}
+                  >
                     Подтвердить вход
                   </Button>
                   <Button block onClick={controller.resetLoginChallenge}>
@@ -192,7 +196,13 @@ export function AuthPage() {
                 <Form.Item name="password" label="Пароль" rules={[{ required: true }]}>
                   <Input.Password prefix={<LockOutlined />} autoComplete="current-password" />
                 </Form.Item>
-                <Button block type="primary" htmlType="submit" loading={controller.loginMutation.isPending}>
+                <Button
+                  block
+                  type="primary"
+                  htmlType="submit"
+                  loading={controller.loginMutation.isPending}
+                  disabled={controller.loginMutation.isPending}
+                >
                   Продолжить
                 </Button>
               </Form>

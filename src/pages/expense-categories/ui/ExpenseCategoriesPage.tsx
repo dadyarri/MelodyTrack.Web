@@ -1,10 +1,12 @@
-import { DeleteOutlined, PlusOutlined } from "@/components/icons";
 import { Button } from "antd";
-import { queryKeys } from "@/api/queryKeys";
-import { expenseCategoriesApi } from "@/api/crm";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useReferenceBookPageController } from "@/features/reference-books";
+
+import { expenseQueryKeys } from "@/entities/expense";
+import { expenseCategoriesApi, referenceBookQueryKeys } from "@/entities/reference-book";
+import { useReferenceBookPageController } from "@/features/manage-reference-book";
+import { ActionableEmptyState } from "@/shared/ui";
 import { ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DeleteOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
 
 export function ExpenseCategoriesPage() {
   const controller = useReferenceBookPageController({
@@ -19,9 +21,9 @@ export function ExpenseCategoriesPage() {
     },
     createItem: (values) => expenseCategoriesApi.create(values),
     deleteItem: (id, options) => expenseCategoriesApi.remove(id, options),
-    listQueryKey: queryKeys.expenses.categories,
+    listQueryKey: referenceBookQueryKeys.expenseCategories,
     listQueryFn: () => expenseCategoriesApi.list(),
-    invalidateQueryKeys: [queryKeys.expenses.all],
+    invalidateQueryKeys: [expenseQueryKeys.all],
   });
 
   return (
@@ -44,7 +46,23 @@ export function ExpenseCategoriesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Статьи расходов пока не созданы"
+                actionLabel="Добавить статью"
+                onAction={() => {
+                  controller.setCreateOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.query.data}
             pagination={false}
             columns={[
@@ -56,6 +74,9 @@ export function ExpenseCategoriesPage() {
                   <Button
                     danger
                     icon={<DeleteOutlined />}
+                    aria-label="Удалить статью расходов"
+                    title="Удалить"
+                    loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                     onClick={() => {
                       controller.modal.confirm({
                         title: "Удалить категорию?",
@@ -75,11 +96,14 @@ export function ExpenseCategoriesPage() {
       <ReferenceBookCreateModal
         open={controller.isCreateOpen}
         title="Новая категория расхода"
+        draftKey="draft:expense-categories:create"
         confirmLoading={controller.createMutation.isPending}
         onCancel={() => {
           controller.setCreateOpen(false);
         }}
-        onSubmit={controller.onCreate}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

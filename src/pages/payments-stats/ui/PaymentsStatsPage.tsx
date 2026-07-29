@@ -1,20 +1,20 @@
 import { Card, DatePicker, Space, Table, Tag, Typography } from "antd";
 import type { ReactNode } from "react";
-import { queryKeys } from "@/api/queryKeys";
-import { dashboardApi } from "@/api/crm";
-import { StatsDonutChart, StatsHorizontalBarChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { InfoLabel } from "@/components/InfoLabel";
-import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
-import { useDashboardDateRangeQuery } from "@/features/stats/useDashboardStatsQuery";
-import { PageLayout, ListFilters } from "@/shared/ui";
+
+import { analyticsQueryKeys, dashboardApi } from "@/entities/dashboard";
+import { useDashboardDateRangeQuery } from "@/entities/dashboard";
+import { DATE_FORMAT } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { InfoLabel } from "@/shared/ui";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
+import { ListFilters, PageLayout } from "@/shared/ui";
+import { StatsDonutChart, StatsHorizontalBarChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
 
 export function PaymentsStatsPage() {
   const controller = useDashboardDateRangeQuery({
-    getQueryKey: ({ timezone, dateRange }) => queryKeys.dashboard.payments(timezone, dateRange[0], dateRange[1]),
+    getQueryKey: ({ timezone, dateRange }) => analyticsQueryKeys.payments(timezone, dateRange[0], dateRange[1]),
     queryFn: ({ timezone, dateRange }) =>
       dashboardApi.payments({
         timezone,
