@@ -28,8 +28,14 @@ describe("onboarding tour in supported browsers", () => {
 
     await expect.element(screen.getByText("Давайте быстро освоимся")).toBeVisible();
     await expect.element(screen.getByRole("button", { name: "Пропустить", exact: true })).toBeVisible();
-    await expect.element(screen.getByRole("button", { name: "Далее" })).toBeVisible();
-    await screen.getByRole("button", { name: "Далее" }).click();
+    const nextButton = screen.getByRole("button", { name: "Далее" });
+    await expect.element(nextButton).toBeVisible();
+    const nextButtonElement = nextButton.element();
+    if (!(nextButtonElement instanceof HTMLButtonElement)) {
+      throw new TypeError("The onboarding next action must be a button.");
+    }
+    nextButtonElement.click();
+    await expect.poll(() => changeStep.mock.calls.length).toBe(1);
     expect(changeStep).toHaveBeenCalledWith(1);
     await expect.poll(() => document.documentElement.scrollWidth - document.documentElement.clientWidth).toBeLessThanOrEqual(0);
   });
