@@ -48,7 +48,7 @@ static ReleasePullRequest? FindReleasePullRequest(string repository, string comm
 
     var pull = pulls[0];
     var version = pull.GetProperty("title").GetString()?.Trim() ?? string.Empty;
-    var body = pull.GetProperty("body").GetString()?.Trim() ?? string.Empty;
+    var body = NormalizeBody(pull.GetProperty("body").GetString() ?? string.Empty);
     var branch = pull.GetProperty("head").GetProperty("ref").GetString();
     if (!Regex.IsMatch(version, @"^\d{4}\.(0[1-9]|1[0-2])\.[1-9]\d*(?:\.[1-9]\d*)?$") || branch != $"release/{version}")
     {
@@ -90,7 +90,7 @@ static void Publish(ReleasePullRequest release, string commit)
         var root = existing.RootElement;
         if (root.GetProperty("tagName").GetString() != tag
             || root.GetProperty("name").GetString() != title
-            || root.GetProperty("body").GetString()?.Trim() != release.Body)
+            || NormalizeBody(root.GetProperty("body").GetString() ?? string.Empty) != release.Body)
         {
             throw new InvalidOperationException($"{tag} GitHub Release metadata conflicts with the pull request.");
         }
@@ -99,7 +99,7 @@ static void Publish(ReleasePullRequest release, string commit)
     }
 
     var notes = Path.Combine(Path.GetTempPath(), $"melodytrack-release-{Guid.NewGuid():N}.md");
-    File.WriteAllText(notes, $"{release.Body}\n", Encoding.UTF8);
+    File.WriteAllText(notes, $"{release.Body}\n", new UTF8Encoding(false));
     try
     {
         Run("gh", ["release", "create", tag, "--verify-tag", "--title", title, "--notes-file", notes]);
@@ -113,6 +113,8 @@ static void Publish(ReleasePullRequest release, string commit)
 static string Required(string name) => Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
     ? value
     : throw new InvalidOperationException($"{name} is required.");
+
+static string NormalizeBody(string value) => value.Trim().TrimStart('\uFEFF');
 
 static bool Success(string command, IReadOnlyList<string> arguments) => Execute(command, arguments, false).ExitCode == 0;
 static void Run(string command, IReadOnlyList<string> arguments)
