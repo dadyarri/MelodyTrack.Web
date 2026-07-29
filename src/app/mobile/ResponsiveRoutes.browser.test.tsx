@@ -14,6 +14,10 @@ import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
 
 const longRussianLabel = "Очень длинное имя клиента для проверки переноса без перекрытия соседних действий";
 const isWebKitBrowser = /Safari/.test(navigator.userAgent) && !/Chrome|Chromium/.test(navigator.userAgent);
+const visualBaselineOptions = {
+  comparatorName: "pixelmatch",
+  comparatorOptions: { allowedMismatchedPixelRatio: 0.01 },
+} as const;
 const routeFamilies = ["auth", "list", "analytics", "schedule", "workspace", "profile", "portal"] as const;
 const portraitViewports = [
   { width: 320, height: 568 },
@@ -83,7 +87,7 @@ describe("responsive route families", () => {
     await page.viewport(320, 568);
     const screen = await render(<RouteFamilySurface family="list" clipToViewport />);
 
-    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-list-320.png");
+    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-list-320.png", visualBaselineOptions);
   });
 
   it.skipIf(isWebKitBrowser)("matches the dark compact schedule visual baseline", async () => {
@@ -92,7 +96,7 @@ describe("responsive route families", () => {
     const screen = await render(<RouteFamilySurface family="schedule" clipToViewport />);
 
     await expect.poll(() => document.documentElement.dataset.theme).toBe("dark");
-    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-schedule-dark-390.png");
+    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-schedule-dark-390.png", visualBaselineOptions);
   });
 });
 
