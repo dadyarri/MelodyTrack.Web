@@ -1,4 +1,4 @@
-import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -14,15 +14,17 @@ import {
 describe("shared HTTP transport", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    document.cookie = "MelodyTrack.Csrf=; Max-Age=0; Path=/";
   });
 
   it("gets authentication from an injected session adapter", async () => {
     let capturedConfig: InternalAxiosRequestConfig | undefined;
     configureHttpSession({
       clear: vi.fn(),
+      clearLegacyRefreshToken: vi.fn(),
       getAccessToken: () => "access-token",
-      getRefreshToken: () => "refresh-token",
-      setTokens: vi.fn(),
+      getLegacyRefreshToken: () => null,
+      setAccessToken: vi.fn(),
     });
 
     await http.get("/test", {
@@ -39,6 +41,21 @@ describe("shared HTTP transport", () => {
     });
 
     expect(capturedConfig?.headers.Authorization).toBe("Bearer access-token");
+  });
+
+  it("adds the CSRF cookie value only to state-changing requests", async () => {
+    document.cookie = "MelodyTrack.Csrf=csrf-token; Path=/";
+    const capturedConfigs: InternalAxiosRequestConfig[] = [];
+    const adapter = (config: InternalAxiosRequestConfig) => {
+      capturedConfigs.push(config);
+      return Promise.resolve({ config, data: null, headers: {}, status: 200, statusText: "OK" });
+    };
+
+    await http.get("/read", { adapter });
+    await http.post("/write", {}, { adapter });
+
+    expect(capturedConfigs[0]?.headers["X-CSRF-Token"]).toBeUndefined();
+    expect(capturedConfigs[1]?.headers["X-CSRF-Token"]).toBe("csrf-token");
   });
 
   it("normalizes non-HTTP errors", () => {
@@ -80,19 +97,19 @@ describe("shared HTTP transport", () => {
 
   it("refreshes an expired access token and retries the original request once", async () => {
     let accessToken = "expired-access";
-    let refreshToken = "refresh-1";
-    const setTokens = vi.fn((nextAccessToken: string, nextRefreshToken: string) => {
+    const setAccessToken = vi.fn((nextAccessToken: string) => {
       accessToken = nextAccessToken;
-      refreshToken = nextRefreshToken;
     });
+    const clearLegacyRefreshToken = vi.fn();
     configureHttpSession({
       clear: vi.fn(),
+      clearLegacyRefreshToken,
       getAccessToken: () => accessToken,
-      getRefreshToken: () => refreshToken,
-      setTokens,
+      getLegacyRefreshToken: () => null,
+      setAccessToken,
     });
     vi.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "fresh-access", refreshToken: "refresh-2" },
+      data: { accessToken: "fresh-access" },
     });
     let attempt = 0;
     let retriedAuthorization: unknown;
@@ -122,37 +139,63 @@ describe("shared HTTP transport", () => {
       },
     });
 
-    expect(setTokens).toHaveBeenCalledWith("fresh-access", "refresh-2");
+    expect(setAccessToken).toHaveBeenCalledWith("fresh-access");
+    expect(clearLegacyRefreshToken).toHaveBeenCalledOnce();
     expect(retriedAuthorization).toBe("Bearer fresh-access");
     expect(attempt).toBe(2);
   });
 
   it("restores an access token before the first authenticated request", async () => {
     let accessToken: string | null = null;
-    const setTokens = vi.fn((nextAccessToken: string) => {
+    const setAccessToken = vi.fn((nextAccessToken: string) => {
       accessToken = nextAccessToken;
     });
+    const clearLegacyRefreshToken = vi.fn();
     configureHttpSession({
       clear: vi.fn(),
+      clearLegacyRefreshToken,
       getAccessToken: () => accessToken,
-      getRefreshToken: () => "refresh-1",
-      setTokens,
+      getLegacyRefreshToken: () => "refresh-1",
+      setAccessToken,
     });
     vi.spyOn(axios, "post").mockResolvedValue({
-      data: { accessToken: "fresh-access", refreshToken: "refresh-2" },
+      data: { accessToken: "fresh-access" },
     });
 
     await expect(restoreAccessToken()).resolves.toBe("fresh-access");
-    expect(setTokens).toHaveBeenCalledWith("fresh-access", "refresh-2");
+    expect(setAccessToken).toHaveBeenCalledWith("fresh-access");
+    expect(clearLegacyRefreshToken).toHaveBeenCalledOnce();
+  });
+
+  it("refreshes a cookie session with credentials and explicit CSRF protection", async () => {
+    document.cookie = "MelodyTrack.Csrf=cookie-csrf; Path=/";
+    configureHttpSession({
+      clear: vi.fn(),
+      clearLegacyRefreshToken: vi.fn(),
+      getAccessToken: () => null,
+      getLegacyRefreshToken: () => null,
+      setAccessToken: vi.fn(),
+    });
+    const post = vi.spyOn(axios, "post").mockResolvedValue({ data: { accessToken: "fresh-access" } });
+
+    await expect(restoreAccessToken()).resolves.toBe("fresh-access");
+
+    expect(post).toHaveBeenCalledOnce();
+    const [url, body, config] = post.mock.calls[0] as [string, unknown, AxiosRequestConfig];
+    expect(url).toContain("/auth/refresh");
+    expect(body).toEqual({});
+    expect(config.withCredentials).toBe(true);
+    expect(config.headers).toMatchObject({ "X-CSRF-Token": "cookie-csrf" });
   });
 
   it("clears and publishes expiry when refresh fails", async () => {
     const clear = vi.fn();
     configureHttpSession({
       clear,
+      clearLegacyRefreshToken: vi.fn(),
       getAccessToken: () => "expired-access",
-      getRefreshToken: () => "expired-refresh",
-      setTokens: vi.fn(),
+      getLegacyRefreshToken: () => null,
+      setAccessToken: vi.fn(),
     });
     vi.spyOn(axios, "post").mockRejectedValue(new Error("refresh rejected"));
     const expiredListener = vi.fn();

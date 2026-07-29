@@ -88,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [hasSession, handleSessionExpired, meQuery.error, meQuery.isError]);
 
   const loadMe = useCallback(
-    async (accessToken: string, refreshToken: string) => {
-      authStore.setSession(accessToken, refreshToken);
+    async (accessToken: string) => {
+      authStore.setSession(accessToken);
       setHasSession(true);
       const me = await queryClient.fetchQuery<MeResponse>({
         queryKey: authQueryKeys.me,
@@ -111,17 +111,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async login(input) {
         const response = await http.post<{
           accessToken: string;
-          refreshToken: string;
         }>("/auth/login", input);
-        return loadMe(response.data.accessToken, response.data.refreshToken);
+        return loadMe(response.data.accessToken);
       },
-      async establishSession(accessToken, refreshToken) {
-        return loadMe(accessToken, refreshToken);
+      async establishSession(accessToken) {
+        return loadMe(accessToken);
       },
       async logout() {
         await logoutSession({
-          getRefreshToken: () => authStore.getRefreshToken(),
-          revoke: (refreshToken) => http.post("/auth/logout", { refreshToken }).then(() => undefined),
+          revoke: () => http.post("/auth/logout", {}).then(() => undefined),
           clear: () => {
             authStore.clear();
           },

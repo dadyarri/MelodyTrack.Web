@@ -4,9 +4,10 @@ import { apiBaseUrl } from "../config";
 
 export type HttpSession = {
   clear: () => void;
+  clearLegacyRefreshToken: () => void;
   getAccessToken: () => string | null;
-  getRefreshToken: () => string | null;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  getLegacyRefreshToken: () => string | null;
+  setAccessToken: (accessToken: string) => void;
 };
 
 export type ApiValidationError = {
@@ -36,6 +37,7 @@ export const authExpiredEventName = "melodytrack:auth-expired";
 
 export const http = axios.create({
   baseURL: apiBaseUrl,
+  withCredentials: true,
   headers: {
     "Content-Type": "application/json",
   },
@@ -44,6 +46,8 @@ export const http = axios.create({
 let refreshRequest: Promise<string | null> | null = null;
 let httpSession: HttpSession | null = null;
 const legacyCacheStorageKeyPrefix = "melodytrack:http-cache:";
+const csrfCookieName = "MelodyTrack.Csrf";
+const csrfHeaderName = "X-CSRF-Token";
 
 if (typeof window !== "undefined") {
   discardLegacyHttpCache(window.localStorage);
@@ -73,6 +77,11 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = httpSession?.getAccessToken();
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const csrfToken = readCookie(csrfCookieName);
+  if (csrfToken && isStateChangingMethod(config.method)) {
+    config.headers[csrfHeaderName] = csrfToken;
   }
 
   if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -152,22 +161,46 @@ export async function probeBackendReachable() {
 }
 
 async function refreshAccessToken() {
-  const refreshToken = httpSession?.getRefreshToken();
-  if (!refreshToken) {
-    return null;
-  }
+  const legacyRefreshToken = httpSession?.getLegacyRefreshToken();
+  const csrfToken = readCookie(csrfCookieName);
 
   try {
-    const response = await axios.post<{ accessToken: string; refreshToken: string }>(
+    const response = await axios.post<{ accessToken: string }>(
       `${apiBaseUrl}/auth/refresh`,
-      { refreshToken },
-      { headers: { "Content-Type": "application/json" } },
+      legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
+      {
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { [csrfHeaderName]: csrfToken } : {}),
+        },
+        withCredentials: true,
+      },
     );
-    httpSession?.setTokens(response.data.accessToken, response.data.refreshToken);
+    httpSession?.setAccessToken(response.data.accessToken);
+    httpSession?.clearLegacyRefreshToken();
     return response.data.accessToken;
   } catch {
     return null;
   }
+}
+
+function isStateChangingMethod(method?: string) {
+  return method !== undefined && ["post", "put", "patch", "delete"].includes(method.toLowerCase());
+}
+
+function readCookie(name: string) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const prefix = `${encodeURIComponent(name)}=`;
+  for (const cookie of document.cookie.split(";")) {
+    const value = cookie.trim();
+    if (value.startsWith(prefix)) {
+      return decodeURIComponent(value.slice(prefix.length));
+    }
+  }
+  return null;
 }
 
 export function getApiProblemDetails(error: unknown) {

@@ -17,6 +17,7 @@ import {
   CheckOutlined,
   CreditCardOutlined,
   DeleteOutlined,
+  DisconnectOutlined,
   LinkOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -34,6 +35,8 @@ type ClientHistoryPanelProps = {
   onCreateCourseEnrollment?: () => void;
   onCreatePortalLink?: () => void;
   isCreatingPortalLink?: boolean;
+  onRevokePortalLink?: () => void;
+  isRevokingPortalLink?: boolean;
   onCreateCalendarSubscription?: () => void;
   isCreatingCalendarSubscription?: boolean;
   onResetPortalPin?: () => void;
@@ -55,6 +58,8 @@ export function ClientHistoryPanel({
   onCreateCourseEnrollment,
   onCreatePortalLink,
   isCreatingPortalLink = false,
+  onRevokePortalLink,
+  isRevokingPortalLink = false,
   onCreateCalendarSubscription,
   isCreatingCalendarSubscription = false,
   onResetPortalPin,
@@ -71,6 +76,7 @@ export function ClientHistoryPanel({
       onCreatePayment ||
       onCreateCourseEnrollment ||
       onCreatePortalLink ||
+      onRevokePortalLink ||
       onCreateCalendarSubscription ||
       onResetPortalPin ||
       onEditVacations ? (
@@ -120,7 +126,7 @@ export function ClientHistoryPanel({
               </Space>
             </div>
           ) : null}
-          {onCreatePortalLink || onCreateCalendarSubscription || onResetPortalPin ? (
+          {onCreatePortalLink || onRevokePortalLink || onCreateCalendarSubscription || onResetPortalPin ? (
             <div className={`${styles.actionGroup} ${styles.portalActionGroup}`}>
               <Typography.Text type="secondary" className={styles.actionGroupLabel}>
                 Клиентский портал
@@ -128,7 +134,12 @@ export function ClientHistoryPanel({
               <Space wrap size={[8, 8]}>
                 {onCreatePortalLink ? (
                   <Button icon={<LinkOutlined />} loading={isCreatingPortalLink} onClick={onCreatePortalLink}>
-                    Копировать ссылку
+                    Новая ссылка
+                  </Button>
+                ) : null}
+                {onRevokePortalLink ? (
+                  <Button danger icon={<DisconnectOutlined />} loading={isRevokingPortalLink} onClick={onRevokePortalLink}>
+                    Отключить ссылку
                   </Button>
                 ) : null}
                 {onCreateCalendarSubscription ? (

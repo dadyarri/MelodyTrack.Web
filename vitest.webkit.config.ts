@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["**/*.webkit.test.tsx"],
+    include: ["**/*.browser.test.tsx", "**/*.webkit.test.tsx"],
     browser: {
       enabled: true,
       headless: true,

@@ -320,6 +320,15 @@ export function useClientsPageController() {
       void navigator.clipboard.writeText(payload.url).catch(() => {
         void message.error("Не удалось скопировать ссылку автоматически");
       });
+      message.success("Новая ссылка скопирована. Предыдущая ссылка отключена.");
+    },
+    onError: showErrors,
+  });
+
+  const revokePortalLinkMutation = useMutation({
+    mutationFn: (clientId: Ulid) => clientsApi.revokePortalLink(clientId),
+    onSuccess: () => {
+      message.success("Ссылка клиентского кабинета отключена");
     },
     onError: showErrors,
   });
@@ -521,6 +530,7 @@ export function useClientsPageController() {
     deleteMutation,
     leadStatusMutation,
     createPortalLinkMutation,
+    revokePortalLinkMutation,
     createCalendarSubscriptionMutation,
     resetPortalPinMutation,
     openEditor,
@@ -592,9 +602,33 @@ export function useClientsPageController() {
       createEnrollmentMutation.mutate(values);
     },
     onCreatePortalLink: () => {
-      if (historyClient) {
-        createPortalLinkMutation.mutate(historyClient.id);
+      if (!historyClient) {
+        return;
       }
+
+      modal.confirm({
+        title: "Создать новую ссылку на кабинет?",
+        content: "Предыдущая ссылка перестанет работать, а активные сессии клиента будут завершены.",
+        okText: "Создать и скопировать",
+        onOk: () => {
+          createPortalLinkMutation.mutate(historyClient.id);
+        },
+      });
+    },
+    onRevokePortalLink: () => {
+      if (!historyClient) {
+        return;
+      }
+
+      modal.confirm({
+        title: "Отключить ссылку на кабинет?",
+        content: "Ссылка перестанет работать, а активные сессии клиента будут завершены.",
+        okText: "Отключить",
+        okButtonProps: { danger: true },
+        onOk: () => {
+          revokePortalLinkMutation.mutate(historyClient.id);
+        },
+      });
     },
     onCreateCalendarSubscription: () => {
       if (historyClient) {

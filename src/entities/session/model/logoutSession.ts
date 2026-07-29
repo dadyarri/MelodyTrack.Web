@@ -1,17 +1,6 @@
-export async function logoutSession({
-  getRefreshToken,
-  revoke,
-  clear,
-}: {
-  getRefreshToken: () => string | null;
-  revoke: (refreshToken: string) => Promise<void>;
-  clear: () => void;
-}) {
-  const refreshToken = getRefreshToken();
+export async function logoutSession({ revoke, clear }: { revoke: () => Promise<void>; clear: () => void }) {
   try {
-    if (refreshToken) {
-      await revoke(refreshToken);
-    }
+    await revoke();
   } finally {
     clear();
   }

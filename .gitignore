@@ -85,7 +85,7 @@ web_modules/
 .playwright-cli/
 .vitest-attachments/
 output/playwright/
-src/app/mobile/__screenshots__/
+**/__screenshots__/
 .env.*
 !.env.example
 

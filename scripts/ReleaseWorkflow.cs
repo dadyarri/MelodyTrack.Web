@@ -69,6 +69,7 @@ static void Publish(ReleasePullRequest release, string commit)
 {
     var tag = $"v{release.Version}";
     var title = $"{release.Version} — {release.Codename}";
+    Run("gh", ["auth", "setup-git"]);
     Run("git", ["fetch", "--tags", "origin"]);
     if (Success("git", ["show-ref", "--verify", "--quiet", $"refs/tags/{tag}"]))
     {

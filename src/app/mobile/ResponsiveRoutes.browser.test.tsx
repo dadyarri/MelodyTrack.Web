@@ -13,6 +13,7 @@ import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filt
 import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
 
 const longRussianLabel = "Очень длинное имя клиента для проверки переноса без перекрытия соседних действий";
+const isWebKitBrowser = /Safari/.test(navigator.userAgent) && !/Chrome|Chromium/.test(navigator.userAgent);
 const routeFamilies = ["auth", "list", "analytics", "schedule", "workspace", "profile", "portal"] as const;
 const portraitViewports = [
   { width: 320, height: 568 },
@@ -78,14 +79,14 @@ describe("responsive route families", () => {
     expect(window.matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
   });
 
-  it("matches the compact list visual baseline", async () => {
+  it.skipIf(isWebKitBrowser)("matches the compact list visual baseline", async () => {
     await page.viewport(320, 568);
     const screen = await render(<RouteFamilySurface family="list" clipToViewport />);
 
     await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-list-320.png");
   });
 
-  it("matches the dark compact schedule visual baseline", async () => {
+  it.skipIf(isWebKitBrowser)("matches the dark compact schedule visual baseline", async () => {
     await page.viewport(390, 844);
     localStorage.setItem("melodytrack.theme", "dark");
     const screen = await render(<RouteFamilySurface family="schedule" clipToViewport />);

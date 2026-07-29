@@ -40,7 +40,6 @@ export interface RecoveryCodeItem {
 
 export interface Recover2FaResponse {
   accessToken: string;
-  refreshToken: string;
   secret: string;
   otpUrl: string;
   allCodes: RecoveryCodeItem[];
@@ -48,7 +47,6 @@ export interface Recover2FaResponse {
 
 export interface LoginResponse {
   accessToken: string;
-  refreshToken: string;
   firstName: string;
   lastName: string;
 }

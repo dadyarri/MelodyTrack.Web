@@ -82,7 +82,7 @@ export function useAuthPageController() {
   }, [inviteEmail, registerForm, registerInviteCode]);
 
   const finishLogin = async (result: Extract<LoginAttemptResult, { kind: "success" }>) => {
-    const me = await auth.establishSession(result.accessToken, result.refreshToken);
+    const me = await auth.establishSession(result.accessToken);
     const fallbackPath = me.isClientPortal ? "/portal" : "/";
     await navigate((location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? fallbackPath, { replace: true });
   };
@@ -230,7 +230,7 @@ export function useAuthPageController() {
         return;
       }
 
-      const me = await auth.establishSession(recover2FaState.accessToken, recover2FaState.refreshToken);
+      const me = await auth.establishSession(recover2FaState.accessToken);
       void navigate(me.isClientPortal ? "/portal" : "/", { replace: true });
     },
     continueAfterRecoveryCodes: () => {

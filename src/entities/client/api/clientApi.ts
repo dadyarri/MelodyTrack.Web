@@ -62,6 +62,9 @@ export const clientsApi = {
   createPortalLink(id: Ulid) {
     return http.post<{ url: string }>(`/clients/${id}/portal-links`, {}).then((response) => response.data);
   },
+  revokePortalLink(id: Ulid) {
+    return http.delete<unknown>(`/clients/${id}/portal-links`).then(() => undefined);
+  },
   regenerateCalendarSubscription(id: Ulid) {
     return http.post<ClientCalendarSubscription>(`/clients/${id}/calendar-subscriptions`, {}).then((response) => response.data);
   },

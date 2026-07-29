@@ -1,4 +1,5 @@
-const refreshTokenKey = "melodytrack.refreshToken";
+const legacyRefreshTokenKey = "melodytrack.refreshToken";
+const sessionMarkerKey = "melodytrack.hasSession";
 const legacyAccessTokenKey = "melodytrack.accessToken";
 const legacyPortalClientsKey = "melodytrack.portalClients";
 
@@ -16,7 +17,7 @@ if (typeof window !== "undefined") {
   // Portal-link tokens are login capabilities and must never remain in browser persistence.
   window.localStorage.removeItem(legacyPortalClientsKey);
   window.addEventListener("storage", (event) => {
-    if (event.key === refreshTokenKey || event.key === null) {
+    if (event.key === sessionMarkerKey || event.key === legacyRefreshTokenKey || event.key === null) {
       accessToken = null;
       currentUserId = null;
       notifyListeners("external");
@@ -28,23 +29,27 @@ export const authStore = {
   getAccessToken() {
     return accessToken;
   },
-  getRefreshToken() {
-    return localStorage.getItem(refreshTokenKey);
+  getLegacyRefreshToken() {
+    return localStorage.getItem(legacyRefreshTokenKey);
   },
   getUserId() {
     return currentUserId;
   },
   hasSession() {
-    return Boolean(localStorage.getItem(refreshTokenKey));
+    return localStorage.getItem(sessionMarkerKey) === "1" || Boolean(localStorage.getItem(legacyRefreshTokenKey));
   },
-  setSession(accessToken: string, refreshToken: string) {
+  setSession(accessToken: string) {
     setAccessToken(accessToken);
-    localStorage.setItem(refreshTokenKey, refreshToken);
+    localStorage.setItem(sessionMarkerKey, "1");
+    localStorage.removeItem(legacyRefreshTokenKey);
     notifyListeners("local");
   },
-  setTokens(accessToken: string, refreshToken: string) {
+  setAccessToken(accessToken: string) {
     setAccessToken(accessToken);
-    localStorage.setItem(refreshTokenKey, refreshToken);
+    localStorage.setItem(sessionMarkerKey, "1");
+  },
+  clearLegacyRefreshToken() {
+    localStorage.removeItem(legacyRefreshTokenKey);
   },
   setUserId(userId: string) {
     currentUserId = userId;
@@ -52,7 +57,8 @@ export const authStore = {
   clear() {
     accessToken = null;
     currentUserId = null;
-    localStorage.removeItem(refreshTokenKey);
+    localStorage.removeItem(sessionMarkerKey);
+    localStorage.removeItem(legacyRefreshTokenKey);
     localStorage.removeItem(legacyAccessTokenKey);
     localStorage.removeItem(legacyPortalClientsKey);
     notifyListeners("local");

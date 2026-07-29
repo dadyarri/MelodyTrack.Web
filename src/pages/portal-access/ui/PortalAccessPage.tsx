@@ -37,7 +37,7 @@ function PortalAccessPageContent({ token }: { token?: string }) {
   const authenticateMutation = useMutation({
     mutationFn: (input: ClientPortalPinAuthInput) => authApi.authenticateClientPortalLink(input),
     onSuccess: async (response) => {
-      await auth.establishSession(response.accessToken, response.refreshToken);
+      await auth.establishSession(response.accessToken);
       await navigate("/portal", { replace: true });
     },
     onError: (error) => {

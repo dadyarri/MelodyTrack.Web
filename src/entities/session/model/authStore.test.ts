@@ -8,20 +8,22 @@ describe("authStore", () => {
     localStorage.clear();
   });
 
-  it("keeps the access token in memory and persists only the refresh token", () => {
-    authStore.setSession("access", "refresh");
+  it("keeps the access token in memory and persists only a non-sensitive session marker", () => {
+    authStore.setSession("access");
     authStore.setUserId("user-1");
 
     expect(authStore.getAccessToken()).toBe("access");
-    expect(authStore.getRefreshToken()).toBe("refresh");
+    expect(authStore.getLegacyRefreshToken()).toBeNull();
     expect(authStore.getUserId()).toBe("user-1");
     expect(authStore.hasSession()).toBe(true);
     expect(localStorage.getItem("melodytrack.accessToken")).toBeNull();
+    expect(localStorage.getItem("melodytrack.refreshToken")).toBeNull();
+    expect(localStorage.getItem("melodytrack.hasSession")).toBe("1");
 
     authStore.clear();
 
     expect(authStore.getAccessToken()).toBeNull();
-    expect(authStore.getRefreshToken()).toBeNull();
+    expect(authStore.getLegacyRefreshToken()).toBeNull();
     expect(authStore.getUserId()).toBeNull();
     expect(authStore.hasSession()).toBe(false);
   });
@@ -36,22 +38,21 @@ describe("authStore", () => {
     expect(localStorage.getItem("melodytrack.portalClients")).toBeNull();
   });
 
-  it("observes refresh rotation and logout performed by another tab", () => {
+  it("migrates a legacy refresh token and observes logout performed by another tab", () => {
     const listener = vi.fn();
     const unsubscribe = authStore.subscribe(listener);
-    authStore.setSession("access", "refresh-1");
+    localStorage.setItem("melodytrack.refreshToken", "legacy-refresh");
+    expect(authStore.getLegacyRefreshToken()).toBe("legacy-refresh");
+    expect(authStore.hasSession()).toBe(true);
+
+    authStore.setSession("access");
+    expect(authStore.getLegacyRefreshToken()).toBeNull();
     listener.mockClear();
 
-    localStorage.setItem("melodytrack.refreshToken", "refresh-2");
-    window.dispatchEvent(new StorageEvent("storage", { key: "melodytrack.refreshToken", newValue: "refresh-2" }));
+    localStorage.removeItem("melodytrack.hasSession");
+    window.dispatchEvent(new StorageEvent("storage", { key: "melodytrack.hasSession", newValue: null }));
 
     expect(authStore.getAccessToken()).toBeNull();
-    expect(authStore.getRefreshToken()).toBe("refresh-2");
-    expect(listener).toHaveBeenLastCalledWith({ hasSession: true, source: "external" });
-
-    localStorage.removeItem("melodytrack.refreshToken");
-    window.dispatchEvent(new StorageEvent("storage", { key: "melodytrack.refreshToken", newValue: null }));
-
     expect(authStore.hasSession()).toBe(false);
     expect(listener).toHaveBeenLastCalledWith({ hasSession: false, source: "external" });
     unsubscribe();
