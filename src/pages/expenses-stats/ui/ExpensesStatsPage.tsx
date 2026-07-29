@@ -1,18 +1,17 @@
 import { Card, DatePicker, Select, Space, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 import type { ReactNode } from "react";
-import { queryKeys } from "@/api/queryKeys";
-import { dashboardApi } from "@/api/crm";
-import type { ExpenseDynamicsBucket, ExpensesAnalytics } from "@/api/types";
-import { StatsDonutChart, StatsTrendChart } from "@/components/charts/StatsCharts";
-import { STATS_CHART_COLORS } from "@/components/charts/chartColors";
-import { InfoLabel } from "@/components/InfoLabel";
-import { SummaryCard, SummaryGrid } from "@/components/SummaryGrid";
-import { useDashboardDateRangeGroupByQuery } from "@/features/stats/useDashboardStatsQuery";
-import { PageLayout, ListFilters } from "@/shared/ui";
+
+import { analyticsQueryKeys, dashboardApi, type ExpenseDynamicsBucket, type ExpensesAnalytics } from "@/entities/dashboard";
+import { useDashboardDateRangeGroupByQuery } from "@/entities/dashboard";
+import { DATE_FORMAT } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { InfoLabel } from "@/shared/ui";
+import { SummaryCard, SummaryGrid } from "@/shared/ui";
+import { ListFilters, PageLayout } from "@/shared/ui";
+import { StatsDonutChart, StatsTrendChart } from "@/shared/ui/charts";
+import { STATS_CHART_COLORS } from "@/shared/ui/charts";
 import { filterFieldClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
 
 type ExpenseGroupBy = "day" | "week" | "month" | "year";
 
@@ -26,7 +25,7 @@ const groupByOptions: Array<{ label: string; value: ExpenseGroupBy }> = [
 export function ExpensesStatsPage() {
   const controller = useDashboardDateRangeGroupByQuery<ExpensesAnalytics, ExpenseGroupBy>({
     initialGroupBy: "month",
-    getQueryKey: ({ timezone, dateRange, groupBy }) => queryKeys.dashboard.expenses(timezone, dateRange[0], dateRange[1], groupBy),
+    getQueryKey: ({ timezone, dateRange, groupBy }) => analyticsQueryKeys.expenses(timezone, dateRange[0], dateRange[1], groupBy),
     queryFn: ({ timezone, dateRange, groupBy }) =>
       dashboardApi.expenses({
         timezone,

@@ -1,6 +1,7 @@
-import { Button } from "antd";
 import type { ButtonProps } from "antd";
+import { Button } from "antd";
 import type { ReactNode } from "react";
+
 import { Shortcut } from "./Shortcut";
 import styles from "./ShortcutButton.module.css";
 

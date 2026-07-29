@@ -1,19 +1,21 @@
-import { LeftOutlined, PlusOutlined, RightOutlined } from "@/components/icons";
 import { Button, Space, Typography } from "antd";
 import dayjs from "dayjs";
-import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
-import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
-import { UserSelect } from "@/components/RemoteSelect";
+
+import { UserSelect } from "@/entities/user";
 import {
   AppointmentCreateModal,
   AppointmentDetailsModal,
   AppointmentEditModal,
   RecurringDeleteModal,
   RecurringRescheduleModal,
-} from "@/features/schedule/ScheduleModals";
-import { AppointmentsCalendar } from "@/features/schedule/ScheduleCalendar";
-import { useSchedulePageController } from "@/features/schedule/useSchedulePageController";
+} from "@/features/manage-appointment";
+import { ClientQuickCreateModal } from "@/features/manage-client";
+import { PaymentCreateModal } from "@/features/record-payment";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
+import { LeftOutlined, PlusOutlined, RightOutlined } from "@/shared/ui/icons";
+import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
+
+import { useSchedulePageController } from "../model/useSchedulePageController";
 import styles from "./SchedulePage.module.css";
 
 export function SchedulePage() {
@@ -33,7 +35,7 @@ export function SchedulePage() {
               leadingIcon={<LeftOutlined />}
               label="Пред."
               onClick={() => {
-                controller.setWeekStart((value) => value.subtract(1, "week"));
+                controller.setWeekStart(controller.weekStart.subtract(1, "week"));
               }}
             />
             <ShortcutButton
@@ -48,7 +50,7 @@ export function SchedulePage() {
               leadingIcon={<RightOutlined />}
               label="След."
               onClick={() => {
-                controller.setWeekStart((value) => value.add(1, "week"));
+                controller.setWeekStart(controller.weekStart.add(1, "week"));
               }}
             />
             {controller.canCreateAppointments ? (
@@ -80,7 +82,7 @@ export function SchedulePage() {
                             disabled={false}
                             label="Моё"
                             onClick={() => {
-                              controller.setProviderFilterId((current) => (current === currentUserId ? undefined : currentUserId));
+                              controller.setProviderFilterId(controller.providerFilterId === currentUserId ? undefined : currentUserId);
                             }}
                           />
                         );
@@ -232,7 +234,9 @@ export function SchedulePage() {
         canCreateClient={controller.canCreateAppointments}
         createPending={controller.createMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
-        draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateModalOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         lockedProviderId={controller.lockedProviderId}
         onCreateClient={() => {
@@ -248,6 +252,7 @@ export function SchedulePage() {
         onProviderLabelChange={controller.setCreateProviderLabel}
         open={controller.isCreateModalOpen}
         onClearDraft={controller.handleClearCreateDraft}
+        onRetryDraft={controller.createDraftRetry}
         recurrenceTypes={controller.recurrenceTypesQuery.data ?? []}
         recurrenceTypesLoading={controller.recurrenceTypesQuery.isLoading}
         courseThemeOptions={controller.createCourseThemeOptions}
@@ -281,6 +286,28 @@ export function SchedulePage() {
             expectedActivityId: controller.appointmentToEditBaselineActivityId ?? undefined,
           });
         }}
+        onValuesChange={controller.onEditDraftChange}
+        draftStatus={controller.editDraft.status}
+        draftRestored={controller.editDraft.restored}
+        hasDraft={controller.editDraft.hasDraft}
+        draftStale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
+        onDiscardDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            const appointment = controller.currentEditingAppointment;
+            if (appointment) {
+              controller.editForm.setFieldsValue({
+                clientId: appointment.client.id,
+                serviceId: appointment.service.id,
+                providerId: controller.lockedProviderId ?? appointment.provider?.id,
+                courseThemeId: appointment.courseTheme?.id,
+                lessonNotes: appointment.lessonNotes ?? undefined,
+                startDate: dayjs(appointment.startDate),
+              });
+            }
+          });
+        }}
       />
       <ClientQuickCreateModal
         open={controller.isQuickClientCreateOpen}
@@ -292,7 +319,9 @@ export function SchedulePage() {
       <PaymentCreateModal
         open={controller.paymentCreate.isCreateModalOpen}
         editing={Boolean(controller.paymentCreate.editingPayment)}
-        draftRestored={controller.paymentCreate.hasCreateDraft && controller.paymentCreate.isCreateModalOpen}
+        hasDraft={controller.paymentCreate.hasCreateDraft}
+        draftRestored={controller.paymentCreate.isCreateDraftRestored && controller.paymentCreate.isCreateModalOpen}
+        draftSaveStatus={controller.paymentCreate.createDraftSaveStatus}
         form={controller.paymentCreate.form}
         createPending={controller.paymentCreate.saveMutation.isPending}
         createdClientOptions={controller.paymentCreate.createdClientOptions}
@@ -301,6 +330,9 @@ export function SchedulePage() {
         selectedServicePrice={controller.paymentCreate.selectedServicePrice}
         onCancel={controller.paymentCreate.closeCreateModal}
         onClearDraft={controller.paymentCreate.handleClearCreateDraft}
+        draftStale={controller.paymentCreate.activeDraft.isStale}
+        onReapplyDraft={controller.paymentCreate.activeDraft.reapply}
+        onRetryDraft={controller.paymentCreate.activeDraft.retry}
         onSubmit={(values) => {
           controller.paymentCreate.saveMutation.mutate({
             values,

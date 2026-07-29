@@ -1,13 +1,16 @@
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Space, Typography } from "antd";
-import { ExpenseCategorySelect } from "@/components/RemoteSelect";
-import { ReferenceBookCreateModal } from "@/components/ReferenceBookCreateModal";
-import { useExpensesPageController } from "@/features/expenses/useExpensesPageController";
+import { Button, DatePicker, Form, Input, InputNumber, Space, Typography } from "antd";
+
+import { ExpenseCategorySelect } from "@/entities/reference-book";
+import { DATE_FORMAT, formatDate } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { ActionableEmptyState } from "@/shared/ui";
 import { DraftFormModal, ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
-import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
+import { MoneyListSummaryCards } from "@/shared/ui";
 import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDate } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
+
+import { useExpensesPageController } from "../model/useExpensesPageController";
 
 export function ExpensesPage() {
   const controller = useExpensesPageController();
@@ -48,15 +51,14 @@ export function ExpensesPage() {
               <Typography.Text type="secondary">Поиск по описанию расхода</Typography.Text>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Введите часть описания или название статьи"
                 onSearch={(value) => {
                   controller.setSearch(value);
-                  controller.setPage(1);
                 }}
                 onChange={(event) => {
                   if (!event.target.value) {
                     controller.setSearch("");
-                    controller.setPage(1);
                   }
                 }}
               />
@@ -68,7 +70,6 @@ export function ExpensesPage() {
                 format={DATE_FORMAT}
                 onChange={(value) => {
                   controller.setDateRange(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -90,7 +91,23 @@ export function ExpensesPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Расходов по выбранным условиям пока нет"
+                actionLabel="Добавить расход"
+                onAction={() => {
+                  controller.setOpen(true);
+                }}
+              />
+            }
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.query.data?.data}
             pagination={{
               current: controller.page,
@@ -102,12 +119,14 @@ export function ExpensesPage() {
               {
                 title: "Дата",
                 dataIndex: "date",
+                responsive: ["sm"],
                 render: (value: string) => formatDate(value),
               },
               { title: "Описание", dataIndex: "description" },
               {
                 title: "Категория",
                 dataIndex: "categoryName",
+                responsive: ["md"],
                 render: (value?: string | null) => value || "Без категории",
               },
               {
@@ -123,6 +142,8 @@ export function ExpensesPage() {
                     {controller.canEditExpenses ? (
                       <Button
                         icon={<EditOutlined />}
+                        aria-label="Редактировать расход"
+                        title="Редактировать"
                         onClick={() => {
                           controller.openEdit(row);
                         }}
@@ -131,6 +152,9 @@ export function ExpensesPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить расход"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() =>
                         controller.modal.confirm({
                           title: "Удалить расход?",
@@ -153,8 +177,11 @@ export function ExpensesPage() {
       <DraftFormModal
         open={controller.isOpen}
         title="Новый расход"
-        restored={controller.hasCreateDraft && controller.isOpen}
+        restored={controller.isCreateDraftRestored && controller.isOpen}
+        saveStatus={controller.createDraftSaveStatus}
+        showClearDraft={controller.hasCreateDraft}
         onClearDraft={controller.handleClearCreateDraft}
+        onRetryDraft={controller.createDraftRetry}
         onCancel={() => {
           controller.setOpen(false);
         }}
@@ -195,16 +222,33 @@ export function ExpensesPage() {
           </Form.Item>
         </Form>
       </DraftFormModal>
-      <Modal
+      <DraftFormModal
         open={controller.editingExpense !== null}
         title="Редактировать расход"
+        restored={controller.editDraft.restored}
+        saveStatus={controller.editDraft.status}
+        showClearDraft={controller.editDraft.hasDraft}
+        onClearDraft={() => {
+          void controller.editDraft.discard().then(() => {
+            controller.editForm.resetFields();
+          });
+        }}
+        stale={controller.editDraft.isStale}
+        onReapplyDraft={controller.editDraft.reapply}
+        onRetryDraft={controller.editDraft.retry}
         onCancel={controller.closeEdit}
         onOk={() => {
           controller.editForm.submit();
         }}
         confirmLoading={controller.editMutation.isPending}
       >
-        <Form form={controller.editForm} layout="vertical" requiredMark={false} onFinish={controller.onEditSubmit}>
+        <Form
+          form={controller.editForm}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={controller.onEditSubmit}
+          onValuesChange={controller.onEditValuesChange}
+        >
           <Form.Item name="categoryId" label="Категория">
             <ExpenseCategorySelect extraOptions={controller.createdCategoryOptions} />
           </Form.Item>
@@ -218,15 +262,18 @@ export function ExpensesPage() {
             <DatePicker format={DATE_FORMAT} className="wide" />
           </Form.Item>
         </Form>
-      </Modal>
+      </DraftFormModal>
       <ReferenceBookCreateModal
         open={controller.isCategoryCreateOpen}
         title="Новая категория расхода"
+        draftKey="draft:expense-categories:create"
         confirmLoading={controller.createCategoryMutation.isPending}
         onCancel={() => {
           controller.setCategoryCreateOpen(false);
         }}
-        onSubmit={controller.onCreateCategory}
+        onSubmit={(values, clearAfterSuccess) => {
+          controller.createCategoryMutation.mutate(values, { onSuccess: () => void clearAfterSuccess() });
+        }}
       />
     </PageLayout>
   );

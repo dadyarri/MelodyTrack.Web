@@ -1,14 +1,17 @@
-import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/components/icons";
 import { App as AntdApp, Button, DatePicker, Input, Space, Typography } from "antd";
-import { ClientQuickCreateModal } from "@/components/ClientQuickCreateModal";
-import { MoneyListSummaryCards } from "@/components/MoneyListSummaryCards";
-import { ClientSelect, ServiceSelect } from "@/components/RemoteSelect";
-import { PaymentCreateModal } from "@/features/payments/PaymentCreateModal";
-import { formatOptionalDateTime, usePaymentsPageController } from "@/features/payments/usePaymentsPageController";
+
+import { ClientSelect } from "@/entities/client";
+import { ServiceSelect } from "@/entities/service";
+import { ClientQuickCreateModal } from "@/features/manage-client";
+import { PaymentCreateModal } from "@/features/record-payment";
+import { DATE_FORMAT, formatDateTime } from "@/shared/lib";
+import { formatMoney } from "@/shared/lib";
+import { ActionableEmptyState, MoneyListSummaryCards } from "@/shared/ui";
 import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
 import { filterFieldClassName, filterFieldServiceClassName, filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
-import { DATE_FORMAT, formatDateTime } from "@/utils/date";
-import { formatMoney } from "@/utils/money";
+import { DeleteOutlined, DownloadOutlined, EditOutlined, PlusOutlined } from "@/shared/ui/icons";
+
+import { formatOptionalDateTime, usePaymentsPageController } from "../model/usePaymentsPageController";
 
 export function PaymentsPage() {
   const controller = usePaymentsPageController();
@@ -48,15 +51,14 @@ export function PaymentsPage() {
               <Typography.Text type="secondary">Поиск по клиенту, услуге или описанию</Typography.Text>
               <Input.Search
                 allowClear
+                value={controller.search}
                 placeholder="Введите имя клиента, услугу или текст описания"
                 onSearch={(value) => {
                   controller.setSearch(value);
-                  controller.setPage(1);
                 }}
                 onChange={(event) => {
                   if (!event.target.value) {
                     controller.setSearch("");
-                    controller.setPage(1);
                   }
                 }}
               />
@@ -67,7 +69,6 @@ export function PaymentsPage() {
                 value={controller.clientId}
                 onChange={(value) => {
                   controller.setClientId(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -78,7 +79,6 @@ export function PaymentsPage() {
                 value={controller.serviceId}
                 onChange={(value) => {
                   controller.setServiceId(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -89,7 +89,6 @@ export function PaymentsPage() {
                 format={DATE_FORMAT}
                 onChange={(value) => {
                   controller.setDateRange(value);
-                  controller.setPage(1);
                 }}
               />
             </div>
@@ -111,7 +110,21 @@ export function PaymentsPage() {
         table={
           <ListTable
             rowKey="id"
+            emptyText={
+              <ActionableEmptyState
+                description="Платежей по выбранным условиям пока нет"
+                actionLabel="Добавить платёж"
+                onAction={controller.openCreateModal}
+              />
+            }
             loading={controller.query.isLoading}
+            queryStatus={{
+              isError: controller.query.isError,
+              isFetching: controller.query.isFetching,
+              onRetry: () => {
+                void controller.query.refetch();
+              },
+            }}
             dataSource={controller.query.data?.data}
             scroll={{ x: "max-content" }}
             pagination={{
@@ -124,19 +137,25 @@ export function PaymentsPage() {
               {
                 title: "Дата",
                 dataIndex: "date",
+                responsive: ["sm"],
                 render: (value: string) => formatDateTime(value),
               },
               {
                 title: "Клиент",
                 render: (_, row) => `${row.client.lastName} ${row.client.firstName}`,
               },
-              { title: "Услуга", render: (_, row) => row.service?.name },
+              { title: "Услуга", responsive: ["md"], render: (_, row) => row.service?.name },
               {
                 title: "Сумма",
                 dataIndex: "amount",
                 render: (value: number) => formatMoney(value),
               },
-              { title: "Описание", dataIndex: "description", render: (value?: string | null) => value?.trim() || "Без описания" },
+              {
+                title: "Описание",
+                dataIndex: "description",
+                responsive: ["lg"],
+                render: (value?: string | null) => value?.trim() || "Без описания",
+              },
               {
                 title: "",
                 width: 112,
@@ -144,6 +163,8 @@ export function PaymentsPage() {
                   <Space>
                     <Button
                       icon={<EditOutlined />}
+                      aria-label="Редактировать платёж"
+                      title="Редактировать"
                       onClick={() => {
                         controller.openEditModal(row);
                       }}
@@ -151,6 +172,9 @@ export function PaymentsPage() {
                     <Button
                       danger
                       icon={<DeleteOutlined />}
+                      aria-label="Удалить платёж"
+                      title="Удалить"
+                      loading={controller.deleteMutation.isPending && controller.deleteMutation.variables.id === row.id}
                       onClick={() => {
                         modal.confirm({
                           title: "Удалить платеж?",
@@ -173,7 +197,9 @@ export function PaymentsPage() {
       <PaymentCreateModal
         open={controller.isCreateModalOpen}
         editing={Boolean(controller.editingPayment)}
-        draftRestored={controller.hasCreateDraft && controller.isCreateModalOpen}
+        hasDraft={controller.hasCreateDraft}
+        draftRestored={controller.isCreateDraftRestored && controller.isCreateModalOpen}
+        draftSaveStatus={controller.createDraftSaveStatus}
         form={controller.form}
         createPending={controller.saveMutation.isPending}
         createdClientOptions={controller.createdClientOptions}
@@ -182,6 +208,9 @@ export function PaymentsPage() {
         selectedServicePrice={controller.selectedServicePrice}
         onCancel={controller.closeCreateModal}
         onClearDraft={controller.handleClearCreateDraft}
+        draftStale={controller.activeDraft.isStale}
+        onReapplyDraft={controller.activeDraft.reapply}
+        onRetryDraft={controller.activeDraft.retry}
         onSubmit={(values) => {
           controller.saveMutation.mutate({
             values,

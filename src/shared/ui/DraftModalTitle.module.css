@@ -12,13 +12,23 @@
 .titleState {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--text-subtle);
   font-size: 14px;
   line-height: 1;
 }
 
+button.titleState {
+  cursor: pointer;
+}
+
 .titleStateRestored {
   color: var(--accent);
+}
+
+.titleStateFailed {
+  color: var(--ant-color-error);
 }

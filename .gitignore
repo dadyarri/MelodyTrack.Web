@@ -80,10 +80,14 @@ web_modules/
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+
+# Local browser-test output
+.playwright-cli/
+.vitest-attachments/
+output/playwright/
+**/__screenshots__/
+.env.*
+!.env.example
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -96,6 +100,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+artifacts/
 
 # Gatsby files
 .cache/

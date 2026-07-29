@@ -1,13 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Result, Space, Spin, Typography } from "antd";
+import { Button, Form, Input, Result, Space, Spin, Typography } from "antd";
 import { useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router";
-import { ClientPortalThemeProvider } from "@/app/ThemeProvider";
-import { authApi, type ClientPortalPinAuthInput } from "@/api/auth";
-import { getApiErrorMessage } from "@/api/http";
-import { AuthScreenLayout } from "@/components/AuthScreenLayout";
-import { portalClientsStore } from "@/features/auth/portalClientsStore";
-import { useAuth } from "@/features/auth/useAuth";
+
+import { authApi, type ClientPortalPinAuthInput, useAuth } from "@/entities/session";
+import { getApiErrorMessage, getApiFieldErrors } from "@/shared/api";
+import { AuthScreenLayout } from "@/shared/ui";
 
 type PortalPinFormValues = {
   pin: string;
@@ -17,11 +15,7 @@ type PortalPinFormValues = {
 export function PortalAccessPage() {
   const { token } = useParams<{ token: string }>();
 
-  return (
-    <ClientPortalThemeProvider>
-      <PortalAccessPageContent key={token ?? "saved-clients"} token={token} />
-    </ClientPortalThemeProvider>
-  );
+  return <PortalAccessPageContent key={token ?? "saved-clients"} token={token} />;
 }
 
 function PortalAccessPageContent({ token }: { token?: string }) {
@@ -30,7 +24,6 @@ function PortalAccessPageContent({ token }: { token?: string }) {
   const [form] = Form.useForm<PortalPinFormValues>();
   const [pinSetupStep, setPinSetupStep] = useState<"entry" | "confirmation">("entry");
   const [pendingPin, setPendingPin] = useState("");
-  const [savedClients, setSavedClients] = useState(() => portalClientsStore.list());
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinConfirmationError, setPinConfirmationError] = useState<string | null>(null);
 
@@ -44,16 +37,7 @@ function PortalAccessPageContent({ token }: { token?: string }) {
   const authenticateMutation = useMutation({
     mutationFn: (input: ClientPortalPinAuthInput) => authApi.authenticateClientPortalLink(input),
     onSuccess: async (response) => {
-      if (token) {
-        portalClientsStore.save({
-          token,
-          firstName: response.firstName,
-          lastName: response.lastName,
-        });
-        setSavedClients(portalClientsStore.list());
-      }
-
-      await auth.establishSession(response.accessToken, response.refreshToken);
+      await auth.establishSession(response.accessToken);
       await navigate("/portal", { replace: true });
     },
     onError: (error) => {
@@ -67,28 +51,13 @@ function PortalAccessPageContent({ token }: { token?: string }) {
     return <Navigate to={auth.user?.isClientPortal ? "/portal" : "/"} replace />;
   }
 
-  if (!token && savedClients.length === 0) {
+  if (!token) {
     return (
       <AuthScreenLayout title="Вход на портал ученика">
         <Result
           status="info"
-          title="Пока нет сохраненных пользователей"
-          subTitle="Откройте ссылку для входа один раз, и кабинет появится здесь для быстрого входа по PIN."
-        />
-      </AuthScreenLayout>
-    );
-  }
-
-  if (!token) {
-    return (
-      <AuthScreenLayout title="Вход на портал ученика">
-        <SavedClientsList
-          clients={savedClients}
-          onOpen={(savedToken) => void navigate(`/portal/access/${savedToken}`)}
-          onRemove={(savedToken) => {
-            portalClientsStore.remove(savedToken);
-            setSavedClients(portalClientsStore.list());
-          }}
+          title="Нужна ссылка для входа"
+          subTitle="Откройте персональную ссылку, которую вам прислал преподаватель. В целях безопасности приложение не сохраняет ссылки доступа на устройстве."
         />
       </AuthScreenLayout>
     );
@@ -230,7 +199,7 @@ function PinCodeInput({ autoFocus = false, value, onChange }: { autoFocus?: bool
 }
 
 function getPortalPinFieldErrors(error: unknown, hasPin: boolean, step: "entry" | "confirmation", fallbackMessage: string) {
-  const errorsByField = readApiErrorsByField(error);
+  const errorsByField = getApiFieldErrors(error);
   const pinErrors = getFieldErrors(errorsByField, "pin");
   const pinConfirmationErrors = !hasPin ? getFieldErrors(errorsByField, "pinConfirmation") : [];
   const tokenErrors = getFieldErrors(errorsByField, "token");
@@ -261,83 +230,4 @@ function getPortalPinFieldErrors(error: unknown, hasPin: boolean, step: "entry" 
 
 function getFieldErrors(errorsByField: Record<string, string[]>, fieldName: string) {
   return errorsByField[fieldName.toLowerCase()] ?? [];
-}
-
-function readApiErrorsByField(error: unknown) {
-  if (!error || typeof error !== "object") {
-    return {};
-  }
-
-  const response = "response" in error ? error.response : undefined;
-  if (!response || typeof response !== "object") {
-    return {};
-  }
-
-  const data = "data" in response ? response.data : undefined;
-  if (!data || typeof data !== "object" || !("errors" in data)) {
-    return {};
-  }
-
-  const apiErrors = data.errors;
-  if (!apiErrors || typeof apiErrors !== "object" || Array.isArray(apiErrors)) {
-    return {};
-  }
-
-  const normalized: Record<string, string[]> = {};
-  for (const [key, value] of Object.entries(apiErrors)) {
-    const messages = Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
-    if (messages.length > 0) {
-      normalized[key] = messages;
-      normalized[key.toLowerCase()] = messages;
-    }
-  }
-
-  return normalized;
-}
-
-function SavedClientsList({
-  clients,
-  onOpen,
-  onRemove,
-  title = "Сохраненные пользователи",
-}: {
-  clients: Array<{ token: string; firstName: string; lastName: string; lastUsedAtUtc: string }>;
-  onOpen: (token: string) => void;
-  onRemove: (token: string) => void;
-  title?: string;
-}) {
-  if (clients.length === 0) {
-    return null;
-  }
-
-  return (
-    <Card size="small" title={title}>
-      <Space orientation="vertical" size={12} className="wide">
-        {clients.map((client) => (
-          <Space key={client.token} className="wide" style={{ justifyContent: "space-between" }}>
-            <div>
-              <Typography.Text strong>{[client.firstName, client.lastName].filter(Boolean).join(" ")}</Typography.Text>
-            </div>
-            <Space>
-              <Button
-                onClick={() => {
-                  onOpen(client.token);
-                }}
-              >
-                Открыть
-              </Button>
-              <Button
-                danger
-                onClick={() => {
-                  onRemove(client.token);
-                }}
-              >
-                Убрать
-              </Button>
-            </Space>
-          </Space>
-        ))}
-      </Space>
-    </Card>
-  );
 }
