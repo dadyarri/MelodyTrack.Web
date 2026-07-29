@@ -1,7 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { Empty, Modal, Skeleton, Space, Typography } from "antd";
+import { Button, Empty, Modal, Pagination, Skeleton, Space, Typography } from "antd";
+import { type ReactNode, useState } from "react";
 
-import { getReleaseHistory, type ReleaseChanges, releaseQueryKeys } from "@/entities/release";
+import type { ReleaseChanges, ReleaseEntry } from "@/entities/release";
+
+import { useReleaseHistory } from "../model/useReleaseHistory";
 
 const changeLabels: Array<[keyof ReleaseChanges, string]> = [
   ["new", "Добавлено"],
@@ -9,16 +11,6 @@ const changeLabels: Array<[keyof ReleaseChanges, string]> = [
   ["fixed", "Исправления"],
   ["security", "Безопасность"],
 ];
-
-function useReleaseHistory() {
-  return useQuery({
-    queryKey: releaseQueryKeys.history(),
-    queryFn: () => getReleaseHistory(),
-    staleTime: 5 * 60 * 1000,
-    retry: 1,
-    meta: { suppressErrorNotification: true },
-  });
-}
 
 export function ReleaseVersion({ compact = false }: { compact?: boolean }) {
   const query = useReleaseHistory();
@@ -32,43 +24,96 @@ export function ReleaseVersion({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function ReleaseNotesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const query = useReleaseHistory();
+export function ReleaseNotesModal({
+  open,
+  automaticReleases = null,
+  onClose,
+}: {
+  open: boolean;
+  automaticReleases?: ReleaseEntry[] | null;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      open={open}
+      title="Что нового"
+      footer={
+        <Button type="primary" onClick={onClose}>
+          Понятно
+        </Button>
+      }
+      onCancel={onClose}
+    >
+      {open ? automaticReleases ? <ReleaseNotesContent releases={automaticReleases} /> : <ReleaseHistory /> : null}
+    </Modal>
+  );
+}
+
+function ReleaseHistory() {
+  const [page, setPage] = useState(1);
+  const query = useReleaseHistory(page);
 
   return (
-    <Modal open={open} title="Что нового" footer={null} onCancel={onClose}>
-      {query.isPending ? (
-        <Skeleton active paragraph={{ rows: 4 }} />
-      ) : query.isError ? (
-        <Empty description="Не удалось загрузить историю обновлений" />
-      ) : (
-        <Space orientation="vertical" size={24} className="wide">
-          {query.data.releases.map((release) => (
-            <section key={release.version}>
-              <Typography.Title level={4}>
-                {release.parentVersion ? "Исправление " : ""}
-                {release.version} — {release.codename}
-              </Typography.Title>
-              <br />
-              <Typography.Text type="secondary">
-                {new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" }).format(new Date(`${release.date}T00:00:00`))}
-              </Typography.Text>
-              {changeLabels.map(([key, label]) =>
-                release.changes[key].length > 0 ? (
-                  <div key={key}>
-                    <Typography.Text strong>{label}</Typography.Text>
-                    <ul>
-                      {release.changes[key].map((change) => (
-                        <li key={change}>{change}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null,
-              )}
-            </section>
-          ))}
-        </Space>
+    <ReleaseNotesContent query={query} releases={query.data?.releases ?? []}>
+      {query.data && query.data.totalPages > 1 ? (
+        <Pagination
+          current={query.data.page}
+          pageSize={query.data.pageSize}
+          total={query.data.totalCount}
+          showSizeChanger={false}
+          onChange={setPage}
+        />
+      ) : null}
+    </ReleaseNotesContent>
+  );
+}
+
+function ReleaseNotesContent({
+  query,
+  releases,
+  children,
+}: {
+  query?: ReturnType<typeof useReleaseHistory>;
+  releases: ReleaseEntry[];
+  children?: ReactNode;
+}) {
+  return query?.isPending ? (
+    <Skeleton active paragraph={{ rows: 4 }} />
+  ) : query?.isError ? (
+    <Empty description="Не удалось загрузить историю обновлений" />
+  ) : (
+    <Space orientation="vertical" size={24} className="wide">
+      {releases.map((release) => (
+        <ReleaseSection key={release.version} release={release} />
+      ))}
+      {children}
+    </Space>
+  );
+}
+
+function ReleaseSection({ release }: { release: ReleaseEntry }) {
+  return (
+    <section>
+      <Typography.Title level={4}>
+        {release.parentVersion ? "Исправление " : ""}
+        {release.version} — {release.codename}
+      </Typography.Title>
+      <br />
+      <Typography.Text type="secondary">
+        {new Intl.DateTimeFormat("ru-RU", { dateStyle: "long" }).format(new Date(`${release.date}T00:00:00`))}
+      </Typography.Text>
+      {changeLabels.map(([key, label]) =>
+        release.changes[key].length > 0 ? (
+          <div key={key}>
+            <Typography.Text strong>{label}</Typography.Text>
+            <ul>
+              {release.changes[key].map((change) => (
+                <li key={change}>{change}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null,
       )}
-    </Modal>
+    </section>
   );
 }

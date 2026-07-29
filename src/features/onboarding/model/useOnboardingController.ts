@@ -230,6 +230,8 @@ export function useOnboardingController({ onCompleted }: { onCompleted?: () => v
     steps,
     currentStepIndex,
     open: Boolean(currentState?.shouldLaunch && canShowStep),
+    isLoading: onboardingQuery.isPending,
+    isActive: Boolean(currentState?.shouldLaunch),
     isBusy,
     hasError: machine.phase === "failed",
     changeStep: saveStep,
