@@ -1,6 +1,6 @@
 import { Button, Input, Modal, Typography } from "antd";
 import type { ReactNode } from "react";
-import { useId, useRef, useState } from "react";
+import { useCallback, useId, useState } from "react";
 
 import styles from "./UrlCopyModal.module.css";
 
@@ -36,8 +36,10 @@ const defaults = {
 
 export function UrlCopyModal({ open, content, onClose }: UrlCopyModalProps) {
   const [feedback, setFeedback] = useState<CopyFeedback>(null);
-  const copyButtonRef = useRef<HTMLButtonElement>(null);
   const fieldId = useId();
+  const focusCopyButton = useCallback((button: HTMLButtonElement | null) => {
+    button?.focus();
+  }, []);
 
   if (!content) {
     return null;
@@ -85,16 +87,11 @@ export function UrlCopyModal({ open, content, onClose }: UrlCopyModalProps) {
       footer={
         <div className={styles.footer}>
           <Button onClick={close}>{content.closeLabel ?? defaults.closeLabel}</Button>
-          <Button ref={copyButtonRef} type="primary" className={styles.copyButton} onClick={copyUrl}>
+          <Button ref={focusCopyButton} type="primary" className={styles.copyButton} onClick={copyUrl}>
             {content.copyButtonLabel ?? defaults.copyButtonLabel}
           </Button>
         </div>
       }
-      afterOpenChange={(isOpen) => {
-        if (isOpen) {
-          copyButtonRef.current?.focus();
-        }
-      }}
       onCancel={close}
       destroyOnHidden
     >
