@@ -23,6 +23,7 @@ import { getApiErrorMessages } from "@/shared/api";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { handleStaleEntityConflict } from "@/shared/lib";
 import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+import { useUrlCopyModal } from "@/shared/ui";
 
 type TotpSetupState = Setup2FaResponse & { password: string };
 
@@ -127,6 +128,7 @@ function timeToDayjs(value: string) {
 
 export function useProfilePageController() {
   const auth = useAuth();
+  const urlModal = useUrlCopyModal(auth.user?.id);
   const { message, modal } = AntdApp.useApp();
   const queryClient = useQueryClient();
   const [setupState, setSetupState] = useState<TotpSetupState | null>(null);
@@ -405,9 +407,14 @@ export function useProfilePageController() {
 
   const calendarSubscriptionMutation = useMutation({
     mutationFn: (userId: Ulid) => calendarSubscriptionsApi.regenerateUser(userId),
-    onSuccess: async (subscription) => {
-      await navigator.clipboard.writeText(subscription.url);
-      message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
+    onSuccess: (subscription) => {
+      urlModal.openUrlModal({
+        url: subscription.url,
+        title: "Подписка на календарь",
+        description: "Скопируйте ссылку и добавьте её в приложение календаря.",
+        warning: "Предыдущая ссылка на календарь уже отключена.",
+      });
+      message.success("Ссылка на календарь создана");
     },
     onError: showErrors,
   });
@@ -515,6 +522,7 @@ export function useProfilePageController() {
     saveAvailabilityMutation,
     resetOnboardingMutation,
     calendarSubscriptionMutation,
+    urlModalProps: urlModal.urlModalProps,
     isTwoFactorEnabled,
     isTwoFactorRequired,
     onPersonalInfoSubmit: (values: PersonalInfoFormValues) => {
