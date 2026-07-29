@@ -80,7 +80,11 @@ static void Publish(ReleasePullRequest release, string commit)
     }
     else
     {
-        Run("git", ["tag", "--annotate", tag, commit, "--message", title]);
+        Run("git", [
+            "-c", "user.name=github-actions[bot]",
+            "-c", "user.email=41898282+github-actions[bot]@users.noreply.github.com",
+            "tag", "--annotate", tag, commit, "--message", title
+        ]);
         Run("git", ["push", "origin", tag]);
     }
 
