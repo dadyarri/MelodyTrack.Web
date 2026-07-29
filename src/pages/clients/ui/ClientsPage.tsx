@@ -6,7 +6,7 @@ import { ClientEditorModal, ClientVacationsModal } from "@/features/manage-clien
 import { formatDateTime } from "@/shared/lib";
 import { formatMoney } from "@/shared/lib";
 import { ActionableEmptyState } from "@/shared/ui";
-import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton } from "@/shared/ui";
+import { ListFilters, ListPageScaffold, ListTable, PageLayout, ShortcutButton, UrlCopyModal } from "@/shared/ui";
 import { filterFieldWideClassName } from "@/shared/ui/filterFieldStyles";
 import { CloseOutlined, DeleteOutlined, EditOutlined, PlusOutlined, ProfileOutlined, ReloadOutlined } from "@/shared/ui/icons";
 import { ReferenceBookCreateModal } from "@/shared/ui/ReferenceBookCreateModal";
@@ -281,6 +281,7 @@ export function ClientsPage() {
         onCancel={controller.closeVacationsEditor}
         onSubmit={controller.saveVacations}
       />
+      <UrlCopyModal {...controller.urlModalProps} />
     </PageLayout>
   );
 }

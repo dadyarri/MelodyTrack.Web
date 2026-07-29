@@ -19,3 +19,5 @@ export { QueryStateBlock } from "./QueryStateBlock";
 export { ShortcutButton } from "./ShortcutButton";
 export { StatusBanner } from "./StatusBanner";
 export { SummaryCard, SummaryGrid } from "./SummaryGrid";
+export { UrlCopyModal, type UrlCopyModalContent, type UrlCopyModalProps } from "./UrlCopyModal";
+export { useUrlCopyModal } from "./useUrlCopyModal";

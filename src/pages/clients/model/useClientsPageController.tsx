@@ -18,6 +18,7 @@ import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
 import { readPositiveInteger, useDurableForm, useUrlState } from "@/shared/lib/react";
+import { useUrlCopyModal } from "@/shared/ui";
 import { getClientHistoryActions } from "@/widgets/client-history";
 
 type ClientSubmitInput = {
@@ -132,6 +133,7 @@ export function useClientsPageController() {
   });
   const navigate = useNavigate();
   const auth = useAuth();
+  const urlModal = useUrlCopyModal(auth.user?.id);
   const queryClient = useQueryClient();
   const { message, modal } = AntdApp.useApp();
 
@@ -317,10 +319,13 @@ export function useClientsPageController() {
   const createPortalLinkMutation = useMutation({
     mutationFn: (clientId: Ulid) => clientsApi.createPortalLink(clientId),
     onSuccess: (payload) => {
-      void navigator.clipboard.writeText(payload.url).catch(() => {
-        void message.error("Не удалось скопировать ссылку автоматически");
+      urlModal.openUrlModal({
+        url: payload.url,
+        title: "Ссылка на портал клиента",
+        description: "Скопируйте ссылку и отправьте её клиенту.",
+        warning: "Предыдущая ссылка уже отключена, а активные сессии клиента завершены.",
       });
-      message.success("Новая ссылка скопирована. Предыдущая ссылка отключена.");
+      message.success("Новая ссылка на портал создана");
     },
     onError: showErrors,
   });
@@ -335,9 +340,14 @@ export function useClientsPageController() {
 
   const createCalendarSubscriptionMutation = useMutation({
     mutationFn: (clientId: Ulid) => clientsApi.regenerateCalendarSubscription(clientId),
-    onSuccess: async (subscription) => {
-      await navigator.clipboard.writeText(subscription.url);
-      message.success("Ссылка на календарь скопирована. Предыдущая ссылка отключена.");
+    onSuccess: (subscription) => {
+      urlModal.openUrlModal({
+        url: subscription.url,
+        title: "Календарь клиента",
+        description: "Скопируйте ссылку и передайте её клиенту для добавления в календарь.",
+        warning: "Предыдущая ссылка на календарь уже отключена.",
+      });
+      message.success("Ссылка на календарь создана");
     },
     onError: showErrors,
   });
@@ -533,6 +543,7 @@ export function useClientsPageController() {
     revokePortalLinkMutation,
     createCalendarSubscriptionMutation,
     resetPortalPinMutation,
+    urlModalProps: urlModal.urlModalProps,
     openEditor,
     closeEditor,
     handleSearch,
@@ -607,9 +618,9 @@ export function useClientsPageController() {
       }
 
       modal.confirm({
-        title: "Создать новую ссылку на кабинет?",
+        title: "Создать новую ссылку на портал?",
         content: "Предыдущая ссылка перестанет работать, а активные сессии клиента будут завершены.",
-        okText: "Создать и скопировать",
+        okText: "Создать ссылку",
         onOk: () => {
           createPortalLinkMutation.mutate(historyClient.id);
         },
@@ -621,7 +632,7 @@ export function useClientsPageController() {
       }
 
       modal.confirm({
-        title: "Отключить ссылку на кабинет?",
+        title: "Отключить ссылку на портал?",
         content: "Ссылка перестанет работать, а активные сессии клиента будут завершены.",
         okText: "Отключить",
         okButtonProps: { danger: true },
