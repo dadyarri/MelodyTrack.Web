@@ -4,10 +4,12 @@ import { defineConfig } from "steiger";
 const intentionalRouteWidgets = ["course-workspace", "schedule-calendar"];
 const intentionalFocusedSlices = [
   "entities/audit-log",
+  "entities/release",
   "features/client-portal",
   "features/edit-user",
   "features/enroll-client-course",
   "features/manage-appointment",
+  "features/view-release-notes",
   "features/update-course-progress",
 ];
 

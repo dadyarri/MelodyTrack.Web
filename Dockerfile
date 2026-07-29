@@ -6,6 +6,8 @@ COPY . .
 RUN npm run build
 
 FROM alpine:3.22
+ARG RELEASE_VERSION=dev
+LABEL org.opencontainers.image.version=$RELEASE_VERSION
 RUN apk add --no-cache nginx nginx-mod-http-brotli
 COPY --from=builder /app/dist /usr/share/nginx/html
 RUN rm /etc/nginx/http.d/default.conf

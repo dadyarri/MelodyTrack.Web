@@ -44,12 +44,26 @@ jobs:
     needs: verify
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     permissions:
-      contents: read
+      contents: write
       packages: write
+      pull-requests: read
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Read release version
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "version=$(dotnet run scripts/ReleaseWorkflow.cs -- current-version)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -68,6 +82,13 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: RELEASE_VERSION=${{ steps.release.outputs.version }}
           tags: |
             ghcr.io/${{ github.repository_owner }}/melody-track-frontend:latest
             ghcr.io/${{ github.repository_owner }}/melody-track-frontend:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/melody-track-frontend:${{ steps.release.outputs.version }}
+
+      - name: Publish release tag and notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: dotnet run scripts/ReleaseWorkflow.cs -- publish

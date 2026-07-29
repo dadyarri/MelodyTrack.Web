@@ -4,10 +4,12 @@ import { lazy, type ReactNode, Suspense, type SyntheticEvent, useCallback, useEf
 import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
+import { ReleaseNotesModal, ReleaseVersion } from "@/features/view-release-notes";
 import { useTheme } from "@/shared/config";
 import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
   FileSearchOutlined,
+  InfoCircleOutlined,
   LeftOutlined,
   LogoutOutlined,
   MenuOutlined,
@@ -42,6 +44,7 @@ export function AppShell({
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
+  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
   const availableNavItems = getAvailableNavItems(auth.user);
   const canViewAudit = hasSuperuserAccess(auth.user);
   const menuItems = buildNavMenuItems(availableNavItems, {
@@ -56,6 +59,11 @@ export function AppShell({
     canViewAudit,
     isDarkMode: mode === "dark",
   });
+  const desktopUserActionItems = [
+    ...mobileActionItems,
+    { type: "divider" as const },
+    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
+  ];
   const mobileDrawerActionItems = [
     { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
     ...(canViewAudit ? [{ key: "audit", icon: <FileSearchOutlined />, label: "Аудит" }] : []),
@@ -65,6 +73,8 @@ export function AppShell({
       label: mode === "dark" ? "Светлая тема" : "Темная тема",
     },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
+    { type: "divider" as const },
+    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
   ];
   const navigateTo = useCallback(
     (path: string) => {
@@ -73,7 +83,11 @@ export function AppShell({
     },
     [navigate],
   );
-  const handleUserAction = (key: ShellActionKey) => {
+  const handleUserAction = (key: ShellActionKey | "releaseNotes") => {
+    if (key === "releaseNotes") {
+      setReleaseNotesOpen(true);
+      return;
+    }
     if (key === "profile") {
       navigateTo("/profile");
       return;
@@ -185,6 +199,9 @@ export function AppShell({
             }}
           />
         </div>
+        <div className={styles.releaseVersion}>
+          <ReleaseVersion compact={!desktopNavOpen} />
+        </div>
       </Layout.Sider>
       <Layout>
         <Layout.Header className={styles.header}>
@@ -217,11 +234,12 @@ export function AppShell({
             content={
               <Menu
                 mode="inline"
+                inlineIndent={10}
                 className={styles.headerUserMenu}
                 selectable={false}
-                items={mobileActionItems}
+                items={desktopUserActionItems}
                 onClick={({ key }) => {
-                  handleUserAction(key as ShellActionKey);
+                  handleUserAction(key as ShellActionKey | "releaseNotes");
                 }}
               />
             }
@@ -281,14 +299,23 @@ export function AppShell({
             items={mobileDrawerActionItems}
             onClick={({ key }) => {
               setMobileNavOpen(false);
-              handleUserAction(key as ShellActionKey);
+              handleUserAction(key as ShellActionKey | "releaseNotes");
             }}
           />
+          <div className={styles.mobileReleaseVersion}>
+            <ReleaseVersion />
+          </div>
         </Space>
       </Drawer>
       <Suspense fallback={null}>
         <AppOnboarding />
       </Suspense>
+      <ReleaseNotesModal
+        open={releaseNotesOpen}
+        onClose={() => {
+          setReleaseNotesOpen(false);
+        }}
+      />
     </Layout>
   );
 }

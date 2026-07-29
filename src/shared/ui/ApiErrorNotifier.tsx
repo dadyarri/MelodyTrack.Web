@@ -15,6 +15,10 @@ export function ApiErrorNotifier() {
         return;
       }
 
+      if (event.query.meta?.suppressErrorNotification === true) {
+        return;
+      }
+
       const errorUpdatedAt = event.query.state.errorUpdatedAt;
       if (shownAtRef.current.get(event.query) === errorUpdatedAt) {
         return;
