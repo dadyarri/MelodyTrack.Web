@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+env:
+  VITE_API_BASE_URL: /api
+
 concurrency:
   group: frontend-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -85,7 +88,9 @@ jobs:
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: RELEASE_VERSION=${{ steps.release.outputs.version }}
+          build-args: |
+            RELEASE_VERSION=${{ steps.release.outputs.version }}
+            VITE_API_BASE_URL=${{ env.VITE_API_BASE_URL }}
           provenance: mode=max
           sbom: true
           tags: |
