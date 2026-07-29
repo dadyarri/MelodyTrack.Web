@@ -1,16 +1,25 @@
 import { App, Button, Tour, Typography } from "antd";
+import { useLayoutEffect } from "react";
 
 import { findOnboardingTarget } from "../model/targets";
 import { type OnboardingController, useOnboardingController } from "../model/useOnboardingController";
 import styles from "./AppOnboarding.module.css";
 
-export function AppOnboarding() {
+export type OnboardingDisplayStatus = "loading" | "active" | "idle";
+
+export function AppOnboarding({ onStatusChange }: { onStatusChange?: (status: OnboardingDisplayStatus) => void } = {}) {
   const { message } = App.useApp();
   const controller = useOnboardingController({
     onCompleted: () => {
       void message.success("Готово! Теперь можно начинать работу.");
     },
   });
+  const status = controller.isLoading ? "loading" : controller.isActive ? "active" : "idle";
+
+  useLayoutEffect(() => {
+    onStatusChange?.(status);
+  }, [onStatusChange, status]);
+
   return <OnboardingTour controller={controller} />;
 }
 

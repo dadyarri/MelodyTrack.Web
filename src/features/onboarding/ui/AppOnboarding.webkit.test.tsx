@@ -46,6 +46,8 @@ function createController(changeStep: (nextIndex: number) => void): OnboardingCo
     steps: administratorJourney.steps,
     currentStepIndex: 0,
     open: true,
+    isLoading: false,
+    isActive: true,
     isBusy: false,
     hasError: false,
     changeStep,

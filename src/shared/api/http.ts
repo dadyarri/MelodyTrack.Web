@@ -162,26 +162,46 @@ export async function probeBackendReachable() {
 
 async function refreshAccessToken() {
   const legacyRefreshToken = httpSession?.getLegacyRefreshToken();
-  const csrfToken = readCookie(csrfCookieName);
+  let csrfToken = readCookie(csrfCookieName);
 
-  try {
-    const response = await axios.post<{ accessToken: string }>(
-      `${apiBaseUrl}/auth/refresh`,
-      legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
-      {
-        headers: {
-          "Content-Type": "application/json",
-          ...(csrfToken ? { [csrfHeaderName]: csrfToken } : {}),
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await axios.post<{ accessToken: string }>(
+        `${apiBaseUrl}/auth/refresh`,
+        legacyRefreshToken ? { refreshToken: legacyRefreshToken } : {},
+        {
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrfToken ? { [csrfHeaderName]: csrfToken } : {}),
+          },
+          withCredentials: true,
         },
-        withCredentials: true,
-      },
-    );
-    httpSession?.setAccessToken(response.data.accessToken);
-    httpSession?.clearLegacyRefreshToken();
-    return response.data.accessToken;
-  } catch {
-    return null;
+      );
+      httpSession?.setAccessToken(response.data.accessToken);
+      httpSession?.clearLegacyRefreshToken();
+      return response.data.accessToken;
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      const currentCsrfToken = readCookie(csrfCookieName);
+      const cookieWasRotated = currentCsrfToken !== csrfToken;
+      if (attempt === 0 && (status === 401 || status === 403) && cookieWasRotated) {
+        csrfToken = currentCsrfToken;
+        continue;
+      }
+
+      if (attempt === 0 && (status === undefined || status >= 500)) {
+        continue;
+      }
+
+      if (status === 401) {
+        return null;
+      }
+
+      throw new Error("Не удалось обновить сессию. Повторите попытку.", { cause: error });
+    }
   }
+
+  return null;
 }
 
 function isStateChangingMethod(method?: string) {

@@ -188,7 +188,7 @@ describe("shared HTTP transport", () => {
     expect(config.headers).toMatchObject({ "X-CSRF-Token": "cookie-csrf" });
   });
 
-  it("clears and publishes expiry when refresh fails", async () => {
+  it("clears and publishes expiry when the refresh session is invalid", async () => {
     const clear = vi.fn();
     configureHttpSession({
       clear,
@@ -197,7 +197,16 @@ describe("shared HTTP transport", () => {
       getLegacyRefreshToken: () => null,
       setAccessToken: vi.fn(),
     });
-    vi.spyOn(axios, "post").mockRejectedValue(new Error("refresh rejected"));
+    const refreshConfig = {} as InternalAxiosRequestConfig;
+    vi.spyOn(axios, "post").mockRejectedValue(
+      new AxiosError("Unauthorized", "ERR_BAD_REQUEST", refreshConfig, undefined, {
+        config: refreshConfig,
+        data: null,
+        headers: {},
+        status: 401,
+        statusText: "Unauthorized",
+      }),
+    );
     const expiredListener = vi.fn();
     window.addEventListener(authExpiredEventName, expiredListener);
 
@@ -219,6 +228,92 @@ describe("shared HTTP transport", () => {
     expect(clear).toHaveBeenCalledOnce();
     expect(expiredListener).toHaveBeenCalledOnce();
     window.removeEventListener(authExpiredEventName, expiredListener);
+  });
+
+  it("keeps the session when refreshing fails transiently", async () => {
+    const clear = vi.fn();
+    configureHttpSession({
+      clear,
+      clearLegacyRefreshToken: vi.fn(),
+      getAccessToken: () => "expired-access",
+      getLegacyRefreshToken: () => null,
+      setAccessToken: vi.fn(),
+    });
+    vi.spyOn(axios, "post").mockRejectedValue(new AxiosError("Network unavailable", AxiosError.ERR_NETWORK));
+    const expiredListener = vi.fn();
+    window.addEventListener(authExpiredEventName, expiredListener);
+
+    await expect(
+      http.get("/protected", {
+        adapter: (config) =>
+          Promise.reject(
+            new AxiosError("Unauthorized", "ERR_BAD_REQUEST", config, undefined, {
+              config,
+              data: null,
+              headers: {},
+              status: 401,
+              statusText: "Unauthorized",
+            }),
+          ),
+      }),
+    ).rejects.toThrow("Не удалось обновить сессию");
+
+    expect(clear).not.toHaveBeenCalled();
+    expect(expiredListener).not.toHaveBeenCalled();
+    window.removeEventListener(authExpiredEventName, expiredListener);
+  });
+
+  it("recovers when the first refresh attempt fails transiently", async () => {
+    const setAccessToken = vi.fn();
+    configureHttpSession({
+      clear: vi.fn(),
+      clearLegacyRefreshToken: vi.fn(),
+      getAccessToken: () => null,
+      getLegacyRefreshToken: () => null,
+      setAccessToken,
+    });
+    const post = vi
+      .spyOn(axios, "post")
+      .mockRejectedValueOnce(new AxiosError("Network unavailable", AxiosError.ERR_NETWORK))
+      .mockResolvedValueOnce({ data: { accessToken: "fresh-access" } });
+
+    await expect(restoreAccessToken()).resolves.toBe("fresh-access");
+
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(setAccessToken).toHaveBeenCalledWith("fresh-access");
+  });
+
+  it("retries refresh when another request rotates the cookie", async () => {
+    document.cookie = "MelodyTrack.Csrf=csrf-before; Path=/";
+    const setAccessToken = vi.fn();
+    configureHttpSession({
+      clear: vi.fn(),
+      clearLegacyRefreshToken: vi.fn(),
+      getAccessToken: () => null,
+      getLegacyRefreshToken: () => null,
+      setAccessToken,
+    });
+    const forbiddenConfig = {} as InternalAxiosRequestConfig;
+    const post = vi.spyOn(axios, "post").mockImplementationOnce(() => {
+      document.cookie = "MelodyTrack.Csrf=csrf-after; Path=/";
+      return Promise.reject(
+        new AxiosError("Forbidden", "ERR_BAD_REQUEST", forbiddenConfig, undefined, {
+          config: forbiddenConfig,
+          data: null,
+          headers: {},
+          status: 403,
+          statusText: "Forbidden",
+        }),
+      );
+    });
+    post.mockResolvedValueOnce({ data: { accessToken: "fresh-access" } });
+
+    await expect(restoreAccessToken()).resolves.toBe("fresh-access");
+
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post.mock.calls[0]?.[2]?.headers).toMatchObject({ "X-CSRF-Token": "csrf-before" });
+    expect(post.mock.calls[1]?.[2]?.headers).toMatchObject({ "X-CSRF-Token": "csrf-after" });
+    expect(setAccessToken).toHaveBeenCalledWith("fresh-access");
   });
 
   it("removes only generic legacy response-cache entries", () => {

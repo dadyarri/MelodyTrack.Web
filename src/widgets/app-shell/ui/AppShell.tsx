@@ -4,7 +4,8 @@ import { lazy, type ReactNode, Suspense, type SyntheticEvent, useCallback, useEf
 import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
-import { ReleaseNotesModal, ReleaseVersion } from "@/features/view-release-notes";
+import type { OnboardingDisplayStatus } from "@/features/onboarding";
+import { isReleaseNotesEligiblePath, ReleaseNotesModal, ReleaseVersion, useReleaseNotesController } from "@/features/view-release-notes";
 import { useTheme } from "@/shared/config";
 import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
@@ -44,7 +45,11 @@ export function AppShell({
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
-  const [releaseNotesOpen, setReleaseNotesOpen] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingDisplayStatus>("loading");
+  const releaseNotes = useReleaseNotesController({
+    userId: auth.user?.id ?? null,
+    automaticEnabled: onboardingStatus === "idle" && isReleaseNotesEligiblePath(location.pathname),
+  });
   const availableNavItems = getAvailableNavItems(auth.user);
   const canViewAudit = hasSuperuserAccess(auth.user);
   const menuItems = buildNavMenuItems(availableNavItems, {
@@ -85,7 +90,7 @@ export function AppShell({
   );
   const handleUserAction = (key: ShellActionKey | "releaseNotes") => {
     if (key === "releaseNotes") {
-      setReleaseNotesOpen(true);
+      releaseNotes.openManual();
       return;
     }
     if (key === "profile") {
@@ -308,14 +313,9 @@ export function AppShell({
         </Space>
       </Drawer>
       <Suspense fallback={null}>
-        <AppOnboarding />
+        <AppOnboarding onStatusChange={setOnboardingStatus} />
       </Suspense>
-      <ReleaseNotesModal
-        open={releaseNotesOpen}
-        onClose={() => {
-          setReleaseNotesOpen(false);
-        }}
-      />
+      <ReleaseNotesModal open={releaseNotes.open} automaticReleases={releaseNotes.automaticReleases} onClose={releaseNotes.close} />
     </Layout>
   );
 }
