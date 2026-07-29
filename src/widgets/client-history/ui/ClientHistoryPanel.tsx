@@ -144,7 +144,7 @@ export function ClientHistoryPanel({
                 ) : null}
                 {onCreateCalendarSubscription ? (
                   <Button icon={<CalendarCheckOutlined />} loading={isCreatingCalendarSubscription} onClick={onCreateCalendarSubscription}>
-                    Скопировать календарь
+                    Создать ссылку календаря
                   </Button>
                 ) : null}
                 {onResetPortalPin ? (

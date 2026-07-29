@@ -12,6 +12,7 @@ import { getApiErrorMessages } from "@/shared/api";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
 import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { jsonDurableFormCodec, useDurableForm } from "@/shared/lib/react";
+import { useUrlCopyModal } from "@/shared/ui";
 
 const inviteDraftSchema = v.object({ email: v.optional(v.string()), role: v.string() });
 const userDraftSchema = v.object({
@@ -27,9 +28,7 @@ const userDraftCodec = jsonDurableFormCodec<UserFormValues>();
 export function useUsersPageController() {
   const auth = useAuth();
   const [isInviteOpen, setInviteOpen] = useState(false);
-  const [inviteUrl, setInviteUrl] = useState("");
-  const [passwordResetUser, setPasswordResetUser] = useState<User | null>(null);
-  const [passwordResetUrl, setPasswordResetUrl] = useState("");
+  const urlModal = useUrlCopyModal(auth.user?.id);
   const [editing, setEditing] = useState<User | null>(null);
   const [editingBaselineActivityId, setEditingBaselineActivityId] = useState<Ulid | null | undefined>();
   const [form] = Form.useForm<CreateInviteInput>();
@@ -39,7 +38,7 @@ export function useUsersPageController() {
     schema: inviteDraftSchema,
     form,
     codec: inviteDraftCodec,
-    enabled: isInviteOpen && !inviteUrl,
+    enabled: isInviteOpen,
   });
   const editDraft = useDurableForm({
     key: editing ? `draft:users:edit:${editing.id}` : null,
@@ -70,7 +69,13 @@ export function useUsersPageController() {
     mutationFn: (input: CreateInviteInput) => authApi.createInvite(input),
     onSuccess: async (data) => {
       await inviteDraft.clearAfterSuccess();
-      setInviteUrl(data.url);
+      setInviteOpen(false);
+      form.resetFields();
+      urlModal.openUrlModal({
+        url: data.url,
+        title: "Ссылка приглашения",
+        description: "Скопируйте ссылку и отправьте её приглашённому пользователю.",
+      });
       message.success("Приглашение создано");
     },
     onError: showErrors,
@@ -79,8 +84,13 @@ export function useUsersPageController() {
   const createPasswordResetLinkMutation = useMutation({
     mutationFn: (user: User) => authApi.createPasswordResetLink(user.id),
     onSuccess: (data, user) => {
-      setPasswordResetUser(user);
-      setPasswordResetUrl(data.url);
+      urlModal.openUrlModal({
+        url: data.url,
+        title: "Ссылка на восстановление пароля",
+        description: `Ссылка создана для пользователя ${user.lastName} ${user.firstName}.`,
+        fieldLabel: "Ссылка восстановления",
+        warning: "Предыдущие неиспользованные ссылки больше не действуют.",
+      });
       message.success("Ссылка на восстановление создана");
     },
     onError: showErrors,
@@ -178,27 +188,12 @@ export function useUsersPageController() {
     updateUserMutation,
     isInviteOpen,
     setInviteOpen,
-    inviteUrl,
     form,
     createInviteMutation,
     createPasswordResetLinkMutation,
-    passwordResetUser,
-    passwordResetUrl,
+    urlModalProps: urlModal.urlModalProps,
     closeInviteModal: () => {
       setInviteOpen(false);
-      setInviteUrl("");
-    },
-    closePasswordResetModal: () => {
-      setPasswordResetUser(null);
-      setPasswordResetUrl("");
-    },
-    copyInviteUrl: async () => {
-      await navigator.clipboard.writeText(inviteUrl);
-      message.success("Ссылка скопирована");
-    },
-    copyPasswordResetUrl: async () => {
-      await navigator.clipboard.writeText(passwordResetUrl);
-      message.success("Ссылка скопирована");
     },
     onInviteSubmit: (values: CreateInviteInput) => {
       createInviteMutation.mutate({

@@ -1,4 +1,4 @@
-import { Button, Form, Input, Modal, Space } from "antd";
+import { Button, Form, Input, Space } from "antd";
 
 import { formatPhone } from "@/entities/client";
 import { RoleSelect } from "@/entities/user";
@@ -11,8 +11,9 @@ import {
   ListTable,
   PageLayout,
   ShortcutButton,
+  UrlCopyModal,
 } from "@/shared/ui";
-import { CopyOutlined, EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
+import { EditOutlined, KeyOutlined, PlusOutlined } from "@/shared/ui/icons";
 
 import { useUsersPageController } from "../model/useUsersPageController";
 
@@ -145,7 +146,7 @@ export function UsersPage() {
         title="Создать приглашение"
         restored={controller.inviteDraft.restored}
         saveStatus={controller.inviteDraft.status}
-        showClearDraft={controller.inviteDraft.hasDraft && !controller.inviteUrl}
+        showClearDraft={controller.inviteDraft.hasDraft}
         onClearDraft={() => {
           void controller.inviteDraft.discard().then(() => {
             controller.form.resetFields();
@@ -160,64 +161,22 @@ export function UsersPage() {
         cancelText="Закрыть"
         confirmLoading={controller.createInviteMutation.isPending}
       >
-        <Space orientation="vertical" size={16} className="wide">
-          <Form
-            form={controller.form}
-            layout="vertical"
-            requiredMark={false}
-            onFinish={controller.onInviteSubmit}
-            onValuesChange={controller.onInviteValuesChange}
-          >
-            <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
-              <Input placeholder="Необязательно" />
-            </Form.Item>
-            <Form.Item name="role" label="Роль" rules={[{ required: true }]}>
-              <RoleSelect />
-            </Form.Item>
-          </Form>
-          <Form.Item label="Ссылка приглашения">
-            <Space.Compact className="wide">
-              <Input readOnly value={controller.inviteUrl} />
-              <Button
-                icon={<CopyOutlined />}
-                aria-label="Копировать ссылку приглашения"
-                title="Копировать"
-                disabled={!controller.inviteUrl}
-                onClick={controller.copyInviteUrl}
-              />
-            </Space.Compact>
+        <Form
+          form={controller.form}
+          layout="vertical"
+          requiredMark={false}
+          onFinish={controller.onInviteSubmit}
+          onValuesChange={controller.onInviteValuesChange}
+        >
+          <Form.Item name="email" label="Email" rules={[{ type: "email" }]}>
+            <Input placeholder="Необязательно" />
           </Form.Item>
-        </Space>
+          <Form.Item name="role" label="Роль" rules={[{ required: true }]}>
+            <RoleSelect />
+          </Form.Item>
+        </Form>
       </DraftFormModal>
-      <Modal
-        open={Boolean(controller.passwordResetUser)}
-        title="Ссылка на восстановление пароля"
-        onCancel={controller.closePasswordResetModal}
-        footer={null}
-      >
-        <Space orientation="vertical" size={16} className="wide">
-          <div>
-            Ссылка создана для пользователя{" "}
-            <strong>
-              {controller.passwordResetUser?.lastName} {controller.passwordResetUser?.firstName}
-            </strong>
-            . Предыдущие неиспользованные ссылки больше не действуют.
-          </div>
-          <Form.Item label="Ссылка восстановления">
-            <Space.Compact className="wide">
-              <Input readOnly value={controller.passwordResetUrl} />
-              <Button
-                icon={<CopyOutlined />}
-                aria-label="Копировать ссылку восстановления"
-                title="Копировать"
-                disabled={!controller.passwordResetUrl}
-                loading={controller.createPasswordResetLinkMutation.isPending}
-                onClick={controller.copyPasswordResetUrl}
-              />
-            </Space.Compact>
-          </Form.Item>
-        </Space>
-      </Modal>
+      <UrlCopyModal {...controller.urlModalProps} />
     </PageLayout>
   );
 }

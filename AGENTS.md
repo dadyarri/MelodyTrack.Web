@@ -88,6 +88,24 @@ or scatter WebKit workarounds across route styles. At compact widths, preserve
 16px form-control text, 44px primary touch targets, bounded internal scrollers,
 safe-area padding, and zero document-level horizontal overflow.
 
+Treat WebKit as a distinct behavioral target, not only a CSS rendering target.
+Before introducing or changing a browser API, check its WebKit requirements and
+cover the real interaction in WebKit when behavior may depend on user
+activation, permissions, focus, the virtual keyboard, the visual viewport,
+popups, downloads, clipboard access, sharing, media, or fullscreen state. Do
+not assume behavior observed in Chromium is portable.
+
+Browser APIs gated by a user gesture must be invoked directly in the click,
+pointer, touch, or keyboard handler before any `await`, API request, timer,
+transition, state refresh, or other asynchronous boundary. It is fine to handle
+the API's returned promise afterward. If data must first be generated or
+loaded, use a second explicit user action after the data is available. Never
+rely on a transient-activation timeout, `navigator.userActivation`, a prior
+permission grant, or a fast network response for correctness. Use capability
+detection rather than user-agent detection, keep a user-operable fallback, and
+translate platform rejections into contextual application feedback instead of
+showing raw browser errors or reporting them as API failures.
+
 ## Verification
 
 Run `npm run verify` before handing off frontend changes. It checks formatting,

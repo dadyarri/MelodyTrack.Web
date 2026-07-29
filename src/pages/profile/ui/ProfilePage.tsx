@@ -4,7 +4,7 @@ import { formatPhoneInput, isValidPhone, normalizeSocialLink } from "@/entities/
 import type { MeResponse } from "@/entities/session";
 import { RecoveryCodesCard, TotpSecretPanel } from "@/entities/session";
 import { weekdayLabels, weekdayOrder } from "@/entities/user";
-import { DraftModalTitle, PageLayout, ShortcutButton } from "@/shared/ui";
+import { DraftModalTitle, PageLayout, ShortcutButton, UrlCopyModal } from "@/shared/ui";
 import { DisconnectOutlined, LogoutOutlined, ReloadOutlined, SafetyCertificateOutlined } from "@/shared/ui/icons";
 
 import { type AvailabilityFormValues, type PersonalInfoFormValues, useProfilePageController } from "../model/useProfilePageController";
@@ -135,10 +135,11 @@ export function ProfilePage() {
               if (controller.me) controller.calendarSubscriptionMutation.mutate(controller.me.id);
             }}
           >
-            Создать и скопировать ссылку
+            Создать ссылку
           </Button>
         </Space>
       </Card>
+      <UrlCopyModal {...controller.urlModalProps} />
 
       <Card
         title={
