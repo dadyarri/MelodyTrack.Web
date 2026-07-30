@@ -50,11 +50,11 @@ const dashboard: DashboardStats = {
   },
 };
 
-describe("personal dashboard in supported browsers", () => {
+describe("dashboard overview in supported browsers", () => {
   it.each([
-    { width: 1280, height: 800, label: "desktop" },
-    { width: 320, height: 568, label: "compact mobile" },
-  ])("keeps matching personal counts and lists usable on $label", async ({ width, height }) => {
+    { width: 1280, height: 800, label: "desktop", schedulesShareRow: true, statisticsShareRow: true },
+    { width: 320, height: 568, label: "compact mobile", schedulesShareRow: false, statisticsShareRow: false },
+  ])("restores the overview card layout on $label", async ({ width, height, schedulesShareRow, statisticsShareRow }) => {
     await page.viewport(width, height);
     const screen = await render(
       <ThemeProvider>
@@ -62,17 +62,18 @@ describe("personal dashboard in supported browsers", () => {
       </ThemeProvider>,
     );
 
-    await expect.element(screen.getByRole("heading", { name: "Моя работа" })).toBeVisible();
-    await expect.element(screen.getByText("1 запись")).toBeVisible();
+    await expect.element(screen.getByRole("heading", { name: "Обзор" })).toBeVisible();
+    await expect.element(screen.getByText("Доход за месяц")).toBeVisible();
     await expect.element(screen.getByText("Иванова Анна — Урок вокала")).toBeVisible();
     await expect.element(screen.getByText("На завтра записей нет")).toBeVisible();
-    await expect.element(screen.getByText("Общие показатели")).toBeVisible();
+    await expect.element(screen.getByText("Клиенты с отрицательным балансом")).toBeVisible();
     await expect.poll(() => document.documentElement.scrollWidth - document.documentElement.clientWidth).toBeLessThanOrEqual(0);
     await expect.poll(() => hasNestedVerticalScroller()).toBe(false);
-    await expect.poll(() => organizationDividerWidthDifference()).toBeLessThanOrEqual(1);
+    await expect.poll(() => cardsShareRow("Записи на сегодня", "Записи на завтра")).toBe(schedulesShareRow);
+    await expect.poll(() => cardsShareRow("Записи сегодня", "Общий долг")).toBe(statisticsShareRow);
   });
 
-  it("keeps previously loaded work visible when a refresh fails", async () => {
+  it("keeps previously loaded schedule visible to a regular user when a refresh fails", async () => {
     await page.viewport(390, 844);
     const screen = await render(
       <ThemeProvider>
@@ -81,8 +82,9 @@ describe("personal dashboard in supported browsers", () => {
     );
 
     await expect.element(screen.getByText("Иванова Анна — Урок вокала")).toBeVisible();
-    await expect.element(screen.getByText("2", { exact: true })).toBeVisible();
-    await expect.element(screen.getByText(/3.*200.*₽/)).toBeVisible();
+    await expect.element(screen.getByText("На завтра записей нет")).toBeVisible();
+    await expect.element(screen.getByText("Общий долг")).not.toBeInTheDocument();
+    await expect.element(screen.getByText("Клиенты с отрицательным балансом")).not.toBeInTheDocument();
   });
 });
 
@@ -93,12 +95,13 @@ function hasNestedVerticalScroller() {
   });
 }
 
-function organizationDividerWidthDifference() {
-  const divider = document.querySelector<HTMLElement>("[data-testid='organization-divider']");
-  const grid = divider?.parentElement;
-  if (!divider || !grid) {
-    return Number.POSITIVE_INFINITY;
+function cardsShareRow(firstTitle: string, secondTitle: string) {
+  const cards = [...document.querySelectorAll<HTMLElement>(".ant-card")];
+  const first = cards.find((card) => card.querySelector(".ant-card-head-title")?.textContent.startsWith(firstTitle));
+  const second = cards.find((card) => card.querySelector(".ant-card-head-title")?.textContent.startsWith(secondTitle));
+  if (!first || !second) {
+    return false;
   }
 
-  return Math.abs(divider.getBoundingClientRect().width - grid.getBoundingClientRect().width);
+  return Math.abs(first.getBoundingClientRect().top - second.getBoundingClientRect().top) <= 1;
 }

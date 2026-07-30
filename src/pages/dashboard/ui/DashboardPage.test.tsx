@@ -68,36 +68,36 @@ beforeAll(() => {
 });
 
 describe("DashboardContent", () => {
-  it("shows personal summaries and counts from the same appointment lists", () => {
+  it("shows only schedule cards to a regular user", () => {
     render(<DashboardContent data={dashboard} isLoading={false} isError={false} onRetry={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Моя работа" })).toBeInTheDocument();
-    expect(screen.getByText("1 запись")).toBeInTheDocument();
-    expect(screen.getByText("0 записей")).toBeInTheDocument();
-    expect(screen.getByText("Мои клиенты")).toBeInTheDocument();
-    expect(screen.getByText("Мой доход за месяц")).toBeInTheDocument();
-    expect(screen.getByText("Клиенты в вашей истории записей")).toBeInTheDocument();
-    expect(screen.getByText("Мои клиенты").closest(".ant-card-head")).not.toBeNull();
-    expect(screen.getByText("Мой доход за месяц").closest(".ant-card-head")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Обзор" })).toBeInTheDocument();
+    expect(screen.getByText(/Записи на сегодня,/)).toBeInTheDocument();
+    expect(screen.getByText(/Записи на завтра,/)).toBeInTheDocument();
+    expect(screen.getByText("Иванова Анна — Урок")).toBeInTheDocument();
+    expect(screen.queryByText("Мои клиенты")).not.toBeInTheDocument();
+    expect(screen.queryByText("Мой доход за месяц")).not.toBeInTheDocument();
+    expect(screen.queryByText("Записи сегодня")).not.toBeInTheDocument();
     expect(screen.queryByText("Общий долг")).not.toBeInTheDocument();
     expect(screen.queryByText("Расход за месяц")).not.toBeInTheDocument();
+    expect(screen.queryByText("Клиенты с отрицательным балансом")).not.toBeInTheDocument();
   });
 
-  it("restores organization-wide widgets for staff with statistics access", () => {
+  it("restores all overview cards for admins and superusers", () => {
     render(<DashboardContent data={dashboard} isLoading={false} isError={false} onRetry={vi.fn()} canSeeOrganization />);
 
-    expect(screen.getByTestId("organization-divider")).toHaveTextContent("Общие показатели");
     expect(screen.getByText("Записи сегодня")).toBeInTheDocument();
     expect(screen.getByText("Записи завтра")).toBeInTheDocument();
     expect(screen.getByText("Должники")).toBeInTheDocument();
     expect(screen.getByText("Общий долг")).toBeInTheDocument();
     expect(screen.getByText("Всего клиентов")).toBeInTheDocument();
     expect(screen.getByText("Весь резерв")).toBeInTheDocument();
-    expect(screen.getByText("Общий доход за месяц")).toBeInTheDocument();
+    expect(screen.getByText("Доход за месяц")).toBeInTheDocument();
     expect(screen.getByText("Расход за месяц")).toBeInTheDocument();
     expect(screen.getByText("Итог за месяц")).toBeInTheDocument();
     expect(screen.getByText("Клиенты с отрицательным балансом")).toBeInTheDocument();
-    expect(screen.getByText("Общий доход за месяц").closest(".ant-card-head")).not.toBeNull();
+    expect(screen.getByText("Доход за месяц").closest(".ant-card-head")).not.toBeNull();
+    expect(screen.getByText(/Записи на сегодня,/).closest(".ant-card-head")).not.toBeNull();
   });
 
   it("keeps both schedule cards useful when there are no appointments", () => {
@@ -121,7 +121,7 @@ describe("DashboardContent", () => {
     const onRetry = vi.fn();
     render(<DashboardContent isLoading={false} isError onRetry={onRetry} />);
 
-    expect(screen.getByRole("heading", { name: "Моя работа" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Обзор" })).toBeInTheDocument();
     expect(screen.getAllByText("Не удалось загрузить записи.")).toHaveLength(2);
     fireEvent.click(screen.getAllByRole("button", { name: "Повторить" })[0]);
     expect(onRetry).toHaveBeenCalledOnce();

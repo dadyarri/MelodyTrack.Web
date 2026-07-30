@@ -1,4 +1,4 @@
-import { Button, Card, Divider, Empty, Skeleton, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Empty, Skeleton, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 
 import { renderAppointmentStatusTag } from "@/entities/appointment";
@@ -76,47 +76,10 @@ export function DashboardContent({
   const organization = data?.organization;
 
   return (
-    <PageLayout title="Моя работа">
+    <PageLayout title="Обзор">
       <div className={styles.grid} data-onboarding-id="dashboard-content">
-        <DashboardDayCard
-          title="Сегодня"
-          day={data?.today}
-          fallbackDate={dayjs()}
-          emptyDescription="На сегодня записей нет"
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={onRetry}
-        />
-        <DashboardDayCard
-          title="Завтра"
-          day={data?.tomorrow}
-          fallbackDate={dayjs().add(1, "day")}
-          emptyDescription="На завтра записей нет"
-          isLoading={isLoading}
-          isError={isError}
-          onRetry={onRetry}
-        />
-
-        <div className={styles.personalSummary}>
-          <DashboardStatisticCard
-            title="Мои клиенты"
-            value={data?.personalClientsCount}
-            isLoading={isLoading}
-            caption="Клиенты в вашей истории записей"
-          />
-          <DashboardStatisticCard
-            title="Мой доход за месяц"
-            value={data ? formatMoney(data.monthIncome) : undefined}
-            isLoading={isLoading}
-            caption="По завершённым и сгоревшим записям"
-          />
-        </div>
-
         {canSeeOrganization ? (
           <>
-            <Divider className={styles.organizationDivider} titlePlacement="start" data-testid="organization-divider">
-              Общие показатели
-            </Divider>
             <DashboardStatisticCard title="Записи сегодня" value={organization?.appointmentsToday} isLoading={isLoading} />
             <DashboardStatisticCard title="Записи завтра" value={organization?.appointmentsTomorrow} isLoading={isLoading} />
             <DashboardStatisticCard title="Должники" value={organization?.debtorsCount} isLoading={isLoading} />
@@ -127,81 +90,85 @@ export function DashboardContent({
               value={formatOptionalMoney(organization?.totalPositiveBalance)}
               isLoading={isLoading}
             />
-            <DashboardStatisticCard
-              title="Общий доход за месяц"
-              value={formatOptionalMoney(organization?.monthIncome)}
-              isLoading={isLoading}
-            />
+            <DashboardStatisticCard title="Доход за месяц" value={formatOptionalMoney(organization?.monthIncome)} isLoading={isLoading} />
             <DashboardStatisticCard
               title="Расход за месяц"
               value={formatOptionalMoney(organization?.monthExpenses)}
               isLoading={isLoading}
             />
             <DashboardStatisticCard title="Итог за месяц" value={formatOptionalMoney(organization?.monthNet)} isLoading={isLoading} />
-
-            <Card
-              data-onboarding-id="dashboard-debtors"
-              className={styles.debtors}
-              title="Клиенты с отрицательным балансом"
-              extra={
-                <ShortcutButton
-                  shortcut="X"
-                  leadingIcon={<DownloadOutlined />}
-                  loading={isExportingDebtors}
-                  label="Экспорт"
-                  onClick={onExportDebtors}
-                />
-              }
-            >
-              <Table
-                rowKey="id"
-                loading={isDebtorsLoading}
-                dataSource={debtors}
-                pagination={false}
-                scroll={{ x: "max-content" }}
-                columns={[
-                  {
-                    title: "Клиент",
-                    render: (_, row) => (
-                      <Button type="link" className={tableLinkButtonStyles.button} onClick={() => onSelectDebtor?.(row)}>
-                        {`${row.lastName} ${row.firstName}`}
-                      </Button>
-                    ),
-                  },
-                  {
-                    title: "Баланс",
-                    dataIndex: "balance",
-                    render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag>,
-                  },
-                ]}
-              />
-            </Card>
           </>
+        ) : null}
+
+        <DashboardDayCard
+          className={styles.scheduleToday}
+          title="Записи на сегодня"
+          day={data?.today}
+          fallbackDate={dayjs()}
+          emptyDescription="На сегодня записей нет"
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
+        />
+        <DashboardDayCard
+          className={styles.scheduleTomorrow}
+          title="Записи на завтра"
+          day={data?.tomorrow}
+          fallbackDate={dayjs().add(1, "day")}
+          emptyDescription="На завтра записей нет"
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
+        />
+
+        {canSeeOrganization ? (
+          <Card
+            data-onboarding-id="dashboard-debtors"
+            className={styles.debtors}
+            title="Клиенты с отрицательным балансом"
+            extra={
+              <ShortcutButton
+                shortcut="X"
+                leadingIcon={<DownloadOutlined />}
+                loading={isExportingDebtors}
+                label="Экспорт"
+                onClick={onExportDebtors}
+              />
+            }
+          >
+            <Table
+              rowKey="id"
+              loading={isDebtorsLoading}
+              dataSource={debtors}
+              pagination={false}
+              scroll={{ x: "max-content" }}
+              columns={[
+                {
+                  title: "Клиент",
+                  render: (_, row) => (
+                    <Button type="link" className={tableLinkButtonStyles.button} onClick={() => onSelectDebtor?.(row)}>
+                      {`${row.lastName} ${row.firstName}`}
+                    </Button>
+                  ),
+                },
+                {
+                  title: "Баланс",
+                  dataIndex: "balance",
+                  render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag>,
+                },
+              ]}
+            />
+          </Card>
         ) : null}
       </div>
     </PageLayout>
   );
 }
 
-function DashboardStatisticCard({
-  title,
-  value,
-  isLoading,
-  caption,
-}: {
-  title: string;
-  value?: number | string;
-  isLoading: boolean;
-  caption?: string;
-}) {
+function DashboardStatisticCard({ title, value, isLoading }: { title: string; value?: number | string; isLoading: boolean }) {
   return (
     <Card className={styles.statisticCard} size="small" title={title}>
       <Statistic value={value ?? "—"} loading={isLoading && value === undefined} />
-      {caption ? (
-        <Typography.Text className={styles.statisticCaption} type="secondary">
-          {caption}
-        </Typography.Text>
-      ) : null}
     </Card>
   );
 }
@@ -211,6 +178,7 @@ function formatOptionalMoney(value?: number) {
 }
 
 function DashboardDayCard({
+  className,
   title,
   day,
   fallbackDate,
@@ -219,6 +187,7 @@ function DashboardDayCard({
   isError,
   onRetry,
 }: {
+  className: string;
   title: string;
   day?: DashboardScheduleDay;
   fallbackDate: dayjs.Dayjs;
@@ -230,11 +199,7 @@ function DashboardDayCard({
   const date = day ? dayjs(day.date) : fallbackDate;
 
   return (
-    <Card
-      className={styles.schedule}
-      title={`${title}, ${formatDateTitle(date)}`}
-      extra={day ? <Tag>{formatAppointmentCount(day.count)}</Tag> : null}
-    >
+    <Card className={`${styles.schedule} ${className}`} title={`${title}, ${formatDateTitle(date)}`}>
       {isLoading && !day ? (
         <Skeleton active paragraph={{ rows: 2 }} title={false} />
       ) : isError && !day ? (
@@ -315,18 +280,4 @@ export function DashboardScheduleItem({ appointment }: { appointment: DashboardA
 
 function formatDateTitle(value: dayjs.Dayjs) {
   return `${value.format("DD.MM.YYYY")} (${value.format("dd").toUpperCase()})`;
-}
-
-function formatAppointmentCount(count: number) {
-  const lastTwoDigits = count % 100;
-  const lastDigit = count % 10;
-  const noun =
-    lastTwoDigits >= 11 && lastTwoDigits <= 14
-      ? "записей"
-      : lastDigit === 1
-        ? "запись"
-        : lastDigit >= 2 && lastDigit <= 4
-          ? "записи"
-          : "записей";
-  return `${String(count)} ${noun}`;
 }

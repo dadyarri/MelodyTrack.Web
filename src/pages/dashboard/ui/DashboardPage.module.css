@@ -1,45 +1,37 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 20px;
 }
 
 .schedule,
-.personalSummary {
+.statisticCard,
+.debtors {
   min-width: 0;
 }
 
 .schedule {
+  grid-column: span 4;
+}
+
+.scheduleToday {
+  grid-column: 1 / span 4;
+}
+
+.scheduleTomorrow {
+  grid-column: 5 / span 4;
+}
+
+.statisticCard {
   grid-column: span 2;
 }
 
-.personalSummary {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.organizationDivider,
 .debtors {
   grid-column: 1 / -1;
 }
 
-.organizationDivider {
-  margin: 4px 0 0;
-}
-
-.statisticCard {
-  min-width: 0;
-}
-
 .statisticCard :global(.ant-card-body) {
   padding: 16px;
-}
-
-.statisticCaption {
-  display: block;
-  margin-top: 8px;
 }
 
 .queryState {
@@ -70,16 +62,12 @@
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-  }
-
-  .personalSummary {
-    grid-column: 1;
-    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
   }
 
   .schedule,
-  .organizationDivider,
+  .scheduleToday,
+  .scheduleTomorrow,
   .statisticCard,
   .debtors {
     grid-column: 1;
@@ -92,7 +80,10 @@
   }
 
   .schedule,
-  .statisticCard {
+  .scheduleToday,
+  .scheduleTomorrow,
+  .statisticCard,
+  .debtors {
     grid-column: span 1;
   }
 }
