@@ -26,7 +26,7 @@ import type { RecurringTask, RecurringTaskListStatus, RecurringTaskRule, Recurri
 import { getRecurringTaskTypeLabel } from "@/entities/task";
 import { formatRecordActivitySummary } from "@/shared/lib";
 import type { DurableFormStatus } from "@/shared/lib/react";
-import { DraftFormModal, PageLayout } from "@/shared/ui";
+import { CopyTextModal, DraftFormModal, PageLayout } from "@/shared/ui";
 import {
   CalendarCheckOutlined,
   CheckOutlined,
@@ -42,6 +42,7 @@ import {
 } from "@/shared/ui/icons";
 
 import { type CustomTaskFormValues, type RecurringTaskRuleFormValues, useTasksPageController } from "../model/useTasksPageController";
+import { PreparedScheduleShareModal } from "./PreparedScheduleShareModal";
 
 const statusOptions: { label: string; value: RecurringTaskListStatus }[] = [
   { label: "Открытые", value: "open" },
@@ -223,6 +224,8 @@ export function TasksPage() {
         onValuesChange={controller.onCustomTaskValuesChange}
         onRetryDraft={controller.customTaskDraft.retry}
       />
+      <CopyTextModal {...controller.copyTextModalProps} />
+      <PreparedScheduleShareModal content={controller.preparedScheduleShare} onClose={controller.closePreparedScheduleShare} />
     </PageLayout>
   );
 }
