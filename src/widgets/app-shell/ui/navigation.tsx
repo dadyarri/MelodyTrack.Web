@@ -48,7 +48,7 @@ export const appNavItems: AppNavItem[] = [
   {
     key: "/",
     icon: <DashboardOutlined />,
-    label: "Моя работа",
+    label: "Обзор",
     shortcut: "1",
     visibility: "all",
   },

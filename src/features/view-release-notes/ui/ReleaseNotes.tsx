@@ -46,7 +46,9 @@ export function ReleaseNotesModal({
       }
       onCancel={onClose}
     >
-      {open ? automaticReleases ? <ReleaseNotesContent releases={automaticReleases} /> : <ReleaseHistory /> : null}
+      <div className={styles.modalContent} data-release-notes-content>
+        {open ? automaticReleases ? <ReleaseNotesContent releases={automaticReleases} /> : <ReleaseHistory /> : null}
+      </div>
     </Modal>
   );
 }

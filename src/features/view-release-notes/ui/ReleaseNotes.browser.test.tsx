@@ -61,6 +61,7 @@ describe("automatic release notes in supported browsers", () => {
     await expect.element(dismissButton).toBeVisible();
     await expect.poll(() => isModalBodyScrollable()).toBe(true);
     await expect.poll(() => isModalCardScrollable()).toBe(false);
+    await expect.poll(() => getModalContentEndPadding()).toBeGreaterThanOrEqual(16);
     await dismissButton.click();
 
     await expect
@@ -95,4 +96,9 @@ function isModalCardScrollable() {
   }
 
   return ["auto", "scroll"].includes(getComputedStyle(card).overflowY);
+}
+
+function getModalContentEndPadding() {
+  const content = document.querySelector<HTMLElement>("[data-release-notes-content]");
+  return content ? Number.parseFloat(getComputedStyle(content).paddingInlineEnd) : 0;
 }

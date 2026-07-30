@@ -9,3 +9,7 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
+
+.modalContent {
+  padding-inline-end: 16px;
+}
