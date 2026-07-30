@@ -28,7 +28,7 @@ import {
 } from "@/shared/ui/icons";
 
 import styles from "./AppShell.module.css";
-import { getAvailableNavItems } from "./navigation";
+import { buildNavigationTarget, getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
 
 const AppOnboarding = lazy(async () => {
@@ -92,10 +92,11 @@ export function AppShell({
   ];
   const navigateTo = useCallback(
     (path: string) => {
-      rememberNavigationIntent(path);
-      void navigate(path);
+      const target = buildNavigationTarget(path, location.pathname, location.search);
+      rememberNavigationIntent(target);
+      void navigate(target);
     },
-    [navigate],
+    [location.pathname, location.search, navigate],
   );
   const handleUserAction = (key: ShellActionKey | "releaseNotes") => {
     if (key === "releaseNotes") {
@@ -135,8 +136,8 @@ export function AppShell({
   );
 
   useEffect(() => {
-    clearNavigationIntent(location.pathname);
-  }, [location.pathname]);
+    clearNavigationIntent(location.pathname + location.search);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

@@ -151,3 +151,8 @@ export const appNavItems: AppNavItem[] = [
 export function getAvailableNavItems(user: AppUser) {
   return appNavItems.filter((item) => canAccessAudience(user, item.visibility));
 }
+
+export function buildNavigationTarget(targetPath: string, currentPath: string, currentSearch: string) {
+  const movesBetweenStatisticsAreas = targetPath.startsWith("/statistics/") && currentPath.startsWith("/statistics/");
+  return movesBetweenStatisticsAreas && currentSearch ? `${targetPath}${currentSearch}` : targetPath;
+}
