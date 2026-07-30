@@ -77,11 +77,11 @@ const administratorSteps = [
   },
   {
     id: "administrator-analytics",
-    path: "/revenue",
-    targetId: "revenue-main-blocks",
+    path: "/statistics/work",
+    targetId: "statistics-main",
     placement: "top",
     title: "Результаты работы",
-    description: "Выберите период, чтобы сравнить выручку, расходы и прибыль. Остальные отчёты находятся в разделе статистики.",
+    description: "Выберите период и посмотрите работу, финансы или клиентов. Фильтры сохраняются при переходе между отчётами.",
   },
 ] satisfies readonly OnboardingStepDefinition[];
 

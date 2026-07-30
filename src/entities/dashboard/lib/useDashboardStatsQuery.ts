@@ -1,113 +1,47 @@
-import { useQuery } from "@tanstack/react-query";
-import dayjs, { type Dayjs } from "dayjs";
-import { useState } from "react";
+import dayjs from "dayjs";
 
-type DateRange = [Dayjs, Dayjs];
-type StatsQueryContext = {
-  timezone: string;
-  dateRange: DateRange;
-};
+import type { ReportGroupBy, ReportParams } from "../model/types";
 
-type DateRangeQueryOptions<TData> = {
-  initialRange?: DateRange;
-  getQueryKey: (context: StatsQueryContext) => readonly unknown[];
-  queryFn: (context: StatsQueryContext) => Promise<TData>;
-};
-
-type DateRangeGroupByQueryOptions<TData, TGroupBy extends string> = {
-  initialRange?: DateRange;
-  initialGroupBy: TGroupBy;
-  getQueryKey: (context: StatsQueryContext & { groupBy: TGroupBy }) => readonly unknown[];
-  queryFn: (context: StatsQueryContext & { groupBy: TGroupBy }) => Promise<TData>;
-};
-
-type DateRangeWindowDaysQueryOptions<TData> = {
-  initialRange?: DateRange;
-  initialWindowDays: number;
-  getQueryKey: (context: StatsQueryContext & { windowDays: number }) => readonly unknown[];
-  queryFn: (context: StatsQueryContext & { windowDays: number }) => Promise<TData>;
-};
-
-function getDefaultMonthRange(): DateRange {
-  return [dayjs().startOf("month"), dayjs().endOf("month")];
-}
-
-function useDateRangeState(initialRange: DateRange) {
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const [dateRange, setDateRange] = useState<DateRange>(initialRange);
-
+export function getDefaultReportParams(): ReportParams {
   return {
-    timezone,
-    dateRange,
-    setDateRange,
-    onDateRangeChange: (value: [Dayjs | null, Dayjs | null] | null) => {
-      if (!value || value[0] === null || value[1] === null) {
-        return;
-      }
-
-      setDateRange([value[0], value[1]]);
-    },
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    start: dayjs().startOf("month").format("YYYY-MM-DD"),
+    end: dayjs().endOf("month").format("YYYY-MM-DD"),
+    groupBy: "month",
   };
 }
 
-export function useDashboardDateRangeQuery<TData>({
-  initialRange = getDefaultMonthRange(),
-  getQueryKey,
-  queryFn,
-}: DateRangeQueryOptions<TData>) {
-  const state = useDateRangeState(initialRange);
-  const query = useQuery({
-    queryKey: getQueryKey({ timezone: state.timezone, dateRange: state.dateRange }),
-    queryFn: () => queryFn({ timezone: state.timezone, dateRange: state.dateRange }),
+export function parseReportParams(search: URLSearchParams): ReportParams {
+  const defaults = getDefaultReportParams();
+  const groupBy = search.get("groupBy");
+  return {
+    timezone: search.get("timezone") || defaults.timezone,
+    start: validDate(search.get("start")) ?? defaults.start,
+    end: validDate(search.get("end")) ?? defaults.end,
+    providerId: search.get("providerId") || undefined,
+    groupBy: isGroupBy(groupBy) ? groupBy : defaults.groupBy,
+  };
+}
+
+export function serializeReportParams(params: ReportParams) {
+  const search = new URLSearchParams({
+    timezone: params.timezone,
+    start: params.start,
+    end: params.end,
+    groupBy: params.groupBy,
   });
-
-  return {
-    ...state,
-    query,
-  };
+  if (params.providerId) {
+    search.set("providerId", params.providerId);
+  }
+  return search;
 }
 
-export function useDashboardDateRangeGroupByQuery<TData, TGroupBy extends string>({
-  initialRange = getDefaultMonthRange(),
-  initialGroupBy,
-  getQueryKey,
-  queryFn,
-}: DateRangeGroupByQueryOptions<TData, TGroupBy>) {
-  const state = useDateRangeState(initialRange);
-  const [groupBy, setGroupBy] = useState<TGroupBy>(initialGroupBy);
-  const query = useQuery({
-    queryKey: getQueryKey({ timezone: state.timezone, dateRange: state.dateRange, groupBy }),
-    queryFn: () => queryFn({ timezone: state.timezone, dateRange: state.dateRange, groupBy }),
-  });
-
-  return {
-    ...state,
-    groupBy,
-    setGroupBy,
-    query,
-  };
+function validDate(value: string | null) {
+  return value && dayjs(value, "YYYY-MM-DD", true).isValid() ? value : null;
 }
 
-export function useDashboardDateRangeWindowDaysQuery<TData>({
-  initialRange = getDefaultMonthRange(),
-  initialWindowDays,
-  getQueryKey,
-  queryFn,
-}: DateRangeWindowDaysQueryOptions<TData>) {
-  const state = useDateRangeState(initialRange);
-  const [windowDays, setWindowDays] = useState(initialWindowDays);
-  const query = useQuery({
-    queryKey: getQueryKey({ timezone: state.timezone, dateRange: state.dateRange, windowDays }),
-    queryFn: () => queryFn({ timezone: state.timezone, dateRange: state.dateRange, windowDays }),
-  });
-
-  return {
-    ...state,
-    windowDays,
-    setWindowDays,
-    query,
-    onWindowDaysChange: (value: number | null) => {
-      setWindowDays(typeof value === "number" ? value : initialWindowDays);
-    },
-  };
+function isGroupBy(value: string | null): value is ReportGroupBy {
+  return value === "day" || value === "week" || value === "month";
 }
+
+export type { ReportGroupBy };

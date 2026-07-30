@@ -1,5 +1,5 @@
-import { type AppUser, hasStatsAccess } from "@/entities/session";
+import { type AppUser, hasAdminAccess, hasSuperuserAccess } from "@/entities/session";
 
 export function canViewReleaseNotes(user: AppUser) {
-  return hasStatsAccess(user);
+  return hasAdminAccess(user) || hasSuperuserAccess(user);
 }

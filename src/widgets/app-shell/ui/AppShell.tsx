@@ -342,11 +342,11 @@ function isShellShortcutReserved(pathname: string, key: string) {
     return ["r", "g", "o", "f", "w"].includes(normalizedKey);
   }
 
-  if (pathname.startsWith("/payments") && !pathname.startsWith("/payments-stats")) {
+  if (pathname.startsWith("/payments")) {
     return ["a", "x"].includes(normalizedKey);
   }
 
-  if (pathname.startsWith("/expenses") && pathname !== "/expenses-dashboard") {
+  if (pathname.startsWith("/expenses")) {
     return ["a", "x"].includes(normalizedKey);
   }
 
@@ -354,7 +354,7 @@ function isShellShortcutReserved(pathname: string, key: string) {
     return normalizedKey === "a";
   }
 
-  if (pathname.startsWith("/clients") && !pathname.startsWith("/clients-stats")) {
+  if (pathname.startsWith("/clients")) {
     return normalizedKey === "a";
   }
 
