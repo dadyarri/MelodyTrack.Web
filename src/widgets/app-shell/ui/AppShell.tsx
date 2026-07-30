@@ -5,7 +5,13 @@ import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
 import type { OnboardingDisplayStatus } from "@/features/onboarding";
-import { isReleaseNotesEligiblePath, ReleaseNotesModal, ReleaseVersion, useReleaseNotesController } from "@/features/view-release-notes";
+import {
+  canViewReleaseNotes,
+  isReleaseNotesEligiblePath,
+  ReleaseNotesModal,
+  ReleaseVersion,
+  useReleaseNotesController,
+} from "@/features/view-release-notes";
 import { useTheme } from "@/shared/config";
 import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
@@ -46,9 +52,10 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingDisplayStatus>("loading");
+  const releaseNotesVisible = canViewReleaseNotes(auth.user);
   const releaseNotes = useReleaseNotesController({
     userId: auth.user?.id ?? null,
-    automaticEnabled: onboardingStatus === "idle" && isReleaseNotesEligiblePath(location.pathname),
+    automaticEnabled: releaseNotesVisible && onboardingStatus === "idle" && isReleaseNotesEligiblePath(location.pathname),
   });
   const availableNavItems = getAvailableNavItems(auth.user);
   const canViewAudit = hasSuperuserAccess(auth.user);
@@ -66,8 +73,9 @@ export function AppShell({
   });
   const desktopUserActionItems = [
     ...mobileActionItems,
-    { type: "divider" as const },
-    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
+    ...(releaseNotesVisible
+      ? [{ type: "divider" as const }, { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" }]
+      : []),
   ];
   const mobileDrawerActionItems = [
     { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
@@ -78,8 +86,9 @@ export function AppShell({
       label: mode === "dark" ? "Светлая тема" : "Темная тема",
     },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
-    { type: "divider" as const },
-    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
+    ...(releaseNotesVisible
+      ? [{ type: "divider" as const }, { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" }]
+      : []),
   ];
   const navigateTo = useCallback(
     (path: string) => {
@@ -315,7 +324,9 @@ export function AppShell({
       <Suspense fallback={null}>
         <AppOnboarding onStatusChange={setOnboardingStatus} />
       </Suspense>
-      <ReleaseNotesModal open={releaseNotes.open} automaticReleases={releaseNotes.automaticReleases} onClose={releaseNotes.close} />
+      {releaseNotesVisible ? (
+        <ReleaseNotesModal open={releaseNotes.open} automaticReleases={releaseNotes.automaticReleases} onClose={releaseNotes.close} />
+      ) : null}
     </Layout>
   );
 }
