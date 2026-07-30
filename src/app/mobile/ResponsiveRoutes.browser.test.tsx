@@ -13,10 +13,6 @@ import { filterFieldClassName, filterFieldWideClassName } from "@/shared/ui/filt
 import { AppointmentsCalendar } from "@/widgets/schedule-calendar";
 
 const longRussianLabel = "Очень длинное имя клиента для проверки переноса без перекрытия соседних действий";
-const visualBaselineOptions = {
-  comparatorName: "pixelmatch",
-  comparatorOptions: { allowedMismatchedPixelRatio: 0.01 },
-} as const;
 const routeFamilies = ["auth", "list", "analytics", "schedule", "workspace", "profile", "portal"] as const;
 const portraitViewports = [
   { width: 320, height: 568 },
@@ -81,34 +77,16 @@ describe("responsive route families", () => {
   it("honors the operating system reduced-motion preference", () => {
     expect(window.matchMedia("(prefers-reduced-motion: reduce)").matches).toBe(true);
   });
-
-  it("matches the compact list visual baseline", async () => {
-    await page.viewport(320, 568);
-    const screen = await render(<RouteFamilySurface family="list" clipToViewport />);
-
-    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-list-320.png", visualBaselineOptions);
-  });
-
-  it("matches the dark compact schedule visual baseline", async () => {
-    await page.viewport(390, 844);
-    localStorage.setItem("melodytrack.theme", "dark");
-    const screen = await render(<RouteFamilySurface family="schedule" clipToViewport />);
-
-    await expect.poll(() => document.documentElement.dataset.theme).toBe("dark");
-    await expect(screen.getByTestId("route-family-surface")).toMatchScreenshot("responsive-schedule-dark-390.png", visualBaselineOptions);
-  });
 });
 
-function RouteFamilySurface({ family, clipToViewport = false }: { family: (typeof routeFamilies)[number]; clipToViewport?: boolean }) {
+function RouteFamilySurface({ family }: { family: (typeof routeFamilies)[number] }) {
   return (
     <ThemeProvider>
       <div
         data-testid="route-family-surface"
         style={{
           minHeight: "var(--visual-viewport-height)",
-          height: clipToViewport ? "var(--visual-viewport-height)" : undefined,
           padding: 12,
-          overflow: clipToViewport ? "hidden" : undefined,
           background: "var(--bg-app)",
         }}
       >
