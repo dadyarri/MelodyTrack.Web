@@ -1,159 +1,52 @@
-import { Button, Card, Empty, List, Space, Statistic, Table, Tag, Typography } from "antd";
+import { Button, Card, Divider, Empty, Skeleton, Space, Statistic, Table, Tag, Typography } from "antd";
 import dayjs from "dayjs";
 
-import type { Appointment } from "@/entities/appointment";
 import { renderAppointmentStatusTag } from "@/entities/appointment";
-import { getPhoneUri, getSocialLinkHref } from "@/entities/client";
-import { formatDateTime, TIME_FORMAT } from "@/shared/lib";
-import { formatMoney } from "@/shared/lib";
+import { type Client, getPhoneUri, getSocialLinkHref } from "@/entities/client";
+import type { DashboardAppointment, DashboardScheduleDay, DashboardStats } from "@/entities/dashboard";
+import { formatMoney, TIME_FORMAT } from "@/shared/lib";
 import { PageLayout, ShortcutButton } from "@/shared/ui";
 import { DownloadOutlined, LinkOutlined, PhoneOutlined, SendOutlined } from "@/shared/ui/icons";
 import tableLinkButtonStyles from "@/shared/ui/TableLinkButton.module.css";
 import { ClientHistoryDrawer } from "@/widgets/client-history";
 
-import { type DashboardReminderListProps, useDashboardPageController } from "../model/useDashboardPageController";
+import { useDashboardPageController } from "../model/useDashboardPageController";
 import styles from "./DashboardPage.module.css";
+
+type DashboardContentProps = {
+  data?: DashboardStats;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  canSeeOrganization?: boolean;
+  debtors?: Client[];
+  isDebtorsLoading?: boolean;
+  isExportingDebtors?: boolean;
+  onExportDebtors?: () => void;
+  onSelectDebtor?: (client: Client) => void;
+};
 
 export function DashboardPage() {
   const controller = useDashboardPageController();
-  const smallWidgetClassName = `${styles.widget} ${styles.widgetSmall}`;
-  const largeWidgetClassName = `${styles.widget} ${styles.widgetLarge}`;
-  const todayWidgetClassName = `${largeWidgetClassName} ${styles.widgetMiniSchedule} ${styles.widgetMiniScheduleToday}`;
-  const tomorrowWidgetClassName = `${largeWidgetClassName} ${styles.widgetMiniSchedule} ${styles.widgetMiniScheduleTomorrow}`;
-  const debtorsWidgetClassName = `${largeWidgetClassName} ${styles.widgetDebtors}`;
 
   return (
-    <PageLayout title="Обзор">
-      <div className={styles.grid} data-onboarding-id="dashboard-content">
-        {controller.canSeeFinancialOverview ? (
-          <>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Записи сегодня"
-                value={controller.statsQuery.data?.appointmentsToday ?? 0}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Записи завтра"
-                value={controller.statsQuery.data?.appointmentsTomorrow ?? 0}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic title="Должники" value={controller.statsQuery.data?.debtorsCount ?? 0} loading={controller.statsQuery.isLoading} />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Общий долг"
-                value={formatMoney(controller.statsQuery.data?.totalDebt)}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Всего клиентов"
-                value={controller.statsQuery.data?.totalClients ?? 0}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Весь резерв"
-                value={formatMoney(controller.statsQuery.data?.totalPositiveBalance)}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Доход за месяц"
-                value={formatMoney(controller.statsQuery.data?.monthIncome)}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Расход за месяц"
-                value={formatMoney(controller.statsQuery.data?.monthExpenses)}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-            <Card className={smallWidgetClassName}>
-              <Statistic
-                title="Итог за месяц"
-                value={formatMoney(controller.statsQuery.data?.monthNet)}
-                loading={controller.statsQuery.isLoading}
-              />
-            </Card>
-          </>
-        ) : null}
-
-        <Card
-          className={todayWidgetClassName}
-          title={`Записи на сегодня, ${formatDateTitle(controller.today)}`}
-          loading={controller.miniQuery.isLoading}
-        >
-          <ReminderList appointments={controller.todayAppointments} emptyDescription="На сегодня записей нет" showTimeOnly />
-        </Card>
-
-        <Card
-          className={tomorrowWidgetClassName}
-          title={`Записи на завтра, ${formatDateTitle(controller.tomorrow)}`}
-          loading={controller.miniQuery.isLoading}
-        >
-          <ReminderList appointments={controller.tomorrowAppointments} emptyDescription="На завтра записей нет" showTimeOnly />
-        </Card>
-
-        {controller.canSeeFinancialOverview ? (
-          <Card
-            data-onboarding-id="dashboard-debtors"
-            className={debtorsWidgetClassName}
-            title="Клиенты с отрицательным балансом"
-            extra={
-              <ShortcutButton
-                shortcut="X"
-                leadingIcon={<DownloadOutlined />}
-                loading={controller.debtorsExportMutation.isPending}
-                label="Экспорт"
-                onClick={() => {
-                  controller.debtorsExportMutation.mutate();
-                }}
-              />
-            }
-          >
-            <Table
-              rowKey="id"
-              loading={controller.debtorsQuery.isLoading}
-              dataSource={controller.debtorsQuery.data}
-              pagination={false}
-              scroll={{ x: "max-content" }}
-              columns={[
-                {
-                  title: "Клиент",
-                  render: (_, row) => (
-                    <Button
-                      type="link"
-                      className={tableLinkButtonStyles.button}
-                      onClick={() => {
-                        controller.setHistoryClient(row);
-                      }}
-                    >
-                      {`${row.lastName} ${row.firstName}`}
-                    </Button>
-                  ),
-                },
-                {
-                  title: "Баланс",
-                  dataIndex: "balance",
-                  render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag>,
-                },
-              ]}
-            />
-          </Card>
-        ) : null}
-      </div>
+    <>
+      <DashboardContent
+        data={controller.dashboardQuery.data}
+        isLoading={controller.dashboardQuery.isLoading}
+        isError={controller.dashboardQuery.isError}
+        canSeeOrganization={controller.canSeeOrganization}
+        debtors={controller.debtorsQuery.data}
+        isDebtorsLoading={controller.debtorsQuery.isLoading}
+        isExportingDebtors={controller.debtorsExportMutation.isPending}
+        onRetry={() => {
+          void controller.retry();
+        }}
+        onExportDebtors={() => {
+          controller.debtorsExportMutation.mutate();
+        }}
+        onSelectDebtor={controller.setHistoryClient}
+      />
       <ClientHistoryDrawer
         client={controller.historyClient}
         data={controller.historyQuery.data}
@@ -164,35 +57,226 @@ export function DashboardPage() {
         onCreatePayment={controller.clientHistoryActions.onCreatePayment}
         onEventsPageChange={controller.setHistoryEventsPage}
       />
+    </>
+  );
+}
+
+export function DashboardContent({
+  data,
+  isLoading,
+  isError,
+  onRetry,
+  canSeeOrganization = false,
+  debtors,
+  isDebtorsLoading = false,
+  isExportingDebtors = false,
+  onExportDebtors,
+  onSelectDebtor,
+}: DashboardContentProps) {
+  const organization = data?.organization;
+
+  return (
+    <PageLayout title="Моя работа">
+      <div className={styles.grid} data-onboarding-id="dashboard-content">
+        <DashboardDayCard
+          title="Сегодня"
+          day={data?.today}
+          fallbackDate={dayjs()}
+          emptyDescription="На сегодня записей нет"
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
+        />
+        <DashboardDayCard
+          title="Завтра"
+          day={data?.tomorrow}
+          fallbackDate={dayjs().add(1, "day")}
+          emptyDescription="На завтра записей нет"
+          isLoading={isLoading}
+          isError={isError}
+          onRetry={onRetry}
+        />
+
+        <div className={styles.personalSummary}>
+          <DashboardStatisticCard
+            title="Мои клиенты"
+            value={data?.personalClientsCount}
+            isLoading={isLoading}
+            caption="Клиенты в вашей истории записей"
+          />
+          <DashboardStatisticCard
+            title="Мой доход за месяц"
+            value={data ? formatMoney(data.monthIncome) : undefined}
+            isLoading={isLoading}
+            caption="По завершённым и сгоревшим записям"
+          />
+        </div>
+
+        {canSeeOrganization ? (
+          <>
+            <Divider className={styles.organizationDivider} titlePlacement="start" data-testid="organization-divider">
+              Общие показатели
+            </Divider>
+            <DashboardStatisticCard title="Записи сегодня" value={organization?.appointmentsToday} isLoading={isLoading} />
+            <DashboardStatisticCard title="Записи завтра" value={organization?.appointmentsTomorrow} isLoading={isLoading} />
+            <DashboardStatisticCard title="Должники" value={organization?.debtorsCount} isLoading={isLoading} />
+            <DashboardStatisticCard title="Общий долг" value={formatOptionalMoney(organization?.totalDebt)} isLoading={isLoading} />
+            <DashboardStatisticCard title="Всего клиентов" value={organization?.totalClients} isLoading={isLoading} />
+            <DashboardStatisticCard
+              title="Весь резерв"
+              value={formatOptionalMoney(organization?.totalPositiveBalance)}
+              isLoading={isLoading}
+            />
+            <DashboardStatisticCard
+              title="Общий доход за месяц"
+              value={formatOptionalMoney(organization?.monthIncome)}
+              isLoading={isLoading}
+            />
+            <DashboardStatisticCard
+              title="Расход за месяц"
+              value={formatOptionalMoney(organization?.monthExpenses)}
+              isLoading={isLoading}
+            />
+            <DashboardStatisticCard title="Итог за месяц" value={formatOptionalMoney(organization?.monthNet)} isLoading={isLoading} />
+
+            <Card
+              data-onboarding-id="dashboard-debtors"
+              className={styles.debtors}
+              title="Клиенты с отрицательным балансом"
+              extra={
+                <ShortcutButton
+                  shortcut="X"
+                  leadingIcon={<DownloadOutlined />}
+                  loading={isExportingDebtors}
+                  label="Экспорт"
+                  onClick={onExportDebtors}
+                />
+              }
+            >
+              <Table
+                rowKey="id"
+                loading={isDebtorsLoading}
+                dataSource={debtors}
+                pagination={false}
+                scroll={{ x: "max-content" }}
+                columns={[
+                  {
+                    title: "Клиент",
+                    render: (_, row) => (
+                      <Button type="link" className={tableLinkButtonStyles.button} onClick={() => onSelectDebtor?.(row)}>
+                        {`${row.lastName} ${row.firstName}`}
+                      </Button>
+                    ),
+                  },
+                  {
+                    title: "Баланс",
+                    dataIndex: "balance",
+                    render: (value: number) => <Tag color="red">{formatMoney(value)}</Tag>,
+                  },
+                ]}
+              />
+            </Card>
+          </>
+        ) : null}
+      </div>
     </PageLayout>
   );
 }
 
-function ReminderList({ appointments, emptyDescription, showTimeOnly = false }: DashboardReminderListProps) {
+function DashboardStatisticCard({
+  title,
+  value,
+  isLoading,
+  caption,
+}: {
+  title: string;
+  value?: number | string;
+  isLoading: boolean;
+  caption?: string;
+}) {
+  return (
+    <Card className={styles.statisticCard} size="small" title={title}>
+      <Statistic value={value ?? "—"} loading={isLoading && value === undefined} />
+      {caption ? (
+        <Typography.Text className={styles.statisticCaption} type="secondary">
+          {caption}
+        </Typography.Text>
+      ) : null}
+    </Card>
+  );
+}
+
+function formatOptionalMoney(value?: number) {
+  return value === undefined ? undefined : formatMoney(value);
+}
+
+function DashboardDayCard({
+  title,
+  day,
+  fallbackDate,
+  emptyDescription,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  title: string;
+  day?: DashboardScheduleDay;
+  fallbackDate: dayjs.Dayjs;
+  emptyDescription: string;
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
+  const date = day ? dayjs(day.date) : fallbackDate;
+
+  return (
+    <Card
+      className={styles.schedule}
+      title={`${title}, ${formatDateTitle(date)}`}
+      extra={day ? <Tag>{formatAppointmentCount(day.count)}</Tag> : null}
+    >
+      {isLoading && !day ? (
+        <Skeleton active paragraph={{ rows: 2 }} title={false} />
+      ) : isError && !day ? (
+        <Space orientation="vertical" size={8} className={styles.queryState}>
+          <Typography.Text type="danger">Не удалось загрузить записи.</Typography.Text>
+          <Button size="small" onClick={onRetry}>
+            Повторить
+          </Button>
+        </Space>
+      ) : (
+        <ReminderList appointments={day?.appointments ?? []} emptyDescription={emptyDescription} />
+      )}
+    </Card>
+  );
+}
+
+function ReminderList({ appointments, emptyDescription }: { appointments: DashboardAppointment[]; emptyDescription: string }) {
   if (appointments.length === 0) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={emptyDescription} />;
   }
 
   return (
-    <List
-      dataSource={appointments}
-      renderItem={(appointment) => <DashboardScheduleItem appointment={appointment} showTimeOnly={showTimeOnly} />}
-    />
+    <ul className={styles.appointmentList}>
+      {appointments.map((appointment) => (
+        <DashboardScheduleItem key={appointment.id} appointment={appointment} />
+      ))}
+    </ul>
   );
 }
 
-export function DashboardScheduleItem({ appointment, showTimeOnly = false }: { appointment: Appointment; showTimeOnly?: boolean }) {
+export function DashboardScheduleItem({ appointment }: { appointment: DashboardAppointment }) {
   const start = dayjs(appointment.startDate);
   const status = renderAppointmentStatusTag(appointment.status);
   const telegramHref = getSocialLinkHref(appointment.client.contacts?.telegram, "telegram");
   const vkHref = getSocialLinkHref(appointment.client.contacts?.vk, "vk");
 
   return (
-    <List.Item>
+    <li className={styles.appointment}>
       <Space orientation="vertical" size={2} className="wide">
         <Space wrap align="start" className="wide" style={{ justifyContent: "space-between" }}>
           <Space wrap>
-            <Typography.Text strong>{showTimeOnly ? start.format(TIME_FORMAT) : formatDateTime(start)}</Typography.Text>
+            <Typography.Text strong>{start.format(TIME_FORMAT)}</Typography.Text>
             {status}
           </Space>
           <Space size={4}>
@@ -222,18 +306,27 @@ export function DashboardScheduleItem({ appointment, showTimeOnly = false }: { a
           </Space>
         </Space>
         <Typography.Text>
-          {appointment.client.lastName} {appointment.client.firstName} - {appointment.service.name}
+          {appointment.client.lastName} {appointment.client.firstName} — {appointment.service.name}
         </Typography.Text>
-        {appointment.provider ? (
-          <Typography.Text type="secondary">
-            {appointment.provider.lastName} {appointment.provider.firstName}
-          </Typography.Text>
-        ) : null}
       </Space>
-    </List.Item>
+    </li>
   );
 }
 
 function formatDateTitle(value: dayjs.Dayjs) {
   return `${value.format("DD.MM.YYYY")} (${value.format("dd").toUpperCase()})`;
+}
+
+function formatAppointmentCount(count: number) {
+  const lastTwoDigits = count % 100;
+  const lastDigit = count % 10;
+  const noun =
+    lastTwoDigits >= 11 && lastTwoDigits <= 14
+      ? "записей"
+      : lastDigit === 1
+        ? "запись"
+        : lastDigit >= 2 && lastDigit <= 4
+          ? "записи"
+          : "записей";
+  return `${String(count)} ${noun}`;
 }

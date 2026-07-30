@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
-import type { Appointment } from "@/entities/appointment";
+import type { DashboardAppointment, DashboardStats } from "@/entities/dashboard";
 
-import { DashboardScheduleItem } from "./DashboardPage";
+import { DashboardContent, DashboardScheduleItem } from "./DashboardPage";
 
-const appointment: Appointment = {
+const appointment: DashboardAppointment = {
   id: "01JTESTAPPOINTMENT0000000000",
   client: {
     id: "01JTESTCLIENT00000000000000",
@@ -24,6 +24,109 @@ const appointment: Appointment = {
   endDate: "2026-07-27T11:00:00Z",
   status: "planned",
 };
+
+const dashboard: DashboardStats = {
+  personalClientsCount: 1,
+  monthIncome: 1500,
+  today: {
+    date: "2026-07-29",
+    count: 1,
+    appointments: [appointment],
+  },
+  tomorrow: {
+    date: "2026-07-30",
+    count: 0,
+    appointments: [],
+  },
+  organization: {
+    totalClients: 8,
+    debtorsCount: 2,
+    totalDebt: 2400,
+    totalPositiveBalance: 1500,
+    appointmentsToday: 4,
+    appointmentsTomorrow: 3,
+    monthIncome: 18_000,
+    monthExpenses: 5_000,
+    monthNet: 13_000,
+  },
+};
+
+beforeAll(() => {
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
+
+describe("DashboardContent", () => {
+  it("shows personal summaries and counts from the same appointment lists", () => {
+    render(<DashboardContent data={dashboard} isLoading={false} isError={false} onRetry={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "Моя работа" })).toBeInTheDocument();
+    expect(screen.getByText("1 запись")).toBeInTheDocument();
+    expect(screen.getByText("0 записей")).toBeInTheDocument();
+    expect(screen.getByText("Мои клиенты")).toBeInTheDocument();
+    expect(screen.getByText("Мой доход за месяц")).toBeInTheDocument();
+    expect(screen.getByText("Клиенты в вашей истории записей")).toBeInTheDocument();
+    expect(screen.getByText("Мои клиенты").closest(".ant-card-head")).not.toBeNull();
+    expect(screen.getByText("Мой доход за месяц").closest(".ant-card-head")).not.toBeNull();
+    expect(screen.queryByText("Общий долг")).not.toBeInTheDocument();
+    expect(screen.queryByText("Расход за месяц")).not.toBeInTheDocument();
+  });
+
+  it("restores organization-wide widgets for staff with statistics access", () => {
+    render(<DashboardContent data={dashboard} isLoading={false} isError={false} onRetry={vi.fn()} canSeeOrganization />);
+
+    expect(screen.getByTestId("organization-divider")).toHaveTextContent("Общие показатели");
+    expect(screen.getByText("Записи сегодня")).toBeInTheDocument();
+    expect(screen.getByText("Записи завтра")).toBeInTheDocument();
+    expect(screen.getByText("Должники")).toBeInTheDocument();
+    expect(screen.getByText("Общий долг")).toBeInTheDocument();
+    expect(screen.getByText("Всего клиентов")).toBeInTheDocument();
+    expect(screen.getByText("Весь резерв")).toBeInTheDocument();
+    expect(screen.getByText("Общий доход за месяц")).toBeInTheDocument();
+    expect(screen.getByText("Расход за месяц")).toBeInTheDocument();
+    expect(screen.getByText("Итог за месяц")).toBeInTheDocument();
+    expect(screen.getByText("Клиенты с отрицательным балансом")).toBeInTheDocument();
+    expect(screen.getByText("Общий доход за месяц").closest(".ant-card-head")).not.toBeNull();
+  });
+
+  it("keeps both schedule cards useful when there are no appointments", () => {
+    render(
+      <DashboardContent
+        data={{
+          ...dashboard,
+          today: { ...dashboard.today, count: 0, appointments: [] },
+        }}
+        isLoading={false}
+        isError={false}
+        onRetry={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("На сегодня записей нет")).toBeInTheDocument();
+    expect(screen.getByText("На завтра записей нет")).toBeInTheDocument();
+  });
+
+  it("offers retry without hiding the dashboard structure after an initial failure", () => {
+    const onRetry = vi.fn();
+    render(<DashboardContent isLoading={false} isError onRetry={onRetry} />);
+
+    expect(screen.getByRole("heading", { name: "Моя работа" })).toBeInTheDocument();
+    expect(screen.getAllByText("Не удалось загрузить записи.")).toHaveLength(2);
+    fireEvent.click(screen.getAllByRole("button", { name: "Повторить" })[0]);
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+});
 
 describe("DashboardScheduleItem", () => {
   it.each(["Telegram", "VK"])("does not render an unsafe stored %s contact", (contactTitle) => {

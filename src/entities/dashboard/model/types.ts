@@ -3,6 +3,14 @@ import type { Ulid } from "@/shared/api";
 type AppointmentStatus = "planned" | "completed" | "cancelled" | "burned";
 
 export interface DashboardStats {
+  personalClientsCount: number;
+  monthIncome: number;
+  today: DashboardScheduleDay;
+  tomorrow: DashboardScheduleDay;
+  organization?: OrganizationDashboardStats | null;
+}
+
+export interface OrganizationDashboardStats {
   totalClients: number;
   debtorsCount: number;
   totalDebt: number;
@@ -12,6 +20,39 @@ export interface DashboardStats {
   monthIncome: number;
   monthExpenses: number;
   monthNet: number;
+}
+
+export interface DashboardScheduleDay {
+  date: string;
+  count: number;
+  appointments: DashboardAppointment[];
+}
+
+export interface DashboardAppointment {
+  id: Ulid;
+  client: DashboardAppointmentClient;
+  service: DashboardAppointmentService;
+  startDate: string;
+  endDate: string;
+  status: AppointmentStatus;
+}
+
+export interface DashboardAppointmentClient {
+  id: Ulid;
+  firstName: string;
+  lastName: string;
+  contacts?: DashboardAppointmentContacts | null;
+}
+
+export interface DashboardAppointmentContacts {
+  telegram?: string | null;
+  vk?: string | null;
+  phone?: string | null;
+}
+
+export interface DashboardAppointmentService {
+  id: Ulid;
+  name: string;
 }
 
 export interface ClientSourceAnalytics {

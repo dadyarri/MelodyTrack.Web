@@ -1,53 +1,87 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
 }
 
-.widget {
+.schedule,
+.personalSummary {
   min-width: 0;
 }
 
-.widgetSmall {
+.schedule {
   grid-column: span 2;
 }
 
-.widgetSmall :global(.ant-card-body) {
+.personalSummary {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.organizationDivider,
+.debtors {
+  grid-column: 1 / -1;
+}
+
+.organizationDivider {
+  margin: 4px 0 0;
+}
+
+.statisticCard {
+  min-width: 0;
+}
+
+.statisticCard :global(.ant-card-body) {
   padding: 16px;
 }
 
-.widgetLarge {
-  grid-column: span 4;
+.statisticCaption {
+  display: block;
+  margin-top: 8px;
 }
 
-.widgetMiniSchedule {
-  grid-column: span 4;
+.queryState {
+  min-height: 96px;
+  justify-content: center;
 }
 
-.widgetMiniScheduleToday {
-  grid-column: 1 / span 4;
+.appointmentList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.widgetMiniScheduleTomorrow {
-  grid-column: 5 / span 4;
+.appointment {
+  padding: 12px 0;
+  border-block-end: 1px solid var(--border-soft);
 }
 
-.widgetDebtors {
-  grid-column: 1 / -1;
+.appointment:first-child {
+  padding-block-start: 0;
+}
+
+.appointment:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
 }
 
 @media (max-width: 720px) {
   .grid {
-    grid-template-columns: 1fr;
-    gap: 22px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
   }
 
-  .widgetSmall,
-  .widgetLarge,
-  .widgetMiniSchedule,
-  .widgetMiniScheduleToday,
-  .widgetMiniScheduleTomorrow,
-  .widgetDebtors {
+  .personalSummary {
+    grid-column: 1;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .schedule,
+  .organizationDivider,
+  .statisticCard,
+  .debtors {
     grid-column: 1;
   }
 }
@@ -57,12 +91,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .widgetSmall,
-  .widgetLarge,
-  .widgetMiniSchedule,
-  .widgetMiniScheduleToday,
-  .widgetMiniScheduleTomorrow,
-  .widgetDebtors {
+  .schedule,
+  .statisticCard {
     grid-column: span 1;
   }
 }
