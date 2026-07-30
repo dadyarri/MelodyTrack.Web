@@ -1,0 +1,11 @@
+.modalCard {
+  overflow: hidden;
+}
+
+.modalBody {
+  min-height: 0;
+  max-height: min(65dvh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

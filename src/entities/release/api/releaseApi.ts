@@ -4,6 +4,8 @@ import { http } from "@/shared/api";
 
 import type { ReleaseHistory } from "../model/types";
 
+const releaseHistoryPageSize = 2;
+
 const changesSchema = v.strictObject({
   new: v.array(v.string()),
   improved: v.array(v.string()),
@@ -35,7 +37,7 @@ export const releaseQueryKeys = {
 
 export async function getReleaseHistory(page = 1) {
   const response = await http.get<ReleaseHistory>("/releases", {
-    params: { page, page_size: 20 },
+    params: { page, page_size: releaseHistoryPageSize },
   });
   return v.parse(releaseHistorySchema, response.data);
 }

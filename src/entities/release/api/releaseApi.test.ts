@@ -12,7 +12,7 @@ describe("getReleaseHistory", () => {
     const get = vi.spyOn(http, "get").mockResolvedValue({ data });
 
     await expect(getReleaseHistory(2)).resolves.toEqual(data);
-    expect(get).toHaveBeenCalledWith("/releases", { params: { page: 2, page_size: 20 } });
+    expect(get).toHaveBeenCalledWith("/releases", { params: { page: 2, page_size: 2 } });
   });
 
   it("rejects malformed release data", async () => {
@@ -34,7 +34,7 @@ function validHistory() {
       },
     ],
     page: 1,
-    pageSize: 20,
+    pageSize: 2,
     totalCount: 1,
     totalPages: 1,
     hasNextPage: false,

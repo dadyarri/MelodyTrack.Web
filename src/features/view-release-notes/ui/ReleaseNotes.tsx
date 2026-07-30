@@ -4,6 +4,7 @@ import { type ReactNode, useState } from "react";
 import type { ReleaseChanges, ReleaseEntry } from "@/entities/release";
 
 import { useReleaseHistory } from "../model/useReleaseHistory";
+import styles from "./ReleaseNotes.module.css";
 
 const changeLabels: Array<[keyof ReleaseChanges, string]> = [
   ["new", "Добавлено"],
@@ -37,6 +38,7 @@ export function ReleaseNotesModal({
     <Modal
       open={open}
       title="Что нового"
+      classNames={{ container: styles.modalCard, body: styles.modalBody }}
       footer={
         <Button type="primary" onClick={onClose}>
           Понятно
