@@ -21,11 +21,16 @@ const history: ReleaseHistory = {
       codename: "Accordatura",
       date: "2026-07-29",
       parentVersion: "2026.07.1",
-      changes: { new: ["Описание обновления"], improved: [], fixed: ["Продление сеанса"], security: [] },
+      changes: {
+        new: ["Описание обновления"],
+        improved: [],
+        fixed: Array.from({ length: 20 }, (_, index) => `Исправление ${String(index + 1)}`),
+        security: [],
+      },
     },
   ],
   page: 1,
-  pageSize: 20,
+  pageSize: 2,
   totalCount: 1,
   totalPages: 1,
   hasNextPage: false,
@@ -54,6 +59,9 @@ describe("automatic release notes in supported browsers", () => {
     await expect.element(screen.getByText("Исправление 2026.07.1.1 — Accordatura")).toBeVisible();
     const dismissButton = screen.getByRole("button", { name: "Понятно" });
     await expect.element(dismissButton).toBeVisible();
+    await expect.poll(() => isModalBodyScrollable()).toBe(true);
+    await expect.poll(() => isModalCardScrollable()).toBe(false);
+    await expect.poll(() => getModalContentEndPadding()).toBeGreaterThanOrEqual(16);
     await dismissButton.click();
 
     await expect
@@ -70,4 +78,27 @@ describe("automatic release notes in supported browsers", () => {
 function ReleaseNotesExperience() {
   const controller = useReleaseNotesController({ userId: "browser-user", automaticEnabled: true });
   return <ReleaseNotesModal open={controller.open} automaticReleases={controller.automaticReleases} onClose={controller.close} />;
+}
+
+function isModalBodyScrollable() {
+  const body = document.querySelector<HTMLElement>(".ant-modal-body");
+  if (!body) {
+    return false;
+  }
+
+  return getComputedStyle(body).overflowY === "auto" && body.scrollHeight > body.clientHeight;
+}
+
+function isModalCardScrollable() {
+  const card = document.querySelector<HTMLElement>(".ant-modal-content");
+  if (!card) {
+    return false;
+  }
+
+  return ["auto", "scroll"].includes(getComputedStyle(card).overflowY);
+}
+
+function getModalContentEndPadding() {
+  const content = document.querySelector<HTMLElement>("[data-release-notes-content]");
+  return content ? Number.parseFloat(getComputedStyle(content).paddingInlineEnd) : 0;
 }

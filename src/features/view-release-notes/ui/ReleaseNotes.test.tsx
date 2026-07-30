@@ -253,7 +253,7 @@ function createHistory(
     currentVersion: "2026.07.1.1",
     releases,
     page: 1,
-    pageSize: 20,
+    pageSize: 2,
     totalCount: releases.length,
     totalPages: 1,
     hasNextPage: false,

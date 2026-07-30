@@ -1,5 +1,5 @@
 export * from "./date";
-export * from "./download";
+export * from "./browser";
 export * from "./money";
 export * from "./pluralize";
 export * from "./react/useCreatedReferenceOptions";

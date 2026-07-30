@@ -3,12 +3,10 @@ import dayjs from "dayjs";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
-import { type Appointment, appointmentQueryKeys, appointmentsApi } from "@/entities/appointment";
 import { type Client, clientQueryKeys, clientsApi } from "@/entities/client";
 import { analyticsQueryKeys, dashboardApi } from "@/entities/dashboard";
-import { hasAdminAccess, useAuth } from "@/entities/session";
-import { downloadBlob } from "@/shared/lib";
-import { isShortcutTarget, matchesPlainKey } from "@/shared/lib";
+import { hasStatsAccess, useAuth } from "@/entities/session";
+import { downloadBlob, isShortcutTarget, matchesPlainKey } from "@/shared/lib";
 import { getClientHistoryActions } from "@/widgets/client-history";
 
 const clientHistoryEventsPageSize = 8;
@@ -19,34 +17,30 @@ export function useDashboardPageController() {
   const [historyClient, setHistoryClient] = useState<Client | null>(null);
   const [historyEventsPage, setHistoryEventsPage] = useState(1);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const canSeeFinancialOverview = hasAdminAccess(auth.user);
-
-  const statsQuery = useQuery({
+  const canSeeOrganization = hasStatsAccess(auth.user);
+  const historyClientId = historyClient?.id;
+  const dashboardQuery = useQuery({
     queryKey: analyticsQueryKeys.stats(timezone),
     queryFn: () => dashboardApi.stats(timezone),
   });
   const debtorsQuery = useQuery({
     queryKey: clientQueryKeys.debtors,
     queryFn: () => clientsApi.debtors(),
-    enabled: canSeeFinancialOverview,
-  });
-  const miniQuery = useQuery({
-    queryKey: appointmentQueryKeys.mini(timezone),
-    queryFn: () => appointmentsApi.mini(timezone),
+    enabled: canSeeOrganization,
   });
   const historyQuery = useQuery({
-    queryKey: clientQueryKeys.history(historyClient?.id, historyEventsPage, clientHistoryEventsPageSize),
+    queryKey: clientQueryKeys.history(historyClientId, historyEventsPage, clientHistoryEventsPageSize),
     queryFn: () => {
-      const clientId = historyClient?.id;
-      if (!clientId) {
+      if (!historyClientId) {
         throw new Error("History client is not selected.");
       }
-      return clientsApi.history(clientId, {
+
+      return clientsApi.history(historyClientId, {
         page: historyEventsPage,
         page_size: clientHistoryEventsPageSize,
       });
     },
-    enabled: Boolean(historyClient),
+    enabled: Boolean(historyClientId),
     placeholderData: keepPreviousData,
   });
   const debtorsExportMutation = useMutation({
@@ -56,6 +50,7 @@ export function useDashboardPageController() {
     },
   });
   const exportDebtors = debtorsExportMutation.mutate;
+  const clientHistoryActions = useMemo(() => getClientHistoryActions(auth.user, navigate), [auth.user, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -63,7 +58,7 @@ export function useDashboardPageController() {
         return;
       }
 
-      if (!matchesPlainKey(event, "x") || !canSeeFinancialOverview) {
+      if (!matchesPlainKey(event, "x") || !canSeeOrganization) {
         return;
       }
 
@@ -75,13 +70,7 @@ export function useDashboardPageController() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canSeeFinancialOverview, exportDebtors]);
-
-  const today = dayjs();
-  const tomorrow = today.add(1, "day");
-  const todayAppointments = miniQuery.data?.[today.format("YYYY-MM-DD")] ?? [];
-  const tomorrowAppointments = miniQuery.data?.[tomorrow.format("YYYY-MM-DD")] ?? [];
-  const clientHistoryActions = useMemo(() => getClientHistoryActions(auth.user, navigate), [auth.user, navigate]);
+  }, [canSeeOrganization, exportDebtors]);
 
   const openHistoryClient = (client: Client) => {
     setHistoryEventsPage(1);
@@ -94,28 +83,17 @@ export function useDashboardPageController() {
   };
 
   return {
-    auth,
-    canSeeFinancialOverview,
+    canSeeOrganization,
+    dashboardQuery,
+    debtorsQuery,
+    debtorsExportMutation,
     historyClient,
     historyEventsPage,
-    setHistoryEventsPage,
+    historyQuery,
+    clientHistoryActions,
     setHistoryClient: openHistoryClient,
     closeHistoryClient,
-    statsQuery,
-    debtorsQuery,
-    miniQuery,
-    historyQuery,
-    debtorsExportMutation,
-    today,
-    tomorrow,
-    todayAppointments,
-    tomorrowAppointments,
-    clientHistoryActions,
+    setHistoryEventsPage,
+    retry: () => dashboardQuery.refetch(),
   };
 }
-
-export type DashboardReminderListProps = {
-  appointments: Appointment[];
-  emptyDescription: string;
-  showTimeOnly?: boolean;
-};

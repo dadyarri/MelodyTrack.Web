@@ -5,7 +5,13 @@ import { useLocation, useNavigate } from "react-router";
 
 import { hasSuperuserAccess, useAuth } from "@/entities/session";
 import type { OnboardingDisplayStatus } from "@/features/onboarding";
-import { isReleaseNotesEligiblePath, ReleaseNotesModal, ReleaseVersion, useReleaseNotesController } from "@/features/view-release-notes";
+import {
+  canViewReleaseNotes,
+  isReleaseNotesEligiblePath,
+  ReleaseNotesModal,
+  ReleaseVersion,
+  useReleaseNotesController,
+} from "@/features/view-release-notes";
 import { useTheme } from "@/shared/config";
 import { clearNavigationIntent, isShortcutTarget, matchesPlainKey, recoverableImport, rememberNavigationIntent } from "@/shared/lib";
 import {
@@ -22,7 +28,7 @@ import {
 } from "@/shared/ui/icons";
 
 import styles from "./AppShell.module.css";
-import { getAvailableNavItems } from "./navigation";
+import { buildNavigationTarget, getAvailableNavItems } from "./navigation";
 import { buildNavMenuItems, buildShellActionItems, getSelectedNavKey, renderUserName, type ShellActionKey } from "./shellMenus";
 
 const AppOnboarding = lazy(async () => {
@@ -46,9 +52,10 @@ export function AppShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [desktopNavOpen, setDesktopNavOpen] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingDisplayStatus>("loading");
+  const releaseNotesVisible = canViewReleaseNotes(auth.user);
   const releaseNotes = useReleaseNotesController({
     userId: auth.user?.id ?? null,
-    automaticEnabled: onboardingStatus === "idle" && isReleaseNotesEligiblePath(location.pathname),
+    automaticEnabled: releaseNotesVisible && onboardingStatus === "idle" && isReleaseNotesEligiblePath(location.pathname),
   });
   const availableNavItems = getAvailableNavItems(auth.user);
   const canViewAudit = hasSuperuserAccess(auth.user);
@@ -66,8 +73,9 @@ export function AppShell({
   });
   const desktopUserActionItems = [
     ...mobileActionItems,
-    { type: "divider" as const },
-    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
+    ...(releaseNotesVisible
+      ? [{ type: "divider" as const }, { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" }]
+      : []),
   ];
   const mobileDrawerActionItems = [
     { key: "profile", icon: <SettingOutlined />, label: "Профиль" },
@@ -78,15 +86,17 @@ export function AppShell({
       label: mode === "dark" ? "Светлая тема" : "Темная тема",
     },
     { key: "logout", icon: <LogoutOutlined />, label: "Выйти", danger: true },
-    { type: "divider" as const },
-    { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" },
+    ...(releaseNotesVisible
+      ? [{ type: "divider" as const }, { key: "releaseNotes", icon: <InfoCircleOutlined />, label: "Что нового" }]
+      : []),
   ];
   const navigateTo = useCallback(
     (path: string) => {
-      rememberNavigationIntent(path);
-      void navigate(path);
+      const target = buildNavigationTarget(path, location.pathname, location.search);
+      rememberNavigationIntent(target);
+      void navigate(target);
     },
-    [navigate],
+    [location.pathname, location.search, navigate],
   );
   const handleUserAction = (key: ShellActionKey | "releaseNotes") => {
     if (key === "releaseNotes") {
@@ -126,8 +136,8 @@ export function AppShell({
   );
 
   useEffect(() => {
-    clearNavigationIntent(location.pathname);
-  }, [location.pathname]);
+    clearNavigationIntent(location.pathname + location.search);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -315,7 +325,9 @@ export function AppShell({
       <Suspense fallback={null}>
         <AppOnboarding onStatusChange={setOnboardingStatus} />
       </Suspense>
-      <ReleaseNotesModal open={releaseNotes.open} automaticReleases={releaseNotes.automaticReleases} onClose={releaseNotes.close} />
+      {releaseNotesVisible ? (
+        <ReleaseNotesModal open={releaseNotes.open} automaticReleases={releaseNotes.automaticReleases} onClose={releaseNotes.close} />
+      ) : null}
     </Layout>
   );
 }
@@ -331,11 +343,11 @@ function isShellShortcutReserved(pathname: string, key: string) {
     return ["r", "g", "o", "f", "w"].includes(normalizedKey);
   }
 
-  if (pathname.startsWith("/payments") && !pathname.startsWith("/payments-stats")) {
+  if (pathname.startsWith("/payments")) {
     return ["a", "x"].includes(normalizedKey);
   }
 
-  if (pathname.startsWith("/expenses") && pathname !== "/expenses-dashboard") {
+  if (pathname.startsWith("/expenses")) {
     return ["a", "x"].includes(normalizedKey);
   }
 
@@ -343,7 +355,7 @@ function isShellShortcutReserved(pathname: string, key: string) {
     return normalizedKey === "a";
   }
 
-  if (pathname.startsWith("/clients") && !pathname.startsWith("/clients-stats")) {
+  if (pathname.startsWith("/clients")) {
     return normalizedKey === "a";
   }
 

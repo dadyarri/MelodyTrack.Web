@@ -15,7 +15,7 @@
   min-width: 0;
 }
 
-.urlInput {
+.valueInput {
   max-width: 100%;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: var(--ant-font-size-sm);
@@ -59,7 +59,8 @@
     display: grid;
   }
 
-  .copyButton {
+  .copyButton,
+  .followUpButton {
     min-height: 44px;
     width: 100%;
   }

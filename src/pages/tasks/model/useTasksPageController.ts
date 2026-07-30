@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import * as v from "valibot";
 
 import { getSocialHandle } from "@/entities/client";
+import { useAuth } from "@/entities/session";
 import {
   type RecurringTask,
   type RecurringTaskListStatus,
@@ -19,6 +20,7 @@ import { downloadBlob } from "@/shared/lib";
 import { getBackgroundRefetchInterval } from "@/shared/lib";
 import { findItemInQueryData, handleStaleEntityConflict, isActivityStale } from "@/shared/lib";
 import { jsonDurableFormCodec, useDurableForm, useUrlState } from "@/shared/lib/react";
+import { useCopyTextModal } from "@/shared/ui";
 
 export type RecurringTaskRuleFormValues = {
   isEnabled: boolean;
@@ -41,6 +43,12 @@ export type CustomTaskFormValues = {
   title: string;
   messageText: string;
   dueAt: Dayjs;
+};
+
+export type PreparedScheduleShare = {
+  blob: Blob;
+  fileName: string;
+  messengerUrl: string;
 };
 
 type CustomTaskDraftValues = Partial<Omit<CustomTaskFormValues, "dueAt">> & { dueAt?: string };
@@ -71,6 +79,8 @@ export const customTaskDraftCodec = {
 };
 
 export function useTasksPageController() {
+  const auth = useAuth();
+  const copyTextModal = useCopyTextModal(auth.user?.id);
   const { searchParams, setUrlState } = useUrlState();
   const taskAutoRefreshMs = 30_000;
   const timezone = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
@@ -92,6 +102,7 @@ export function useTasksPageController() {
   const [customTaskForm] = Form.useForm<CustomTaskFormValues>();
   const [delayTaskForm] = Form.useForm<DelayTaskFormValues>();
   const [delayingTask, setDelayingTask] = useState<RecurringTask | null>(null);
+  const [preparedScheduleShare, setPreparedScheduleShare] = useState<PreparedScheduleShare | null>(null);
   const [isCustomTaskModalOpen, setIsCustomTaskModalOpen] = useState(false);
   const ruleDraft = useDurableForm({
     key: editingRule ? `draft:tasks:rules:edit:${editingRule.id}` : null,
@@ -284,24 +295,35 @@ export function useTasksPageController() {
     },
   });
 
-  const getFreshTask = async (task: RecurringTask) => {
-    const refreshedTasks = await queryClient.fetchQuery({
-      queryKey: taskQueryKeys.due(timezone, status, type === "all" ? null : type),
-      queryFn: () => tasksApi.due({ timezone, status, type }),
-    });
+  const getFreshTaskForAction = async (task: RecurringTask) => {
+    try {
+      const refreshedTasks = await queryClient.fetchQuery({
+        queryKey: taskQueryKeys.due(timezone, status, type === "all" ? null : type),
+        queryFn: () => tasksApi.due({ timezone, status, type }),
+      });
+      const freshTask =
+        refreshedTasks.find((item) => item.deduplicationKey === task.deduplicationKey) ??
+        refreshedTasks.find(
+          (item) =>
+            item.ruleId === task.ruleId &&
+            item.type === task.type &&
+            item.clientId === task.clientId &&
+            item.teacherId === task.teacherId &&
+            item.appointmentId === task.appointmentId,
+        ) ??
+        null;
 
-    return (
-      refreshedTasks.find((item) => item.deduplicationKey === task.deduplicationKey) ??
-      refreshedTasks.find(
-        (item) =>
-          item.ruleId === task.ruleId &&
-          item.type === task.type &&
-          item.clientId === task.clientId &&
-          item.teacherId === task.teacherId &&
-          item.appointmentId === task.appointmentId,
-      ) ??
-      null
-    );
+      if (!freshTask) {
+        void message.error("Задача больше не актуальна.");
+      }
+
+      return freshTask;
+    } catch (error) {
+      for (const errorMessage of getApiErrorMessages(error)) {
+        void message.error(errorMessage);
+      }
+      return null;
+    }
   };
 
   return {
@@ -372,28 +394,42 @@ export function useTasksPageController() {
     delayMutation,
     delayTaskForm,
     delayingTask,
+    copyTextModalProps: copyTextModal.copyTextModalProps,
+    preparedScheduleShare,
+    closePreparedScheduleShare: () => {
+      setPreparedScheduleShare(null);
+    },
     copyTaskPreparedMessage: async (task: RecurringTask) => {
-      const freshTask = await getFreshTask(task);
+      const freshTask = await getFreshTaskForAction(task);
       if (!freshTask) {
-        void message.error("Задача больше не актуальна.");
         return;
       }
 
-      await navigator.clipboard.writeText(freshTask.preparedMessage);
-      void message.success("Текст сообщения обновлён и скопирован.");
+      copyTextModal.openCopyTextModal({
+        value: freshTask.preparedMessage,
+        title: "Сообщение готово",
+        description: "Текст обновлён по актуальным данным задачи. Проверьте и скопируйте его.",
+        fieldLabel: "Текст сообщения",
+        copyButtonLabel: "Скопировать текст",
+        copiedConfirmation: "Текст сообщения скопирован",
+      });
     },
     openTaskTelegram: async (task: RecurringTask) => {
       if (!task.telegram) {
         return;
       }
 
-      const freshTask = await getFreshTask(task);
+      const freshTask = await getFreshTaskForAction(task);
       if (!freshTask) {
-        void message.error("Задача больше не актуальна.");
         return;
       }
 
-      const telegramLink = buildTelegramLink(task.telegram, freshTask.preparedMessage);
+      if (!freshTask.telegram) {
+        void message.error("У задачи больше не указан Telegram.");
+        return;
+      }
+
+      const telegramLink = buildTelegramLink(freshTask.telegram, freshTask.preparedMessage);
       if (!telegramLink) {
         void message.error("Не удалось сформировать ссылку Telegram.");
         return;
@@ -406,21 +442,35 @@ export function useTasksPageController() {
         return;
       }
 
-      const freshTask = await getFreshTask(task);
+      const freshTask = await getFreshTaskForAction(task);
       if (!freshTask) {
-        void message.error("Задача больше не актуальна.");
         return;
       }
 
-      const vkLink = buildVkLink(task.vk);
+      if (!freshTask.vk) {
+        void message.error("У задачи больше не указан VK.");
+        return;
+      }
+
+      const vkLink = buildVkLink(freshTask.vk);
       if (!vkLink) {
         void message.error("Не удалось сформировать ссылку VK.");
         return;
       }
 
-      await navigator.clipboard.writeText(freshTask.preparedMessage);
-      void message.success("Текст сообщения обновлён и скопирован.");
-      window.open(vkLink, "_blank", "noopener,noreferrer");
+      copyTextModal.openCopyTextModal({
+        value: freshTask.preparedMessage,
+        title: "Сообщение для VK готово",
+        description: "Скопируйте обновлённый текст, затем откройте диалог VK.",
+        fieldLabel: "Текст сообщения",
+        copyButtonLabel: "Скопировать текст",
+        copiedConfirmation: "Текст скопирован. Теперь можно открыть VK",
+        followUpAction: {
+          label: "Открыть VK",
+          href: vkLink,
+          target: "_blank",
+        },
+      });
     },
     downloadTeacherSchedule: async (task: RecurringTask) => {
       if (!task.teacherId) {
@@ -448,11 +498,6 @@ export function useTasksPageController() {
         return;
       }
 
-      if (typeof ClipboardItem === "undefined" || !("clipboard" in navigator) || typeof navigator.clipboard.write !== "function") {
-        void message.error("Браузер не поддерживает копирование изображения в буфер обмена.");
-        return;
-      }
-
       try {
         const blob = await tasksApi.teacherScheduleImage({
           teacherId: task.teacherId,
@@ -460,20 +505,11 @@ export function useTasksPageController() {
           timezone,
         });
 
-        const imageBlob = blob.type === "image/png" ? blob : new Blob([blob], { type: "image/png" });
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            [imageBlob.type]: imageBlob,
-          }),
-        ]);
-
-        void message.success("Изображение расписания скопировано в буфер обмена.");
-        if (messengerUrl.startsWith("tg://")) {
-          window.location.href = messengerUrl;
-          return;
-        }
-
-        window.open(messengerUrl, "_blank", "noopener,noreferrer");
+        setPreparedScheduleShare({
+          blob: blob.type === "image/png" ? blob : new Blob([blob], { type: "image/png" }),
+          fileName: `teacher_schedule_${task.businessDate}_${task.teacherId}.png`,
+          messengerUrl,
+        });
       } catch (error) {
         for (const errorMessage of getApiErrorMessages(error)) {
           void message.error(errorMessage);

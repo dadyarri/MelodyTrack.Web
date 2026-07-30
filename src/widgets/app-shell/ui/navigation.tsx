@@ -5,22 +5,17 @@ import {
   BookOutlined,
   CalendarCheckOutlined,
   CalendarOutlined,
-  CoinsOutlined,
   CreditCardOutlined,
   DashboardOutlined,
-  DollarOutlined,
   FolderOpenOutlined,
   FunnelTargetOutlined,
-  LineChartOutlined,
   ListTodoOutlined,
   PieChartOutlined,
   TagsOutlined,
   TeamOutlined,
-  TeamStatsOutlined,
   ToolOutlined,
   UserBadgeOutlined,
   WalletOutlined,
-  WalletStatsOutlined,
 } from "@/shared/ui/icons";
 
 type NavGroup = "stats" | "reference-books";
@@ -60,50 +55,26 @@ export const appNavItems: AppNavItem[] = [
     visibility: "admin",
   },
   {
-    key: "/revenue",
-    icon: <LineChartOutlined />,
-    label: "Выручка",
-    shortcut: "R",
-    visibility: "stats",
-    group: "stats",
-  },
-  {
-    key: "/price-changes",
-    icon: <DollarOutlined />,
-    label: "Изменения цен",
-    shortcut: "P",
-    visibility: "stats",
-    group: "stats",
-  },
-  {
-    key: "/appointments-stats",
+    key: "/statistics/work",
     icon: <CalendarCheckOutlined />,
-    label: "Записи",
-    shortcut: "Z",
+    label: "Работа",
+    shortcut: "W",
     visibility: "stats",
     group: "stats",
   },
   {
-    key: "/clients-stats",
-    icon: <TeamStatsOutlined />,
+    key: "/statistics/finance",
+    icon: <PieChartOutlined />,
+    label: "Финансы",
+    shortcut: "F",
+    visibility: "stats",
+    group: "stats",
+  },
+  {
+    key: "/statistics/clients",
+    icon: <TeamOutlined />,
     label: "Клиенты",
     shortcut: "C",
-    visibility: "stats",
-    group: "stats",
-  },
-  {
-    key: "/payments-stats",
-    icon: <WalletStatsOutlined />,
-    label: "Платежи",
-    shortcut: "M",
-    visibility: "stats",
-    group: "stats",
-  },
-  {
-    key: "/expenses-dashboard",
-    icon: <CoinsOutlined />,
-    label: "Расходы",
-    shortcut: "E",
     visibility: "stats",
     group: "stats",
   },
@@ -179,4 +150,9 @@ export const appNavItems: AppNavItem[] = [
 
 export function getAvailableNavItems(user: AppUser) {
   return appNavItems.filter((item) => canAccessAudience(user, item.visibility));
+}
+
+export function buildNavigationTarget(targetPath: string, currentPath: string, currentSearch: string) {
+  const movesBetweenStatisticsAreas = targetPath.startsWith("/statistics/") && currentPath.startsWith("/statistics/");
+  return movesBetweenStatisticsAreas && currentSearch ? `${targetPath}${currentSearch}` : targetPath;
 }

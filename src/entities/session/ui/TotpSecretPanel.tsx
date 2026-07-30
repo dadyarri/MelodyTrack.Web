@@ -1,6 +1,7 @@
 import { Alert, App as AntdApp, Button, Form, Input, QRCode, Space } from "antd";
 import type { ReactNode } from "react";
 
+import { copyTextToClipboard } from "@/shared/lib";
 import { authScreenStyles as styles } from "@/shared/ui";
 import { CopyOutlined } from "@/shared/ui/icons";
 
@@ -27,9 +28,15 @@ export function TotpSecretPanel({
 }: TotpSecretPanelProps) {
   const { message } = AntdApp.useApp();
 
-  async function copySecret() {
-    await navigator.clipboard.writeText(secret);
-    message.success("Секрет скопирован.");
+  function copySecret() {
+    void copyTextToClipboard(secret).then((copied) => {
+      if (copied) {
+        void message.success("Секрет скопирован.");
+        return;
+      }
+
+      void message.error("Не удалось скопировать секрет. Выделите его и скопируйте вручную.");
+    });
   }
 
   return (
@@ -42,7 +49,9 @@ export function TotpSecretPanel({
         <Input
           readOnly
           value={secret}
-          suffix={copyable ? <Button type="text" icon={<CopyOutlined />} onClick={() => void copySecret()} /> : undefined}
+          suffix={
+            copyable ? <Button type="text" icon={<CopyOutlined />} aria-label="Скопировать секрет" onClick={copySecret} /> : undefined
+          }
         />
       </Form.Item>
       {children}

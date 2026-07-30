@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { CopyTextModal } from "./CopyTextModal";
 import { UrlCopyModal } from "./UrlCopyModal";
 import { useUrlCopyModal } from "./useUrlCopyModal";
 
@@ -94,6 +95,37 @@ describe("UrlCopyModal", () => {
     expect(await screen.findByText(/Выделите ссылку и скопируйте её вручную/)).toBeInTheDocument();
     expect(screen.getByLabelText("Ссылка")).toHaveValue("https://example.test/manual");
     expect(screen.queryByText("Raw platform error")).not.toBeInTheDocument();
+  });
+});
+
+describe("CopyTextModal", () => {
+  it("uses generic text labels and reveals a follow-up destination only after copying", async () => {
+    const writeText = installClipboardMock().mockResolvedValue();
+
+    render(
+      <CopyTextModal
+        open
+        content={{
+          value: "Актуальный текст сообщения",
+          followUpAction: {
+            label: "Открыть VK",
+            href: "https://vk.me/example",
+            target: "_blank",
+          },
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("dialog", { name: "Текст готов" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Текст")).toHaveValue("Актуальный текст сообщения");
+    expect(screen.queryByRole("link", { name: "Открыть VK" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Скопировать" }));
+
+    expect(writeText).toHaveBeenCalledWith("Актуальный текст сообщения");
+    expect(await screen.findByText("Текст скопирован")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Открыть VK" })).toHaveAttribute("href", "https://vk.me/example");
   });
 });
 

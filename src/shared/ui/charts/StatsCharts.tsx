@@ -76,7 +76,14 @@ export function StatsDonutChart({
   });
 
   return (
-    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(180px, 220px) minmax(220px, 1fr)", alignItems: "center" }}>
+    <div
+      style={{
+        display: "grid",
+        gap: 16,
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
+        alignItems: "center",
+      }}
+    >
       <svg
         viewBox={["0", "0", stringifyNumber(size), stringifyNumber(size)].join(" ")}
         style={{ width: "100%", maxWidth: size, justifySelf: "center" }}
