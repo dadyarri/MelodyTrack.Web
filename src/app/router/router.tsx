@@ -15,20 +15,17 @@ import { createRoutePrefetcher } from "./routePrefetch";
 const prefetchStaffRoute = createRoutePrefetcher<QueryClient>(
   {
     "/": () => import("@/pages/dashboard"),
-    "/appointments-stats": () => import("@/pages/appointments-stats"),
     "/audit": () => import("@/pages/audit"),
     "/client-sources": () => import("@/pages/client-sources"),
     "/clients": () => import("@/pages/clients"),
-    "/clients-stats": () => import("@/pages/clients-stats"),
     "/courses": () => import("@/pages/courses"),
     "/expense-categories": () => import("@/pages/expense-categories"),
     "/expenses": () => import("@/pages/expenses"),
-    "/expenses-dashboard": () => import("@/pages/expenses-stats"),
     "/payments": () => import("@/pages/payments"),
-    "/payments-stats": () => import("@/pages/payments-stats"),
-    "/price-changes": () => import("@/pages/price-changes"),
     "/profile": () => import("@/pages/profile"),
-    "/revenue": () => import("@/pages/revenue"),
+    "/statistics/work": () => import("@/pages/statistics"),
+    "/statistics/finance": () => import("@/pages/statistics"),
+    "/statistics/clients": () => import("@/pages/statistics"),
     "/schedule": () => import("@/pages/schedule"),
     "/services": () => import("@/pages/services"),
     "/tasks": () => import("@/pages/tasks"),
@@ -170,93 +167,51 @@ export const router = createBrowserRouter([
         },
       },
       {
-        path: "revenue",
+        path: "statistics/work",
         lazy: async () => {
-          const { RevenuePage } = await recoverableImport(() => import("@/pages/revenue"));
-
+          const { StatisticsWorkPage } = await recoverableImport(() => import("@/pages/statistics"));
           return {
             Component: () => (
               <StatsRoute>
-                <RevenuePage />
+                <StatisticsWorkPage />
               </StatsRoute>
             ),
           };
         },
       },
       {
-        path: "price-changes",
+        path: "statistics/finance",
         lazy: async () => {
-          const { PriceChangesPage } = await recoverableImport(() => import("@/pages/price-changes"));
-
+          const { StatisticsFinancePage } = await recoverableImport(() => import("@/pages/statistics"));
           return {
             Component: () => (
               <StatsRoute>
-                <PriceChangesPage />
+                <StatisticsFinancePage />
               </StatsRoute>
             ),
           };
         },
       },
       {
-        path: "appointments-stats",
+        path: "statistics/clients",
         lazy: async () => {
-          const { AppointmentsStatsPage } = await recoverableImport(() => import("@/pages/appointments-stats"));
-
+          const { StatisticsClientsPage } = await recoverableImport(() => import("@/pages/statistics"));
           return {
             Component: () => (
               <StatsRoute>
-                <AppointmentsStatsPage />
+                <StatisticsClientsPage />
               </StatsRoute>
             ),
           };
         },
       },
-      {
-        path: "clients-stats",
-        lazy: async () => {
-          const { ClientsStatsPage } = await recoverableImport(() => import("@/pages/clients-stats"));
-
-          return {
-            Component: () => (
-              <StatsRoute>
-                <ClientsStatsPage />
-              </StatsRoute>
-            ),
-          };
-        },
-      },
-      {
-        path: "payments-stats",
-        lazy: async () => {
-          const { PaymentsStatsPage } = await recoverableImport(() => import("@/pages/payments-stats"));
-
-          return {
-            Component: () => (
-              <StatsRoute>
-                <PaymentsStatsPage />
-              </StatsRoute>
-            ),
-          };
-        },
-      },
-      {
-        path: "expenses-dashboard",
-        lazy: async () => {
-          const { ExpensesStatsPage } = await recoverableImport(() => import("@/pages/expenses-stats"));
-
-          return {
-            Component: () => (
-              <StatsRoute>
-                <ExpensesStatsPage />
-              </StatsRoute>
-            ),
-          };
-        },
-      },
-      {
-        path: "expenses-stats",
-        element: <Navigate to="/expenses-dashboard" replace />,
-      },
+      { path: "revenue", element: <Navigate to="/statistics/finance" replace /> },
+      { path: "price-changes", element: <Navigate to="/statistics/finance" replace /> },
+      { path: "appointments-stats", element: <Navigate to="/statistics/work" replace /> },
+      { path: "clients-stats", element: <Navigate to="/statistics/clients" replace /> },
+      { path: "payments-stats", element: <Navigate to="/statistics/finance" replace /> },
+      { path: "expenses-dashboard", element: <Navigate to="/statistics/finance" replace /> },
+      { path: "expenses-stats", element: <Navigate to="/statistics/finance" replace /> },
       {
         path: "clients",
         lazy: async () => {

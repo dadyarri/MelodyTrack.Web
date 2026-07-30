@@ -69,6 +69,5 @@ describe("appointmentsApi", () => {
     expect(appointmentQueryKeys.all).toEqual(["schedule"]);
     expect(appointmentQueryKeys.appointmentsAll).toEqual(["schedule", "appointments"]);
     expect(appointmentQueryKeys.appointments("start", "end")).toEqual(["schedule", "appointments", "start", "end"]);
-    expect(appointmentQueryKeys.mini("Europe/Moscow")).toEqual(["schedule", "mini", "Europe/Moscow"]);
   });
 });

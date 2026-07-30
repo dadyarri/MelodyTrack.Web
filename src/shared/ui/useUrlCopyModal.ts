@@ -1,52 +1,50 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 import type { UrlCopyModalContent, UrlCopyModalProps } from "./UrlCopyModal";
-
-type StoredUrlModal = {
-  ownerKey: string | null;
-  content: UrlCopyModalContent;
-};
+import { useCopyTextModal } from "./useCopyTextModal";
 
 export function useUrlCopyModal(ownerKey?: string | null) {
-  const normalizedOwnerKey = ownerKey ?? null;
-  const [storedModal, setStoredModal] = useState<StoredUrlModal | null>(null);
-  const activeOwnerKeyRef = useRef(normalizedOwnerKey);
-
-  useLayoutEffect(() => {
-    activeOwnerKeyRef.current = normalizedOwnerKey;
-  }, [normalizedOwnerKey]);
-
+  const { openCopyTextModal, closeCopyTextModal, copyTextModalProps } = useCopyTextModal(ownerKey);
   const openUrlModal = useCallback(
     (content: UrlCopyModalContent) => {
-      if (activeOwnerKeyRef.current !== normalizedOwnerKey) {
-        return;
-      }
-      setStoredModal({ ownerKey: normalizedOwnerKey, content });
+      openCopyTextModal({
+        value: content.url,
+        title: content.title,
+        description: content.description,
+        fieldLabel: content.fieldLabel,
+        copyButtonLabel: content.copyButtonLabel,
+        copiedConfirmation: content.copiedConfirmation,
+        copyFailure: content.copyFailure,
+        closeLabel: content.closeLabel,
+        warning: content.warning,
+        context: content.context,
+        followUpAction: content.followUpAction,
+      });
     },
-    [normalizedOwnerKey],
+    [openCopyTextModal],
   );
-  const closeUrlModal = useCallback(() => {
-    setStoredModal(null);
-  }, []);
-
-  useEffect(() => {
-    const cleanupTimer = window.setTimeout(() => {
-      setStoredModal((current) => (current?.ownerKey === normalizedOwnerKey ? current : null));
-    }, 0);
-    return () => {
-      window.clearTimeout(cleanupTimer);
-    };
-  }, [normalizedOwnerKey]);
-
-  const content = storedModal?.ownerKey === normalizedOwnerKey ? storedModal.content : null;
   const urlModalProps = useMemo<UrlCopyModalProps>(
     () => ({
-      content,
-      open: content !== null,
-      onClose: closeUrlModal,
+      content: copyTextModalProps.content
+        ? {
+            url: copyTextModalProps.content.value,
+            title: copyTextModalProps.content.title,
+            description: copyTextModalProps.content.description,
+            fieldLabel: copyTextModalProps.content.fieldLabel,
+            copyButtonLabel: copyTextModalProps.content.copyButtonLabel,
+            copiedConfirmation: copyTextModalProps.content.copiedConfirmation,
+            copyFailure: copyTextModalProps.content.copyFailure,
+            closeLabel: copyTextModalProps.content.closeLabel,
+            warning: copyTextModalProps.content.warning,
+            context: copyTextModalProps.content.context,
+            followUpAction: copyTextModalProps.content.followUpAction,
+          }
+        : null,
+      open: copyTextModalProps.open,
+      onClose: closeCopyTextModal,
     }),
-    [closeUrlModal, content],
+    [closeCopyTextModal, copyTextModalProps],
   );
 
-  return { openUrlModal, closeUrlModal, urlModalProps };
+  return { openUrlModal, closeUrlModal: closeCopyTextModal, urlModalProps };
 }

@@ -13,13 +13,6 @@ export const appointmentsApi = {
   list(params: ListAppointmentsParams) {
     return http.get<{ appointments: Appointment[] }>("/appointments", { params }).then((response) => response.data.appointments);
   },
-  mini(timezone: string) {
-    return http
-      .get<{ appointments: Record<string, Appointment[]> }>("/appointments/agenda", {
-        params: { timezone },
-      })
-      .then((response) => response.data.appointments);
-  },
   recurrenceTypes() {
     return http
       .get<{ recurrenceTypes: RecurrenceType[] }>("/appointment-recurrence-types/options")

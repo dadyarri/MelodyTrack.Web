@@ -57,7 +57,7 @@ function createHistory(releases: ReleaseEntry[], pagination: Partial<Pick<Releas
     currentVersion: current.version,
     releases,
     page: 1,
-    pageSize: 20,
+    pageSize: 2,
     totalCount: releases.length,
     totalPages: 1,
     hasNextPage: false,

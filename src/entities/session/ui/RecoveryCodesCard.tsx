@@ -1,5 +1,6 @@
 import { App as AntdApp, Button, Card, Space, Typography } from "antd";
 
+import { copyTextToClipboard } from "@/shared/lib";
 import { authScreenStyles as styles } from "@/shared/ui";
 import { CopyOutlined, DownloadOutlined } from "@/shared/ui/icons";
 
@@ -24,14 +25,20 @@ export function RecoveryCodesCard({
   const { message } = AntdApp.useApp();
   const activeCodes = items.filter((item) => !item.wasUsed).map((item) => item.code);
 
-  async function copyCodes() {
+  function copyCodes() {
     if (activeCodes.length === 0) {
       message.warning("Не осталось активных кодов для копирования.");
       return;
     }
 
-    await navigator.clipboard.writeText(activeCodes.join("\n"));
-    message.success("Активные коды восстановления скопированы.");
+    void copyTextToClipboard(activeCodes.join("\n")).then((copied) => {
+      if (copied) {
+        void message.success("Активные коды восстановления скопированы.");
+        return;
+      }
+
+      void message.error("Не удалось скопировать коды. Выделите их и скопируйте вручную.");
+    });
   }
 
   function downloadCodes() {
@@ -57,7 +64,7 @@ export function RecoveryCodesCard({
       title={title}
       extra={
         <Space wrap>
-          <Button icon={<CopyOutlined />} onClick={() => void copyCodes()}>
+          <Button icon={<CopyOutlined />} onClick={copyCodes}>
             Копировать активные
           </Button>
           <Button icon={<DownloadOutlined />} onClick={downloadCodes}>

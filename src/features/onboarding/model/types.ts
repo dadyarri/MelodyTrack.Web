@@ -1,6 +1,6 @@
 import type { TourProps } from "antd";
 
-export const ONBOARDING_DEFINITION_VERSION = 2;
+export const ONBOARDING_DEFINITION_VERSION = 3;
 
 export const onboardingTargetIds = [
   "dashboard-content",
@@ -9,7 +9,7 @@ export const onboardingTargetIds = [
   "schedule-calendar",
   "clients-page-content",
   "courses-workspace",
-  "revenue-main-blocks",
+  "statistics-main",
   "users-page-content",
   "audit-page-content",
   "profile-availability",
@@ -26,7 +26,7 @@ export type OnboardingRoute =
   | "/schedule"
   | "/clients"
   | "/courses"
-  | "/revenue"
+  | "/statistics/work"
   | "/users"
   | "/audit"
   | "/profile"

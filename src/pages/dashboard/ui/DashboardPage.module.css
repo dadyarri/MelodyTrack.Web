@@ -4,50 +4,72 @@
   gap: 20px;
 }
 
-.widget {
+.schedule,
+.statisticCard,
+.debtors {
   min-width: 0;
 }
 
-.widgetSmall {
-  grid-column: span 2;
-}
-
-.widgetSmall :global(.ant-card-body) {
-  padding: 16px;
-}
-
-.widgetLarge {
+.schedule {
   grid-column: span 4;
 }
 
-.widgetMiniSchedule {
-  grid-column: span 4;
-}
-
-.widgetMiniScheduleToday {
+.scheduleToday {
   grid-column: 1 / span 4;
 }
 
-.widgetMiniScheduleTomorrow {
+.scheduleTomorrow {
   grid-column: 5 / span 4;
 }
 
-.widgetDebtors {
+.statisticCard {
+  grid-column: span 2;
+}
+
+.debtors {
   grid-column: 1 / -1;
+}
+
+.statisticCard :global(.ant-card-body) {
+  padding: 16px;
+}
+
+.queryState {
+  min-height: 96px;
+  justify-content: center;
+}
+
+.appointmentList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.appointment {
+  padding: 12px 0;
+  border-block-end: 1px solid var(--border-soft);
+}
+
+.appointment:first-child {
+  padding-block-start: 0;
+}
+
+.appointment:last-child {
+  padding-block-end: 0;
+  border-block-end: 0;
 }
 
 @media (max-width: 720px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 22px;
   }
 
-  .widgetSmall,
-  .widgetLarge,
-  .widgetMiniSchedule,
-  .widgetMiniScheduleToday,
-  .widgetMiniScheduleTomorrow,
-  .widgetDebtors {
+  .schedule,
+  .scheduleToday,
+  .scheduleTomorrow,
+  .statisticCard,
+  .debtors {
     grid-column: 1;
   }
 }
@@ -57,12 +79,11 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .widgetSmall,
-  .widgetLarge,
-  .widgetMiniSchedule,
-  .widgetMiniScheduleToday,
-  .widgetMiniScheduleTomorrow,
-  .widgetDebtors {
+  .schedule,
+  .scheduleToday,
+  .scheduleTomorrow,
+  .statisticCard,
+  .debtors {
     grid-column: span 1;
   }
 }
